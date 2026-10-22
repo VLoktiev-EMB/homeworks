@@ -26,7 +26,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 
 - [ ] Monorepo with one independent PlatformIO project per homework under `homeworks/`.
 - [ ] Shared libraries in `lib/` (`common`, `port`, `arduino`, `espidf`, `host`) consumed
-      through `lib_extra_dirs`.
+      through `lib_deps = <name>=symlink://../../lib/<name>` with a `library.json` per
+      library and a generated `platformio.shared.ini`; `lib_extra_dirs` remains a
+      generator fallback only.
+- [ ] Toolchain is pinned: PlatformIO Core 6.2.0, `platformio/espressif32` 8.0.0, and
+      explicit ESP32-S3-DevKitC-1 N16R8 overrides (16 MB flash, octal PSRAM).
 - [ ] Homework directories named `module_lesson-name`, e.g. `1_3-police-flasher`.
 - [ ] Multi-root VS Code workspace containing `repo`, `docs`, `lib`, `scripts`, and each
       homework; generated from metadata and committed.
@@ -79,8 +83,19 @@ artifact — code, evidence, and report — that can be understood and verified 
 
 **Quality**
 
-- [ ] clang-format (ESP-IDF style), clang-tidy (bugprone, cert, performance, portability),
-      markdownlint, yamllint, ruff, and gitleaks are configured.
+- [ ] clang-format 23.1.3 is configured as a documented ESP-IDF approximation (4 spaces,
+      120 columns, function brace on a new line), together with clang-tidy (bugprone,
+      cert, performance, portability), markdownlint, yamllint, ruff, and gitleaks.
+- [ ] esp-clangd (Espressif's LLVM fork) serves the workspace through
+      `scripts/clangd-wrapper.sh`, with per-project `.clangd` files and explicit
+      `--query-driver` toolchain globs.
+- [ ] `scripts/affected.py` maps a git diff to a build/simulation matrix, including
+      fanout from `lib/**` changes to every consumer.
+- [ ] `scripts/check_architecture.py` and a native compile gate enforce the dependency
+      rule.
+- [ ] Reports include a measurement ledger labelling every value as measured,
+      calculated, simulated, datasheet, or explicitly not measured, with instrument,
+      method, uncertainty, and commit hash.
 - [ ] Checks are layered: fast hooks in pre-commit, clang-tidy in pre-push, full build and
       tests in CI.
 - [ ] Unity tests run on the native environment; shared libraries have a dedicated
@@ -88,16 +103,21 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] Testing is tiered: build always; unit tests for pure logic; simulation where
       supported; hardware-in-the-loop when hardware is available.
 - [ ] TDD is used for pure logic; hardware behavior is verified by simulation or HIL.
-- [ ] CI runs lint and metadata/docs checks on every pull request, builds changed
-      projects, runs tests and simulation, and runs a full matrix nightly.
+- [ ] CI runs lint, metadata/docs checks, native tests, and builds of changed projects on
+      every pull request. Simulation enters CI only after the Phase 5 spike, only for
+      changed projects, and never as a required check for fork pull requests. Nightly
+      runs the full build and unit-test matrix; full simulation runs weekly if adopted.
 
 **Simulation and diagrams**
 
-- [ ] A full spike evaluates self-hosted Velxio, Wokwi CLI, and Fritzing against defined
-      criteria, including a pilot simulation of homework 1.3.
+- [ ] A full spike measures Wokwi (primary), Velxio (self-hosted fallback), Renode
+      (STM32), and Fritzing (illustration) against defined criteria, including a pilot
+      simulation of homework 1.3, and records measured minutes and fidelity limits.
 - [ ] Spike results are stored in research artifacts and an ADR.
 - [ ] `assets/diagram.json` is the source of truth for wiring and simulation.
-- [ ] Fritzing SVGs may be added for final report illustrations.
+- [ ] Fritzing SVGs may be used for final report illustrations with attribution; part
+      graphics are not copied into shared assets or the docs site, and `diagram.json`
+      remains the source of truth.
 - [ ] Pinout diagrams are generated from board profiles or linked to official sources.
 
 **Git and publication**
@@ -106,12 +126,15 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] Conventional Commits; squash merge; tag `hw/<id>` after merge; branches deleted.
 - [ ] Three PR templates (`homework`, `infra`, `docs`) with a shared header and
       type-specific checklists; no default template.
-- [ ] Git LFS is used for large binaries with size limits; videos are linked, not
-      committed.
+- [ ] Git LFS is used only for large, non-diffable binaries; site assets (PNG, JPG, SVG,
+      Markdown, YAML, JSON) stay in normal git because GitHub Pages cannot serve LFS
+      objects. Videos are linked, not committed.
 - [ ] The repository is public under the MIT license.
 - [ ] Internal course materials are never committed; assignments are paraphrased in
       English with attribution.
-- [ ] A README index and a MkDocs Material site are generated from `homework.yaml`.
+- [ ] A README index and a MkDocs Material 9.7.7 site are generated from `homework.yaml`;
+      the configuration stays Zensical-compatible and is re-evaluated in Q1 2027 before
+      the 2027-05-05 end-of-life.
 - [ ] Infrastructure decisions are recorded as ADRs; homework assumptions are recorded in
       the report.
 
@@ -139,6 +162,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 - MISRA C compliance — too heavy for a course; ESP-IDF style plus clang-tidy is the
   agreed quality bar.
 - Team collaboration features — assignments are individual.
+- Nightly full simulation matrix — free-tier simulation quotas cannot sustain it; use
+  changed-only PR simulation and a weekly full run if adopted.
+- Git LFS for site assets — GitHub Pages cannot serve LFS objects.
+- Copying Fritzing part graphics into shared assets or the docs site — the part library
+  license restricts reuse outside Fritzing.
 
 ## Context
 
@@ -159,6 +187,12 @@ artifact — code, evidence, and report — that can be understood and verified 
   will contain only an English paraphrase and a public source reference.
 - The user wants deep, adaptive questioning and industry-standard output rather than
   quick one-shot results.
+- Research completed on 2026-10-23 is recorded in `.planning/research/SUMMARY.md`; it
+  changes the shared-library mechanism, formatting approximation, language server,
+  simulator priority, CI simulation cadence, docs lifecycle, Fritzing licensing, and
+  LFS scope.
+- The course allows public solutions and does not require AI-assistance disclosure
+  (confirmed by the user on 2026-10-23).
 
 ## Constraints
 
@@ -180,6 +214,12 @@ artifact — code, evidence, and report — that can be understood and verified 
 - **Hardware**: Only the boards and instruments listed in Context are available.
 - **Git**: `main` is protected; no direct commits, no force-push, no history rewriting.
 - **Spike timebox**: No fixed timebox; the spike runs until the decision is evidence-based.
+- **Pinned toolchain**: PlatformIO Core 6.2.0 and espressif32 8.0.0; the N16R8 board
+  requires explicit flash/PSRAM overrides.
+- **Licensing**: Fritzing part graphics are not redistributed; SVGs used in reports are
+  attributed and kept out of shared assets.
+- **Assets**: LFS only for large non-diffable binaries; site assets remain normal git
+  objects.
 
 ## Key Decisions
 
@@ -191,11 +231,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Arduino uses idiomatic C++; ESP-IDF uses C11; shared logic is C | Idiomatic per framework while keeping logic portable | — Pending |
 | Thin core + port + adapters | Reuse without building a shadow framework | — Pending |
 | No universal HAL | Hardware abstractions leak; the course must teach framework APIs | — Pending |
-| Shared libraries in `lib/` via `lib_extra_dirs` | Reuse across 30+ projects without copying | — Pending |
+| Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | — Pending |
 | Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | — Pending |
-| clangd + compiledb + `--query-driver` | Industry-standard language server with accurate cross-compiler diagnostics | — Pending |
+| esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | — Pending |
 | Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | — Pending |
-| ESP-IDF style + clang-tidy | Consistent quality without MISRA overhead | — Pending |
+| clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | — Pending |
 | 10-section report with BOM, calculations, safety, and industry notes | Academic completeness plus engineering rigor | — Pending |
 | `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | — Pending |
 | Unity + native environment | Fast, deterministic tests for pure logic | — Pending |
@@ -207,7 +247,10 @@ artifact — code, evidence, and report — that can be understood and verified 
 | MIT license | Simple public portfolio license | — Pending |
 | README index + MkDocs Material | One source of metadata renders both catalog and site | — Pending |
 | ADRs for infrastructure, assumptions in reports | Traceable decisions at the right scope | — Pending |
-| Full spike on Velxio, Wokwi, and Fritzing | De-risks the simulation-critical requirement with evidence | — Pending |
+| Wokwi primary, Velxio fallback, Renode for STM32, Fritzing with attribution | Research shows Wokwi has the strongest ESP32 fidelity and CI; Velxio self-host excludes STM32 | — Pending |
+| MkDocs Material 9.7.7 with Zensical-compatible config | Stable today; re-evaluate in Q1 2027 before the 2027-05-05 EOL | — Pending |
+| Git LFS only for large non-diffable binaries | Pages cannot serve LFS objects; LFS bandwidth is consumed by checkouts | — Pending |
+| Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | — Pending |
 | Pilot 1.3 with all extensions in guided mode | Validates the full workflow before scaling to 30+ homeworks | — Pending |
 | Seven thin skills, two fully implemented | Complete inventory without premature design | — Pending |
 | Four deterministic scripts | Guarantees consistency for scaffolding, index, workspace, and validation | — Pending |
@@ -235,4 +278,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-22 after initialization*
+*Last updated: 2026-10-23 after research*
