@@ -38,25 +38,28 @@ created: "2026-10-23"
 
 ## Per-Task Verification Map
 
-Plan-level clustering below follows the research's artifact groups. Exact task IDs (`1-0N-MM`) are assigned by the planner; this table is the requirement-level contract those tasks must satisfy.
+Derived from the final plan frontmatter: the Plan and Wave columns are regenerated from each
+PLAN.md's `plan` / `wave` / `requirements` fields, and the plans are authoritative. Each row's
+plan is the one whose tasks actually implement that requirement; regenerate this table if a
+plan's frontmatter changes.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 1-01-* | 01 | 1 | FOUND-03 | T-1-01 | `bypass_actors` stays `[]`; live rules equal committed projection | integration | `python3 scripts/check_policy.py --check` | ❌ W0 | ⬜ pending |
 | 1-01-* | 01 | 1 | FOUND-04 | T-1-01 | squash-only merges, `delete_branch_on_merge: true` asserted | integration | `python3 scripts/check_policy.py --check` | ❌ W0 | ⬜ pending |
-| 1-01-* | 01 | 1 | FOUND-04 | — | `tag_homework.sh` refuses an existing `hw/<id>` tag | unit | `python3 -m unittest scripts.tests.test_tag_homework` | ❌ W0 | ⬜ pending |
-| 1-02-* | 02 | 1 | FOUND-07 | T-1-02 | gitleaks blocks a staged fake secret; `--redact` keeps it out of logs | integration | `pre-commit run gitleaks --all-files` (non-zero on planted `AKIAIOSFODNN7EXAMPLE`) | ✅ manual, once | ⬜ pending |
-| 1-02-* | 02 | 1 | FOUND-07 | — | `.gitignore` covers `.pio/`, `.env`, `compile_commands.json`, `site/`, `.planning/research/.cache/` | unit | `python3 -m unittest scripts.tests.test_gitignore` | ❌ W0 | ⬜ pending |
-| 1-02-* | 02 | 1 | FOUND-07 | — | `.gitattributes` routes every LFS extension to `filter: lfs` | integration | `git check-attr filter -- *.pdf *.step *.stl *.fzz *.zip *.bin *.elf *.vcd` | ✅ | ⬜ pending |
-| 1-02-* | 02 | 1 | FOUND-08 | — | videos and docs images are **not** LFS-routed | integration | `git check-attr filter -- docs/assets/x.png report/video.mp4` | ❌ W0 | ⬜ pending |
-| 1-03-* | 03 | 2 | FOUND-06 | T-1-03 | `LICENSE`, `NOTICE`, `LICENSES/*`, `REUSE.toml` present; split declared | integration | `reuse lint` (local once; CI in Phase 8) | ❌ W0 | ⬜ pending |
-| 1-03-* | 03 | 2 | FOUND-06 | — | no PII: public handle only in `LICENSE` / `NOTICE` | unit | `python3 -m unittest scripts.tests.test_license_hygiene` | ❌ W0 | ⬜ pending |
-| 1-04-* | 04 | 2 | FOUND-05 | — | three templates exist; shared header identical across all three | unit | `python3 -m unittest scripts.tests.test_check_pr_templates` | ❌ W0 | ⬜ pending |
-| 1-04-* | 04 | 2 | FOUND-05 | — | no default `pull_request_template.md` at any of the three paths | unit | same | ❌ W0 | ⬜ pending |
-| 1-05-* | 05 | 2 | FOUND-10 | — | `AGENTS.md` exists, ≤ 300 lines, carries `[MUST]`/`[ENFORCED: …]` vocabulary | unit | `python3 -m unittest scripts.tests.test_agents_md` | ❌ W0 | ⬜ pending |
-| 1-05-* | 05 | 2 | FOUND-10 | — | `.claude/CLAUDE.md` imports `@AGENTS.md`, does not restate rules | unit | same | ❌ W0 | ⬜ pending |
-| 1-05-* | 05 | 2 | TOOL-07 | — | five ADRs, MADR frontmatter, sequential numbering, index agrees | unit | `python3 -m unittest scripts.tests.test_adrs` | ❌ W0 | ⬜ pending |
-| 1-05-* | 05 | 2 | FOUND-02 | — | homework ID convention documented in `AGENTS.md` (enforced by Phase 4 schema) | manual | — documented only | n/a | ⬜ pending |
+| 1-02-* | 02 | 2 | FOUND-07 | T-1-02 | `.gitignore` covers `.pio/`, `.env`, `compile_commands.json`, `site/`, `.planning/research/.cache/` | unit | `python3 -m unittest scripts.tests.test_gitignore` | ❌ W0 | ⬜ pending |
+| 1-02-* | 02 | 2 | FOUND-08 | T-1-09 | `.gitattributes` routes every LFS extension to `filter: lfs`; docs images and videos are **not** LFS-routed | integration | `git check-attr filter -- *.pdf *.step *.stl *.fzz *.zip *.bin *.elf *.vcd docs/assets/x.png report/video.mp4` | ✅ | ⬜ pending |
+| 1-03-* | 03 | 2 | FOUND-07 | T-1-02 | gitleaks blocks a staged fake secret; `--redact` keeps it out of logs | integration | `pre-commit run gitleaks --all-files` (non-zero on the planted canary) | ✅ manual, once | ⬜ pending |
+| 1-03-* | 03 | 2 | FOUND-07 | T-1-08 | the full-history workflow pins `fetch-depth: 0`, the all-refs log options, and `--redact` | unit | `python3 -m unittest scripts.tests.test_security_workflow` | ❌ W0 | ⬜ pending |
+| 1-04-* | 04 | 2 | FOUND-06 | T-1-03 | `LICENSE`, `NOTICE`, `LICENSES/*`, `REUSE.toml` present; split declared | integration | `reuse lint` (local once; CI in Phase 8) | ❌ W0 | ⬜ pending |
+| 1-04-* | 04 | 2 | FOUND-06 | T-1-03 | no PII: public handle only in `LICENSE` / `NOTICE` / `REUSE.toml` | unit | `python3 -m unittest scripts.tests.test_license_hygiene` | ❌ W0 | ⬜ pending |
+| 1-05-* | 05 | 2 | FOUND-05 | T-1-10 | three templates exist; shared header identical across all three | unit | `python3 -m unittest scripts.tests.test_check_pr_templates` | ❌ W0 | ⬜ pending |
+| 1-05-* | 05 | 2 | FOUND-05 | T-1-10 | no default `pull_request_template.md` at any of the three paths | unit | same | ❌ W0 | ⬜ pending |
+| 1-07-* | 07 | 2 | TOOL-07 | T-1-12 | five ADRs, MADR frontmatter, sequential numbering, index agrees | unit | `python3 -m unittest scripts.tests.test_adrs` | ❌ W0 | ⬜ pending |
+| 1-08-* | 08 | 2 | FOUND-04 | T-1-07 | `tag_homework.sh` refuses an existing `hw/<id>` tag; no force flags in source | unit | `python3 -m unittest scripts.tests.test_tag_homework` | ❌ W0 | ⬜ pending |
+| 1-06-* | 06 | 3 | FOUND-10 | T-1-13 | `AGENTS.md` exists, ≤ 300 lines, carries `[MUST]`/`[ENFORCED: …]` vocabulary; `.claude/CLAUDE.md` imports `@AGENTS.md` and does not restate rules | unit | `python3 -m unittest scripts.tests.test_agents_md` | ❌ W0 | ⬜ pending |
+| 1-06-* | 06 | 3 | FOUND-02 | — | homework ID convention documented in `AGENTS.md` and test-proven (empty and separator-less rejected, canonical form accepted) | unit | `python3 -m unittest scripts.tests.test_homework_id` | ❌ W0 | ⬜ pending |
+| 1-06-* | 06 | 3 | FOUND-02 | — | the same convention is enforced mechanically by the Phase 4 schema (not Phase 1) | manual | — documented only | n/a | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
