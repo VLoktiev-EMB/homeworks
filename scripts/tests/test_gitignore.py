@@ -63,7 +63,22 @@ IGNORED = {
         ".pytest_cache/x",
         ".ruff_cache/x",
     ],
-    "secrets": [".env", ".env.local", "secrets.yaml", "key.pem", "cert.key"],
+    "secrets": [
+        ".env",
+        ".env.local",
+        "secrets.yaml",
+        "key.pem",
+        "cert.key",
+        # SSH/GPG material has no extension, so `*.key` cannot catch it.
+        "id_rsa",
+        "id_ed25519",
+        "key.ppk",
+    ],
+    # Regenerable by the ESP-IDF component manager and build system.
+    "esp-idf artifacts": [
+        "sdkconfig.old",
+        "managed_components/espressif__led_strip/led_strip.h",
+    ],
     "os and editor junk": [
         ".DS_Store",
         "Thumbs.db",
@@ -104,6 +119,10 @@ VISIBLE = [
     # A Makefile is source, not a build artefact: ignoring it makes a build entry
     # point vanish from every clone with no error anywhere.
     "Makefile",
+    # ESP-IDF per-project configuration belongs in version control; only the
+    # regenerable artifacts (sdkconfig.old, managed_components/) are ignored.
+    "sdkconfig",
+    "dependencies.lock",
 ]
 
 

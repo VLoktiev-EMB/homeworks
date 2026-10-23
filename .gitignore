@@ -5,6 +5,13 @@
 platformio.sublime-project
 platformio.sublime-workspace
 
+# ESP-IDF artifacts (regenerable by the component manager / build system)
+# NOTE: `sdkconfig` and `dependencies.lock` are deliberately NOT ignored —
+# they are per-project configuration and belong in version control.
+sdkconfig.old
+sdkconfig.old.*
+managed_components/
+
 # Generated
 compile_commands.json
 site/
@@ -24,6 +31,16 @@ __pycache__/
 secrets.*
 *.pem
 *.key
+# SSH / GPG private material has no extension, so `*.key` cannot catch it.
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
+*.ppk
+*.p12
+*.pfx
 
 # OS / editor
 .DS_Store
@@ -445,9 +462,7 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
-.env
-.env.*
+# dotenv environment variable files (also covered in the Secrets block above)
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -456,11 +471,10 @@ web_modules/
 
 # Next.js build output
 .next
-out
+/out/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 .output
 
 # Gatsby files
