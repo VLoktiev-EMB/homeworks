@@ -50,9 +50,8 @@ PROJECT_DEPTH_ANCHOR = REPO_ROOT / "homeworks" / "1_1-example"
 
 LIB_NAMES = ("common", "port", "arduino", "espidf", "host")
 
-# The module files each library is expected to ship. ``port`` is header-only, so
-# its tuple is empty. The mapping moves to exact set equality once the Phase 2
-# stub sources are retired.
+# The module files each library ships, as an exact inventory. ``port`` is
+# header-only, so its tuple is empty and it has no ``src/`` directory.
 LIB_SOURCES = {
     "common": ("ring_buffer.c", "timing.c", "crc.c", "hex.c"),
     "port": (),
@@ -61,15 +60,8 @@ LIB_SOURCES = {
     "host": ("fake_time.c", "fake_gpio.c", "fake_i2c.c", "fake_spi.c", "fake_log.c"),
 }
 
-# The Phase 2 version-returning linkage stubs. They are still on disk while this
-# test runs; the retirement commit removes them and tightens the inventory.
-STUB_SOURCES = {
-    "common": "common.c",
-    "port": "port.c",
-    "arduino": "arduino_adapter.c",
-    "espidf": "espidf_adapter.c",
-    "host": "host.c",
-}
+# ``port`` is the one header-only library: its manifest has no ``srcDir``.
+HEADER_ONLY_LIBRARIES = ("port",)
 
 HOOK_PATH = "pre:../../scripts/pio/compiledb.py"
 
@@ -262,16 +254,43 @@ class ShippedTreeTests(unittest.TestCase):
             with self.subTest(library=name):
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                 self.assertEqual(name, manifest["name"])
-                self.assertEqual("0.1.0", manifest["version"])
-                self.assertIn("srcDir", manifest["build"])
+                self.assertEqual("0.2.0", manifest["version"])
                 self.assertIn("includeDir", manifest["build"])
+                if name == "port":
+                    self.assertNotIn("srcDir", manifest["build"])
+                else:
+                    self.assertIn("srcDir", manifest["build"])
 
-    def test_expected_module_sources_are_present(self):
-        for name, expected in LIB_SOURCES.items():
-            for filename in expected:
-                source = REPO_ROOT / "lib" / name / "src" / filename
-                with self.subTest(library=name, source=filename):
-                    self.assertTrue(source.is_file(), f"missing {source}")
+    def test_no_manifest_declares_a_dependency(self):
+        # D-03: ``symlink://`` resolves a manifest dependency against the package
+        # registry, so every project lists its own ``lib_deps`` instead.
+        for name in LIB_NAMES:
+            manifest_path = REPO_ROOT / "lib" / name / "library.json"
+            with self.subTest(library=name):
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                self.assertNotIn("dependencies", manifest)
+
+    def test_library_sources_match_the_inventory_exactly(self):
+        for name in LIB_NAMES:
+            source_dir = REPO_ROOT / "lib" / name / "src"
+            actual = (
+                {path.name for path in source_dir.rglob("*") if path.is_file()}
+                if source_dir.is_dir()
+                else set()
+            )
+            with self.subTest(library=name):
+                self.assertEqual(set(LIB_SOURCES[name]), actual)
+
+    def test_header_only_library_has_no_sources(self):
+        for name in HEADER_ONLY_LIBRARIES:
+            with self.subTest(library=name):
+                self.assertEqual((), LIB_SOURCES[name])
+                source_dir = REPO_ROOT / "lib" / name / "src"
+                if source_dir.exists():
+                    files = [
+                        path for path in source_dir.rglob("*") if path.is_file()
+                    ]
+                    self.assertEqual([], files, f"{source_dir} must be empty or absent")
 
     def test_every_library_source_is_c(self):
         for name in LIB_NAMES:
@@ -283,14 +302,6 @@ class ShippedTreeTests(unittest.TestCase):
                     continue
                 with self.subTest(library=name, source=path.name):
                     self.assertEqual(".c", path.suffix)
-
-    def test_phase_two_stub_sources_are_still_present(self):
-        # The retirement commit in this plan deletes these; until then the tree
-        # must still hold them so this test and the modules agree on one moment.
-        for name, filename in STUB_SOURCES.items():
-            source = REPO_ROOT / "lib" / name / "src" / filename
-            with self.subTest(library=name, source=filename):
-                self.assertTrue(source.is_file(), f"missing stub {source}")
 
 
 if __name__ == "__main__":
