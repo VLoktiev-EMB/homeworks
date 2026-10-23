@@ -61,6 +61,34 @@ class SecurityWorkflowContractTest(unittest.TestCase):
     def test_triggers_on_workflow_dispatch(self):
         self.assertIn("workflow_dispatch:", self.text)
 
+    def test_actions_are_pinned_to_full_commit_shas(self):
+        # A major tag such as `@v7` is mutable; only a 40-hex commit is
+        # immutable. Any `uses:` line must therefore carry a SHA.
+        uses = re.findall(r"uses:\s*(\S+)", self.text)
+        self.assertTrue(uses, "workflow declares no actions at all")
+        for reference in uses:
+            with self.subTest(action=reference):
+                action, _, revision = reference.partition("@")
+                self.assertRegex(
+                    revision,
+                    r"^[0-9a-f]{40}$",
+                    f"{action} is not pinned to a commit SHA ({reference})",
+                )
+
+    def test_verifies_the_gitleaks_archive_against_a_published_digest(self):
+        # The archive is executed with the job's privileges, so the digest must
+        # be checked before it is unpacked.
+        self.assertIn(
+            "GITLEAKS_SHA256: "
+            "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+            self.text,
+            "the published linux_x64 sha256 is not pinned",
+        )
+        self.assertIn("sha256sum -c -", self.text)
+
+    def test_downloads_over_https_only(self):
+        self.assertIn("--proto '=https'", self.text)
+
     # --- forbidden tokens ------------------------------------------------
 
     def test_does_not_use_hosted_gitleaks_action(self):
