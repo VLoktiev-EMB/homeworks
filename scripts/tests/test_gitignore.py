@@ -118,5 +118,71 @@ class TestGitignorePatterns(unittest.TestCase):
         )
 
 
+def check_attr(attribute: str, path: str) -> str:
+    """Return git's effective value for ``attribute`` on ``path``.
+
+    Values are git's vocabulary: ``set``, ``unset``, ``unspecified``, ``auto``, or
+    the literal assignment (``lfs``). A missing rule reads as ``unspecified``.
+    """
+    completed = git("check-attr", attribute, "--", path)
+    if completed.returncode != 0:
+        raise AssertionError(
+            f"git check-attr failed for {path!r}: {completed.stderr.strip()}"
+        )
+    output = completed.stdout.strip()
+    marker = f"{path}: {attribute}: "
+    if not output.startswith(marker):
+        raise AssertionError(f"unexpected git check-attr output: {output!r}")
+    return output[len(marker) :]
+
+
+# D-20: the only extensions allowed to consume LFS quota.
+LFS_EXTENSIONS = ["pdf", "step", "stl", "fzz", "zip", "bin", "elf", "vcd"]
+
+# Page-served assets must stay normal git objects: GitHub Pages cannot serve LFS.
+PAGE_SERVED_IMAGES = ["png", "jpg", "jpeg", "webp", "svg"]
+
+# Videos are linked from reports, never committed, so they must not reach LFS.
+VIDEO_EXTENSIONS = ["mp4", "mov", "avi", "webm", "mkv"]
+
+
+class TestLfsRouting(unittest.TestCase):
+    """`.gitattributes` routing, asserted through ``git check-attr``."""
+
+    def test_declared_extensions_route_to_lfs(self) -> None:
+        for extension in LFS_EXTENSIONS:
+            path = f"artifact.{extension}"
+            with self.subTest(extension=extension):
+                self.assertEqual(check_attr("filter", path), "lfs")
+
+    def test_page_served_images_are_not_lfs(self) -> None:
+        for extension in PAGE_SERVED_IMAGES:
+            path = f"docs/assets/sample.{extension}"
+            with self.subTest(extension=extension):
+                self.assertNotEqual(check_attr("filter", path), "lfs")
+
+    def test_video_containers_are_not_lfs(self) -> None:
+        for extension in VIDEO_EXTENSIONS:
+            path = f"report/video.{extension}"
+            with self.subTest(extension=extension):
+                self.assertNotEqual(check_attr("filter", path), "lfs")
+
+    def test_raster_images_are_binary(self) -> None:
+        for extension in ["png", "jpg", "jpeg", "webp"]:
+            path = f"docs/assets/sample.{extension}"
+            with self.subTest(extension=extension):
+                self.assertEqual(check_attr("text", path), "unset")
+
+    def test_svg_is_text_with_lf_endings(self) -> None:
+        self.assertEqual(check_attr("text", "docs/assets/sample.svg"), "set")
+        self.assertEqual(check_attr("eol", "docs/assets/sample.svg"), "lf")
+
+    def test_markdown_is_lf_text(self) -> None:
+        # No markdown-specific rule exists; the global `* text=auto eol=lf` line
+        # covers it, which git reports as `auto` rather than `set`.
+        self.assertIn(check_attr("text", "reports/report.md"), {"auto", "set"})
+        self.assertEqual(check_attr("eol", "reports/report.md"), "lf")
+
+
 if __name__ == "__main__":
     unittest.main()
