@@ -59,42 +59,43 @@ status: issues_found
 
 ## Summary
 
-Переглянуто весь приріст фази 01 (48 комітів після `ccf4224`): два Python-чекери,
-bash-скрипт тегування, полісі-як-код, secret-gate, ліцензійну декларацію, ADR,
-PR-шаблони, rulebook і тестовий набір. Перевірку зроблено не лише читанням: тестовий
-набір виконано (99 тестів, OK), `reuse lint`/`reuse spdx` прогнано для перевірки
-фактичного ліцензійного розподілу, `gitleaks git --redact --verbose --log-opts="--all"`
-виконано на реальній історії (no leaks found), а два підозрювані дефекти підтверджено
-цілеспрямованими експериментами в тимчасових git-репозиторіях.
+The full phase 01 delta (48 commits after `ccf4224`) was reviewed: two Python checkers,
+the tagging bash script, policy-as-code, the secret gate, the license declaration, the
+ADRs, the PR templates, the rulebook, and the test suite. The review was not read-only
+inspection: the test suite was executed (99 tests, OK), `reuse lint`/`reuse spdx` were run
+to verify the actual license split, `gitleaks git --redact --verbose --log-opts="--all"`
+was executed against the real history (no leaks found), and two suspected defects were
+confirmed with targeted experiments in throwaway git repositories.
 
-Загальна оцінка: ядро політики коректне і fail-closed. `check_policy.py` виявляє дрейф у
-всіх перевірених напрямках (відсутнє правило, зайве правило, вимкнене enforcement,
-розширені conditions), а проєкція не пропускає відсутні в live поля. Однак два guard-и
-мають реальні fail-open прогалини: чекер PR-шаблонів не бачить усіх шляхів, які GitHub
-використовує для default-шаблону, а `tag_homework.sh` перевіряє наявність homework у
-робочому дереві, але тегує зовсім інший коміт. Крім того, частина тегів
-`[ENFORCED: ...]` у AGENTS.md заявляє механізми, яких у репозиторії немає.
+Overall: the policy core is correct and fail-closed. `check_policy.py` detects drift in
+every direction that was probed (missing rule, extra rule, disabled enforcement, widened
+conditions), and the projection does not skip fields that are absent from live. Two
+guards, however, have real fail-open gaps: the PR-template checker does not see every path
+GitHub uses for a default template, and `tag_homework.sh` verifies the homework in the
+working tree but tags an entirely different commit. In addition, some
+`[ENFORCED: ...]` tags in AGENTS.md claim mechanisms the repository does not have.
 
-Критичних (BLOCKER) дефектів не знайдено.
+No critical (BLOCKER) defects were found.
 
 ## Warnings
 
-### WR-01: Чекер PR-шаблонів не виявляє default-шаблон у root `PULL_REQUEST_TEMPLATE/`
+### WR-01: The PR-template checker misses a default template in the root `PULL_REQUEST_TEMPLATE/`
 
 **File:** `scripts/check_pr_templates.py:40-49`, `scripts/check_pr_templates.py:182-191`
-**Issue:** `DEFAULT_TEMPLATE_PATHS` перелічує вісім шляхів, але GitHub підтримує
-`PULL_REQUEST_TEMPLATE/` як у `.github/`, так і в корені репозиторію та в `docs/`, і
-використовує файл `default.md` з цієї теки як типовий шаблон. Шляхи
-`PULL_REQUEST_TEMPLATE/default.md` і `docs/PULL_REQUEST_TEMPLATE/default.md` (а також
-будь-яке інше написання, якщо файлова система CI регістрозалежна) не перевіряються.
-Перевірено експериментально: у тимчасовому дереві з копією трьох шаблонів і доданим
-`PULL_REQUEST_TEMPLATE/default.md` у корені скрипт вивів
-`PASS default-template: no default PR template at any fallback path` і завершився з
-кодом 0. Тобто інваріант «chooser cannot be suppressed» (заявлений у 01-05-SUMMARY)
-фактично не виконується: контриб'ютор може додати дефолтний шаблон і чекер цього не
-помітить, а GitHub мовчки перестане показувати вибір шаблону.
-**Fix:** перелічити всі задокументовані локації, а не вибіркові, і порівнювати імена без
-урахування регістру; краще — сканувати три підтримувані теки, а не фіксований список:
+**Issue:** `DEFAULT_TEMPLATE_PATHS` lists eight paths, but GitHub supports a
+`PULL_REQUEST_TEMPLATE/` directory in `.github/` as well as in the repository root and in
+`docs/`, and uses a `default.md` file inside that directory as the default template. The
+paths `PULL_REQUEST_TEMPLATE/default.md` and `docs/PULL_REQUEST_TEMPLATE/default.md` (and
+any other casing, when the CI filesystem is case-sensitive) are not checked. Verified
+experimentally: in a temporary tree containing a copy of the three templates plus an added
+root-level `PULL_REQUEST_TEMPLATE/default.md`, the script printed
+`PASS default-template: no default PR template at any fallback path` and exited with code
+0. The invariant "chooser cannot be suppressed" (claimed in 01-05-SUMMARY) therefore does
+not actually hold: a contributor can add a default template and the checker will not
+notice, while GitHub silently stops showing the template chooser.
+**Fix:** enumerate every documented location instead of a hand-picked list, and compare
+names case-insensitively; better, scan the three supported directories rather than a fixed
+list:
 
 ```python
 SUPPORTED_DIRS = ("", "docs", ".github")
@@ -106,23 +107,24 @@ for base in SUPPORTED_DIRS:
                 present.append(child.relative_to(root).as_posix())
 ```
 
-та додати відповідні негативні фікстури до `test_stray_default_template_exits_1`.
+and add the corresponding negative fixtures to `test_stray_default_template_exits_1`.
 
-### WR-02: `tag_homework.sh` перевіряє homework у робочому дереві, але тегує `origin/<default>`
+### WR-02: `tag_homework.sh` checks the homework in the working tree but tags `origin/<default>`
 
 **File:** `scripts/tag_homework.sh:104-110`, `scripts/tag_homework.sh:161-180`
-**Issue:** Прекондиція 2 перевіряє `-d "$REPO_ROOT/homeworks/$id"`, тобто *поточне робоче
-дерево* (можливо, гілку `hw/<id>`), а тег створюється на `refs/remotes/origin/$DEFAULT_BRANCH`.
-Це різні коміти. Перевірено експериментально: у тимчасовому репозиторії `origin/main` не
-містить `homeworks/9_9-ghost-homework`, гілка `hw/9_9-ghost-homework` містить; скрипт
-вивів `PASS homework: ... exists`, створив і запушив тег, і
-`git cat-file -e hw/9_9-ghost-homework:homeworks/9_9-ghost-homework/README.md` завершився
-невдачею. У реальному режимі це частково прикриває перевірка merged-PR, але вона не
-вимагає, щоб PR було змерджено саме в default branch, тому тег може вказати на коміт без
-homework. Оскільки тег — публічний і незмінний артефакт (ADR-0003), помилка стає
-постійним хибним посиланням.
-**Fix:** після обчислення `base` перевіряти вміст саме цього коміту і вимагати, щоб
-merged PR мав базою default branch:
+**Issue:** Precondition 2 checks `-d "$REPO_ROOT/homeworks/$id"`, that is, the *current
+working tree* (possibly the `hw/<id>` branch), while the tag is created at
+`refs/remotes/origin/$DEFAULT_BRANCH`. These are different commits. Verified
+experimentally: in a temporary repository, `origin/main` does not contain
+`homeworks/9_9-ghost-homework` while the `hw/9_9-ghost-homework` branch does; the script
+printed `PASS homework: ... exists`, created and pushed the tag, and
+`git cat-file -e hw/9_9-ghost-homework:homeworks/9_9-ghost-homework/README.md` failed. In
+real mode this is partly masked by the merged-PR check, but that check does not require the
+PR to have been merged into the default branch, so the tag can point at a commit without
+the homework. Because the tag is a public and immutable artifact (ADR-0003), the mistake
+becomes a permanent dangling reference.
+**Fix:** after computing `base`, verify the contents of that exact commit and require the
+merged PR to target the default branch:
 
 ```bash
 if ! git -C "$REPO_ROOT" cat-file -e "$base:homeworks/$id"; then
@@ -131,136 +133,135 @@ if ! git -C "$REPO_ROOT" cat-file -e "$base:homeworks/$id"; then
 fi
 ```
 
-і додати `--base "$DEFAULT_BRANCH"` до `gh pr list` (після того, як default branch
-визначено; порядок прекондицій доведеться переставити).
+and add `--base "$DEFAULT_BRANCH"` to `gh pr list` (once the default branch is resolved;
+the order of the preconditions will have to change).
 
-### WR-03: `[ENFORCED: pre-commit]` для generated files не має жодного enforcement-механізму
+### WR-03: `[ENFORCED: pre-commit]` for generated files has no enforcement mechanism
 
 **File:** `AGENTS.md:153-155`
-**Issue:** Правило «Generated files are never committed: `compile_commands.json`, `site/`,
-`.pio/`» позначене `[MUST] [ENFORCED: pre-commit]`, але `.pre-commit-config.yaml`
-містить лише gitleaks, trailing-whitespace, end-of-file-fixer, check-merge-conflict і
-check-added-large-files. Ніщо з цього не перевіряє відслідковані шляхи; `.gitignore`
-запобігає лише випадковому `git add .`, а `git add -f compile_commands.json` пройде всі
-хуки. Rulebook — канонічний артефакт фази, і його enforcement-теги за визначенням
-машиночитні та перевірювані, тому хибний тег гірший за його відсутність.
-**Fix:** або змінити тег на `[ENFORCED: review]`, або додати реальний хук, наприклад
-локальний `repo: local` з `entry: bash -c 'git ls-files -ci --exclude-standard
+**Issue:** The rule "Generated files are never committed: `compile_commands.json`, `site/`,
+`.pio/`" is tagged `[MUST] [ENFORCED: pre-commit]`, but `.pre-commit-config.yaml` contains
+only gitleaks, trailing-whitespace, end-of-file-fixer, check-merge-conflict, and
+check-added-large-files. None of these inspects tracked paths; `.gitignore` only prevents
+an accidental `git add .`, and `git add -f compile_commands.json` passes every hook. The
+rulebook is the canonical artifact of this phase, and its enforcement tags are by
+definition machine-matchable and verifiable, so a false tag is worse than none.
+**Fix:** either change the tag to `[ENFORCED: review]`, or add a real hook, for example a
+local `repo: local` with `entry: bash -c 'git ls-files -ci --exclude-standard
 compile_commands.json site .pio | grep . && exit 1 || exit 0'`.
 
-### WR-04: `[ENFORCED: CI]` для ліцензійного розподілу до Phase 8
+### WR-04: `[ENFORCED: CI]` for the license split before Phase 8
 
 **File:** `AGENTS.md:159-161`
-**Issue:** Правило про MIT/CC-BY-4.0 має тег `[ENFORCED: CI]`, хоча в тому ж реченні
-сказано, що `reuse lint` «joins the pull-request pipeline in Phase 8», а єдиний workflow
-у репозиторії — `security.yml` (gitleaks). Сьогодні ліцензійний розподіл не перевіряє
-жоден CI-джоб, отже тег описує майбутній, а не поточний стан.
-**Fix:** до Phase 8 поставити `[ENFORCED: review]`, або додати job `reuse lint` у
-`security.yml` і тим зробити тег правдивим. Те саме стосується формулювання в
-рядках 84-87: `check_policy.py --check` сьогодні не входить до CI, його запускає лише
-людина/агент.
+**Issue:** The MIT/CC-BY-4.0 rule carries the `[ENFORCED: CI]` tag even though the same
+sentence says `reuse lint` "joins the pull-request pipeline in Phase 8", and the only
+workflow in the repository is `security.yml` (gitleaks). Today no CI job checks the license
+split, so the tag describes a future state rather than the current one.
+**Fix:** use `[ENFORCED: review]` until Phase 8, or add a `reuse lint` job to
+`security.yml` so the tag becomes true. The same applies to the wording on lines 84-87:
+`check_policy.py --check` is not part of CI today; only a human or an agent runs it.
 
-### WR-05: gitleaks-бінарник у CI виконується без перевірки цілісності
+### WR-05: The gitleaks binary in CI is executed without an integrity check
 
 **File:** `.github/workflows/security.yml:17-28`
-**Issue:** `curl -sSfL .../gitleaks_8.30.1_linux_x64.tar.gz | tar -xz` завантажує і
-негайно розпаковує архів, після чого бінарник встановлюється в `/usr/local/bin` і
-запускається. Немає ні SHA-256, ні підпису, ні `--proto '=https'`; скомпрометований
-release-артефакт або підміна на рівні CDN виконується з правами CI-джоба. Pinned версія
-обмежує поверхню, але не доводить цілісність. Додатково `actions/checkout@v7` — рухомий
-major-тег, а не незмінний SHA.
-**Fix:** зафіксувати digest і перевіряти його перед розпакуванням, а `checkout` пінити
-на commit SHA:
+**Issue:** `curl -sSfL .../gitleaks_8.30.1_linux_x64.tar.gz | tar -xz` downloads and
+immediately unpacks the archive, after which the binary is installed into
+`/usr/local/bin` and executed. There is neither a SHA-256 nor a signature, nor
+`--proto '=https'`; a compromised release artifact or a CDN-level substitution runs with
+the CI job's privileges. The pinned version narrows the surface but does not prove
+integrity. Additionally, `actions/checkout@v7` is a mutable major tag, not an immutable
+SHA.
+**Fix:** pin the digest and verify it before unpacking, and pin `checkout` to a commit SHA:
 
 ```yaml
 echo "<sha256>  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
 ```
 
-### WR-06: `READ_ONLY` не застосовується, а тест «strips read-only keys» не може провалитися
+### WR-06: `READ_ONLY` is never applied, and the "strips read-only keys" test cannot fail
 
 **File:** `scripts/check_policy.py:36-48`, `scripts/tests/test_check_policy.py:87-96`
-**Issue:** Константа `READ_ONLY` ніде не використовується: `project()` будує результат,
-ітеруючи лише ключі `desired`, тому server-side поля не можуть потрапити в проєкцію
-незалежно від вмісту `READ_ONLY`. Відповідний тест перевіряє
-`assertNotIn(key, projected)` для ключів, яких у `committed_ruleset()` немає, отже
-перевірка істинна за побудовою — навіть якщо `READ_ONLY` видалити або зламати. Це
-мертвий код плюс тест, що створює хибну впевненість у перевірці server-полів.
-**Fix:** або видалити `READ_ONLY` і відповідну перевірку, або зробити її справжньою:
-явно відкидати read-only ключі з live-тіла перед проєкцією та тестувати на синтетичному
-`live`, що *містить* ці ключі, а також перевіряти, що сама `policy/` не містить
-read-only полів (це запобігатиме невдалому `--apply`).
+**Issue:** The `READ_ONLY` constant is not used anywhere: `project()` builds its result by
+iterating only the keys of `desired`, so server-side fields cannot reach the projection
+regardless of the contents of `READ_ONLY`. The corresponding test asserts
+`assertNotIn(key, projected)` for keys that `committed_ruleset()` does not contain, so the
+check is true by construction — even if `READ_ONLY` were removed or broken. This is dead
+code plus a test that creates false confidence that server fields are verified.
+**Fix:** either remove `READ_ONLY` and the corresponding assertion, or make it real:
+explicitly drop read-only keys from the live body before projecting, test against a
+synthetic `live` that *does* contain those keys, and additionally assert that `policy/`
+itself contains no read-only fields (which would prevent a failed `--apply`).
 
 ## Info
 
-### IN-01: Успішний шлях `tag_homework.sh` не покритий тестами
+### IN-01: The success path of `tag_homework.sh` has no test coverage
 
 **File:** `scripts/tests/test_tag_homework.py:97-180`
-**Issue:** Усі чотири тести завершуються до створення тега (`TAG_HOMEWORK_SKIP_REMOTE=1`
-плюс відсутність `origin` у фікстурі). Гілка `git fetch` → `resolve_default_branch` →
-`git tag` → `git push` не виконується жодного разу; 01-08-SUMMARY це визнає. Саме там
-живе дефект WR-02 і залежність від `origin/HEAD`.
-**Fix:** додати фікстуру з локальним bare-remote (`git init --bare`), кількома комітами і
-перевіркою, що тег створено на `origin/main` та запушено рівно один раз.
+**Issue:** All four tests end before the tag is created (`TAG_HOMEWORK_SKIP_REMOTE=1` plus
+the absence of an `origin` in the fixture). The branch `git fetch` → `resolve_default_branch`
+→ `git tag` → `git push` never executes; 01-08-SUMMARY acknowledges this. That is exactly
+where defect WR-02 and the dependency on `origin/HEAD` live.
+**Fix:** add a fixture with a local bare remote (`git init --bare`), several commits, and
+an assertion that the tag was created at `origin/main` and pushed exactly once.
 
-### IN-02: `section_order` може пропустити відсутню MADR-секцію
+### IN-02: `section_order` can miss a missing MADR section
 
 **File:** `scripts/tests/test_adrs.py:112-115`, `scripts/tests/test_adrs.py:216-225`
-**Issue:** `lines.index(heading)` бере перше входження, а перевірка обмежується
-`len(indices) == len(MADR_SECTIONS)`. Якщо один заголовок продубльовано, а інший
-відсутній, кількість збігається і тест проходить.
-**Fix:** перевіряти унікальність кожного заголовка (`text.count(heading) == 1`) і
-порівнювати позиції, обчислені за єдиним проходом.
+**Issue:** `lines.index(heading)` takes the first occurrence, and the assertion is limited
+to `len(indices) == len(MADR_SECTIONS)`. If one heading is duplicated and another is
+missing, the count still matches and the test passes.
+**Fix:** assert that each heading is unique (`text.count(heading) == 1`) and compare
+positions computed in a single pass.
 
-### IN-03: Перевірка «no configured git identity» може хибно падати
+### IN-03: The "no configured git identity" check can fail spuriously
 
 **File:** `scripts/tests/test_license_hygiene.py:198-210`
-**Issue:** `assertNotIn(value, text)` для `git config user.name` спрацює на будь-якому
-короткому імені (наприклад `A` або `MIT`), яке трапляється в тексті `LICENSE`/`NOTICE`.
-Канонічна команда `python3 -m unittest discover -s scripts/tests` тоді падає з причини,
-не пов'язаної з витоком PII.
-**Fix:** перевіряти лише `user.email` (він унікальний) або вимагати мінімальну довжину
-значення / збіг цілого слова з межами.
+**Issue:** `assertNotIn(value, text)` for `git config user.name` trips on any short name
+(for example `A` or `MIT`) that happens to occur in the `LICENSE`/`NOTICE` text. The
+canonical command `python3 -m unittest discover -s scripts/tests` then fails for a reason
+unrelated to a PII leak.
+**Fix:** check only `user.email` (which is unique), or require a minimum value length / a
+whole-word match with boundaries.
 
-### IN-04: Hook `language: golang` тягне незафіксований Go toolchain
+### IN-04: The `language: golang` hook pulls an unpinned Go toolchain
 
 **File:** `.pre-commit-config.yaml:5-8`
-**Issue:** Upstream-визначення gitleaks має `language: golang`; якщо `go` немає в `PATH`,
-pre-commit завантажує *останню* версію Go з `go.dev`/`dl.google.com` під час
-встановлення хука. Це суперечить зафіксованому toolchain-курсу (PlatformIO/espressif32/
-clang-format) і робить перший `pre-commit run` залежним від мережі та пливучим у часі.
-**Fix:** або задокументувати це як відому властивість, або використати
-`id: gitleaks-system` з уже встановленим бінарником 8.30.1 (brew/CI), або `language:
-docker_image`.
+**Issue:** The upstream gitleaks definition uses `language: golang`; when `go` is not on
+`PATH`, pre-commit downloads the *latest* Go version from `go.dev`/`dl.google.com` while
+installing the hook. That contradicts the pinned-toolchain posture
+(PlatformIO/espressif32/clang-format) and makes the first `pre-commit run` network-dependent
+and drifting over time.
+**Fix:** either document this as a known property, or use `id: gitleaks-system` with an
+already installed 8.30.1 binary (brew/CI), or `language: docker_image`.
 
-### IN-05: «Next number: 0006 (reserved …)» суперечить правилу нумерації
+### IN-05: "Next number: 0006 (reserved …)" contradicts the numbering rule
 
 **File:** `docs/decisions/README.md:10-16`, `docs/decisions/README.md:30`
-**Issue:** Індекс стверджує, що номери присвоюються послідовно *на момент прийняття* і що
-наступний номер — «highest existing + 1», але потім «резервує» 0006 за рішенням Phase 2.
-Резервування не передбачене правилами і створює конфлікт, якщо Phase 2 прийме інше
-рішення першим.
-**Fix:** замінити на «Next free number: 0006».
+**Issue:** The index states that numbers are assigned sequentially *on acceptance* and
+that the next number is "highest existing + 1", but then "reserves" 0006 for a Phase 2
+decision. Reservation is not provided for by the rules and creates a conflict if Phase 2
+accepts a different decision first.
+**Fix:** replace it with "Next free number: 0006".
 
-### IN-06: Клас ASCII-символів ширший за шаблон ID
+### IN-06: The ASCII character class is broader than the ID pattern
 
 **File:** `AGENTS.md:100-107`
-**Issue:** Правило ID — `^[0-9]+_[0-9]+-[a-z0-9-]+$`, а наступне правило дозволяє для
-«IDs and paths» клас `[a-z0-9_.-]`. ID `1_3-a.b` задовольняє ASCII-правило, але не
-задовольняє шаблон ID; читач, який реалізує обидва правила, отримає різні результати.
-**Fix:** розділити: ID — точний regex, шляхи — `[a-z0-9_.-]`.
+**Issue:** The ID rule is `^[0-9]+_[0-9]+-[a-z0-9-]+$`, while the next rule allows the
+class `[a-z0-9_.-]` for "IDs and paths". The ID `1_3-a.b` satisfies the ASCII rule but not
+the ID pattern; a reader implementing both rules gets different results.
+**Fix:** separate them: an exact regex for IDs, `[a-z0-9_.-]` for paths.
 
-### IN-07: Проєкція `--check` не бачить полів, яких немає в committed-файлі
+### IN-07: The `--check` projection cannot see fields absent from the committed file
 
 **File:** `scripts/check_policy.py:144-162`, `docs/decisions/0003-git-policy-and-protected-main.md:122-127`
-**Issue:** Перевірено: якщо live `require_extra_approval_for_unattributed_changes`
-змінити з `true` на `false`, `--check` усе одно повертає 0, бо поле не оголошене в
-`policy/ruleset-main.json`. ADR-0003 це прямо документує як неперевірене припущення, тому
-це не дефект реалізації, але це справжня fail-open прогалина drift-чекера: послаблення
-захисту, зроблене поза оголошеним підмножиною, не детектується.
-**Fix:** після першого `--apply` зафіксувати фактичні значення
-`require_extra_approval_for_unattributed_changes`, `required_reviewers` і
-`dismissal_restriction` у committed-файлі (або явно їх забороняти), щоб `--check`
-порівнював і їх.
+**Issue:** Verified: changing live `require_extra_approval_for_unattributed_changes` from
+`true` to `false` still makes `--check` return 0, because the field is not declared in
+`policy/ruleset-main.json`. ADR-0003 documents this explicitly as an unverified assumption,
+so it is not an implementation defect, but it is a genuine fail-open gap in the drift
+checker: a weakening of protection made outside the declared subset is not detected.
+**Fix:** after the first `--apply`, record the actual values of
+`require_extra_approval_for_unattributed_changes`, `required_reviewers`, and
+`dismissal_restriction` in the committed file (or explicitly forbid them), so `--check`
+compares them too.
 
 ---
 
