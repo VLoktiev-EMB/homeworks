@@ -51,6 +51,9 @@ Thumbs.db
 # Agent worktrees (isolated executor checkouts; .claude/CLAUDE.md stays tracked)
 .claude/worktrees/
 
+# Personal Claude Code overrides (machine-specific, never committed)
+.claude/settings.local.json
+
 # Video (linked, never committed — D-21)
 *.mp4
 *.mov
