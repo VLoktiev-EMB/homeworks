@@ -259,7 +259,9 @@ class ReuseDeclarationTest(ArtifactTestCase):
             shutil.which("reuse"),
             "the reuse tool is not installed (expected reuse 6.2.0)",
         )
-        result = _run_reuse("lint")
+        # ``--no-multiprocessing`` keeps the run deterministic and runnable in
+        # sandboxes that deny POSIX semaphores.
+        result = _run_reuse("--no-multiprocessing", "lint")
         output = result.stdout + result.stderr
         self.assertEqual(result.returncode, 0, f"reuse lint failed:\n{output}")
         self.assertNotIn("no copyright and licensing information", output)
