@@ -42,7 +42,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The three PR templates (`homework`, `infra`, `docs`) share a header and carry distinct Definition of Done checklists, with no default template.
   4. The MIT license, `NOTICE`, LFS policy, and the first MADR ADRs exist; infrastructure decisions are recorded under `docs/decisions/`.
   5. `AGENTS.md` is the canonical rulebook with enforcement tags and short examples, and `.claude/CLAUDE.md` imports it without duplicating rules.
-**Plans**: TBD
+**Plans:** 8 plans
+- [ ] 01-01-PLAN.md — Policy as code: ruleset/settings JSON, check_policy.py, environment bootstrap, live hardening (tracer)
+- [ ] 01-02-PLAN.md — .gitignore / .gitattributes, LFS routing, research-cache untrack
+- [ ] 01-03-PLAN.md — Pre-commit hooks and the full-history gitleaks workflow
+- [ ] 01-04-PLAN.md — MIT/CC-BY-4.0 licensing, NOTICE, LICENSES/, REUSE.toml
+- [ ] 01-05-PLAN.md — Three PR templates and the marker-slice drift checker
+- [ ] 01-06-PLAN.md — AGENTS.md rulebook, thin CLAUDE.md adapter, foundation README
+- [ ] 01-07-PLAN.md — Five MADR ADRs and the status index
+- [ ] 01-08-PLAN.md — tag_homework.sh with precondition gates
 
 ### Phase 2: Toolchain Truth
 **Goal**: A pinned PlatformIO toolchain builds the ESP32-S3 N16R8 target and a native target, with shared libraries wired through `symlink://`.
@@ -168,7 +176,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repository Foundation and Policy Gate | 0/TBD | Not started | - |
+| 1. Repository Foundation and Policy Gate | 0/8 | Not started | - |
 | 2. Toolchain Truth | 0/TBD | Not started | - |
 | 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
