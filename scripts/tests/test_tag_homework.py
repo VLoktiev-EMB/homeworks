@@ -106,6 +106,7 @@ class TagHomeworkTest(unittest.TestCase):
                 env=env,
                 capture_output=True,
                 text=True,
+                check=False,
             )
         except OSError as exc:
             self.fail(f"cannot execute {SCRIPT}: {exc} (expected mode 755)")
