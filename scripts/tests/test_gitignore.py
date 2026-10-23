@@ -79,6 +79,14 @@ IGNORED = {
         "sdkconfig.old",
         "managed_components/espressif__led_strip/led_strip.h",
     ],
+    # ESP-IDF writes these into the project tree on the first build (D-23, P6).
+    # The two CMake paths are distinct: a pattern for the project-root file does
+    # not match the nested `src/` one.
+    "esp-idf build-generated (D-23)": [
+        "homeworks/0_0-toolchain-smoke/CMakeLists.txt",
+        "homeworks/0_0-toolchain-smoke/src/CMakeLists.txt",
+        "homeworks/0_0-toolchain-smoke/sdkconfig.esp32s3_espidf",
+    ],
     "os and editor junk": [
         ".DS_Store",
         "Thumbs.db",
@@ -123,6 +131,13 @@ VISIBLE = [
     # regenerable artifacts (sdkconfig.old, managed_components/) are ignored.
     "sdkconfig",
     "dependencies.lock",
+    # Authored Kconfig fragment: the negation in .gitignore re-includes it after
+    # the broad `homeworks/*/sdkconfig.*` pattern (D-23, P7). Plan 02-04 commits it.
+    "homeworks/0_0-toolchain-smoke/sdkconfig.defaults",
+    # A repository-root CMakeLists.txt is authored source. All D-23 CMake patterns
+    # are scoped under `homeworks/*/` precisely so a future CMake project is not
+    # hidden; this entry fails the suite if a global pattern ever appears.
+    "CMakeLists.txt",
 ]
 
 
@@ -145,6 +160,30 @@ class TestGitignorePatterns(unittest.TestCase):
                     is_ignored(path),
                     f"{path!r} must stay visible to git",
                 )
+
+    def test_sdkconfig_defaults_is_visible_and_env_output_is_not(self) -> None:
+        # D-23/P7: the broad `homeworks/*/sdkconfig.*` pattern must not swallow
+        # the authored Kconfig fragment, while the per-environment build output
+        # must stay out. This is the pair that catches an over-broad pattern.
+        # `git check-ignore` resolves patterns against the pathname alone, so the
+        # assertions hold before the files exist.
+        self.assertFalse(
+            is_ignored("homeworks/0_0-toolchain-smoke/sdkconfig.defaults"),
+            "the authored sdkconfig.defaults must stay visible to git",
+        )
+        self.assertTrue(
+            is_ignored("homeworks/0_0-toolchain-smoke/sdkconfig.esp32s3_espidf"),
+            "the build-generated sdkconfig.<env> must be ignored",
+        )
+        # D-04: the shared configuration file is a source of truth, not a product.
+        self.assertFalse(
+            is_ignored("platformio.shared.ini"),
+            "platformio.shared.ini is committed configuration, never ignored",
+        )
+        self.assertFalse(
+            is_ignored("homeworks/0_0-toolchain-smoke/README.md"),
+            "project documentation must stay visible to git",
+        )
 
     def test_env_example_is_the_only_secret_carve_out(self) -> None:
         # The negation must survive the `.env.*` pattern it overrides.

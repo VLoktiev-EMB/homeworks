@@ -12,6 +12,21 @@ sdkconfig.old
 sdkconfig.old.*
 managed_components/
 
+# ESP-IDF build-generated files written inside a project tree (D-23).
+# Three `sdkconfig` forms are distinguished deliberately:
+#   - bare `sdkconfig` is per-project configuration and stays TRACKED;
+#   - `sdkconfig.defaults` is the authored Kconfig fragment and stays TRACKED;
+#   - `sdkconfig.<env>` is written by the build and is IGNORED.
+# Every pattern is scoped under `homeworks/*/` so no repository-wide filename is
+# banned: a root `CMakeLists.txt` from a future authored CMake project must stay
+# visible. The two CMake patterns are both required — a pattern for the
+# project-root file does not match the nested `src/` one (P6, verified).
+homeworks/*/CMakeLists.txt
+homeworks/*/src/CMakeLists.txt
+homeworks/*/sdkconfig.*
+# Order-sensitive: re-includes the authored fragment after the broad pattern (P7).
+!homeworks/*/sdkconfig.defaults
+
 # Generated
 compile_commands.json
 site/
