@@ -319,3 +319,13 @@ None - no external service configuration required.
 
 *Phase: 03-shared-core-and-dependency-rule*
 *Completed: 2026-10-24*
+
+## Self-Check: PASSED
+
+- All 12 declared adapter files exist on disk.
+- All three task commits (`8047d5a`, `2df238d`, `e57d636`) and the SUMMARY commit (`0a630a3`) are ancestors of HEAD.
+- `pio run -d homeworks/0_0-toolchain-smoke -e esp32s3_arduino`: SUCCESS; three adapter sources in the CDB with `xtensa-esp32s3-elf-gcc`.
+- `pio run -d homeworks/0_0-toolchain-smoke -e esp32s3_espidf`: SUCCESS; three adapter sources in the CDB with `xtensa-esp32s3-elf-gcc`.
+- `pio test -d tests -e native`: 55/55 cases passed, no adapter linked.
+- `python3 -m unittest discover -s scripts/tests -v`: 122 tests OK.
+- Self-check verdict: PASSED.
