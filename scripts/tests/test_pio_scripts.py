@@ -6,6 +6,10 @@ module level, so importing it from a plain ``python3`` process raises
 contract strings — while the contract it serves is checked against the committed
 ``platformio.shared.ini`` and the five shipped library manifests.
 
+The project fixture is the shared-library project at ``tests/``. It is the only
+PlatformIO project after the temporary toolchain smoke project is retired, so no
+assertion here depends on a homework directory.
+
 Every repository path resolves through ``git rev-parse --show-toplevel`` so the
 suite behaves the same from any working directory.
 """
@@ -35,14 +39,31 @@ def _repo_root() -> Path:
 REPO_ROOT = _repo_root()
 SCRIPT = REPO_ROOT / "scripts" / "pio" / "compiledb.py"
 SHARED_INI = REPO_ROOT / "platformio.shared.ini"
-PROJECT_INI = REPO_ROOT / "homeworks" / "0_0-toolchain-smoke" / "platformio.ini"
-PROJECT_SRC = PROJECT_INI.parent / "src"
+PROJECT_INI = REPO_ROOT / "tests" / "platformio.ini"
+PARTITIONS_CSV = REPO_ROOT / "partitions" / "default_16MB.csv"
+
+# The synthetic anchor exists only to normalize the shared path value. Both ESP
+# sections resolve ``board_build.partitions`` relative to a project directory;
+# ``homeworks/<id>`` is the depth every consumer lives at. The directory is never
+# asserted to exist (D-18).
+PROJECT_DEPTH_ANCHOR = REPO_ROOT / "homeworks" / "1_1-example"
 
 LIB_NAMES = ("common", "port", "arduino", "espidf", "host")
 
-# The two adapter libraries use a descriptive source name; keeping the mapping
-# in one place stops this test from drifting away from the shipped tree.
+# The module files each library is expected to ship. ``port`` is header-only, so
+# its tuple is empty. The mapping moves to exact set equality once the Phase 2
+# stub sources are retired.
 LIB_SOURCES = {
+    "common": ("ring_buffer.c", "timing.c", "crc.c", "hex.c"),
+    "port": (),
+    "arduino": ("time.c", "gpio.c", "log.c"),
+    "espidf": ("time.c", "gpio.c", "log.c"),
+    "host": ("fake_time.c", "fake_gpio.c", "fake_i2c.c", "fake_spi.c", "fake_log.c"),
+}
+
+# The Phase 2 version-returning linkage stubs. They are still on disk while this
+# test runs; the retirement commit removes them and tightens the inventory.
+STUB_SOURCES = {
     "common": "common.c",
     "port": "port.c",
     "arduino": "arduino_adapter.c",
@@ -51,6 +72,10 @@ LIB_SOURCES = {
 }
 
 HOOK_PATH = "pre:../../scripts/pio/compiledb.py"
+
+# ``tests/`` sits one level below the repository root, so the inherited hook path
+# resolves above the repository and the project must override it.
+TESTS_HOOK_PATH = "pre:../scripts/pio/compiledb.py"
 
 # Core 6.2.0 prints a scoping warning for this SCons option on every run and the
 # database is complete without it, so the hook must never set it.
@@ -63,7 +88,7 @@ D14_KEYS = {
     "board_build.psram_type": "opi",
     "board_upload.flash_size": "16MB",
     "board_upload.maximum_size": "16777216",
-    "board_build.partitions": "default_16MB.csv",
+    "board_build.partitions": "../../partitions/default_16MB.csv",
 }
 
 TOKEN_SPLIT = re.compile(r"""[\s"'=,]+""")
@@ -180,6 +205,54 @@ class SharedConfigTests(unittest.TestCase):
                 self.assertEqual(HOOK_PATH, parser[section]["extra_scripts"])
 
 
+class PartitionTableTests(unittest.TestCase):
+    """The shared partition table lives at a permanent, project-depth path (D-18)."""
+
+    def test_partition_table_lives_at_repository_root(self):
+        self.assertTrue(
+            PARTITIONS_CSV.is_file(),
+            f"missing {PARTITIONS_CSV}; the shared table belongs in partitions/",
+        )
+
+    def test_shared_partitions_value_resolves_to_the_root_file(self):
+        parser = _read_config(SHARED_INI)
+        target = PARTITIONS_CSV.resolve()
+        for section in ("esp32s3_arduino", "esp32s3_espidf"):
+            with self.subTest(section=section):
+                value = parser[section]["board_build.partitions"]
+                self.assertEqual("../../partitions/default_16MB.csv", value)
+                resolved = (PROJECT_DEPTH_ANCHOR / value).resolve()
+                self.assertEqual(target, resolved)
+
+    def test_shared_partitions_value_has_no_absolute_path(self):
+        # A project-relative value is the contract: an absolute path would break
+        # every clone and every CI checkout.
+        parser = _read_config(SHARED_INI)
+        for section in ("esp32s3_arduino", "esp32s3_espidf"):
+            with self.subTest(section=section):
+                value = parser[section]["board_build.partitions"]
+                self.assertEqual([], _absolute_path_tokens(value))
+
+
+class SharedProjectTests(unittest.TestCase):
+    """``tests/`` is the shared-library project and pins its depth-sensitive paths."""
+
+    def test_project_declares_the_depth_correct_hook_override(self):
+        parser = _read_config(PROJECT_INI)
+        self.assertEqual(TESTS_HOOK_PATH, parser["env:native"]["extra_scripts"])
+        self.assertEqual("false", parser["env:native"]["test_build_src"])
+
+    def test_project_declares_the_three_shared_libraries(self):
+        parser = _read_config(PROJECT_INI)
+        lib_deps = parser["env:native"]["lib_deps"]
+        for library in ("common", "port", "host"):
+            with self.subTest(library=library):
+                self.assertIn(
+                    f"{library}=symlink://../lib/{library}",
+                    lib_deps,
+                )
+
+
 class ShippedTreeTests(unittest.TestCase):
     """The committed library tree matches the contract the config assumes."""
 
@@ -193,14 +266,31 @@ class ShippedTreeTests(unittest.TestCase):
                 self.assertIn("srcDir", manifest["build"])
                 self.assertIn("includeDir", manifest["build"])
 
-    def test_entry_point_is_cpp_and_library_sources_are_c(self):
-        self.assertTrue((PROJECT_SRC / "main.cpp").is_file())
-        stray_c = sorted(path.name for path in PROJECT_SRC.glob("*.c"))
-        self.assertEqual([], stray_c, f"the entry point must stay .cpp: {stray_c}")
+    def test_expected_module_sources_are_present(self):
+        for name, expected in LIB_SOURCES.items():
+            for filename in expected:
+                source = REPO_ROOT / "lib" / name / "src" / filename
+                with self.subTest(library=name, source=filename):
+                    self.assertTrue(source.is_file(), f"missing {source}")
+
+    def test_every_library_source_is_c(self):
         for name in LIB_NAMES:
-            source = REPO_ROOT / "lib" / name / "src" / LIB_SOURCES[name]
-            with self.subTest(library=name):
-                self.assertTrue(source.is_file(), f"missing {source}")
+            source_dir = REPO_ROOT / "lib" / name / "src"
+            if not source_dir.is_dir():
+                continue
+            for path in sorted(source_dir.rglob("*")):
+                if not path.is_file():
+                    continue
+                with self.subTest(library=name, source=path.name):
+                    self.assertEqual(".c", path.suffix)
+
+    def test_phase_two_stub_sources_are_still_present(self):
+        # The retirement commit in this plan deletes these; until then the tree
+        # must still hold them so this test and the modules agree on one moment.
+        for name, filename in STUB_SOURCES.items():
+            source = REPO_ROOT / "lib" / name / "src" / filename
+            with self.subTest(library=name, source=filename):
+                self.assertTrue(source.is_file(), f"missing stub {source}")
 
 
 if __name__ == "__main__":
