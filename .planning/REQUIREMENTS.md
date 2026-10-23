@@ -224,14 +224,80 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmap creation) | — | — |
+| FOUND-01 | Phase 4 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Pending |
+| FOUND-08 | Phase 1 | Pending |
+| FOUND-09 | Phase 2 | Pending |
+| FOUND-10 | Phase 1 | Pending |
+| META-01 | Phase 4 | Pending |
+| META-02 | Phase 4 | Pending |
+| META-03 | Phase 4 | Pending |
+| META-04 | Phase 4 | Pending |
+| META-05 | Phase 5 | Pending |
+| META-06 | Phase 5 | Pending |
+| META-07 | Phase 5 | Pending |
+| META-08 | Phase 5 | Pending |
+| ARCH-01 | Phase 3 | Pending |
+| ARCH-02 | Phase 3 | Pending |
+| ARCH-03 | Phase 3 | Pending |
+| ARCH-04 | Phase 2 | Pending |
+| ARCH-05 | Phase 3 | Pending |
+| ARCH-06 | Phase 3 | Pending |
+| ARCH-07 | Phase 3 | Pending |
+| REPORT-01 | Phase 10 | Pending |
+| REPORT-02 | Phase 10 | Pending |
+| REPORT-03 | Phase 10 | Pending |
+| REPORT-04 | Phase 10 | Pending |
+| REPORT-05 | Phase 10 | Pending |
+| REPORT-06 | Phase 10 | Pending |
+| REPORT-07 | Phase 10 | Pending |
+| REPORT-08 | Phase 10 | Pending |
+| SIM-01 | Phase 11 | Pending |
+| SIM-02 | Phase 7 | Pending |
+| SIM-03 | Phase 7 | Pending |
+| SIM-04 | Phase 8 | Pending |
+| TOOL-01 | Phase 6 | Pending |
+| TOOL-02 | Phase 6 | Pending |
+| TOOL-03 | Phase 6 | Pending |
+| TOOL-04 | Phase 6 | Pending |
+| TOOL-05 | Phase 8 | Pending |
+| TOOL-06 | Phase 8 | Pending |
+| TOOL-07 | Phase 1 | Pending |
+| TOOL-08 | Phase 10 | Pending |
+| FLOW-01 | Phase 9 | Pending |
+| FLOW-02 | Phase 9 | Pending |
+| FLOW-03 | Phase 9 | Pending |
+| FLOW-04 | Phase 9 | Pending |
+| FLOW-05 | Phase 9 | Pending |
+| FLOW-06 | Phase 9 | Pending |
+| FLOW-07 | Phase 9 | Pending |
+| PILOT-01 | Phase 11 | Pending |
+| PILOT-02 | Phase 11 | Pending |
 
 **Coverage:**
 - v1 requirements: 54 total
-- Mapped to phases: 0
-- Unmapped: 54 ⚠️ (expected before roadmap creation)
+- Mapped to phases: 54
+- Unmapped: 0
+
+**Phase summary:**
+- Phase 1: 9 requirements (FOUND-02–08, FOUND-10, TOOL-07)
+- Phase 2: 2 requirements (FOUND-09, ARCH-04)
+- Phase 3: 6 requirements (ARCH-01–03, ARCH-05–07)
+- Phase 4: 5 requirements (FOUND-01, META-01–04)
+- Phase 5: 4 requirements (META-05–08)
+- Phase 6: 4 requirements (TOOL-01–04)
+- Phase 7: 2 requirements (SIM-02, SIM-03)
+- Phase 8: 3 requirements (TOOL-05, TOOL-06, SIM-04)
+- Phase 9: 7 requirements (FLOW-01–07)
+- Phase 10: 9 requirements (REPORT-01–08, TOOL-08)
+- Phase 11: 3 requirements (PILOT-01, PILOT-02, SIM-01)
 
 ---
 
 *Requirements defined: 2026-10-23*
-*Last updated: 2026-10-23 after research synthesis*
+*Last updated: 2026-10-23 after roadmap creation*
