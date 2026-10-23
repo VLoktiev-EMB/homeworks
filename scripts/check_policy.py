@@ -34,9 +34,11 @@ POLICY_DIR = REPO_ROOT / "policy"
 RULESET_FILE = POLICY_DIR / "ruleset-main.json"
 REPOSITORY_FILE = POLICY_DIR / "repository.json"
 
-# Fields GitHub returns on GET but does not accept on PUT. They are dropped so
-# a captured body can be compared against the committed subset.
-READ_ONLY = {
+# Fields GitHub returns on GET but does not accept on PUT. `project` drops them
+# from every projection, and `read_only_declarations` fails the run outright if
+# a committed policy file declares one: such a field can never be applied, so
+# comparing it would report drift nobody can resolve.
+READ_ONLY = frozenset({
     "id",
     "node_id",
     "source_type",
@@ -45,7 +47,7 @@ READ_ONLY = {
     "updated_at",
     "_links",
     "current_user_can_bypass",
-}
+})
 
 
 class PolicyError(Exception):
@@ -142,9 +144,15 @@ def _project_rule_list(live_items, desired_items):
 
 
 def project(live, desired):
-    """Keep only the keys ``desired`` declares, recursively."""
+    """Keep only the keys ``desired`` declares, recursively.
+
+    Read-only fields are dropped even when ``desired`` declares them: GitHub
+    rejects them on write, so a projection that kept them could never converge.
+    """
     projected = {}
     for key, template in desired.items():
+        if key in READ_ONLY:
+            continue
         if key not in live:
             continue
         value = live[key]
@@ -165,6 +173,18 @@ def project(live, desired):
 def normalise(live, desired):
     """Return the live projection and the committed projection."""
     return project(live, desired), project(desired, desired)
+
+
+def read_only_declarations(desired, prefix=""):
+    """Dotted paths of read-only fields declared in a policy body."""
+    found = []
+    for key, value in desired.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if key in READ_ONLY:
+            found.append(path)
+        if isinstance(value, dict):
+            found.extend(read_only_declarations(value, path))
+    return found
 
 
 def diff_report(projected, expected):
@@ -307,6 +327,16 @@ def main(argv=None, runner=None):
         slug_value = slug(runner)
         ruleset = _load_json(RULESET_FILE)
         repository = _load_json(REPOSITORY_FILE)
+        for label, body in (
+            (RULESET_FILE.name, ruleset),
+            (REPOSITORY_FILE.name, repository),
+        ):
+            declared = read_only_declarations(body)
+            if declared:
+                raise PolicyError(
+                    f"{label} declares read-only field(s) {', '.join(declared)}; "
+                    "GitHub rejects them on PUT, so they cannot be part of the policy"
+                )
         if args.mode == "apply":
             apply_policy(slug_value, ruleset, repository, runner)
             print("Applied committed policy; re-reading live state.\n")

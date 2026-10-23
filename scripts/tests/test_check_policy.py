@@ -10,9 +10,11 @@ from __future__ import annotations
 import io
 import json
 import subprocess
+import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from scripts import check_policy
 
@@ -84,16 +86,57 @@ def ruleset_runner(live, repository=None):
 
 
 class ProjectionTests(unittest.TestCase):
-    def test_projection_strips_read_only_keys(self):
-        live, desired = live_ruleset(), committed_ruleset()
-        projected, _ = check_policy.normalise(live, desired)
-        for key in check_policy.READ_ONLY:
-            self.assertNotIn(key, projected, f"read-only key {key} leaked")
+    def test_projection_drops_every_read_only_field(self):
+        # `project` must apply READ_ONLY itself rather than merely mirroring the
+        # keys of `desired`, so the assertion runs against a policy that DOES
+        # declare the read-only fields. Without the filter these would survive
+        # and every --apply would be rejected by GitHub.
+        desired = dict.fromkeys(check_policy.READ_ONLY, "server-owned")
+        desired["name"] = "main"
 
-        # A captured GET body diffs clean against the committed subset.
-        _, desired_projected = check_policy.normalise(live, desired)
+        self.assertEqual(check_policy.project(dict(desired), desired), {"name": "main"})
+
+    def test_captured_get_body_diffs_clean_against_the_committed_policy(self):
+        live, desired = live_ruleset(), committed_ruleset()
+        self.assertTrue(
+            check_policy.READ_ONLY & set(live),
+            "the fixture must carry server-only fields or this test proves nothing",
+        )
+
+        projected, desired_projected = check_policy.normalise(live, desired)
+
         self.assertEqual(projected, desired_projected)
         self.assertEqual(check_policy.diff_report(projected, desired_projected), [])
+
+    def test_committed_policy_declares_no_read_only_fields(self):
+        for path in (check_policy.RULESET_FILE, check_policy.REPOSITORY_FILE):
+            with self.subTest(policy=path.name):
+                body = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual([], check_policy.read_only_declarations(body))
+
+    def test_read_only_field_in_a_policy_file_is_an_environment_error(self):
+        # Such a file cannot be applied, so it must stop the run (exit 2) before
+        # any gh call rather than be silently projected away.
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as handle:
+            json.dump({"name": "main", "id": 25632456, "rules": []}, handle)
+        policy_path = Path(handle.name)
+        self.addCleanup(policy_path.unlink)
+
+        runner = ruleset_runner(live_ruleset())
+        out, err = io.StringIO(), io.StringIO()
+        with (
+            mock.patch.object(check_policy, "RULESET_FILE", policy_path),
+            redirect_stdout(out),
+            redirect_stderr(err),
+        ):
+            code = check_policy.main(["--check"], runner=runner)
+
+        self.assertEqual(code, 2)
+        self.assertIn("read-only", err.getvalue())
+        gh_calls = [call for call in runner.calls if call[:2] == ["gh", "api"]]
+        self.assertEqual([], gh_calls, "no gh call may follow a rejected policy")
 
     def test_reordered_rules_report_no_drift(self):
         live, desired = live_ruleset(), committed_ruleset()
@@ -161,7 +204,6 @@ class CliContractTests(unittest.TestCase):
         )
         err = io.StringIO()
         out = io.StringIO()
-        from contextlib import redirect_stderr
 
         with redirect_stdout(out), redirect_stderr(err):
             code = check_policy.main(["--check"], runner=runner)
