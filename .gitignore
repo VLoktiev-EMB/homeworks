@@ -1,0 +1,42 @@
+# Build output
+.pio/
+.pioenvs/
+.piolibdeps/
+platformio.sublime-project
+platformio.sublime-workspace
+
+# Generated
+compile_commands.json
+site/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+.env.*
+!.env.example
+secrets.*
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# Video (linked, never committed — D-21)
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mkv
+
+# Internal research cache (planning artifacts stay tracked)
+.planning/research/.cache/
