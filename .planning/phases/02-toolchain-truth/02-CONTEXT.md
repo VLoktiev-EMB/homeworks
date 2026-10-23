@@ -256,5 +256,44 @@ ESP frameworks.
 
 ---
 
+## Amendments After Research (2026-10-23)
+
+These four decisions were taken with the user after `/gsd-plan-phase 2` research
+(`02-RESEARCH.md`) contradicted the original text. They override the bullet they name; every
+other decision above stands unchanged.
+
+- **D-15 (amended):** The entry point is **`src/main.cpp`**, not `src/main.c`. It carries three
+  thin branches: `#ifdef ARDUINO` → `setup()`/`loop()`; `#elif defined(ESP_PLATFORM)` →
+  `extern "C" void app_main()`; `#else` → `int main(void)` for `native`. Reason: Arduino core
+  3.3.12 calls C++-mangled `setup`/`loop`, so a `.c` entry fails with
+  `undefined reference to '_Z5setupv'`.
+  **Library sources stay pure C** (`lib/*/src/*.c`), and each public header in
+  `lib/*/include/` carries the standard `#ifdef __cplusplus / extern "C" {` guard so C++
+  callers link against C symbols. This keeps future ESP-IDF/STM32 homework in pure C — the
+  guard compiles to nothing under a C compiler.
+- **D-21 (amended):** The ADR is **`docs/decisions/0007-*.md`**. `0006-public-commit-identity.md`
+  already exists and `docs/decisions/README.md` reserves 0007 for this decision. Sequential,
+  permanent numbering (Phase 1 D-27) forbids reusing 0006.
+- **D-22 (new):** `-DBOARD_HAS_PSRAM` is added to `build_flags` of `[esp32s3_arduino]`. It is a
+  separate key, not part of the D-14 override list; without it the Arduino core may not
+  initialise octal PSRAM.
+- **D-23 (new):** ESP-IDF build-generated files in the project tree — `CMakeLists.txt`,
+  `src/CMakeLists.txt`, and `sdkconfig.<env>` — are **added to `.gitignore`**, never committed.
+  This extends, and does not weaken, the AGENTS.md "generated files are never committed" rule.
+
+**Additional research findings the plan MUST carry as tasks:**
+
+- P2: the ESP-IDF builder looks for `default_16MB.csv` in
+  `framework-espidf/components/partition_table/`, where it does not exist. The project must
+  ship its own `default_16MB.csv` (keeping D-14 literal) plus `sdkconfig.defaults` with
+  `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`, `CONFIG_SPIRAM=y`, `CONFIG_SPIRAM_MODE_OCT=y`.
+- P1/P3: the three fixes (entry point, `extern "C"` guards, ESP-IDF partition/sdkconfig) must
+  land **before** the first `pio run` of the affected environment, not as a later repair.
+- Evidence for criteria 2 and 4 is taken from `esptool image-info` and from Python assertions
+  over `compile_commands.json` / `sdkconfig.json` — never from re-reading `platformio.ini`.
+
+---
+
 *Phase: 2-Toolchain Truth*
 *Context gathered: 2026-10-23*
+*Amended after research: 2026-10-23*
