@@ -92,6 +92,9 @@ VISIBLE = [
     # The canonical rulebook is tracked; only .claude/worktrees/ may be ignored,
     # never the whole .claude/ directory.
     ".claude/CLAUDE.md",
+    # Only the ambient workspace file is ignored. A deliberately authored multi-root
+    # workspace is a legitimate shared artifact, so the pattern must stay narrow.
+    "homeworks-all.code-workspace",
 ]
 
 

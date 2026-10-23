@@ -31,7 +31,10 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
-*.code-workspace
+# Ignore only the ambient workspace file VS Code writes when opening the folder.
+# A deliberately authored multi-root workspace (relative paths, shared by the team)
+# is a legitimate artifact and MUST NOT be caught by a broad *.code-workspace glob.
+homeworks.code-workspace
 
 # Agent worktrees (isolated executor checkouts; .claude/CLAUDE.md stays tracked)
 .claude/worktrees/
