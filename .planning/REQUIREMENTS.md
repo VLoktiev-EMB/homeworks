@@ -29,7 +29,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
       `.gitignore` and `.gitattributes` cover secrets, build output, and generated files.
 - [x] **FOUND-08**: Git LFS is used only for large non-diffable binaries; site assets
       remain normal git objects because GitHub Pages cannot serve LFS; videos are linked.
-- [ ] **FOUND-09**: The toolchain is pinned: PlatformIO Core 6.2.0,
+- [x] **FOUND-09**: The toolchain is pinned: PlatformIO Core 6.2.0,
       `platformio/espressif32` 8.0.0, and explicit ESP32-S3-DevKitC-1 N16R8 overrides
       (16 MB flash, octal PSRAM).
 - [x] **FOUND-10**: `AGENTS.md` is the canonical rulebook (up to ~300 lines) with
@@ -68,7 +68,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
       pattern/state-machine logic, codecs, calculations) and never blocks or sleeps.
 - [ ] **ARCH-03**: `lib/arduino`, `lib/espidf`, and `lib/host` contain thin adapters and
       deterministic test doubles; adapters contain no business logic.
-- [ ] **ARCH-04**: Shared libraries are consumed through
+- [x] **ARCH-04**: Shared libraries are consumed through
       `lib_deps = <name>=symlink://../../lib/<name>` with a `library.json` per library
       and a generated `platformio.shared.ini`; `lib_extra_dirs` remains a generator
       fallback only.
@@ -232,7 +232,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Complete |
 | FOUND-08 | Phase 1 | Complete |
-| FOUND-09 | Phase 2 | Pending |
+| FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 1 | Complete |
 | META-01 | Phase 4 | Pending |
 | META-02 | Phase 4 | Pending |
@@ -245,7 +245,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-01 | Phase 3 | Pending |
 | ARCH-02 | Phase 3 | Pending |
 | ARCH-03 | Phase 3 | Pending |
-| ARCH-04 | Phase 2 | Pending |
+| ARCH-04 | Phase 2 | Complete |
 | ARCH-05 | Phase 3 | Pending |
 | ARCH-06 | Phase 3 | Pending |
 | ARCH-07 | Phase 3 | Pending |
