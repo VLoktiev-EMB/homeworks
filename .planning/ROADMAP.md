@@ -99,10 +99,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The suite produces identical results over 20 consecutive runs, using fake time from `lib/host`.
   5. Public headers expose only C contracts with `extern "C"`; no universal HAL or whole-driver abstraction is present.
 
-**Plans:** 9 plans
+**Plans:** 1/9 plans executed
 
 **Wave 1**
-- [ ] 03-01-PLAN.md — Native suite spine: `tests/` project, port time contract, common timing, host fake clock (tracer)
+- [x] 03-01-PLAN.md — Native suite spine: `tests/` project, port time contract, common timing, host fake clock (tracer)
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 03-02-PLAN.md — ADR-0008 dependency direction, decisions index, runnable quick-start command
@@ -239,7 +239,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 |-------|----------------|--------|-----------|
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
-| 3. Shared Core and Dependency Rule | 0/9 | Not started | - |
+| 3. Shared Core and Dependency Rule | 1/9 | In Progress | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
