@@ -69,8 +69,8 @@ IGNORED = {
         "Thumbs.db",
         "x.swp",
         ".idea/misc.xml",
-        ".vscode/settings.json",
-        "homeworks.code-workspace",
+        # .vscode/* ignores everything except the explicitly re-included files below.
+        ".vscode/workspace-specific.json",
     ],
     # Videos are linked from reports, never committed (D-21).
     "video containers": ["video.mp4", "clip.mov", "a.avi", "b.webm", "c.mkv"],
@@ -92,8 +92,14 @@ VISIBLE = [
     # The canonical rulebook is tracked; only .claude/worktrees/ may be ignored,
     # never the whole .claude/ directory.
     ".claude/CLAUDE.md",
-    # Only the ambient workspace file is ignored. A deliberately authored multi-root
-    # workspace is a legitimate shared artifact, so the pattern must stay narrow.
+    # VS Code: shared settings, tasks, launch configs and extensions are committable;
+    # only the machine-specific remainder under .vscode/ is ignored. Workspace files
+    # are deliberately visible so a multi-root workspace can be shared.
+    ".vscode/settings.json",
+    ".vscode/tasks.json",
+    ".vscode/launch.json",
+    ".vscode/extensions.json",
+    "homeworks.code-workspace",
     "homeworks-all.code-workspace",
 ]
 
