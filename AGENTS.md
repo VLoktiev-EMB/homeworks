@@ -83,8 +83,9 @@ Good:  feat(1_3): add police flasher state machine
 
 - **[MUST]** **[ENFORCED: CI]** Never push directly to the default branch and never
   force-push. Every change arrives through a branch and a pull request. The GitHub
-  ruleset `main` rejects the write server-side, and `python3 scripts/check_policy.py
-  --check` proves that ruleset is still in place.
+  ruleset `main` rejects the write server-side, so this gate is live rather than
+  aspirational. `python3 scripts/check_policy.py --check` proves the ruleset is still
+  in place; today an agent or a maintainer runs it, and Phase 8 puts it in CI.
 - **[MUST]** **[ENFORCED: CI]** Published history is never rewritten: no rebase of a
   shared branch, no history edit, no tag move. The ruleset requires linear history, so a
   squash merge is the only route into the default branch.
@@ -158,8 +159,10 @@ Good:  rotate the key, remove it with a forward commit, document the incident.
 ### Licensing and identity
 
 - **[MUST]** **[ENFORCED: CI]** Original code is MIT-licensed; documentation and
-  homework reports are CC-BY-4.0. The split is declared once in `REUSE.toml`, and
-  `reuse lint` joins the pull-request pipeline in Phase 8.
+  homework reports are CC-BY-4.0. The split is declared once in `REUSE.toml` and the
+  `reuse` job in `.github/workflows/security.yml` runs
+  `reuse --no-multiprocessing lint` on every pull request and every push to the
+  default branch.
 - **[MUST]** **[ENFORCED: review]** Use the public handle or organization name only —
   never a real name, an institution, or an email address — in `LICENSE`, `NOTICE`,
   report metadata, commits, or trailers.

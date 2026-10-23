@@ -89,6 +89,13 @@ class SecurityWorkflowContractTest(unittest.TestCase):
     def test_downloads_over_https_only(self):
         self.assertIn("--proto '=https'", self.text)
 
+    def test_enforces_the_license_split_in_ci(self):
+        # AGENTS.md tags the MIT / CC-BY-4.0 rule `[ENFORCED: CI]`; this job is
+        # the mechanism that makes that tag true.
+        self.assertRegex(self.text, r"(?m)^  reuse:$")
+        self.assertIn("reuse --no-multiprocessing lint", self.text)
+        self.assertIn("REUSE_VERSION: 6.2.0", self.text)
+
     # --- forbidden tokens ------------------------------------------------
 
     def test_does_not_use_hosted_gitleaks_action(self):
