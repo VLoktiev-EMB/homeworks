@@ -3,7 +3,7 @@ status: partial
 phase: 01-repository-foundation-and-policy-gate
 source: [01-VERIFICATION.md]
 started: 2026-10-23T17:36:56Z
-updated: 2026-10-23T17:50:44.593Z
+updated: 2026-10-23T18:07:30Z
 ---
 
 ## Current Test
@@ -33,9 +33,8 @@ evidence: "PR #1, run 39998933792: gitleaks (full history) pass 4s; reuse lint (
 
 ### 5. Squash-merge and linear-history behaviour (backstop truths)
 expected: The Phase 1 pull request squash-merges into exactly one commit on `main`; a second pull request touching the same region must update its base before it can merge.
-result: blocked
-blocked_by: prior-phase
-reason: "blocked — no PR yet"
+result: pass
+evidence: "PR #1 squash-merged as e2dd499 on 2026-10-23T18:03:47Z; main gained exactly one commit over 57ff7ba; remote branch deleted. The second-PR base-update behaviour was not exercised (no second PR touching the same region yet)."
 
 ### 6. Judgment-tier prohibitions review
 expected: No internal course material or original assignment text is present; no document describes a direct-push or force-push workflow.
@@ -48,10 +47,10 @@ result: pass
 ## Summary
 
 total: 7
-passed: 5
+passed: 6
 issues: 0
 pending: 0
 skipped: 0
-blocked: 2
+blocked: 1
 
 ## Gaps

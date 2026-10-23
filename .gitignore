@@ -65,6 +65,10 @@ Thumbs.db
 .planning/state.json
 .planning/milestone.lock
 
+# Generated knowledge-graph output (regenerable)
+.planning/graphs/
+graphify-out/
+
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
