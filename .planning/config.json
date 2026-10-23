@@ -103,7 +103,7 @@
   "review": {
     "models": {
       "codex": "glm-5.3-flash:cloud",
-      "agy": "gemini-3-flash"
+      "agy": "gemini-3.8-flash-high"
     },
     "reviewer_instances": {
       "codex-glm": {
@@ -118,7 +118,11 @@
     "default_reviewers": [
       "codex-glm",
       "codex-beam",
-      "agy"
-    ]
+      "antigravity"
+    ],
+    "parallel_lanes": true,
+    "effort": {
+      "codex": "high"
+    }
   }
 }
