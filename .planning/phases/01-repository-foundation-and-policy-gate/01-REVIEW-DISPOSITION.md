@@ -2,12 +2,12 @@
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
-| WR-06 | warning | open | - |
+| WR-01 | warning | fixed | commit 6d6fb4f — every GitHub default-template path checked |
+| WR-02 | warning | fixed | commit d7fd716 — homework verified at the tag target commit |
+| WR-03 | warning | fixed | commit d2c9829 — claim made true via no-generated-files hook |
+| WR-04 | warning | fixed | commit f1d6936 — claim made true via reuse lint CI job |
+| WR-05 | warning | fixed | commit 018b37b — checkout pinned to SHA, gitleaks digest verified |
+| WR-06 | warning | fixed | commit 3c35e9a — READ_ONLY wired; vacuous test replaced |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
