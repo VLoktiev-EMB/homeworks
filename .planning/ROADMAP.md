@@ -33,6 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: Repository Foundation and Policy Gate
+
 **Goal**: A public repository whose history, licensing, asset, and contribution rules are safe by construction and cannot be repaired later.
 **Depends on**: Nothing (first phase)
 **Requirements**: FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07, FOUND-08, FOUND-10, TOOL-07
@@ -42,17 +43,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The three PR templates (`homework`, `infra`, `docs`) share a header and carry distinct Definition of Done checklists, with no default template.
   4. The MIT license, `NOTICE`, LFS policy, and the first MADR ADRs exist; infrastructure decisions are recorded under `docs/decisions/`.
   5. `AGENTS.md` is the canonical rulebook with enforcement tags and short examples, and `.claude/CLAUDE.md` imports it without duplicating rules.
+
 **Plans:** 8 plans
+**Wave 1**
 - [ ] 01-01-PLAN.md — Policy as code: ruleset/settings JSON, check_policy.py, environment bootstrap, live hardening (tracer)
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 01-02-PLAN.md — .gitignore / .gitattributes, LFS routing, research-cache untrack
 - [ ] 01-03-PLAN.md — Pre-commit hooks and the full-history gitleaks workflow
 - [ ] 01-04-PLAN.md — MIT/CC-BY-4.0 licensing, NOTICE, LICENSES/, REUSE.toml
 - [ ] 01-05-PLAN.md — Three PR templates and the marker-slice drift checker
-- [ ] 01-06-PLAN.md — AGENTS.md rulebook, thin CLAUDE.md adapter, foundation README
 - [ ] 01-07-PLAN.md — Five MADR ADRs and the status index
 - [ ] 01-08-PLAN.md — tag_homework.sh with precondition gates
 
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 01-06-PLAN.md — AGENTS.md rulebook, thin CLAUDE.md adapter, foundation README
+
 ### Phase 2: Toolchain Truth
+
 **Goal**: A pinned PlatformIO toolchain builds the ESP32-S3 N16R8 target and a native target, with shared libraries wired through `symlink://`.
 **Depends on**: Phase 1
 **Requirements**: FOUND-09, ARCH-04
@@ -61,9 +69,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The N16R8 build uses 16 MB flash and octal PSRAM, not the stock 8 MB no-PSRAM board manifest.
   3. A project consumes `common`, `port`, and one adapter through `lib_deps = <name>=symlink://../../lib/<name>` from a generated `platformio.shared.ini`, and every library has a `library.json`.
   4. `compiledb` produces a `compile_commands.json` that contains the shared-library sources for both Arduino and ESP-IDF environments.
+
 **Plans**: TBD
 
 ### Phase 3: Shared Core and Dependency Rule
+
 **Goal**: A minimal, framework-free shared C core with enforced dependency edges and a deterministic native test suite.
 **Depends on**: Phase 2
 **Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-05, ARCH-06, ARCH-07
@@ -73,9 +83,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `scripts/check_architecture.py` rejects a forbidden include (`common` → framework, `common` → adapter) and the native compile gate fails the build.
   4. The suite produces identical results over 20 consecutive runs, using fake time from `lib/host`.
   5. Public headers expose only C contracts with `extern "C"`; no universal HAL or whole-driver abstraction is present.
+
 **Plans**: TBD
 
 ### Phase 4: Metadata Contract and Scaffolding
+
 **Goal**: One schema-validated homework contract and a deterministic scaffold that produces a buildable homework from a template.
 **Depends on**: Phase 3
 **Requirements**: FOUND-01, META-01, META-02, META-03, META-04
@@ -85,9 +97,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `homework.yaml` is validated against a JSON Schema with `additionalProperties: false`; an unknown key is rejected and every required field is recorded.
   4. `task.md` contains an English paraphrase, the source reference, retrieval date, and attribution, and no original internal material.
   5. `templates/` provides the Arduino homework, ESP-IDF homework, report, task, ADR, and board-profile templates.
+
 **Plans**: TBD
 
 ### Phase 5: Generated Views and Documentation Site
+
 **Goal**: Every repeated view of the repository is generated from `homework.yaml`, and the documentation site builds and deploys from that tree.
 **Depends on**: Phase 4
 **Requirements**: META-05, META-06, META-07, META-08
@@ -96,9 +110,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `scripts/affected.py` maps a `lib/**` diff to every consumer project in the build and simulation matrix.
   3. The committed `homeworks.code-workspace` contains `repo`, `docs`, `lib`, `scripts`, and every homework as roots, with ASCII paths.
   4. `mkdocs build --strict` succeeds on the generated tree with MkDocs Material 9.7.7, a Zensical-compatible configuration, and vendored KaTeX; GitHub Pages deploys the artifact.
+
 **Plans**: TBD
 
 ### Phase 6: Developer Experience and Quality Layering
+
 **Goal**: A novice can open the workspace, get correct ESP32 IntelliSense, and have formatting and layered quality checks run without guesswork.
 **Depends on**: Phase 4
 **Requirements**: TOOL-01, TOOL-02, TOOL-03, TOOL-04
@@ -108,9 +124,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. esp-clangd resolves ESP32-S3 includes through per-project `.clangd` files and explicit absolute `--query-driver` globs, and cpptools IntelliSense is disabled.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
+
 **Plans**: TBD
 
 ### Phase 7: Simulation Spike
+
 **Goal**: An evidence-based simulator decision recorded in ADR-0004, with measured costs and fidelity limits.
 **Depends on**: Phase 4
 **Requirements**: SIM-02, SIM-03
@@ -120,9 +138,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `wokwi-cli lint` validates the canonical `diagram.json`.
   4. Fritzing output is used only as an attributed illustration; no part graphics are copied into shared assets or the docs site.
   5. The ADR states which simulator serves each platform and the measured CI cost basis for the cadence decision.
+
 **Plans**: TBD
 
 ### Phase 8: Fast CI
+
 **Goal**: Pull requests are gated by a fast, changed-only CI pipeline with one required check; simulation is optional and never blocks forks.
 **Depends on**: Phase 3, Phase 4, Phase 7
 **Requirements**: TOOL-05, TOOL-06, SIM-04
@@ -131,9 +151,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. CI builds and unit-tests changed projects on every pull request and exposes a single required `gate` check.
   3. Simulation runs only for changed projects after the spike, with explicit timeouts and artifact upload, and is never a required check for fork pull requests.
   4. Nightly runs the full build and unit-test matrix without simulation.
+
 **Plans**: TBD
 
 ### Phase 9: Agent Workflow and Skills
+
 **Goal**: Seven versioned agent skills exist, with `new-homework` and `hw-build` fully usable in guided and one-shot modes.
 **Depends on**: Phase 4
 **Requirements**: FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05, FLOW-06, FLOW-07
@@ -143,9 +165,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Guided mode pauses after each explanation → code → run → questions block and deepens the explanation when the user is stuck.
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
+
 **Plans**: TBD
 
 ### Phase 10: Report and Evidence System
+
 **Goal**: A report and evidence contract that every homework must satisfy, with automated checks and a self-audit rubric.
 **Depends on**: Phase 4
 **Requirements**: REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, REPORT-06, REPORT-07, REPORT-08, TOOL-08
@@ -154,9 +178,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A report missing a BOM row, a ledger provenance label, or a traceability entry fails the check with a specific message.
   3. `docs/standards/electrical-calculations.md` lists the calculation catalog, and each calculation records formula, units, input provenance, result, uncertainty, and assumption impact.
   4. The self-audit rubric maps every report artifact and evidence item to the pre-PR checklist.
+
 **Plans**: TBD
 
 ### Phase 11: Pilot Homework 1.3
+
 **Goal**: Homework 1.3 ships end to end as the reference artifact and validates the whole system before scale-out.
 **Depends on**: Phase 4, Phase 5, Phase 7, Phase 8, Phase 9, Phase 10
 **Requirements**: PILOT-01, PILOT-02, SIM-01
@@ -166,6 +192,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The report satisfies Phase 10 and includes measured versus simulated values, commit hashes, known limitations, and next steps.
   4. The README index, workspace, and docs site include homework 1.3, and the documented local simulation path is recorded.
   5. The pull request passes CI and the merged commit is tagged `hw/1_3-police-flasher`.
+
 **Plans**: TBD
 
 ## Progress
