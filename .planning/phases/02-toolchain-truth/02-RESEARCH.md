@@ -373,6 +373,54 @@ extra_scripts = pre:../../scripts/pio/compiledb.py
 **Практичне правило для плану:** `[env:*]` у проєкті містить **лише** `extends` і `lib_deps`.
 Будь-який `build_flags` у проєкті — сигнал, що шаблон треба переробити.
 
+**Повний мінімальний `platformio.shared.ini` (усі три секції, перевірена композиція):**
+
+```ini
+[esp32s3_arduino]
+platform = espressif32@8.0.0
+board = esp32-s3-devkitc-1
+framework = arduino
+board_build.arduino.memory_type = qio_opi
+board_build.flash_mode = qio
+board_build.psram_type = opi
+board_upload.flash_size = 16MB
+board_upload.maximum_size = 16777216
+board_build.partitions = default_16MB.csv
+build_flags =
+    -Wall
+    -Wextra
+    -Werror=return-type
+    -DBOARD_HAS_PSRAM
+extra_scripts = pre:../../scripts/pio/compiledb.py
+
+[esp32s3_espidf]
+platform = espressif32@8.0.0
+board = esp32-s3-devkitc-1
+framework = espidf
+board_upload.flash_size = 16MB
+board_upload.maximum_size = 16777216
+board_build.partitions = default_16MB.csv
+extra_scripts = pre:../../scripts/pio/compiledb.py
+
+[native_unity]
+platform = native
+build_flags =
+    -std=c11
+    -Wall
+    -Wextra
+extra_scripts = pre:../../scripts/pio/compiledb.py
+```
+
+**Спискові опції, які `extends` замінює, а не зливає** (усе, що в PlatformIO має
+багаторядкове значення): `build_flags`, `build_unflags`, `lib_deps`, `lib_extra_dirs`,
+`lib_ignore`, `extra_scripts`, `build_src_filter`, `src_filter`, `debug_init_break`.
+Саме тому в проєктних `[env:*]` немає жодного з них, крім `lib_deps`.
+
+**Чому `[native_unity]` не має `test_framework`:** D-16 фіксує, що `native` доводиться лише
+`pio run -e native`; Unity — Phase 3. Секція збережена під назвою `native_unity`, щоб
+уникнути перейменування при появі Unity, але без `test_framework` і без `test/`.
+Перевірено: `pio run -e native` зелена без жодного тестового фреймворку.
+
 ### Pattern 2: Один entry point, три гілки (виправлення D-15)
 
 **What:** `src/main.cpp` з `#if defined(ARDUINO) … #elif defined(ESP_PLATFORM) … #else …`.
@@ -491,6 +539,15 @@ env.Replace(COMPILATIONDB_PATH=os.path.join(env.subst("$PROJECT_DIR"), "compile_
 тому доказ для Arduino і ESP-IDF треба робити послідовно, перевіряючи файл одразу після
 кожної генерації (або тимчасово копіюючи його). Шлях `COMPILATIONDB_PATH` навмисно один
 (D-17/D-18).
+
+**Чи потрібні `lib_compat_platform` / `lib_ldf_mode`:** ні. У кожній збірці LDF
+повідомляє `LDF Modes: Finder ~ chain, Compatibility ~ soft` і знаходить усі оголошені
+бібліотеки (`Found 2 compatible libraries` для native, `Found 3` для ESP). Типові
+налаштування не змінювалися. `lib_ldf_mode` варто чіпати лише якщо бібліотека не
+знаходиться через ланцюг `#include` — для цієї композиції це не потрібно. Заголовки
+`lib/espidf` резолвляться тому, що білдер ESP-IDF передає бібліотеці 259 `-I` з
+CMake-codemodel (перевірено: `-I…/components/esp_driver_gpio/include` присутній у команді
+компіляції `espidf_adapter.c`).
 
 ### Anti-Patterns to Avoid
 
