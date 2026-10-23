@@ -70,13 +70,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A project consumes `common`, `port`, and one adapter through `lib_deps = <name>=symlink://../../lib/<name>` from a generated `platformio.shared.ini`, and every library has a `library.json`.
   4. `compiledb` produces a `compile_commands.json` that contains the shared-library sources for both Arduino and ESP-IDF environments.
 
-**Plans:** 5 plans
+**Plans:** 2/5 plans executed
 
 **Wave 1**
-- [ ] 02-01-PLAN.md — Shared config, five libraries, native smoke build, compiledb hook (tracer)
+- [x] 02-01-PLAN.md — Shared config, five libraries, native smoke build, compiledb hook (tracer)
 
 **Wave 1** *(independent of the tracer: ignore rules only)*
-- [ ] 02-02-PLAN.md — ESP-IDF generated-file ignore rules and the no-generated-files hook
+- [x] 02-02-PLAN.md — ESP-IDF generated-file ignore rules and the no-generated-files hook
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 02-03-PLAN.md — ESP32-S3 Arduino environment and N16R8 artifact evidence
@@ -219,7 +219,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
-| 2. Toolchain Truth | 0/5 | Planned | - |
+| 2. Toolchain Truth | 2/5 | In Progress | - |
 | 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
