@@ -161,7 +161,9 @@
 
 Phase 3 is a design phase whose three riskiest assumptions are all mechanically testable, and all three were executed on this machine before writing this document. First, the native Unity project works exactly as the research documents claim: a `tests/` PlatformIO project with `extra_configs = ../platformio.shared.ini`, `extends = native_unity`, `test_framework = unity`, and `lib_deps` symlinking `common`, `port`, and `host` compiles and passes. Second, the compile gate really does reject a framework include in `common` (`fatal error: 'Arduino.h' file not found`), but it does **not** reject `common → adapter`, because a relative include across library directories compiles and links — so the textual checker is load-bearing, not decorative. Third, both framework adapters can remain pure C for the three contracts this phase implements (`millis`/`pinMode`/`digitalWrite`/`digitalRead`/`log_printf` under Arduino; `esp_timer_get_time`/`gpio_config`/`gpio_set_level`/`gpio_get_level`/`ESP_LOGI` under ESP-IDF), which preserves the Phase 2 D-15 rule that library sources stay `.c`.
 
-Four findings change how the plan should be written. (1) `extra_scripts` paths resolve relative to the **project** directory, so `tests/` cannot inherit `pre:../../scripts/pio/compiledb.py` from `platformio.shared.ini` — it resolves two levels above the repository; `tests/` must override it with `pre:../scripts/pio/compiledb.py`. (2) Because D-03 forbids manifest `dependencies`, every consumer must list `port` explicitly; a project that lists `common` without `port` fails with `'port/time.h' file not found`. (3) PlatformIO writes Unity's per-test rows to stdout but the summary and durations to stderr, and Unity's failure rows carry an assertion message before the tab; the 20-run normalizer must iterate per-test lines (anchored per line, not with `re.MULTILINE` over the whole buffer) and must not use PlatformIO's summary counts. (4) `#include "../arduino/include/..."` compiles natively, proving the include scanner must reject path escapes explicitly.
+Four findings change how the plan should be written. (1) `extra_scripts` paths resolve relative to the **project** directory, so `tests/` cannot inherit `pre:../../scripts/pio/compiledb.py` from `platformio.shared.ini` — it resolves two levels above the repository; `tests/` must override it with `pre:../scripts/pio/compiledb.py`. (2) Because D-03 forbids manifest `dependencies`, every consumer must list `port` explicitly; a project that lists `common` without `port` fails with `'port/time.h' file not found`. (3) PlatformIO's console splits across both streams — Unity's per-test rows and the
+per-environment status rows go to stdout, the aggregate `N test cases:` line goes to
+stderr, and duration text appears in both — while Unity's failure rows carry an assertion message before the tab; the 20-run normalizer must iterate per-test lines (anchored per line, not with `re.MULTILINE` over the whole buffer) and must not use PlatformIO's summary counts. (4) `#include "../arduino/include/..."` compiles natively, proving the include scanner must reject path escapes explicitly.
 
 **Primary recommendation:** build `port` as a header-only set of five consumer-owned vtables in `include/port/<name>.h`; implement `common` as four pure-C modules that take a `const port_time_t *` only where time is genuinely needed; implement `host` fakes as bounded, allocation-free structs; drive everything from one `tests/` project that overrides `extra_scripts` and pins Unity; and ship `scripts/check_architecture.py` with a deny-by-default, empty-allowlist policy plus a `pio run -t compiledb` purity assertion.
 
@@ -637,9 +639,10 @@ update AGENTS.md step 3 in this phase so the documented gate is runnable.
 
 ### Pitfall 8: Comparing raw `pio test` output
 
-**What goes wrong:** stdout carries `path:line:` prefixes; stderr carries durations
-(`Took 0.22 seconds`, `00:00:00.222`); a failure row inserts an assertion message
-(`test_fail: Expected 2 Was 1\t[FAILED]`). A digest over raw text changes every run.
+**What goes wrong:** stdout carries `path:line:` prefixes and both streams carry duration
+text (`Took 0.22 seconds`, `00:00:00.222`); the aggregate summary line is on **stderr**; a
+failure row inserts an assertion message (`test_fail: Expected 2 Was 1\t[FAILED]`). A
+digest over raw text changes every run.
 
 **Why it happens:** PlatformIO's console formatting is not a stable interface.
 
