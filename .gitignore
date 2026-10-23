@@ -61,6 +61,10 @@ Thumbs.db
 # Internal research cache (planning artifacts stay tracked)
 .planning/research/.cache/
 
+# GSD runtime state (regenerated; the human-facing .planning/STATE.md stays tracked)
+.planning/state.json
+.planning/milestone.lock
+
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
@@ -191,8 +195,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Scoped to the packaging build tree: the repository root `lib/` is a planned
+# source directory (shared portable libraries, Phase 3), not a build artifact.
+build/lib/
+build/lib64/
 parts/
 sdist/
 var/
