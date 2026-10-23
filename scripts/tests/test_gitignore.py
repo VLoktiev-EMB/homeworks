@@ -101,6 +101,9 @@ VISIBLE = [
     ".vscode/extensions.json",
     "homeworks.code-workspace",
     "homeworks-all.code-workspace",
+    # A Makefile is source, not a build artefact: ignoring it makes a build entry
+    # point vanish from every clone with no error anywhere.
+    "Makefile",
 ]
 
 
@@ -136,6 +139,18 @@ class TestGitignorePatterns(unittest.TestCase):
             completed.stdout.strip(),
             "",
             "cache files are still tracked; `git rm --cached` them",
+        )
+
+    def test_lfs_routed_extensions_are_never_ignored(self) -> None:
+        # An extension routed to LFS in `.gitattributes` must stay addable. An
+        # ignore rule for the same extension silently drops exactly the evidence
+        # files the asset policy exists to preserve (ADR-0005 / D-20). This is the
+        # invariant a boilerplate `.gitignore` import is most likely to break.
+        ignored = [ext for ext in LFS_EXTENSIONS if is_ignored(f"sample.{ext}")]
+        self.assertEqual(
+            ignored,
+            [],
+            f"these LFS-routed extensions are ignored by .gitignore: {ignored}",
         )
 
 
