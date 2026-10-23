@@ -24,6 +24,14 @@ artifact — code, evidence, and report — that can be understood and verified 
 - ✓ Shared libraries consumed through `lib_deps = <name>=symlink://../../lib/<name>` with one
   `library.json` per library; `platformio.shared.ini` is hand-authored in Phase 2 and its
   generator remains Phase 5 — Phase 2 (ARCH-04)
+- ✓ Framework-free `lib/port` function-pointer contracts and pure `lib/common` primitives,
+  with thin Arduino/ESP-IDF adapters and host fakes — Phase 3 (ARCH-01, ARCH-02, ARCH-03,
+  ARCH-07)
+- ✓ `scripts/check_architecture.py` plus a native compile gate enforce the dependency rule;
+  the checker is green on the real tree, red on forbidden fixtures, and wired into
+  pre-commit — Phase 3 (ARCH-05)
+- ✓ A top-level `tests/` PlatformIO project compiles `common` and `port` natively and runs
+  the Unity suite: 73 cases in 7 suites, identical results over 20 runs — Phase 3 (ARCH-06)
 
 ### Active
 
@@ -234,8 +242,8 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Naming `module_lesson-name` | Preserves course order and conveys topic | — Pending |
 | PlatformIO for all homeworks | Single build system, CI, and tooling across platforms | — Pending |
 | Arduino uses idiomatic C++; ESP-IDF uses C11; shared logic is C | Idiomatic per framework while keeping logic portable | — Pending |
-| Thin core + port + adapters | Reuse without building a shadow framework | — Pending |
-| No universal HAL | Hardware abstractions leak; the course must teach framework APIs | — Pending |
+| Thin core + port + adapters | Reuse without building a shadow framework | ✓ Phase 3 — five libraries, 21 headers, no framework leakage |
+| No universal HAL | Hardware abstractions leak; the course must teach framework APIs | ✓ Phase 3 — bus-level I2C/SPI contracts; framework bus adapters deferred (ADR-0008 D-08) |
 | Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | ✓ Phase 2 — ADR-0007; all three environments resolve the symlinked libraries |
 | Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | — Pending |
 | esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | — Pending |
@@ -243,7 +251,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | — Pending |
 | 10-section report with BOM, calculations, safety, and industry notes | Academic completeness plus engineering rigor | — Pending |
 | `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | — Pending |
-| Unity + native environment | Fast, deterministic tests for pure logic | — Pending |
+| Unity + native environment | Fast, deterministic tests for pure logic | ✓ Phase 3 — 73 cases, 7 suites, 20 identical runs |
 | Tiered testing | Avoids overhead while keeping evidence proportional to the work | — Pending |
 | TDD for pure logic | Improves design and guarantees testability | — Pending |
 | Protected `main`, PR, squash merge, tags | Auditable history and a clear entry point per homework | — Pending |
@@ -283,4 +291,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-23 after Phase 2*
+*Last updated: 2026-10-24 after Phase 3*

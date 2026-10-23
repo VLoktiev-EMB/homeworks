@@ -62,22 +62,22 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Shared Architecture
 
-- [ ] **ARCH-01**: `lib/port` defines C function-pointer contracts for time, GPIO, I2C,
+- [x] **ARCH-01**: `lib/port` defines C function-pointer contracts for time, GPIO, I2C,
       SPI, and logging; it contains no framework headers and no state.
-- [ ] **ARCH-02**: `lib/common` contains pure C domain logic (ring buffers, timing math,
+- [x] **ARCH-02**: `lib/common` contains pure C domain logic (ring buffers, timing math,
       pattern/state-machine logic, codecs, calculations) and never blocks or sleeps.
-- [ ] **ARCH-03**: `lib/arduino`, `lib/espidf`, and `lib/host` contain thin adapters and
+- [x] **ARCH-03**: `lib/arduino`, `lib/espidf`, and `lib/host` contain thin adapters and
       deterministic test doubles; adapters contain no business logic.
 - [x] **ARCH-04**: Shared libraries are consumed through
       `lib_deps = <name>=symlink://../../lib/<name>` with a `library.json` per library
       and a generated `platformio.shared.ini`; `lib_extra_dirs` remains a generator
       fallback only.
-- [ ] **ARCH-05**: `scripts/check_architecture.py` and a native compile gate enforce the
+- [x] **ARCH-05**: `scripts/check_architecture.py` and a native compile gate enforce the
       dependency rule (`common → port`, adapters → port, homework → common + port + one
       adapter).
-- [ ] **ARCH-06**: A top-level `tests/` PlatformIO project compiles `common` and `port`
+- [x] **ARCH-06**: A top-level `tests/` PlatformIO project compiles `common` and `port`
       natively and runs the shared-library Unity suite without a target toolchain.
-- [ ] **ARCH-07**: No universal HAL is introduced; reusable drivers abstract the bus
+- [x] **ARCH-07**: No universal HAL is introduced; reusable drivers abstract the bus
       (I2C/SPI), not the whole driver, and framework APIs remain idiomatic in homework
       code.
 
@@ -242,13 +242,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | META-06 | Phase 5 | Pending |
 | META-07 | Phase 5 | Pending |
 | META-08 | Phase 5 | Pending |
-| ARCH-01 | Phase 3 | Pending |
-| ARCH-02 | Phase 3 | Pending |
-| ARCH-03 | Phase 3 | Pending |
+| ARCH-01 | Phase 3 | Complete |
+| ARCH-02 | Phase 3 | Complete |
+| ARCH-03 | Phase 3 | Complete |
 | ARCH-04 | Phase 2 | Complete |
-| ARCH-05 | Phase 3 | Pending |
-| ARCH-06 | Phase 3 | Pending |
-| ARCH-07 | Phase 3 | Pending |
+| ARCH-05 | Phase 3 | Complete |
+| ARCH-06 | Phase 3 | Complete |
+| ARCH-07 | Phase 3 | Complete |
 | REPORT-01 | Phase 10 | Pending |
 | REPORT-02 | Phase 10 | Pending |
 | REPORT-03 | Phase 10 | Pending |
