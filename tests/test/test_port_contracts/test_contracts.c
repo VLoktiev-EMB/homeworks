@@ -5,8 +5,10 @@
 
 #include "port/gpio.h"
 #include "port/i2c.h"
+#include "port/log.h"
 #include "port/spi.h"
 #include "port/status.h"
+#include "port/time.h"
 
 /* File-scope fake state. Every callback receives the same pointer through its
    `ctx` argument, so observing the recorded pointer proves the plumbing. */
@@ -177,6 +179,41 @@ static port_status_t fake_spi_write(void *ctx, const uint8_t *data, size_t lengt
     return PORT_OK;
 }
 
+/* Direct clock call-through: the callback records the ctx it observed. */
+typedef struct fake_clock {
+    uint32_t value_ms;
+    void *seen_ctx;
+    int calls;
+} fake_clock_t;
+
+static uint32_t fake_clock_now_ms(void *ctx) {
+    fake_clock_t *clock = ctx;
+
+    clock->seen_ctx = ctx;
+    clock->calls++;
+    return clock->value_ms;
+}
+
+/* Capturing log sink: up to eight {level, message} pairs. */
+typedef struct captured_log {
+    port_log_level_t level[8];
+    const char *text[8];
+    void *seen_ctx;
+    int count;
+} captured_log_t;
+
+static void capture_log(void *ctx, port_log_level_t level, const char *message) {
+    captured_log_t *sink = ctx;
+
+    if (sink == NULL || sink->count >= 8) {
+        return;
+    }
+    sink->seen_ctx = ctx;
+    sink->level[sink->count] = level;
+    sink->text[sink->count] = message;
+    sink->count++;
+}
+
 void setUp(void) {}
 
 void tearDown(void) {}
@@ -313,6 +350,68 @@ static void test_bus_contracts_use_their_own_context(void) {
     TEST_ASSERT_EQUAL_INT(1, spi_state.transfers);
 }
 
+static void test_time_ctx_reaches_callback(void) {
+    fake_clock_t clock = {1234u, NULL, 0};
+    const port_time_t time = { fake_clock_now_ms, &clock };
+
+    TEST_ASSERT_EQUAL_UINT32(1234u, port_time_now_ms(&time));
+    TEST_ASSERT_EQUAL_PTR(&clock, clock.seen_ctx);
+    TEST_ASSERT_EQUAL_INT(1, clock.calls);
+}
+
+static void test_log_receives_level_and_message(void) {
+    captured_log_t sink = {0};
+    const port_log_t log = { capture_log, &sink };
+
+    port_log_write(&log, PORT_LOG_ERROR, "error");
+    port_log_write(&log, PORT_LOG_WARN, "warn");
+    port_log_write(&log, PORT_LOG_INFO, "info");
+    port_log_write(&log, PORT_LOG_DEBUG, "debug");
+
+    TEST_ASSERT_EQUAL_INT(4, sink.count);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_ERROR, sink.level[0]);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_WARN, sink.level[1]);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_INFO, sink.level[2]);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_DEBUG, sink.level[3]);
+    TEST_ASSERT_EQUAL_STRING("error", sink.text[0]);
+    TEST_ASSERT_EQUAL_STRING("warn", sink.text[1]);
+    TEST_ASSERT_EQUAL_STRING("info", sink.text[2]);
+    TEST_ASSERT_EQUAL_STRING("debug", sink.text[3]);
+}
+
+static void test_log_null_sink_is_safe(void) {
+    const port_log_t empty = { NULL, NULL };
+
+    port_log_write(&empty, PORT_LOG_INFO, "discarded");
+    port_log_write(NULL, PORT_LOG_INFO, "discarded");
+
+    TEST_ASSERT_TRUE(1);
+}
+
+static void test_log_ctx_reaches_the_callback(void) {
+    captured_log_t sink = {0};
+    const port_log_t log = { capture_log, &sink };
+
+    port_log_write(&log, PORT_LOG_INFO, "ctx");
+
+    TEST_ASSERT_EQUAL_INT(1, sink.count);
+    TEST_ASSERT_EQUAL_PTR(&sink, sink.seen_ctx);
+}
+
+static void test_status_values_are_stable(void) {
+    TEST_ASSERT_EQUAL_INT(0, PORT_OK);
+    TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_TIMEOUT);
+    TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_IO);
+    TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_INVALID_ARG);
+    TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_NOT_SUPPORTED);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_TIMEOUT, PORT_ERR_IO);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_TIMEOUT, PORT_ERR_INVALID_ARG);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_TIMEOUT, PORT_ERR_NOT_SUPPORTED);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_IO, PORT_ERR_INVALID_ARG);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_IO, PORT_ERR_NOT_SUPPORTED);
+    TEST_ASSERT_NOT_EQUAL(PORT_ERR_INVALID_ARG, PORT_ERR_NOT_SUPPORTED);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_gpio_ctx_reaches_every_callback);
@@ -325,5 +424,10 @@ int main(void) {
     RUN_TEST(test_spi_transfer_copies_without_allocation);
     RUN_TEST(test_spi_write_records_the_transmitted_bytes);
     RUN_TEST(test_bus_contracts_use_their_own_context);
+    RUN_TEST(test_time_ctx_reaches_callback);
+    RUN_TEST(test_log_receives_level_and_message);
+    RUN_TEST(test_log_null_sink_is_safe);
+    RUN_TEST(test_log_ctx_reaches_the_callback);
+    RUN_TEST(test_status_values_are_stable);
     return UNITY_END();
 }
