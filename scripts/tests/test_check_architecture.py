@@ -485,5 +485,63 @@ class ConfigRuleTests(FixtureBase):
         self.assert_clean(root)
 
 
+    def test_alias_does_not_mask_the_linked_adapter(self):
+        # CR-01: `port=` renaming the Arduino adapter used to satisfy the
+        # closure rule while the environment never linked `lib/port`.
+        root = self.make_tree()
+        (root / "homeworks" / "1_1-example" / "platformio.ini").write_text(
+            "[env:esp32s3]\n"
+            "platform = espressif32\n"
+            "lib_deps =\n"
+            "    port=symlink://../../lib/arduino\n"
+            "    common=symlink://../../lib/common\n",
+            encoding="utf-8",
+        )
+        self.assert_violation(root, "config", "must also list 'port'")
+
+    def test_alias_to_an_adapter_with_a_real_port_passes(self):
+        # The other direction of CR-01: a legitimate alias must not be rejected.
+        root = self.make_tree()
+        (root / "homeworks" / "1_1-example" / "platformio.ini").write_text(
+            "[env:esp32s3_arduino]\n"
+            "platform = espressif32\n"
+            "lib_deps =\n"
+            "    hw=symlink://../../lib/arduino\n"
+            "    port=symlink://../../lib/port\n"
+            "    common=symlink://../../lib/common\n",
+            encoding="utf-8",
+        )
+        self.assert_clean(root)
+
+    def test_target_env_named_like_a_test_is_still_checked(self):
+        # WR-01: the name alone must not exempt a firmware environment.
+        root = self.make_tree()
+        (root / "homeworks" / "1_1-example" / "platformio.ini").write_text(
+            "[env:integration_test]\n"
+            "platform = espressif32\n"
+            "lib_deps =\n"
+            "    port=symlink://../../lib/port\n"
+            "    arduino=symlink://../../lib/arduino\n"
+            "    espidf=symlink://../../lib/espidf\n",
+            encoding="utf-8",
+        )
+        self.assert_violation(root, "config", "more than one adapter")
+
+    def test_extends_target_merely_containing_native_does_not_exempt_host(self):
+        # WR-03: only a `native`-prefixed target section counts as native.
+        root = self.make_tree()
+        (root / "homeworks" / "1_1-example" / "platformio.ini").write_text(
+            "[env:esp32s3]\n"
+            "extends = base_native_helpers\n"
+            "lib_deps =\n"
+            "    port=symlink://../../lib/port\n"
+            "    host=symlink://../../lib/host\n"
+            "[env:base_native_helpers]\n"
+            "framework = arduino\n",
+            encoding="utf-8",
+        )
+        self.assert_violation(root, "config", "'host' in a non-native environment")
+
+
 if __name__ == "__main__":
     unittest.main()

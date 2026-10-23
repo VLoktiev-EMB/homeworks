@@ -435,7 +435,11 @@ def _option(parser, section, key, seen=frozenset()):
             value = _option(parser, candidate, key, seen)
             if value:
                 return value
-        if key == "platform" and "native" in target.lower():
+        # `native` as a PREFIX, not a substring: the shared environment is
+        # conventionally `native_unity`, but a target section named
+        # `base_native_helpers` used to be classified native too, which let
+        # `lib/host` into a firmware environment (code review WR-03, 03-REVIEW.md).
+        if key == "platform" and re.match(r"native(?:$|_)", target.lower()):
             return "native"
     return ""
 
@@ -463,6 +467,12 @@ def _dep_names(value):
     Handles the multi-line shape configparser returns as one string, an
     optional `name=` alias, an `@version` suffix, and a `symlink://` path whose
     library name is its last directory segment.
+
+    The alias in `name=spec` is NOT the linked library: PlatformIO takes the
+    dependency from the spec on the right, and the alias only renames it in the
+    environment. Reading the alias therefore let `port=symlink://.../lib/arduino`
+    pass as "port" while actually linking the Arduino adapter (code review
+    CR-01, 03-REVIEW.md). The spec decides.
     """
     names = set()
     for raw_line in value.replace("\r", "\n").splitlines():
@@ -470,7 +480,7 @@ def _dep_names(value):
         if not entry:
             continue
         if "=" in entry:
-            entry = entry.split("=", 1)[0].strip()
+            entry = entry.split("=", 1)[1].strip()
         if entry.startswith("symlink://"):
             entry = entry.rstrip("/").rsplit("/", 1)[-1]
         entry = entry.split("@", 1)[0].strip()
@@ -507,13 +517,19 @@ def check_platformio(root):
             if not section.startswith("env:"):
                 continue
             name = section[len("env:") :]
-            if TEST_ENV_NAME.search(name.lower()):
-                continue
-            environment_count += 1
 
             deps = _dep_names(_option(parser, section, "lib_deps"))
             platform = _option(parser, section, "platform")
-            native = "native" in platform.lower()
+            native = platform.lower() == "native"
+
+            # A test-like NAME exempts an environment only when it really is a
+            # host build. An env named `integration_test` on a target platform
+            # is a firmware environment and must satisfy every rule; exempting
+            # it on the name alone let two adapters and `lib/host` pass
+            # (code review WR-01, 03-REVIEW.md).
+            if native and TEST_ENV_NAME.search(name.lower()):
+                continue
+            environment_count += 1
 
             adapters = deps & ADAPTERS
             if len(adapters) > 1:
