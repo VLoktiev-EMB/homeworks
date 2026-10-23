@@ -64,11 +64,20 @@ IGNORED = {
         ".ruff_cache/x",
     ],
     "secrets": [".env", ".env.local", "secrets.yaml", "key.pem", "cert.key"],
-    "os and editor junk": [".DS_Store", "Thumbs.db", "x.swp", ".idea/misc.xml"],
+    "os and editor junk": [
+        ".DS_Store",
+        "Thumbs.db",
+        "x.swp",
+        ".idea/misc.xml",
+        ".vscode/settings.json",
+        "homeworks.code-workspace",
+    ],
     # Videos are linked from reports, never committed (D-21).
     "video containers": ["video.mp4", "clip.mov", "a.avi", "b.webm", "c.mkv"],
     # Planning artefacts stay tracked; the retrieval cache is an input, not a record.
     "research cache": [".planning/research/.cache/deadbeef.json"],
+    # Isolated executor checkouts are transient build state, not repository content.
+    "agent worktrees": [".claude/worktrees/agent-abc123/README.md"],
 }
 
 # Paths that must remain visible to git. Over-broad patterns are as damaging as
@@ -80,6 +89,9 @@ VISIBLE = [
     "docs/decisions/README.md",
     ".planning/ROADMAP.md",
     "homeworks/1_3-police-flasher/README.md",
+    # The canonical rulebook is tracked; only .claude/worktrees/ may be ignored,
+    # never the whole .claude/ directory.
+    ".claude/CLAUDE.md",
 ]
 
 

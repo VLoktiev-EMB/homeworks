@@ -30,6 +30,11 @@ secrets.*
 Thumbs.db
 *.swp
 .idea/
+.vscode/
+*.code-workspace
+
+# Agent worktrees (isolated executor checkouts; .claude/CLAUDE.md stays tracked)
+.claude/worktrees/
 
 # Video (linked, never committed — D-21)
 *.mp4
