@@ -18,7 +18,12 @@ artifact — code, evidence, and report — that can be understood and verified 
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Pinned PlatformIO toolchain — Core 6.2.0 and `platformio/espressif32` 8.0.0 build the
+  ESP32-S3-DevKitC-1 N16R8 target (native, Arduino and ESP-IDF) with 16 MB flash and octal
+  PSRAM proven from build artifacts — Phase 2 (FOUND-09)
+- ✓ Shared libraries consumed through `lib_deps = <name>=symlink://../../lib/<name>` with one
+  `library.json` per library; `platformio.shared.ini` is hand-authored in Phase 2 and its
+  generator remains Phase 5 — Phase 2 (ARCH-04)
 
 ### Active
 
@@ -231,7 +236,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Arduino uses idiomatic C++; ESP-IDF uses C11; shared logic is C | Idiomatic per framework while keeping logic portable | — Pending |
 | Thin core + port + adapters | Reuse without building a shadow framework | — Pending |
 | No universal HAL | Hardware abstractions leak; the course must teach framework APIs | — Pending |
-| Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | — Pending |
+| Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | ✓ Phase 2 — ADR-0007; all three environments resolve the symlinked libraries |
 | Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | — Pending |
 | esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | — Pending |
 | Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | — Pending |
@@ -250,7 +255,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Wokwi primary, Velxio fallback, Renode for STM32, Fritzing with attribution | Research shows Wokwi has the strongest ESP32 fidelity and CI; Velxio self-host excludes STM32 | — Pending |
 | MkDocs Material 9.7.7 with Zensical-compatible config | Stable today; re-evaluate in Q1 2027 before the 2027-05-05 EOL | — Pending |
 | Git LFS only for large non-diffable binaries | Pages cannot serve LFS objects; LFS bandwidth is consumed by checkouts | — Pending |
-| Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | — Pending |
+| Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | ✓ Phase 2 — smoke-tested; 16 MB and octal PSRAM proven from `sdkconfig.json` and image headers |
 | Pilot 1.3 with all extensions in guided mode | Validates the full workflow before scaling to 30+ homeworks | — Pending |
 | Seven thin skills, two fully implemented | Complete inventory without premature design | — Pending |
 | Four deterministic scripts | Guarantees consistency for scaffolding, index, workspace, and validation | — Pending |
@@ -278,4 +283,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-23 after research*
+*Last updated: 2026-10-23 after Phase 2*
