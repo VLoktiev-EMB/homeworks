@@ -68,6 +68,9 @@ Thumbs.db
 .planning/state.json
 .planning/milestone.lock
 
+# Per-run reviewer diagnostics preserved by /gsd-review (#3352); regenerable, never committed
+.review-diagnostics/
+
 # Generated knowledge-graph output (regenerable)
 .planning/graphs/
 graphify-out/
