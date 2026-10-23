@@ -55,7 +55,9 @@ class PolicyError(Exception):
 def _run(argv, stdin=None):
     """Run a command with list arguments; never a shell string."""
     try:
-        return subprocess.run(argv, input=stdin, capture_output=True, text=True)
+        return subprocess.run(
+            argv, input=stdin, capture_output=True, text=True, check=False
+        )
     except OSError as exc:
         raise PolicyError(f"cannot execute {argv[0]}: {exc}") from exc
 
