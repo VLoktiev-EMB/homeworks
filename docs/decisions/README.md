@@ -27,5 +27,6 @@ explain why it does it that way.
 | 0004 | License and attribution | accepted | 2026-10-23 |
 | 0005 | Asset and LFS policy | accepted | 2026-10-23 |
 | 0006 | Public commit identity | accepted | 2026-10-23 |
+| 0007 | Symlinked shared libraries via lib_deps and library.json | accepted | 2026-10-23 |
 
-Next number: **0007** (reserved for the Phase 2 symlink decision).
+Next number: **0008**.
