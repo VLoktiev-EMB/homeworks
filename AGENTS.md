@@ -21,8 +21,8 @@ Run from the repository root, in this order, before opening a pull request.
 | Step | Command | Purpose |
 |------|---------|---------|
 | 1 | `/gsd-fast`, `/gsd-quick`, `/gsd-debug`, or `/gsd-execute-phase` | Route the change through the GSD workflow. |
-| 2 | `pio run` | Build the affected PlatformIO environment. |
-| 3 | `pio test -e native` | Run firmware-side native tests, once `homeworks/` exists (Phase 2). |
+| 2 | `pio run -d <project>` | Build the affected PlatformIO environment from its own project directory. |
+| 3 | `pio test -d tests -e native` | Run the shared-library Unity suite from the top-level `tests/` project, without a target toolchain. |
 | 4 | `python3 -m unittest discover -s scripts/tests -v` | Run the repository test suite. |
 | 5 | `python3 scripts/check_policy.py --check` | Prove live GitHub policy still matches `policy/`. |
 | 6 | `python3 scripts/check_pr_templates.py` | Prove the three pull-request templates share one header. |
