@@ -44,7 +44,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The MIT license, `NOTICE`, LFS policy, and the first MADR ADRs exist; infrastructure decisions are recorded under `docs/decisions/`.
   5. `AGENTS.md` is the canonical rulebook with enforcement tags and short examples, and `.claude/CLAUDE.md` imports it without duplicating rules.
 
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans executed
 **Wave 1**
 - [x] 01-01-PLAN.md — Policy as code: ruleset/settings JSON, check_policy.py, environment bootstrap, live hardening (tracer)
 
@@ -57,7 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 01-08-PLAN.md — tag_homework.sh with precondition gates
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 01-06-PLAN.md — AGENTS.md rulebook, thin CLAUDE.md adapter, foundation README
+- [x] 01-06-PLAN.md — AGENTS.md rulebook, thin CLAUDE.md adapter, foundation README
 
 ### Phase 2: Toolchain Truth
 
@@ -203,7 +203,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repository Foundation and Policy Gate | 7/8 | In Progress | - |
+| 1. Repository Foundation and Policy Gate | 8/8 | In Progress | - |
 | 2. Toolchain Truth | 0/TBD | Not started | - |
 | 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
