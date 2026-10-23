@@ -46,3 +46,15 @@ repos:
           echo "$tracked" >&2; exit 1; fi'
         pass_filenames: false
         always_run: true
+
+      # `ARCH-05` needs the dependency rule to fail locally, not only under
+      # test. The `files` pattern names the checker and its allowlist as well as
+      # the scanned tree on purpose: an edit to the rule set or to a policy entry
+      # must be gated too, otherwise an invalid allowlist could be committed
+      # without ever running the scan.
+      - id: check-architecture
+        name: shared-library dependency rule
+        language: system
+        entry: python3 scripts/check_architecture.py
+        files: ^(lib/|homeworks/|scripts/architecture/|scripts/check_architecture\.py)
+        pass_filenames: false
