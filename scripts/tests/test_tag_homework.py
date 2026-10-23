@@ -3,14 +3,18 @@
 The script is the only guard on the human-created ``hw/<id>`` tag: no tag
 ruleset exists, so a duplicate or a moved tag can only be prevented by
 checking every D-11 precondition before anything is created. These tests run
-the real script against a throwaway git repository in a temp directory and
-never touch the network — the documented ``TAG_HOMEWORK_SKIP_REMOTE`` override
-skips the origin tag lookup and the merged-PR check.
+the real script against a throwaway git repository in a temp directory with a
+local bare remote as ``origin`` — never the network. The documented
+``TAG_HOMEWORK_SKIP_REMOTE`` override skips the fetch, the origin tag lookup,
+and the merged-PR check.
 
 Covered cases:
   * an already-existing tag is refused and left exactly as it was;
   * invalid IDs are rejected before any tag exists;
   * a valid unused ID without a homework directory is refused;
+  * a homework present only in the working tree, not at the tag target commit,
+    is refused — the tag must never point at a commit without the homework;
+  * a fully satisfied run creates the tag at ``origin/main`` and pushes it once;
   * the script source contains no forced tag or push invocation.
 """
 
@@ -57,10 +61,28 @@ class TagHomeworkTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory(prefix="tag-homework-")
         self.addCleanup(self._tmp.cleanup)
-        self.fixture = Path(self._tmp.name)
+        base = Path(self._tmp.name)
+
+        # A local bare repository stands in for origin. The tag target is a
+        # remote-tracking commit, so every fixture needs one; a local path
+        # never touches the network.
+        self.remote = base / "origin.git"
+        subprocess.run(
+            ["git", "init", "--bare", "--quiet", str(self.remote)],
+            cwd=str(base),
+            env=self._clean_env(),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        self.fixture = base / "work"
+        self.fixture.mkdir()
         self._git("init", "--quiet")
         self._git("symbolic-ref", "HEAD", "refs/heads/main")
+        self._git("remote", "add", "origin", str(self.remote))
         self._git("commit", "--allow-empty", "--no-gpg-sign", "-m", "fixture root")
+        self._publish()
 
     # -- helpers ---------------------------------------------------------
 
@@ -87,12 +109,18 @@ class TagHomeworkTest(unittest.TestCase):
         except OSError as exc:  # pragma: no cover - defensive
             self.fail(f"cannot read {SCRIPT}: {exc}")
 
+    def _publish(self) -> None:
+        """Push the current commit to origin/main and point origin/HEAD at it."""
+        self._git("push", "--quiet", "origin", "HEAD:refs/heads/main")
+        self._git("remote", "set-head", "origin", "main")
+
     def _add_homework(self, homework_id: str) -> None:
         homework = self.fixture / "homeworks" / homework_id
         homework.mkdir(parents=True)
         (homework / "README.md").write_text("# homework\n", encoding="utf-8")
         self._git("add", "homeworks")
         self._git("commit", "--no-gpg-sign", "-m", f"add {homework_id}")
+        self._publish()
 
     def _run(self, *args: str) -> subprocess.CompletedProcess[str]:
         self._require_script()
@@ -178,6 +206,53 @@ class TagHomeworkTest(unittest.TestCase):
             "stderr must carry a FAIL line naming the missing directory",
         )
         self.assertEqual(self._tags(), [], "no tag may be created when the check fails")
+
+    def test_homework_absent_from_the_tag_target_is_refused(self) -> None:
+        """A homework on hw/<id> only must not produce a tag on origin/main."""
+        self._git("checkout", "--quiet", "-b", f"hw/{HOMEWORK_ID}")
+        homework = self.fixture / "homeworks" / HOMEWORK_ID
+        homework.mkdir(parents=True)
+        (homework / "README.md").write_text("# homework\n", encoding="utf-8")
+        self._git("add", "homeworks")
+        self._git("commit", "--no-gpg-sign", "-m", f"add {HOMEWORK_ID}")
+
+        target = self._git("rev-parse", "origin/main").stdout.strip()
+
+        result = self._run(HOMEWORK_ID)
+
+        # The working tree does contain the homework; only the target commit
+        # does not, so a working-tree check would wrongly pass here.
+        self.assertTrue(homework.is_dir(), "fixture must hold the directory")
+        self.assertEqual(result.returncode, 1, "a failed precondition exits 1")
+        self.assertRegex(
+            result.stderr,
+            r"(?m)^FAIL\b.*homeworks/" + re.escape(HOMEWORK_ID),
+            "stderr must carry a FAIL line naming the absent homework",
+        )
+        self.assertIn(
+            target,
+            result.stderr,
+            "the FAIL line must name the commit the tag would have pointed at",
+        )
+        self.assertEqual(
+            self._tags(), [], "no tag may be created when the check fails"
+        )
+
+    def test_tag_is_created_at_the_default_branch_commit(self) -> None:
+        """A satisfied run tags origin/main and pushes the tag exactly once."""
+        self._add_homework(HOMEWORK_ID)
+        target = self._git("rev-parse", "origin/main").stdout.strip()
+
+        result = self._run(HOMEWORK_ID)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self._tag_commit(f"hw/{HOMEWORK_ID}"), target)
+        remote_tags = self._git("ls-remote", "--tags", "origin").stdout
+        self.assertEqual(
+            remote_tags.count(f"refs/tags/hw/{HOMEWORK_ID}"),
+            1,
+            f"the tag must be pushed exactly once: {remote_tags!r}",
+        )
 
     def test_source_has_no_forced_tag_or_push(self) -> None:
         """The script can never overwrite or move a tag."""
