@@ -19,8 +19,8 @@ typedef enum port_log_level {
    on. This is the documented exception beside the time read.
 
    The consumer owns the interface, the adapter owns the state behind `ctx`,
-   and an adapter factory returns this struct by value. A NULL sink — a zeroed
-   `port_log_t`, or a NULL `port_log_t *` — discards output, so logging stays
+   and an adapter factory returns this struct by value. A NULL sink - a zeroed
+   `port_log_t`, or a NULL `port_log_t *` - discards output, so logging stays
    optional at the composition root.
 
    This contract does not name a framework type, does not own state, does not
