@@ -15,3 +15,20 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1024]
+
+  # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
+  # so the ignore rules alone do not enforce "generated files are never
+  # committed" (AGENTS.md). This hook asks git which TRACKED paths its own
+  # ignore rules exclude, and fails if any of the declared generated paths is
+  # among them.
+  - repo: local
+    hooks:
+      - id: no-generated-files
+        name: generated files are never committed
+        language: system
+        entry: >-
+          bash -c 'tracked=$(git ls-files -ci --exclude-standard --
+          compile_commands.json site .pio); if [ -n "$tracked" ]; then
+          echo "tracked generated paths:" >&2; echo "$tracked" >&2; exit 1; fi'
+        pass_filenames: false
+        always_run: true

@@ -152,7 +152,8 @@ Good:  rotate the key, remove it with a forward commit, document the incident.
   GitHub Pages cannot serve LFS content.
 - **[MUST]** **[ENFORCED: pre-commit]** Generated files are never committed:
   `compile_commands.json`, the `site/` build, and build output such as `.pio/` are
-  covered by `.gitignore`.
+  listed in `.gitignore`, and the `no-generated-files` pre-commit hook fails when any
+  of them is tracked anyway — `.gitignore` alone cannot stop `git add -f`.
 
 ### Licensing and identity
 
