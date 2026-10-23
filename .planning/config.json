@@ -99,5 +99,10 @@
   "graphify": {
     "enabled": true,
     "auto_update": true
+  },
+  "review": {
+    "models": {
+      "codex": "glm-5.3-flash:cloud"
+    }
   }
 }
