@@ -104,6 +104,21 @@
     "models": {
       "codex": "glm-5.3-flash:cloud",
       "agy": "gemini-3-flash"
-    }
+    },
+    "reviewer_instances": {
+      "codex-glm": {
+        "cli": "codex",
+        "model": "glm-5.3-flash:cloud"
+      },
+      "codex-beam": {
+        "cli": "codex",
+        "model": "beam:cloud"
+      }
+    },
+    "default_reviewers": [
+      "codex-glm",
+      "codex-beam",
+      "agy"
+    ]
   }
 }
