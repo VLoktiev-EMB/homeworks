@@ -14,25 +14,25 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [ ] **FOUND-01**: The repository contains one independent PlatformIO project per
       homework under `homeworks/<id>/`, with its own `platformio.ini`, `src/`, `include/`,
       `test/`, `assets/`, `README.md`, `task.md`, and `homework.yaml`.
-- [ ] **FOUND-02**: Homework IDs follow `module_lesson-name` (for example,
+- [x] **FOUND-02**: Homework IDs follow `module_lesson-name` (for example,
       `1_3-police-flasher`) and remain stable after publication.
-- [ ] **FOUND-03**: `main` is protected; every change reaches it through a branch and a
+- [x] **FOUND-03**: `main` is protected; every change reaches it through a branch and a
       pull request; force-push and published-history rewriting are forbidden.
-- [ ] **FOUND-04**: Commits follow Conventional Commits; pull requests are squash-merged;
+- [x] **FOUND-04**: Commits follow Conventional Commits; pull requests are squash-merged;
       a `hw/<id>` tag is created after merge and the source branch is deleted.
-- [ ] **FOUND-05**: Three pull-request templates exist (`homework`, `infra`, `docs`) with
+- [x] **FOUND-05**: Three pull-request templates exist (`homework`, `infra`, `docs`) with
       a shared header and type-specific Definition of Done checklists.
-- [ ] **FOUND-06**: The repository is MIT-licensed for original work, with a `NOTICE` and
+- [x] **FOUND-06**: The repository is MIT-licensed for original work, with a `NOTICE` and
       attribution for third-party assets; internal course materials and PII are never
       committed.
-- [ ] **FOUND-07**: `gitleaks` runs in pre-commit and over the full history in CI;
+- [x] **FOUND-07**: `gitleaks` runs in pre-commit and over the full history in CI;
       `.gitignore` and `.gitattributes` cover secrets, build output, and generated files.
-- [ ] **FOUND-08**: Git LFS is used only for large non-diffable binaries; site assets
+- [x] **FOUND-08**: Git LFS is used only for large non-diffable binaries; site assets
       remain normal git objects because GitHub Pages cannot serve LFS; videos are linked.
 - [ ] **FOUND-09**: The toolchain is pinned: PlatformIO Core 6.2.0,
       `platformio/espressif32` 8.0.0, and explicit ESP32-S3-DevKitC-1 N16R8 overrides
       (16 MB flash, octal PSRAM).
-- [ ] **FOUND-10**: `AGENTS.md` is the canonical rulebook (up to ~300 lines) with
+- [x] **FOUND-10**: `AGENTS.md` is the canonical rulebook (up to ~300 lines) with
       enforcement tags, short examples, and an agent quick-start; `.claude/CLAUDE.md`
       imports it.
 
@@ -135,7 +135,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
       architecture check) and a `changes` job that computes the affected matrix.
 - [ ] **TOOL-06**: CI builds and tests changed projects on every pull request and exposes
       a single required `gate` check; nightly runs the full build and unit-test matrix.
-- [ ] **TOOL-07**: Infrastructure decisions are recorded as MADR ADRs in
+- [x] **TOOL-07**: Infrastructure decisions are recorded as MADR ADRs in
       `docs/decisions/`; homework assumptions live in the report with impact-if-wrong and
       validation.
 - [ ] **TOOL-08**: A self-audit rubric maps the report, BOM, calculations, safety,
@@ -225,15 +225,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 | Phase 4 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
-| FOUND-07 | Phase 1 | Pending |
-| FOUND-08 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
+| FOUND-07 | Phase 1 | Complete |
+| FOUND-08 | Phase 1 | Complete |
 | FOUND-09 | Phase 2 | Pending |
-| FOUND-10 | Phase 1 | Pending |
+| FOUND-10 | Phase 1 | Complete |
 | META-01 | Phase 4 | Pending |
 | META-02 | Phase 4 | Pending |
 | META-03 | Phase 4 | Pending |
@@ -267,7 +267,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-04 | Phase 6 | Pending |
 | TOOL-05 | Phase 8 | Pending |
 | TOOL-06 | Phase 8 | Pending |
-| TOOL-07 | Phase 1 | Pending |
+| TOOL-07 | Phase 1 | Complete |
 | TOOL-08 | Phase 10 | Pending |
 | FLOW-01 | Phase 9 | Pending |
 | FLOW-02 | Phase 9 | Pending |

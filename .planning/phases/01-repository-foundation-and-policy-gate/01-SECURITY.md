@@ -51,6 +51,7 @@ created: "2026-10-23"
 | T-1-12 | Repudiation | `docs/decisions/` index | low | mitigate | `test_adrs.py` enforces sequential numbering and index agreement. Verified: ADR-0001…0005 plus index. | closed |
 | T-1-13 | Information Disclosure | AGENTS.md / README prose | high | mitigate | Handle-only identity rule; no real name, institution, or email. Verified by repo-wide email grep. | closed |
 | T-1-14 | Information Disclosure | ADR prose | high | mitigate | Same handle-only rule across `docs/decisions/`; a no-email test and review. | closed |
+| T-1-15 | Information Disclosure | published commit metadata | high | accept | Three commits on `main` (`57ff7ba`, `e2dd499`, `69c2434`) carry the public account's display name; GitHub writes the profile display name on server-side squash-merge despite a handle identity in the branch commits. Irreversible under the no-rewrite policy. Accepted by ADR-0006; the address remains a handle-based `noreply` address. | closed |
 | T-1-SC | Tampering | third-party packages (pre-commit, reuse, gitleaks, git-lfs) | high | mitigate | Package-legitimacy audit in `01-RESEARCH.md`; exact version pins; no unpinned install path. | closed |
 
 *Status: open · closed · open — below high threshold (non-blocking)*
@@ -66,6 +67,7 @@ created: "2026-10-23"
 | Risk ID | Threat Ref | Rationale | Accepted By | Date |
 |---------|------------|-----------|-------------|------|
 | R-1-01 | T-1-07 | Branch rulesets do not apply to tag refs, so a maintainer with push access can move or delete a `hw/<id>` tag outside `scripts/tag_homework.sh`. Accepted for a single-maintainer repository; ADR-0003 records the trigger to revisit (second maintainer, or a tag-immutability requirement). | VLoktiev-EMB | 2026-10-23 |
+| R-1-02 | T-1-15 | Commits `57ff7ba`, `e2dd499`, and `69c2434` carry the public GitHub account's display name. It was written by GitHub during server-side squash-merge, cannot be removed without rewriting published history (forbidden by the ruleset and `AGENTS.md`), and accompanies only a handle-based `noreply` address. Accepted by ADR-0006; future merges under the same public account are accepted on the same terms. | VLoktiev-EMB | 2026-10-23 |
 
 *Accepted risks do not resurface in future audit runs.*
 
@@ -75,7 +77,7 @@ created: "2026-10-23"
 
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
-| 2026-10-23 | 15 | 15 | 0 | gsd-secure-phase (ASVS L1, grep-depth) |
+| 2026-10-23 | 16 | 16 | 0 | gsd-secure-phase (ASVS L1, grep-depth) |
 
 ---
 

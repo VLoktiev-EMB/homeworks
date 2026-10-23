@@ -1,9 +1,9 @@
 ---
-status: partial
+status: complete
 phase: 01-repository-foundation-and-policy-gate
 source: [01-VERIFICATION.md]
 started: 2026-10-23T17:36:56Z
-updated: 2026-10-23T18:07:30Z
+updated: 2026-10-23T18:09:33.725Z
 ---
 
 ## Current Test
@@ -22,9 +22,8 @@ result: pass
 
 ### 3. Real-GitHub tag creation (FOUND-04)
 expected: After a homework pull request is merged into the default branch, `scripts/tag_homework.sh <id>` passes its merged-PR gate via `gh`, creates the tag at `origin/main`, and pushes it exactly once.
-result: blocked
-blocked_by: prior-phase
-reason: "blocked — no merged homework PR yet"
+result: skipped
+reason: "Deferred follow-up: requires a merged homework pull request; verify on the first homework PR (Phase 11)"
 
 ### 4. First CI execution of the security workflow
 expected: `.github/workflows/security.yml` runs on a GitHub runner; the gitleaks full-history job passes with redacted output and the reuse lint job reports compliance.
@@ -50,7 +49,13 @@ total: 7
 passed: 6
 issues: 0
 pending: 0
-skipped: 0
-blocked: 1
+skipped: 1
+blocked: 0
 
 ## Gaps
+
+## Deferred Follow-Ups
+
+- test: 3
+  idea: "Verify real-GitHub tag creation with scripts/tag_homework.sh on the first merged homework pull request"
+  deferred_at: 2026-10-23

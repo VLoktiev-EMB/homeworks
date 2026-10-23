@@ -18,7 +18,7 @@ artifact before scaling to 30+ homeworks.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Repository Foundation and Policy Gate** - Public history, licensing, asset, and contribution rules that cannot be repaired later
+- [x] **Phase 1: Repository Foundation and Policy Gate** - Public history, licensing, asset, and contribution rules that cannot be repaired later (completed 2026-10-23)
 - [ ] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries
 - [ ] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate
 - [ ] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework`
@@ -44,7 +44,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The MIT license, `NOTICE`, LFS policy, and the first MADR ADRs exist; infrastructure decisions are recorded under `docs/decisions/`.
   5. `AGENTS.md` is the canonical rulebook with enforcement tags and short examples, and `.claude/CLAUDE.md` imports it without duplicating rules.
 
-**Plans:** 8/8 plans executed
+**Plans:** 8/8 plans complete
 **Wave 1**
 - [x] 01-01-PLAN.md — Policy as code: ruleset/settings JSON, check_policy.py, environment bootstrap, live hardening (tracer)
 
@@ -203,7 +203,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repository Foundation and Policy Gate | 8/8 | In Progress | - |
+| 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 0/TBD | Not started | - |
 | 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
