@@ -26,5 +26,6 @@ explain why it does it that way.
 | 0003 | Git policy and protected main branch | accepted | 2026-10-23 |
 | 0004 | License and attribution | accepted | 2026-10-23 |
 | 0005 | Asset and LFS policy | accepted | 2026-10-23 |
+| 0006 | Public commit identity | accepted | 2026-10-23 |
 
-Next number: **0006** (reserved for the Phase 2 symlink decision).
+Next number: **0007** (reserved for the Phase 2 symlink decision).
