@@ -1,42 +1,42 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 3
-current_phase_name: Shared Core and Dependency Rule
-status: "Phase 02 shipped — PR #5"
-stopped_at: Phase 02 complete, ready to plan Phase 3
-last_updated: "2026-10-23T20:12:21.764Z"
-last_activity: 2026-10-23
-state_head: 5e28d3af8962fd377cea59cc99a499980facf74c
+current_phase: 4
+current_phase_name: Metadata Contract and Scaffolding
+status: "Phase 03 shipped — PR #6"
+stopped_at: Phase 03 complete, ready to plan Phase 4
+last_updated: "2026-10-23T23:27:42.025Z"
+last_activity: 2026-10-24
+state_head: 954cf76dc0d13bdcb50e5026daeca3f899c5a3ed
 progress:
   total_phases: 11
-  completed_phases: 2
-  total_plans: 13
-  completed_plans: 13
-  percent: 18
+  completed_phases: 3
+  total_plans: 22
+  completed_plans: 22
+  percent: 27
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-23)
+See: .planning/PROJECT.md (updated 2026-10-24)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 3 — Shared Core and Dependency Rule
+**Current focus:** Phase 04 — Metadata Contract and Scaffolding
 
 ## Current Position
 
-Phase: 3 — Shared Core and Dependency Rule
+Phase: 4 — Metadata Contract and Scaffolding
 Plan: Not started
-Status: Phase 02 shipped — PR #5
-Last activity: 2026-10-23
+Status: Phase 03 shipped — PR #6
+Last activity: 2026-10-24
 
-Progress: [██░░░░░░░░] 18%
+Progress: [███░░░░░░░] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 22
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -46,6 +46,7 @@ Progress: [██░░░░░░░░] 18%
 |-------|-------|-------|----------|
 | 01 | 8 | - | - |
 | 02 | 5 | - | - |
+| 03 | 9 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -68,6 +69,11 @@ Recent decisions affecting current work:
 - Research findings adopted: `lib_deps = <name>=symlink://...` over `lib_extra_dirs`; clang-format 120 documented as an ESP-IDF approximation; esp-clangd; Wokwi primary with Velxio fallback; CI simulation only after the Phase 7 spike; MkDocs Material 9.7.7 with Zensical-compatible config.
 - Simulation spike (Phase 7) is the evidence gate: no CI simulation and no simulation-based report claim before ADR-0004.
 - Documentation site is folded into Phase 5 (generated views) rather than a standalone single-requirement phase.
+- Phase 3: the shared core is five independent libraries (`port`, `common`, `host`, `arduino`, `espidf`) with 21 public headers; only `common → port` is allowed downward and the checker is wired into pre-commit.
+- Phase 3: `void *ctx` carries caller-owned state and there is no global mutable state in `port`; host fakes return the real contract types so signature drift is a compile error.
+- Phase 3: I2C/SPI framework adapters are deferred (ADR-0008 D-08); the post-Phase-3 target-compile gate is owned by Phase 4 SC2 and Phase 8 SC2.
+- Phase 3: the native gate is 73 Unity cases in 7 suites with 20 identical digests; `RUNS = 20` is a constant and every subprocess has a timeout.
+- Phase 3: the architecture allowlist stays empty; any future entry must name a path, a known rule and a non-empty reason, and a stale entry fails the run.
 
 ### Pending Todos
 
@@ -79,15 +85,12 @@ None yet.
   (user, 2026-10-23). No Phase 1 sign-off blocker remains.
 - STM32 board models are unconfirmed; Renode/Wokwi STM32 paths are deferred to v2 until the
   course reaches STM32.
-- **[Phase 2 carry-forward, CR-01]** `platformio.shared.ini` sets
-  `board_build.partitions = default_16MB.csv`, which PlatformIO resolves relative to the
-  project directory; the only copy lives in `homeworks/0_0-toolchain-smoke/`, which Phase 3
-  removes. Move the CSV to a permanent location (and add an existence test) before the smoke
-  project is deleted, or every new ESP32 project will fail to build.
-- **[Phase 2 carry-forward, WR-01..WR-04]** Tests in `scripts/tests/test_pio_scripts.py`
-  hard-read the temporary smoke project; ADR-0007 over-claims test coverage; library version
-  is duplicated in each `.c`; several broad `.gitignore` patterns can hide authored files.
-  See `.planning/phases/02-toolchain-truth/02-REVIEW.md` and its disposition ledger.
+- Resolved in Phase 3: CR-01 (`partitions/default_16MB.csv` moved to a permanent location with
+  existence tests) and WR-01..WR-04 (smoke-project test reads removed, ADR-0007 corrected,
+  version single-sourced in `library.json`, `.gitignore` narrowed).
+- **[Phase 3 follow-up]** Target compilation of the Arduino and ESP-IDF adapters is deferred;
+  the smoke project was retired by design. Owners: Phase 4 SC2 (a scaffolded project builds
+  immediately) and Phase 8 SC2 (CI builds changed projects).
 
 ## Deferred Items
 
@@ -95,10 +98,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
+| Target compile | Arduino/ESP-IDF adapter target builds (03-06.6) — smoke project retired by design | Deferred to Phase 4 SC2 and Phase 8 SC2 | 2026-10-24 | v1 |
 
 ## Session Continuity
 
-Last session: 2026-10-23T20:09:15.947Z
-Stopped at: Phase 02 complete, ready to plan Phase 3
+Last session: 2026-10-24
+Stopped at: Phase 03 complete, ready to plan Phase 4
 Resume file: None

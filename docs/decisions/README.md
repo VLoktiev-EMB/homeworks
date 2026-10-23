@@ -28,5 +28,6 @@ explain why it does it that way.
 | 0005 | Asset and LFS policy | accepted | 2026-10-23 |
 | 0006 | Public commit identity | accepted | 2026-10-23 |
 | 0007 | Symlinked shared libraries via lib_deps and library.json | accepted | 2026-10-23 |
+| 0008 | Common depends on port; ports are consumer-owned | accepted | 2026-10-24 |
 
-Next number: **0008**.
+Next number: **0009**.

@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Repository Foundation and Policy Gate** - Public history, licensing, asset, and contribution rules that cannot be repaired later (completed 2026-10-23)
 - [x] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries (completed 2026-10-23)
-- [ ] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate
+- [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
 - [ ] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework`
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
@@ -99,7 +99,26 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The suite produces identical results over 20 consecutive runs, using fake time from `lib/host`.
   5. Public headers expose only C contracts with `extern "C"`; no universal HAL or whole-driver abstraction is present.
 
-**Plans**: TBD
+**Plans:** 9/9 plans complete
+
+**Wave 1**
+- [x] 03-01-PLAN.md — Native suite spine: `tests/` project, port time contract, common timing, host fake clock (tracer)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 03-02-PLAN.md — ADR-0008 dependency direction, decisions index, runnable quick-start command
+- [x] 03-03-PLAN.md — Port contracts for GPIO, I2C, SPI and logging (tracer: GPIO)
+- [x] 03-04-PLAN.md — Common primitives: ring buffer, CRC-16, hex codecs (tracer: ring buffer)
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 03-05-PLAN.md — Host doubles for GPIO, I2C, SPI and logging (tracer: GPIO)
+- [x] 03-06-PLAN.md — Arduino and ESP-IDF adapters for time, GPIO and logging (tracer: Arduino time)
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 03-07-PLAN.md — Phase 2 carry-forward: partitions move, smoke-project deletion, stub retirement, manifests 0.2.0
+
+**Wave 5** *(blocked on Wave 4)*
+- [x] 03-08-PLAN.md — `check_architecture.py`, allowlist, header contract suite, pre-commit hook (tracer: checker core)
+- [x] 03-09-PLAN.md — Native purity and 20-run determinism proofs (tracer: purity)
 
 ### Phase 4: Metadata Contract and Scaffolding
 
@@ -220,7 +239,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 |-------|----------------|--------|-----------|
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
-| 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
+| 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
