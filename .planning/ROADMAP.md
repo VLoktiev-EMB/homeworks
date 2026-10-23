@@ -99,7 +99,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The suite produces identical results over 20 consecutive runs, using fake time from `lib/host`.
   5. Public headers expose only C contracts with `extern "C"`; no universal HAL or whole-driver abstraction is present.
 
-**Plans:** 6/9 plans executed
+**Plans:** 7/9 plans executed
 
 **Wave 1**
 - [x] 03-01-PLAN.md — Native suite spine: `tests/` project, port time contract, common timing, host fake clock (tracer)
@@ -114,7 +114,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 03-06-PLAN.md — Arduino and ESP-IDF adapters for time, GPIO and logging (tracer: Arduino time)
 
 **Wave 4** *(blocked on Wave 3)*
-- [ ] 03-07-PLAN.md — Phase 2 carry-forward: partitions move, smoke-project deletion, stub retirement, manifests 0.2.0
+- [x] 03-07-PLAN.md — Phase 2 carry-forward: partitions move, smoke-project deletion, stub retirement, manifests 0.2.0
 
 **Wave 5** *(blocked on Wave 4)*
 - [ ] 03-08-PLAN.md — `check_architecture.py`, allowlist, header contract suite, pre-commit hook (tracer: checker core)
@@ -239,7 +239,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 |-------|----------------|--------|-----------|
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
-| 3. Shared Core and Dependency Rule | 6/9 | In Progress | - |
+| 3. Shared Core and Dependency Rule | 7/9 | In Progress | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
