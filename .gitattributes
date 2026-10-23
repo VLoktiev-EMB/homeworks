@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Git LFS — large, non-diffable binaries only (D-20)
+*.pdf   filter=lfs diff=lfs merge=lfs -text
+*.step  filter=lfs diff=lfs merge=lfs -text
+*.stl   filter=lfs diff=lfs merge=lfs -text
+*.fzz   filter=lfs diff=lfs merge=lfs -text
+*.zip   filter=lfs diff=lfs merge=lfs -text
+*.bin   filter=lfs diff=lfs merge=lfs -text
+*.elf   filter=lfs diff=lfs merge=lfs -text
+*.vcd   filter=lfs diff=lfs merge=lfs -text
+
+# Binary but small and page-served — normal git objects (FOUND-08)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.svg  text eol=lf

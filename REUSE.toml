@@ -1,0 +1,28 @@
+# Single license declaration point for this repository (REUSE 3.3).
+#
+# There are no per-file SPDX headers anywhere in the tree (decision D-15):
+# the split between MIT (code) and CC-BY-4.0 (documentation and homework
+# reports) is declared here once. Do not create a `.reuse/dep5` file; the two
+# formats are mutually exclusive and DEP5 is deprecated.
+#
+# Precedence: reuse-tool evaluates annotations from last to first and the last
+# matching entry wins, so the MIT catch-all must stay first and every
+# CC-BY-4.0 override must follow it.
+#
+# The `.github/PULL_REQUEST_TEMPLATE/*.md` files deliberately stay on the MIT
+# catch-all: they are contribution machinery, not documentation or a report.
+
+version = 1
+
+# Catch-all: original code, scripts, configuration, and every path that no
+# more specific annotation below claims.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2026 VLoktiev-EMB"
+SPDX-License-Identifier = "MIT"
+
+# Documentation, homework reports, and planning artifacts.
+[[annotations]]
+path = ["*.md", "docs/**", "homeworks/**/*.md", ".planning/**"]
+SPDX-FileCopyrightText = "2026 VLoktiev-EMB"
+SPDX-License-Identifier = "CC-BY-4.0"

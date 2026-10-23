@@ -1,0 +1,34 @@
+minimum_pre_commit_version: '4.7.0'
+default_install_hook_types: [pre-commit]
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks          # entry: gitleaks git --pre-commit --redact --staged --verbose
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+
+  # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
+  # so the ignore rules alone do not enforce "generated files are never
+  # committed" (AGENTS.md). This hook asks git which TRACKED paths its own
+  # ignore rules exclude, and fails if any of the declared generated paths is
+  # among them.
+  - repo: local
+    hooks:
+      - id: no-generated-files
+        name: generated files are never committed
+        language: system
+        entry: >-
+          bash -c 'tracked=$(git ls-files -ci --exclude-standard --
+          compile_commands.json site .pio); if [ -n "$tracked" ]; then
+          echo "tracked generated paths:" >&2; echo "$tracked" >&2; exit 1; fi'
+        pass_filenames: false
+        always_run: true

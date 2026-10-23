@@ -1,0 +1,59 @@
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: gitleaks (full history)
+    runs-on: ubuntu-24.04
+    steps:
+      # Pinned to the v7.0.1 commit, not the mutable `v7` major tag: a tag can
+      # be repointed at other code between runs, a commit SHA cannot.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          # Published in gitleaks_8.30.1_checksums.txt and confirmed against
+          # the GitHub release-asset digest for the same upload.
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          curl --proto '=https' --tlsv1.2 -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o "$archive"
+          # Fail closed: a substituted or truncated artifact stops the job
+          # before the binary is unpacked or executed.
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+          install -m 0755 "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
+      - name: Scan full history
+        run: gitleaks git --redact --verbose --log-opts="--all"
+
+  reuse:
+    name: reuse lint (license split)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install reuse
+        env:
+          REUSE_VERSION: 6.2.0
+        run: |
+          set -euo pipefail
+          # An isolated venv keeps the job independent of the runner's system
+          # Python (PEP 668) and pins the exact tool version.
+          python3 -m venv "$RUNNER_TEMP/reuse-venv"
+          "$RUNNER_TEMP/reuse-venv/bin/pip" install --disable-pip-version-check \
+            "reuse==${REUSE_VERSION}"
+          echo "$RUNNER_TEMP/reuse-venv/bin" >> "$GITHUB_PATH"
+      - name: Check the MIT / CC-BY-4.0 split
+        run: reuse --no-multiprocessing lint
