@@ -28,9 +28,8 @@ reason: "blocked — no merged homework PR yet"
 
 ### 4. First CI execution of the security workflow
 expected: `.github/workflows/security.yml` runs on a GitHub runner; the gitleaks full-history job passes with redacted output and the reuse lint job reports compliance.
-result: blocked
-blocked_by: prior-phase
-reason: "no CI executions yet?"
+result: pass
+evidence: "PR #1, run 39998933792: gitleaks (full history) pass 4s; reuse lint (license split) pass 10s"
 
 ### 5. Squash-merge and linear-history behaviour (backstop truths)
 expected: The Phase 1 pull request squash-merges into exactly one commit on `main`; a second pull request touching the same region must update its base before it can merge.
@@ -49,10 +48,10 @@ result: pass
 ## Summary
 
 total: 7
-passed: 4
+passed: 5
 issues: 0
 pending: 0
 skipped: 0
-blocked: 3
+blocked: 2
 
 ## Gaps
