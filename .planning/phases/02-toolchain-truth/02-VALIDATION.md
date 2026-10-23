@@ -23,7 +23,7 @@ created: "2026-10-23"
 | **Config file** | `homeworks/0_0-toolchain-smoke/platformio.ini` |
 | **Quick run command** | `cd homeworks/0_0-toolchain-smoke && pio run -e native` |
 | **Full suite command** | `pio run -e native && pio run -e esp32s3_arduino && pio run -e esp32s3_espidf` |
-| **Estimated runtime** | ~26 s cold (0.27 s + 3.28 s + 22.21 s), < 5 s warm |
+| **Estimated runtime** | ~31 s cold (0.34 s + 5.70 s + 24.73 s, re-measured 2026-10-23), < 5 s warm |
 
 ---
 
@@ -47,12 +47,12 @@ task can silently drop one. `Plan`/`Wave` are filled from the PLAN.md frontmatte
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | TBD | TBD | TBD | FOUND-09 | T-02-01 | Version pins read from registry, not floating | smoke | `pio --version \| grep -q '6.2.0'` | ✅ | ⬜ pending |
 | TBD | TBD | TBD | FOUND-09 | T-02-01 | Platform pin resolves to 8.0.0 | smoke | `pio pkg show platformio/espressif32 \| grep -q '8.0.0'` | ✅ | ⬜ pending |
-| TBD | TBD | TBD | FOUND-09 | T-02-02 | 16 MB flash actually linked (Arduino) | integration | `esptool --chip esp32s3 image-info .pio/build/esp32s3_arduino/firmware.bin \| grep -q 'Flash size: 16MB'` | ✅ | ⬜ pending |
+| TBD | TBD | TBD | FOUND-09 | T-02-02 | 16 MB flash actually linked (Arduino) | integration | `pio pkg exec -p tool-esptool -- esptool --chip esp32s3 image-info .pio/build/esp32s3_arduino/firmware.bin \| grep -q 'Flash size: 16MB'` | ✅ | ⬜ pending |
 | TBD | TBD | TBD | FOUND-09 | T-02-02 | Octal PSRAM selected by the Arduino core | integration | `grep -rq 'qio_opi/include' .pio/build/esp32s3_arduino/compile_commands.json` | ✅ | ⬜ pending |
 | TBD | TBD | TBD | FOUND-09 | T-02-02 | 16 MB + octal PSRAM in ESP-IDF sdkconfig | integration | Python assert on `.pio/build/esp32s3_espidf/config/sdkconfig.json` (`FLASHSIZE_16MB`, `SPIRAM_MODE_OCT`) | ✅ | ⬜ pending |
 | TBD | TBD | TBD | ARCH-04 | T-02-03 | Symlinked libraries actually link (native) | integration | `pio run -e native` then assert LDF graph names `common` and `port` | ✅ | ⬜ pending |
-| TBD | TBD | TBD | ARCH-04 | T-02-03 | CDB contains shared-library sources (Arduino) | integration | Python assert over `compile_commands.json` after `-e esp32s3_arduino` for `lib/common/src/`, `lib/port/src/`, adapter | ✅ | ⬜ pending |
-| TBD | TBD | TBD | ARCH-04 | T-02-03 | CDB contains shared-library sources (ESP-IDF) | integration | Python assert over `compile_commands.json` after `-e esp32s3_espidf` (1074 entries observed) | ✅ | ⬜ pending |
+| TBD | TBD | TBD | ARCH-04 | T-02-03 | CDB contains shared-library sources (Arduino) | integration | Python assert over `compile_commands.json` after `-e esp32s3_arduino` for `lib/common/src/`, `lib/port/src/`, adapter and `src/main.cpp` (64 entries observed) | ✅ | ⬜ pending |
+| TBD | TBD | TBD | ARCH-04 | T-02-03 | CDB contains shared-library sources (ESP-IDF) | integration | Python assert over `compile_commands.json` after `-e esp32s3_espidf` for the same four sources (1070 entries observed) | ✅ | ⬜ pending |
 | TBD | TBD | TBD | ARCH-04 | T-02-03 | Every library declares itself | static | `test -f lib/{common,port,arduino,espidf,host}/library.json` | ✅ | ⬜ pending |
 | TBD | TBD | TBD | D-03 | — | No generator ran; file committed by hand | review | `git log --diff-filter=A -- platformio.shared.ini` shows a hand-authored add, no script | ✅ | ⬜ pending |
 
@@ -65,7 +65,7 @@ task can silently drop one. `Plan`/`Wave` are filled from the PLAN.md frontmatte
 - [ ] A small Python assertion helper for `compile_commands.json` — today the CDB checks are
       one-off shell snippets. A permanent gate is Phase 8 (TOOL-05/TOOL-06); this phase needs
       only enough to prove the criterion twice.
-- [ ] `scripts/tests/test_compiledb.py` — the repository convention is that every new script
+- [ ] `scripts/tests/test_pio_scripts.py` — the repository convention is that every new script
       under `scripts/` participates in `python3 -m unittest discover -s scripts/tests`.
       A minimal test (file exists, imports cleanly, no syntax errors) belongs in this phase.
 - [ ] A fixture that isolates the CDB between environments (the same file is overwritten on each
