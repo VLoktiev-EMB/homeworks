@@ -67,8 +67,8 @@ report metadata, prose, or trailers beyond what this decision records.
 * Good, because the phase is no longer blocked by an act the rules themselves forbid repairing.
 * Good, because future verification runs have a documented, citable disposition.
 * Bad, because the name is permanent in public history and cannot be withdrawn.
-* Bad, because the letter of the `AGENTS.md` identity rule and this decision diverge for
-  commit metadata; a reader must consult this record to understand why.
+* Neutral, because `AGENTS.md` was amended in the same change to carry this exception
+  explicitly, so the rulebook and this record agree rather than diverge.
 * Neutral, because the handle-based email means the address itself reveals nothing beyond the
   public account.
 

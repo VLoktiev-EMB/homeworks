@@ -164,8 +164,10 @@ Good:  rotate the key, remove it with a forward commit, document the incident.
   `reuse --no-multiprocessing lint` on every pull request and every push to the
   default branch.
 - **[MUST]** **[ENFORCED: review]** Use the public handle or organization name only —
-  never a real name, an institution, or an email address — in `LICENSE`, `NOTICE`,
-  report metadata, commits, or trailers.
+  never a private name, an institution, or an email address — in `LICENSE`, `NOTICE`,
+  report metadata, commits, or trailers. The public GitHub account's own display name is
+  an accepted exception for commit author metadata written server-side during a
+  squash-merge; see `docs/decisions/0006-public-commit-identity.md`.
 - **[MUST]** **[ENFORCED: review]** Never commit internal course material or original
   assignment text. Assignments appear only as English paraphrase with attribution.
 
