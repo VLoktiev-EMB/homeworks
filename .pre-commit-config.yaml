@@ -21,6 +21,18 @@ repos:
   # committed" (AGENTS.md). This hook asks git which TRACKED paths its own
   # ignore rules exclude, and fails if any of the declared generated paths is
   # among them.
+  #
+  # D-23 extends the generated-file list with the ESP-IDF build outputs that
+  # land inside a project tree: `CMakeLists.txt`, `src/CMakeLists.txt` and
+  # `sdkconfig.<env>`. The patterns are scoped to `homeworks/*/` so no
+  # repository-wide filename is banned. The authored `sdkconfig.defaults` is
+  # deliberately outside the list: a negation in `.gitignore` re-includes it
+  # after the broad `sdkconfig.*` pattern, so `-i` (which lists only ignored
+  # paths) can never return it. Every wildcard pathspec is double-quoted inside
+  # the single-quoted `bash -c` body, or the inner shell would expand it against
+  # the working tree and the pathspec would silently degrade. Git's own exit
+  # status is bound with `|| exit 1` before the captured value is tested, so a
+  # git error cannot pass as an empty result.
   - repo: local
     hooks:
       - id: no-generated-files
@@ -28,7 +40,9 @@ repos:
         language: system
         entry: >-
           bash -c 'tracked=$(git ls-files -ci --exclude-standard --
-          compile_commands.json site .pio); if [ -n "$tracked" ]; then
-          echo "tracked generated paths:" >&2; echo "$tracked" >&2; exit 1; fi'
+          compile_commands.json site .pio "homeworks/*/CMakeLists.txt"
+          "homeworks/*/src/CMakeLists.txt" "homeworks/*/sdkconfig.*") || exit 1;
+          if [ -n "$tracked" ]; then echo "tracked generated paths:" >&2;
+          echo "$tracked" >&2; exit 1; fi'
         pass_filenames: false
         always_run: true

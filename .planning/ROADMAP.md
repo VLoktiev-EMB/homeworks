@@ -19,7 +19,7 @@ artifact before scaling to 30+ homeworks.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Repository Foundation and Policy Gate** - Public history, licensing, asset, and contribution rules that cannot be repaired later (completed 2026-10-23)
-- [ ] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries
+- [x] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries (completed 2026-10-23)
 - [ ] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate
 - [ ] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework`
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
@@ -70,7 +70,22 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A project consumes `common`, `port`, and one adapter through `lib_deps = <name>=symlink://../../lib/<name>` from a generated `platformio.shared.ini`, and every library has a `library.json`.
   4. `compiledb` produces a `compile_commands.json` that contains the shared-library sources for both Arduino and ESP-IDF environments.
 
-**Plans**: TBD
+**Plans:** 5/5 plans complete
+
+**Wave 1**
+- [x] 02-01-PLAN.md — Shared config, five libraries, native smoke build, compiledb hook (tracer)
+
+**Wave 1** *(independent of the tracer: ignore rules only)*
+- [x] 02-02-PLAN.md — ESP-IDF generated-file ignore rules and the no-generated-files hook
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 02-03-PLAN.md — ESP32-S3 Arduino environment and N16R8 artifact evidence
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 02-04-PLAN.md — ESP-IDF environment, project partition table and sdkconfig defaults
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 02-05-PLAN.md — ADR-0007 and the phase gate
 
 ### Phase 3: Shared Core and Dependency Rule
 
@@ -204,7 +219,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
-| 2. Toolchain Truth | 0/TBD | Not started | - |
+| 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 0/TBD | Not started | - |
 | 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
