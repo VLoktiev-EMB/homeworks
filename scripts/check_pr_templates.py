@@ -5,8 +5,8 @@ The repository ships three type-specific pull-request templates under
 ``.github/PULL_REQUEST_TEMPLATE/``. They share one byte-identical header between
 the ``<!-- pr-header:start -->`` and ``<!-- pr-header:end -->`` markers and
 differ only in their Definition of Done checklist. This script makes header
-drift, an empty DoD section, a broken marker pair, or a stray default template
-fail before a pull request is opened.
+drift, an empty DoD section, a broken marker pair, or a default template at any
+path GitHub would read one from fail before a pull request is opened.
 
 Usage:
   python3 scripts/check_pr_templates.py [--dir PATH]
@@ -35,18 +35,17 @@ TEMPLATE_NAMES = ("homework.md", "infra.md", "docs.md")
 START_MARKER = b"<!-- pr-header:start -->"
 END_MARKER = b"<!-- pr-header:end -->"
 
-# A default template at any of these paths suppresses the chooser and silently
-# becomes every pull request's template.
-DEFAULT_TEMPLATE_PATHS = (
-    "pull_request_template.md",
-    "PULL_REQUEST_TEMPLATE.md",
-    "docs/pull_request_template.md",
-    "docs/PULL_REQUEST_TEMPLATE.md",
-    ".github/pull_request_template.md",
-    ".github/PULL_REQUEST_TEMPLATE.md",
-    ".github/PULL_REQUEST_TEMPLATE/default.md",
-    ".github/PULL_REQUEST_TEMPLATE/DEFAULT.md",
-)
+# GitHub looks for a default template in three folders, and a file there
+# suppresses the chooser and silently becomes every pull request's template.
+# Two shapes are supported in each folder: a ``pull_request_template.md`` file,
+# or a ``PULL_REQUEST_TEMPLATE/`` directory containing ``default.md``. The names
+# are matched case-insensitively because the repository may be checked out on a
+# case-sensitive filesystem, so the list is derived by scanning the folders
+# instead of naming every casing.
+SUPPORTED_FOLDERS = ("", "docs", ".github")
+DEFAULT_FILE_NAME = "pull_request_template.md"
+CHOOSER_DIR_NAME = "pull_request_template"
+DEFAULT_ENTRY_NAME = "default.md"
 
 DOD_HEADING = re.compile(r"^##\s+Definition of Done\s*$", re.IGNORECASE)
 SECTION_HEADING = re.compile(r"^#{1,2}\s")
@@ -179,9 +178,35 @@ def check_dod(templates):
     return 0
 
 
+def _matching_entries(directory, name):
+    """Entries of *directory* named *name*, matched case-insensitively."""
+    try:
+        children = sorted(directory.iterdir(), key=lambda child: child.name)
+    except OSError:
+        return []
+    return [child for child in children if child.name.lower() == name]
+
+
+def default_template_paths(root):
+    """Every path GitHub treats as a default template, in lookup order."""
+    present = []
+    for folder in SUPPORTED_FOLDERS:
+        directory = root / folder if folder else root
+        for entry in _matching_entries(directory, DEFAULT_FILE_NAME):
+            if entry.is_file():
+                present.append(entry.relative_to(root).as_posix())
+        for chooser in _matching_entries(directory, CHOOSER_DIR_NAME):
+            if not chooser.is_dir():
+                continue
+            for entry in _matching_entries(chooser, DEFAULT_ENTRY_NAME):
+                if entry.is_file():
+                    present.append(entry.relative_to(root).as_posix())
+    return present
+
+
 def check_default_templates(root):
-    """No default PR template may exist at a fallback path."""
-    present = [path for path in DEFAULT_TEMPLATE_PATHS if (root / path).exists()]
+    """No default PR template may exist at any supported lookup path."""
+    present = default_template_paths(root)
     if present:
         print("FAIL default-template: a default template suppresses the chooser")
         for path in present:

@@ -16,6 +16,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts import check_pr_templates
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check_pr_templates.py"
 TEMPLATES = REPO_ROOT / ".github" / "PULL_REQUEST_TEMPLATE"
@@ -94,6 +96,11 @@ class RealTreeTests(unittest.TestCase):
                         f"{name} requires AI-assistance disclosure: {line!r}",
                     )
 
+    def test_real_tree_has_no_default_template_at_any_supported_path(self):
+        # Every folder GitHub reads a default template from, in the file shape
+        # and in the ``PULL_REQUEST_TEMPLATE/default.md`` shape.
+        self.assertEqual([], check_pr_templates.default_template_paths(REPO_ROOT))
+
     def test_second_run_is_identical_and_read_only(self):
         before = git_status()
         first = run_checker()
@@ -166,14 +173,28 @@ class FixtureTests(unittest.TestCase):
         self.assertIn("marker", combined(result).lower())
 
     def test_stray_default_template_exits_1(self):
+        # The full GitHub lookup order: a ``pull_request_template.md`` and a
+        # ``PULL_REQUEST_TEMPLATE/default.md`` in the repository root, ``docs/``
+        # and ``.github/``, in any casing. A checker that misses one of these
+        # exits 0 while GitHub stops showing the template chooser.
         fallback_paths = (
             "pull_request_template.md",
+            "PULL_REQUEST_TEMPLATE.md",
+            "PULL_REQUEST_TEMPLATE/default.md",
+            "PULL_REQUEST_TEMPLATE/DEFAULT.md",
+            "docs/pull_request_template.md",
+            "docs/PULL_REQUEST_TEMPLATE.md",
+            "docs/PULL_REQUEST_TEMPLATE/default.md",
+            ".github/pull_request_template.md",
             ".github/PULL_REQUEST_TEMPLATE/default.md",
+            ".github/PULL_REQUEST_TEMPLATE/DEFAULT.md",
         )
         for relative in fallback_paths:
             with self.subTest(path=relative):
                 root, _ = self.make_tree()
-                (root / relative).write_text("default\n", encoding="utf-8")
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("default\n", encoding="utf-8")
 
                 result = run_checker("--dir", str(root))
 
