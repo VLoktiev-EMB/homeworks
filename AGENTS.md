@@ -23,11 +23,12 @@ Run from the repository root, in this order, before opening a pull request.
 | 1 | `/gsd-fast`, `/gsd-quick`, `/gsd-debug`, or `/gsd-execute-phase` | Route the change through the GSD workflow. |
 | 2 | `pio run -d <project>` | Build the affected PlatformIO environment from its own project directory. |
 | 3 | `pio test -d tests -e native` | Run the shared-library Unity suite from the top-level `tests/` project, without a target toolchain. |
-| 4 | `python3 -m unittest discover -s scripts/tests -v` | Run the repository test suite. |
-| 5 | `python3 scripts/check_policy.py --check` | Prove live GitHub policy still matches `policy/`. |
-| 6 | `python3 scripts/check_pr_templates.py` | Prove the three pull-request templates share one header. |
-| 7 | `pre-commit run --all-files` | Run the local gate: hygiene, large files, secrets. |
-| 8 | `scripts/tag_homework.sh <id>` | Tag a merged homework. Maintainers only, after merge. |
+| 4 | `uv run scripts/check_metadata.py` | Validate homework metadata and task provenance. |
+| 5 | `python3 -m unittest discover -s scripts/tests -v` | Run the repository test suite. |
+| 6 | `python3 scripts/check_policy.py --check` | Prove live GitHub policy still matches `policy/`. |
+| 7 | `python3 scripts/check_pr_templates.py` | Prove the three pull-request templates share one header. |
+| 8 | `pre-commit run --all-files` | Run the local gate: hygiene, large files, secrets, the dependency rule, and the metadata contract. |
+| 9 | `scripts/tag_homework.sh <id>` | Tag a merged homework. Maintainers only, after merge. |
 
 ## Repository layout
 
@@ -42,12 +43,17 @@ Present today:
 - `docs/decisions/` — MADR records and their status index.
 - `policy/` — the branch ruleset and repository settings as code.
 - `scripts/` — deterministic checks and the tag script; `scripts/tests/` — the test suite.
+- `schema/` — `homework.schema.json`, the JSON Schema 2020-12 metadata contract read by
+  editors, the checker, the scaffold, and the Phase 5 generators.
+- `templates/` — the scaffolding source: two homework templates plus `task/`, `report/`,
+  `adr/` and `board-profile/`; rendered only by `scripts/new_homework`.
+- `lib/` — shared portable libraries: `port`, `common`, `host`, and the thin Arduino and
+  ESP-IDF adapters.
+- `homeworks/<id>/` — one independent PlatformIO project per assignment, created only by
+  `scripts/new_homework`; no homework ships yet.
 
 Planned, each with the phase that introduces it:
 
-- `homeworks/<id>/` — one independent PlatformIO project per assignment (Phase 2 onward).
-- `lib/` — shared portable libraries: `common`, `port`, and thin adapters (Phase 3).
-- `templates/` — the scaffolding source for a new homework (Phase 4).
 - `docs/standards/` — report structure and formatting rationale (planned, Phase 5).
 - `.claude/skills/` or `.agents/skills/` — versioned agent skills (planned, Phase 9).
 
@@ -106,6 +112,25 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: review]** Homework IDs and paths are ASCII-only (`[a-z0-9_.-]`).
   Display names in a report may use emoji and non-ASCII text, but paths and identifiers
   stay ASCII so byte length and codepoint length never diverge.
+
+### Metadata and provenance
+
+- **[MUST]** **[ENFORCED: pre-commit]** Every homework carries `homework.yaml` and
+  `task.md`, and `scripts/check_metadata.py` validates the pair against
+  `schema/homework.schema.json`. The schema rejects an unknown key at any depth, so a new
+  field is a schema change, never an extra key in one file.
+- **[MUST]** **[ENFORCED: review]** A homework directory is created only through
+  `scripts/new_homework <id> --template <name>`. There is no overwrite path: a second run is
+  `UNCHANGED`, and any other existing content is a conflict that writes nothing. The id
+  follows `### Homework identifiers`.
+- **[MUST]** **[ENFORCED: pre-commit]** Provenance is captured at collection time in
+  `task.md` frontmatter: `source_url`, `retrieved`, `attribution`, `license`. The literal
+  sentinel `TODO` is legal in those four fields and in `homework.yaml` `source.reference`
+  only while the status is `planned`; any later status requires the real value, and body
+  `TODO`s are manual-review signals rather than machine-checked values.
+- **[MUST]** **[ENFORCED: pre-commit]** A Cyrillic allowlist entry names its exact
+  repository-relative path and a non-empty reason. An entry that no longer matches a record
+  is stale and fails the run, and the allowlist suppresses a path, never a rule.
 
 ### Pull requests and tags
 
@@ -187,6 +212,8 @@ Good:  rotate the key, remove it with a forward commit, document the incident.
 | Open a pull request | `.github/PULL_REQUEST_TEMPLATE/{homework,infra,docs}.md`, chosen by type |
 | Tag a merged homework | `scripts/tag_homework.sh <id>` — the only tag path |
 | Record an infrastructure decision | `docs/decisions/README.md` and the next numbered MADR |
+| Create a homework | `scripts/new_homework <id> --template <name>` — the only supported path |
+| Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
 | Inspect or extend the secret gate | `.pre-commit-config.yaml` and `.github/workflows/security.yml` |
 | Choose a branch name | this file, "Git, branches, and history" |
 | Report structure and formatting rationale | `docs/standards/` (planned, Phase 5) |
