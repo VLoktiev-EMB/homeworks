@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Repository Foundation and Policy Gate** - Public history, licensing, asset, and contribution rules that cannot be repaired later (completed 2026-10-23)
 - [x] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries (completed 2026-10-23)
 - [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
-- [ ] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework`
+- [x] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework` (completed 2026-10-25)
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
 - [ ] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004
@@ -132,7 +132,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `task.md` contains an English paraphrase, the source reference, retrieval date, and attribution, and no original internal material.
   5. `templates/` provides the Arduino homework, ESP-IDF homework, report, task, ADR, and board-profile templates.
 
-**Plans:** 9/9 plans executed (5 executed, 3 gap-closure)
+**Plans:** 9/9 plans complete (5 executed, 3 gap-closure)
 - [x] 04-09-PLAN.md
 
 **Wave 1**
@@ -259,7 +259,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
-| 4. Metadata Contract and Scaffolding | 9/9 | In Progress | - |
+| 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
@@ -267,3 +267,13 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 | 0/TBD | Not started | - |
+
+## Backlog
+
+### Phase 999.1: Follow-up — Phase 04 deferred UAT follow-up: Test 1 (BACKLOG)
+
+**Goal:** Resolve the UAT checkpoint deferred during Phase 04 verification
+**Source phase:** 04
+**Deferred at:** 2026-10-25 during /gsd-verify-work 04 session completion
+**Follow-ups:**
+- [ ] Test 1: No homework exists yet; review paraphrase originality when the first real task.md lands. (deferred 2026-10-25)
