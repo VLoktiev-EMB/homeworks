@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 5
-current_phase_name: Generated Views and Documentation Site
-status: "Phase 04 shipped — PR #7"
-stopped_at: Phase 04 complete, ready to plan Phase 5
-last_updated: "2026-10-24T23:21:30.256Z"
+current_phase: 4.1
+current_phase_name: Ceremony Trim
+status: Phase 04 complete; ceremony trim inserted
+stopped_at: Phase 4.1 ready to plan
+last_updated: "2026-10-24T23:57:31.144Z"
 last_activity: 2026-10-25
-state_head: 3e6dd898473e123fe4c142b4b6e4caceec4c3336
+last_activity_desc: Phase 4.1 inserted after Phase 04; tracer homework queued
+state_head: bb66d2cff0c5907c7caaaa26e9d021dd1b5e5b9d
 progress:
-  total_phases: 11
+  total_phases: 13
   completed_phases: 4
   total_plans: 31
   completed_plans: 31
-  percent: 36
-last_activity_desc: Phase 04 shipped as PR
+  percent: 31
 ---
 
 # Project State
@@ -23,16 +23,16 @@ last_activity_desc: Phase 04 shipped as PR
 See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 05 — Generated Views and Documentation Site
+**Current focus:** Phase 04.1 — Ceremony Trim
 
 ## Current Position
 
-Phase: 5 — Generated Views and Documentation Site
+Phase: 4.1 — Ceremony Trim
 Plan: Not started
-Status: Phase 04 shipped — PR #7
-Last activity: 2026-10-25 - Completed quick task 261025-349: Fix the squash-merge commit body policy
+Status: Phase 04 complete; ceremony trim inserted
+Last activity: 2026-10-25 - Captured the ceremony trim principle and queued Phases 4.1 and 4.2
 
-Progress: [████░░░░░░] 36%
+Progress: [███░░░░░░░] 31%
 
 ## Performance Metrics
 
@@ -80,10 +80,12 @@ Recent decisions affecting current work:
 - Phase 4: `scripts/new_homework` is the only scaffold path — idempotent, `--dry-run`, no overwrite, no symlink traversal; both templates build immediately.
 - Phase 4: Python deps are pinned once (PyYAML 6.0.3, jsonschema 4.26.0) in the PEP 723 headers and the pre-commit hook; drift fails `test_metadata_deps`.
 - Phase 4: paraphrase originality is not machine-verifiable; it is deferred to the first real `task.md` (UAT Test 1).
+- 2026-10-25: ceremony trim — bureaucracy (policy-as-code, REUSE/SPDX, PR-template drift, tag gates, meta-tests, GSD-on-every-edit, ADR-per-decision) is removed; engineering tooling stays in the roadmap. The rule is frequency of execution, not appearance. See `.planning/notes/ceremony-vs-engineering-principle.md`.
+- 2026-10-25: Phase 4.2 runs homework 1.3 manually as a tracer and records a friction log; Phases 5–10 automate only what the log proves painful.
 
 ### Pending Todos
 
-None yet.
+- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — file-level checklist.
 
 ### Blockers/Concerns
 
@@ -104,6 +106,11 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
 
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Ceremony Trim (URGENT)
+- Phase 4.2 inserted after Phase 4: Tracer Homework 1.3 (URGENT)
+
 ## Deferred Items
 
 Items acknowledged and deferred at milestone close, most recent first:
@@ -111,10 +118,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | Target compile | Arduino/ESP-IDF adapter target builds (03-06.6) — smoke project retired by design | Closed in Phase 4 — both scaffolded templates build | 2026-10-24 | v1 |
-| Human review | UAT Test 1 — paraphrase originality of the first real `task.md` | Deferred until the first homework exists | 2026-10-25 | v1 |
+| Human review | UAT Test 1 — paraphrase originality of the first real `task.md` | Resolved by Phase 4.2 (the tracer is the first real task) | 2026-10-25 | v1 |
+| Governance | Return bureaucracy after stabilization — policy-as-code, REUSE/SPDX, multi-template PRs, ADR status index | Backlog 999.2 | 2026-10-25 | v1 |
 
 ## Session Continuity
 
 Last session: 2026-10-25T00:00:00.000Z
-Stopped at: Phase 04 complete, ready to plan Phase 5
+Stopped at: Phase 4.1 ready to plan
 Resume file: None

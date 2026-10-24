@@ -22,9 +22,11 @@ Requirements for the initial release. Each maps to a roadmap phase.
       a `hw/<id>` tag is created after merge and the source branch is deleted.
 - [x] **FOUND-05**: Three pull-request templates exist (`homework`, `infra`, `docs`) with
       a shared header and type-specific Definition of Done checklists.
+      *(Superseded 2026-10-25: one default PR template.)*
 - [x] **FOUND-06**: The repository is MIT-licensed for original work, with a `NOTICE` and
       attribution for third-party assets; internal course materials and PII are never
       committed.
+      *(Simplified 2026-10-25: a single MIT `LICENSE`; `NOTICE`/`REUSE` removed.)*
 - [x] **FOUND-07**: `gitleaks` runs in pre-commit and over the full history in CI;
       `.gitignore` and `.gitattributes` cover secrets, build output, and generated files.
 - [x] **FOUND-08**: Git LFS is used only for large non-diffable binaries; site assets
@@ -45,6 +47,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
       retrieval date, and attribution; it never contains the original internal material.
       *Shape, sentinel and Cyrillic rules are enforced by the checker; paraphrase
       originality is deferred to the first real homework (Phase 999.1).*
+      *(Mechanism simplified 2026-10-25: one grep, no allowlist.)*
 - [x] **META-03**: `templates/` provides an Arduino homework template, an ESP-IDF
       homework template, a report template, a task template, an ADR template, and a
       board-profile template.
@@ -140,8 +143,10 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **TOOL-07**: Infrastructure decisions are recorded as MADR ADRs in
       `docs/decisions/`; homework assumptions live in the report with impact-if-wrong and
       validation.
+      *(Narrowed 2026-10-25: ADRs for irreversible decisions only; no status index.)*
 - [ ] **TOOL-08**: A self-audit rubric maps the report, BOM, calculations, safety,
       evidence, and traceability to the pre-PR checklist.
+      *(Deferred 2026-10-25 until the report system has three real uses.)*
 
 ### Agent Workflow and Skills
 
@@ -172,6 +177,60 @@ Requirements for the initial release. Each maps to a roadmap phase.
       single-GPIO operation.
 - [ ] **PILOT-02**: The pilot validates the template, skill, report, native tests, local
       simulation, index, workspace, and CI chain before scale-out.
+
+## Invariants and Homework Acceptance (2026-10-25)
+
+The ceremony trim keeps four cross-cutting invariants and replaces the per-homework
+acceptance checklist with a short Definition of Done. The reasoning lives in
+`.planning/notes/ceremony-vs-engineering-principle.md`.
+
+### Invariants
+
+- [ ] **INV-01 (Public safety)**: No secret, private datum, or original internal course
+      material ever enters the public history. gitleaks runs in pre-commit and over the
+      full history in CI; repository artifacts are English-only. Enforcement is a secret
+      scan plus a Cyrillic grep, not a licence-compliance pipeline.
+- [ ] **INV-02 (Build and tests)**: Every homework builds for its declared target
+      environment; pure logic has native Unity tests. The invariant is the green build
+      and the green suite, not a fixed number of tests or a determinism proof.
+- [ ] **INV-03 (Uniform structure)**: Every homework directory carries `task.md`,
+      `homework.yaml`, `README.md`, and a report skeleton, and validates against
+      `schema/homework.schema.json`. IDs follow `^[0-9]+_[0-9]+-[a-z0-9-]+$`.
+- [ ] **INV-04 (Architecture boundary)**: `lib/common` and `lib/port` contain no
+      framework headers; `common` does not depend on adapters. One lightweight check
+      enforces the edge.
+
+### Definition of Done for a homework
+
+A homework is done when:
+
+1. `pio run` is green for its target environment.
+2. `pio test -e native` is green when the homework contains pure logic.
+3. `task.md`, `homework.yaml`, `README.md`, and `report.md` exist, and metadata
+   validation passes.
+4. The report contains the sections that apply to the assignment; BOM, calculations,
+   measurement ledger, and traceability are guidance, not a merge gate until Phase 10.
+5. The pull request is merged and tagged `hw/<id>`.
+
+### Superseded or simplified requirements
+
+- **FOUND-05** (three PR templates with a shared header) is superseded by one default
+  PR template.
+- **FOUND-06** is simplified to a single repo-wide MIT `LICENSE`; `NOTICE`, `REUSE.toml`,
+  `LICENSES/`, and SPDX headers are removed.
+- **META-02** keeps the provenance and English-only invariants; the Cyrillic allowlist
+  is replaced by a single grep.
+- **TOOL-03** and **TOOL-05** keep their CI intent, but the `meta` job no longer runs
+  policy or REUSE checks.
+- **TOOL-07** is narrowed: ADRs are recorded for irreversible decisions, not for every
+  infrastructure choice, and the status index is no longer mandatory.
+- **TOOL-08** is deferred until the report system has been used on at least three
+  homeworks.
+- **REPORT-02..07** remain the report contract, but they are not an automated merge gate
+  until Phase 10.
+
+These invariants are cross-cutting: they apply from Phase 4.1 onward and are not counted
+in the phase-mapped v1 totals above.
 
 ## v2 Requirements
 
@@ -302,4 +361,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 *Requirements defined: 2026-10-23*
-*Last updated: 2026-10-23 after roadmap creation*
+*Last updated: 2026-10-25 after the ceremony trim exploration*
