@@ -31,5 +31,6 @@ explain why it does it that way.
 | 0008 | Common depends on port; ports are consumer-owned | accepted | 2026-10-24 |
 | 0009 | Homework metadata contract | accepted | 2026-10-24 |
 | 0010 | Python dependency policy | accepted | 2026-10-24 |
+| 0011 | Squash-merge commit title and message | accepted | 2026-10-25 |
 
-Next number: **0011**.
+Next number: **0012**.

@@ -4,16 +4,16 @@ current_phase: 5
 current_phase_name: Generated Views and Documentation Site
 status: "Phase 04 shipped — PR #7"
 stopped_at: Phase 04 complete, ready to plan Phase 5
-last_updated: "2026-10-24T23:08:40.541Z"
+last_updated: "2026-10-24T23:21:30.256Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 04 shipped as PR #7, transitioned to Phase 5
-state_head: 61a69a29744e7587f050c711b74640685e8db38d
+state_head: 3e6dd898473e123fe4c142b4b6e4caceec4c3336
 progress:
   total_phases: 11
   completed_phases: 4
   total_plans: 31
   completed_plans: 31
   percent: 36
+last_activity_desc: Phase 04 shipped as PR
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 Phase: 5 — Generated Views and Documentation Site
 Plan: Not started
 Status: Phase 04 shipped — PR #7
-Last activity: 2026-10-25
+Last activity: 2026-10-25 - Completed quick task 261025-349: Fix the squash-merge commit body policy
 
 Progress: [████░░░░░░] 36%
 
@@ -97,6 +97,12 @@ None yet.
 - Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
   templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
 - **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
 
 ## Deferred Items
 
