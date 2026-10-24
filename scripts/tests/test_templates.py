@@ -7,9 +7,10 @@ placeholder vocabulary, UTF-8 text, the environment shape locked by D-28/D-29
 (Pitfall P8), the entry-point linkage tokens (Pitfall P9), and the rule that a
 template ships no generated ESP-IDF build input (Pitfalls P4 and P5).
 
-The four directories owned by 04-03 — ``task``, ``report``, ``adr`` and
-``board-profile`` — are skipped while absent so this module stays green before
-they exist. 04-03 removes the skip once all six directories exist.
+All six template directories are inventoried. A missing directory or file
+fails the inventory rather than being skipped, so the tree cannot silently
+shrink. ``templates/adr`` is exempt from the placeholder lint: the MADR
+template uses its own brace style and the scaffold never renders it.
 
 Every assertion that involves a pattern is two-sided: the accepted form is
 asserted and a rejected form is proved to be rejected in the same module, so a
@@ -41,10 +42,6 @@ TEMPLATE_ROOT = REPO_ROOT / "templates"
 
 HOMEWORK_TEMPLATE_DIRS = ("homework-arduino", "homework-espidf")
 
-# Added by 04-03. Absent directories are skipped until the wave that owns them
-# lands; after that, 04-03 removes this exemption.
-LATER_WAVE_DIRS = ("adr", "board-profile", "report", "task")
-
 # Not rendered by the scaffold: the MADR template keeps its own brace style.
 EXEMPT_DIRS = ("adr",)
 
@@ -71,6 +68,10 @@ TEMPLATE_INVENTORY = {
         "template.yaml",
         "test/test_homework/test_homework.c",
     ),
+    "task": ("task.md",),
+    "report": ("report.md",),
+    "adr": ("template.md",),
+    "board-profile": ("profile.yaml",),
 }
 
 # The closed vocabulary from D-25; the scaffold renders nothing else (D-33).
@@ -102,8 +103,8 @@ SDKCONFIG_DEFAULTS_LINES = [
 
 
 def _template_files():
-    """Yield every template file, skipping directories a later wave still owns."""
-    for name in (*HOMEWORK_TEMPLATE_DIRS, *LATER_WAVE_DIRS):
+    """Yield every template file; a missing directory yields none and fails the inventory."""
+    for name in TEMPLATE_INVENTORY:
         directory = TEMPLATE_ROOT / name
         if not directory.is_dir():
             continue
@@ -147,13 +148,19 @@ def _is_generated_espidf_name(name: str) -> bool:
 class TemplateInventoryTests(unittest.TestCase):
     """META-03 / FOUND-01: each homework template owns exactly the declared files."""
 
-    def test_each_homework_template_directory_exists(self):
-        for name in HOMEWORK_TEMPLATE_DIRS:
+    def test_every_template_directory_exists(self):
+        for name in TEMPLATE_INVENTORY:
             with self.subTest(template=name):
                 self.assertTrue(
                     (TEMPLATE_ROOT / name).is_dir(),
                     f"missing template directory {name}",
                 )
+
+    def test_adr_template_moved_out_of_the_decisions_directory(self):
+        self.assertFalse(
+            (REPO_ROOT / "docs" / "decisions" / "template.md").exists(),
+            "docs/decisions/template.md must not exist; the template moved",
+        )
 
     def test_every_declared_file_exists(self):
         for name, expected in TEMPLATE_INVENTORY.items():

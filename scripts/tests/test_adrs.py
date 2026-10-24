@@ -21,9 +21,10 @@ import re
 import unittest
 from pathlib import Path
 
-DECISIONS_DIR = Path(__file__).resolve().parents[2] / "docs" / "decisions"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DECISIONS_DIR = REPO_ROOT / "docs" / "decisions"
 INDEX_FILE = DECISIONS_DIR / "README.md"
-TEMPLATE_FILE = DECISIONS_DIR / "template.md"
+TEMPLATE_FILE = REPO_ROOT / "templates" / "adr" / "template.md"
 
 FRONTMATTER_KEYS = (
     "status",
@@ -132,8 +133,14 @@ def pros_and_cons_subsections(text: str) -> dict[str, list[str]]:
 
 class AdrSetTests(unittest.TestCase):
     def test_decisions_directory_has_template_and_index(self) -> None:
-        self.assertTrue(TEMPLATE_FILE.is_file(), "docs/decisions/template.md missing")
+        self.assertTrue(TEMPLATE_FILE.is_file(), "templates/adr/template.md missing")
         self.assertTrue(INDEX_FILE.is_file(), "docs/decisions/README.md missing")
+
+    def test_template_has_a_single_home(self) -> None:
+        self.assertFalse(
+            (DECISIONS_DIR / "template.md").exists(),
+            "docs/decisions/template.md must not exist; the template moved",
+        )
 
     def test_numbers_are_contiguous_from_one(self) -> None:
         numbers = [int(path.name[:4]) for path in adr_files()]
@@ -213,6 +220,14 @@ class IndexAgreementTests(unittest.TestCase):
 
 
 class MadrStructureTests(unittest.TestCase):
+    def test_template_keeps_the_madr_sections(self) -> None:
+        headings = [
+            line
+            for line in read(TEMPLATE_FILE).splitlines()
+            if line in MADR_SECTIONS
+        ]
+        self.assertEqual(list(MADR_SECTIONS), headings)
+
     def test_every_record_has_all_sections_in_madr_order(self) -> None:
         for path in adr_files():
             with self.subTest(adr=path.name):
