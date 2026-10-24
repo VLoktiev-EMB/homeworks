@@ -677,6 +677,70 @@ class IdentityTests(FixtureBase):
 
         self.assert_rejected(self.run_fixture(), "containing directory")
 
+    def test_id_mismatch_holds_when_the_root_is_spelled_differently(self):
+        # A symlink alias names the same tree with a different absolute
+        # spelling, so the identity check must not depend on how the caller
+        # spells the root (T-04-29). `run_fixture` cannot express this: it
+        # hardcodes `--dir str(self.root)` and passes no positional path.
+        alias_parent = Path(tempfile.mkdtemp(prefix="metadata-alias-"))
+        self.addCleanup(shutil.rmtree, alias_parent, ignore_errors=True)
+        alias = alias_parent / "spelled-root"
+        alias.symlink_to(self.root.resolve(), target_is_directory=True)
+        self.write_homework(
+            document(homework_id="1_3-other", optional=False),
+            homework_id="1_3-good",
+        )
+
+        for name, root_spelling in (
+            ("alias", alias),
+            ("canonical", self.root.resolve()),
+        ):
+            with self.subTest(spelling=name):
+                positional = (
+                    root_spelling / "homeworks" / "1_3-good" / "homework.yaml"
+                )
+                result = run_checker(
+                    "--dir", str(root_spelling), str(positional)
+                )
+                self.assert_rejected(result, "containing directory")
+
+    def test_matching_id_is_accepted_when_the_root_is_spelled_differently(self):
+        # The spelling repair must not pass by rejecting every spelling.
+        alias_parent = Path(tempfile.mkdtemp(prefix="metadata-alias-"))
+        self.addCleanup(shutil.rmtree, alias_parent, ignore_errors=True)
+        alias = alias_parent / "spelled-root"
+        alias.symlink_to(self.root.resolve(), target_is_directory=True)
+        self.write_homework(document(homework_id="1_3-good", optional=False))
+
+        result = run_checker(
+            "--dir", str(alias), str(alias / "homeworks" / "1_3-good")
+        )
+        self.assert_accepted(result)
+
+    def test_id_mismatch_survives_a_symlinked_base_under_a_differently_spelled_root(
+        self,
+    ):
+        # T-04-30: reconciling the ancestor prefix must not resolve the
+        # `homeworks` component, or the symlinked-base protection is erased.
+        alias_parent = Path(tempfile.mkdtemp(prefix="metadata-alias-"))
+        self.addCleanup(shutil.rmtree, alias_parent, ignore_errors=True)
+        alias = alias_parent / "spelled-root"
+        alias.symlink_to(self.root.resolve(), target_is_directory=True)
+        outside = Path(tempfile.mkdtemp(prefix="metadata-outside-"))
+        self.addCleanup(shutil.rmtree, outside, ignore_errors=True)
+        directory = outside / "1_3-good"
+        directory.mkdir()
+        (directory / "homework.yaml").write_text(
+            document(homework_id="1_3-other", optional=False), encoding="utf-8"
+        )
+        (directory / "task.md").write_text(TASK_TEMPLATE, encoding="utf-8")
+        (self.root / "homeworks").symlink_to(outside)
+
+        result = run_checker(
+            "--dir", str(alias), str(alias / "homeworks" / "1_3-good")
+        )
+        self.assert_rejected(result, "containing directory")
+
 
 class PayloadTests(FixtureBase):
     """Content problems are ERROR records at exit 1, never environment errors."""
