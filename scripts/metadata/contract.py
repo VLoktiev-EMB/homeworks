@@ -421,26 +421,26 @@ def load_allowlist(root):
 
 
 def apply_allowlist(records, entries):
-    """Suppress Cyrillic records by exact path; return `(remaining, stale)`.
+    """Suppress every Cyrillic record for an allowlisted path.
 
-    One entry matches one record path and is consumed once. Only the
-    Cyrillic rule is suppressible: a shape violation on an allowlisted file
-    is still a violation. An entry that matched nothing is stale and must
-    fail the run, so the allowlist cannot accumulate dead permissions.
+    Suppression is keyed on the exact record path, so one entry exempts every
+    Cyrillic record for that path instead of being consumed by the first one
+    (D-16, WR-01). Only the Cyrillic rule is suppressible: a shape violation on
+    an allowlisted file is still a violation. An entry whose path suppressed no
+    record is stale and must fail the run, so the allowlist cannot accumulate
+    dead permissions.
+
+    Returns `(remaining, stale)`.
     """
+    allowed_paths = {entry["path"] for entry in entries}
+    used_paths = set()
     remaining = []
-    matched = [False] * len(entries)
     for item in records:
-        if item.get("rule") != CYRILLIC_RULE:
-            remaining.append(item)
+        if item.get("rule") == CYRILLIC_RULE and item["path"] in allowed_paths:
+            used_paths.add(item["path"])
             continue
-        for index, entry in enumerate(entries):
-            if not matched[index] and entry["path"] == item["path"]:
-                matched[index] = True
-                break
-        else:
-            remaining.append(item)
-    stale = [entry for entry, used in zip(entries, matched) if not used]
+        remaining.append(item)
+    stale = [entry for entry in entries if entry["path"] not in used_paths]
     return remaining, stale
 
 
