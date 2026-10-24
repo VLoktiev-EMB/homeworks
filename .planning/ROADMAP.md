@@ -132,7 +132,20 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `task.md` contains an English paraphrase, the source reference, retrieval date, and attribution, and no original internal material.
   5. `templates/` provides the Arduino homework, ESP-IDF homework, report, task, ADR, and board-profile templates.
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+**Wave 1**
+- [ ] 04-01-PLAN.md — Contract core: JSON Schema, shared validation module, checker exit codes (tracer)
+- [ ] 04-02-PLAN.md — Arduino and ESP-IDF homework templates, build-proven at homework depth
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 04-03-PLAN.md — Provenance rules, allowlist, task/report/ADR/board-profile templates (tracer: task.md)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 04-04-PLAN.md — `scripts/new_homework`, golden trees, pre-commit metadata hook (tracer: scaffold)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 04-05-PLAN.md — ADR-0009/0010, AGENTS.md and REUSE.toml updates, phase build gate (tracer: ADRs)
 
 ### Phase 5: Generated Views and Documentation Site
 
@@ -240,7 +253,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
-| 4. Metadata Contract and Scaffolding | 0/TBD | Not started | - |
+| 4. Metadata Contract and Scaffolding | 0/5 | Planned | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
