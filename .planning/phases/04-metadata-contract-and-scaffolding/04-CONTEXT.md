@@ -195,6 +195,19 @@ is rejected; and the scaffolded ESP-IDF project builds with `pio run`.
 - **D-38:** No separate "field to consumer" mapping artifact is created. A "Phase 5
   implications" section in this file names the known consumers; Phase 5 owns the mapping.
 
+### Provenance in the scaffold (planning-time resolution)
+
+- **D-39:** The exact sentinel `TODO` is allowed in the four `task.md` provenance fields
+  (`source_url`, `retrieved`, `attribution`, `license`) **only** while `homework.yaml` has
+  `status: planned`. The checker rejects the sentinel as soon as the status becomes
+  `in-progress`, `complete`, or `verified`. This resolves the D-16 / D-30 conflict without
+  weakening D-16 for any published homework and without making `new_homework` interactive
+  or flag-heavy (D-18). The sentinel is a literal string, not a placeholder syntax: D-25's
+  `{{...}}` vocabulary and D-33's unknown-placeholder error still apply, and `${...}` stays
+  forbidden.
+  — **Reversibility:** costly — the checker's status-conditional branch and the scaffold's
+  skeleton must agree forever; changing the sentinel later touches every planned homework.
+
 ### Claude's Discretion
 
 - Exact names of helper functions and the internal module split (for example a shared
