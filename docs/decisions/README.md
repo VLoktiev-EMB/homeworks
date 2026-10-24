@@ -29,5 +29,7 @@ explain why it does it that way.
 | 0006 | Public commit identity | accepted | 2026-10-23 |
 | 0007 | Symlinked shared libraries via lib_deps and library.json | accepted | 2026-10-23 |
 | 0008 | Common depends on port; ports are consumer-owned | accepted | 2026-10-24 |
+| 0009 | Homework metadata contract | accepted | 2026-10-24 |
+| 0010 | Python dependency policy | accepted | 2026-10-24 |
 
-Next number: **0009**.
+Next number: **0011**.
