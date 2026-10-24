@@ -661,6 +661,22 @@ class IdentityTests(FixtureBase):
         )
         self.assert_rejected(self.run_fixture(), "containing directory")
 
+    def test_id_mismatch_survives_a_symlinked_homeworks_base(self):
+        # D-14: stdlib only. The candidate lives outside the root and is
+        # reached through a symlinked `homeworks/`; the identity invariant must
+        # still fire instead of being erased by path resolution (T-04-27).
+        outside = Path(tempfile.mkdtemp(prefix="metadata-outside-"))
+        self.addCleanup(shutil.rmtree, outside, ignore_errors=True)
+        directory = outside / "1_3-good"
+        directory.mkdir()
+        (directory / "homework.yaml").write_text(
+            document(homework_id="1_3-other", optional=False), encoding="utf-8"
+        )
+        (directory / "task.md").write_text(TASK_TEMPLATE, encoding="utf-8")
+        (self.root / "homeworks").symlink_to(outside)
+
+        self.assert_rejected(self.run_fixture(), "containing directory")
+
 
 class PayloadTests(FixtureBase):
     """Content problems are ERROR records at exit 1, never environment errors."""
