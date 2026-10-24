@@ -414,6 +414,48 @@ class CyrillicGateTests(FixtureBase):
         )
         self.assert_accepted(self.run_fixture())
 
+    def test_allowlist_suppresses_every_record_for_the_path(self):
+        # One path-scoped entry must exempt every Cyrillic record for that
+        # path, not consume itself on the first line (D-16, WR-01).
+        self.write_homework(
+            task_text=TASK_TEMPLATE + self.WORD + "\n" + self.WORD + "\n"
+        )
+        self.write_allowlist(
+            [
+                {
+                    "path": "homeworks/1_3-good/task.md",
+                    "reason": "the reviewed translation note quotes the source term",
+                }
+            ]
+        )
+        self.assert_accepted(self.run_fixture())
+        result = self.run_fixture("--json")
+        self.assertEqual(0, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload)
+        self.assertFalse(
+            [item for item in payload if item["status"] == "ERROR"],
+            payload,
+        )
+
+    def test_allowlisted_path_still_rejects_a_shape_violation(self):
+        # The allowlist exempts the Cyrillic rule only; a content problem on
+        # the same reviewed file is still a violation (D-16).
+        self.write_homework(
+            task_text=TASK_TEMPLATE.replace(
+                "source_url: TODO", "source_url: not-a-url"
+            )
+        )
+        self.write_allowlist(
+            [
+                {
+                    "path": "homeworks/1_3-good/task.md",
+                    "reason": "the reviewed translation note quotes the source term",
+                }
+            ]
+        )
+        self.assert_rejected(self.run_fixture(), "not an http(s) URL")
+
     def test_allowlist_entry_for_another_path_is_stale(self):
         self.write_homework(task_text=self._cyrillic_task())
         self.write_allowlist(
@@ -644,6 +686,45 @@ class PayloadTests(FixtureBase):
         )
         self.write_homework(text)
         self.assert_rejected(self.run_fixture(), "duplicate key 'reference'")
+
+    def test_composed_mapping_key_is_error(self):
+        # A constructed key that is not hashable must become a YAML error
+        # record, never a TypeError traceback with empty --json output
+        # (CR-02, T-04-24).
+        text = document(optional=False) + "? [a, b]\n: c\n"
+        self.write_homework(text)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        self.assertIsInstance(payload, list)
+        self.assertTrue(payload)
+        records = [
+            item
+            for item in payload
+            if item["path"] == "homeworks/1_3-good/homework.yaml"
+        ]
+        self.assertTrue(records, payload)
+        self.assertEqual("ERROR", records[0]["status"])
+        self.assertIn("found unhashable key", records[0]["reason"])
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_composed_key_in_task_frontmatter_is_error(self):
+        text = "---\n? [a, b]\n: c\n---\n\n# T\n\nbody\n"
+        self.write_homework(task_text=text)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        self.assertIsInstance(payload, list)
+        self.assertTrue(payload)
+        records = [
+            item
+            for item in payload
+            if item["path"] == "homeworks/1_3-good/task.md"
+        ]
+        self.assertTrue(records, payload)
+        self.assertEqual("ERROR", records[0]["status"])
+        self.assertIn("found unhashable key", records[0]["reason"])
+        self.assertNotIn("Traceback", result.stderr)
 
     def test_oversized_document_is_error(self):
         text = document(optional=False) + "# " + ("x" * (64 * 1024)) + "\n"

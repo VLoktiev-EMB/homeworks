@@ -37,6 +37,7 @@ import json
 import re
 import subprocess
 import unicodedata
+from collections.abc import Hashable
 from pathlib import Path
 
 import yaml
@@ -88,6 +89,14 @@ class StrictSafeLoader(yaml.SafeLoader):
         seen = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)
+            # A composed (sequence or mapping) key is not hashable, so the
+            # membership test below would raise TypeError and escape as a
+            # traceback. Delegate to BaseConstructor.construct_mapping, which
+            # raises ConstructorError ("found unhashable key") — a
+            # yaml.YAMLError the caller renders as an ERROR record at exit 1
+            # (T-04-24).
+            if not isinstance(key, Hashable):
+                return super().construct_mapping(node, deep=deep)
             if key in seen:
                 raise ConstructorError(
                     "while constructing a mapping",
@@ -116,6 +125,11 @@ class StrictBaseLoader(yaml.BaseLoader):
         seen = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)
+            # Mirrors StrictSafeLoader: a composed key is not hashable, and
+            # delegating lets BaseConstructor raise ConstructorError instead
+            # of a TypeError traceback (T-04-24).
+            if not isinstance(key, Hashable):
+                return super().construct_mapping(node, deep=deep)
             if key in seen:
                 raise ConstructorError(
                     "while constructing a mapping",
@@ -421,26 +435,26 @@ def load_allowlist(root):
 
 
 def apply_allowlist(records, entries):
-    """Suppress Cyrillic records by exact path; return `(remaining, stale)`.
+    """Suppress every Cyrillic record for an allowlisted path.
 
-    One entry matches one record path and is consumed once. Only the
-    Cyrillic rule is suppressible: a shape violation on an allowlisted file
-    is still a violation. An entry that matched nothing is stale and must
-    fail the run, so the allowlist cannot accumulate dead permissions.
+    Suppression is keyed on the exact record path, so one entry exempts every
+    Cyrillic record for that path instead of being consumed by the first one
+    (D-16, WR-01). Only the Cyrillic rule is suppressible: a shape violation on
+    an allowlisted file is still a violation. An entry whose path suppressed no
+    record is stale and must fail the run, so the allowlist cannot accumulate
+    dead permissions.
+
+    Returns `(remaining, stale)`.
     """
+    allowed_paths = {entry["path"] for entry in entries}
+    used_paths = set()
     remaining = []
-    matched = [False] * len(entries)
     for item in records:
-        if item.get("rule") != CYRILLIC_RULE:
-            remaining.append(item)
+        if item.get("rule") == CYRILLIC_RULE and item["path"] in allowed_paths:
+            used_paths.add(item["path"])
             continue
-        for index, entry in enumerate(entries):
-            if not matched[index] and entry["path"] == item["path"]:
-                matched[index] = True
-                break
-        else:
-            remaining.append(item)
-    stale = [entry for entry, used in zip(entries, matched) if not used]
+        remaining.append(item)
+    stale = [entry for entry in entries if entry["path"] not in used_paths]
     return remaining, stale
 
 
