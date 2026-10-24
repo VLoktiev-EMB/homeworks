@@ -38,10 +38,10 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Metadata and Generation
 
-- [x] **META-01**: `homework.yaml` is validated by a JSON Schema with
+- [ ] **META-01**: `homework.yaml` is validated by a JSON Schema with
       `additionalProperties: false` and records identity, board, framework, language,
       simulation, tests, report, assets, status, source, and toolchain.
-- [x] **META-02**: `task.md` contains an English paraphrase, the source reference, the
+- [ ] **META-02**: `task.md` contains an English paraphrase, the source reference, the
       retrieval date, and attribution; it never contains the original internal material.
 - [ ] **META-03**: `templates/` provides an Arduino homework template, an ESP-IDF
       homework template, a report template, a task template, an ADR template, and a
@@ -234,8 +234,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-08 | Phase 1 | Complete |
 | FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 1 | Complete |
-| META-01 | Phase 4 | Complete |
-| META-02 | Phase 4 | Complete |
+| META-01 | Phase 4 | Gaps Found |
+| META-02 | Phase 4 | Gaps Found |
 | META-03 | Phase 4 | Pending |
 | META-04 | Phase 4 | Pending |
 | META-05 | Phase 5 | Pending |
