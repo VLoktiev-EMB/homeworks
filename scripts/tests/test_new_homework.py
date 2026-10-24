@@ -314,6 +314,31 @@ class ConflictTests(ScaffoldTestBase):
             "nothing may be written through the symlinked target",
         )
 
+    def test_homeworks_base_symlink_exits_2(self) -> None:
+        for label, flags in (("dry-run", ("--dry-run",)), ("real", ())):
+            with self.subTest(mode=label):
+                root = self.build(f"base-{label}", homeworks=False)
+                outside = self.workspace / f"outside-{label}"
+                outside.mkdir()
+                link = root / "homeworks"
+                link.symlink_to(outside)
+
+                result = self.scaffold(root, flags=flags)
+
+                self.assert_usage_error(result)
+                self.assertIn(
+                    "homeworks is a symlink; refusing to follow it",
+                    result.stderr,
+                )
+                self.assertTrue(
+                    link.is_symlink(), "the symlink must be left intact"
+                )
+                self.assertEqual(
+                    [],
+                    sorted(outside.rglob("*")),
+                    "nothing may be written through a symlinked homeworks base",
+                )
+
     def test_regular_file_at_intermediate_path_is_conflict(self) -> None:
         target = self.target(self.root)
         target.mkdir(parents=True)

@@ -20,8 +20,10 @@ Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
   2  usage or environment error (bad arguments, an invalid id or template
      name, a missing template manifest or `templates/task/task.md`, an unknown
      `{{placeholder}}`, a `${...}` occurrence, an unreadable template entry, a
-     target that escapes `homeworks/`, a symlink at `homeworks/<id>`, or an
-     OS-level write failure)
+     symlink at `homeworks/` itself, a `homeworks` path that exists and is not
+     a directory, a `homeworks` base that does not resolve to
+     `<root>/homeworks`, a target that escapes `homeworks/`, a symlink at
+     `homeworks/<id>`, or an OS-level write failure)
 
 The semantics that protect a published homework are content-based (D-20):
 
@@ -320,15 +322,37 @@ def _classify(base, target, data):
 
 
 def _contained_target(root, homework_id):
-    """Inspect `homeworks/<id>` and prove it stays under `homeworks/` (D-24).
+    """Inspect `homeworks/` and `homeworks/<id>`, proving containment (D-24).
 
-    `lstat` runs before `resolve()`, so a symlink at the target directory is
-    refused instead of being resolved into an accepted destination. The
-    `resolve()` plus `relative_to()` containment proof remains as defense in
-    depth, but the unresolved path is returned: every later step must see the
-    path that was inspected, never a link target.
+    The `homeworks` base itself is inspected first with `lstat`: a symlink, a
+    non-directory or a base that resolves anywhere other than `<root>/homeworks`
+    is a `CheckError` (exit 2) raised before `_build_plan` runs, so no plan
+    record can be printed and no write can be redirected outside the repository
+    root (T-04-26). `lstat` on the target then runs before `resolve()`, so a
+    symlink at the target directory is refused instead of being resolved into
+    an accepted destination. The `resolve()` plus `relative_to()` containment
+    proof remains as defense in depth, but the unresolved path is returned:
+    every later step must see the path that was inspected, never a link target.
     """
     base = root / "homeworks"
+    try:
+        base_mode = os.lstat(base).st_mode
+    except FileNotFoundError:
+        base_mode = None
+    except OSError as exc:
+        raise CheckError(f"cannot inspect homeworks: {exc}") from exc
+    if base_mode is not None:
+        if stat.S_ISLNK(base_mode):
+            raise CheckError(
+                "homeworks is a symlink; refusing to follow it"
+            )
+        if not stat.S_ISDIR(base_mode):
+            raise CheckError("homeworks exists and is not a directory")
+    if base.resolve() != root / "homeworks":
+        raise CheckError(
+            "homeworks base resolves outside the repository root; refusing "
+            "to scaffold"
+        )
     target = base / homework_id
     try:
         mode = os.lstat(target).st_mode
