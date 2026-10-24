@@ -132,7 +132,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `task.md` contains an English paraphrase, the source reference, retrieval date, and attribution, and no original internal material.
   5. `templates/` provides the Arduino homework, ESP-IDF homework, report, task, ADR, and board-profile templates.
 
-**Plans:** 5/5 plans executed
+**Plans:** 7 plans (5 executed, 2 gap-closure pending)
 
 **Wave 1**
 - [x] 04-01-PLAN.md — Contract core: JSON Schema, shared validation module, checker exit codes (tracer)
@@ -146,6 +146,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 4** *(blocked on Wave 3)*
 - [x] 04-05-PLAN.md — ADR-0009/0010, AGENTS.md and REUSE.toml updates, phase build gate (tracer: ADRs)
+
+**Gap closure** *(wave 1, after verification)*
+- [ ] 04-06-PLAN.md — Refuse symlinked and non-directory target components in `scripts/new_homework` (CR-01, WR-02)
+- [ ] 04-07-PLAN.md — Whole-path allowlist suppression and composed-YAML-key ERROR records (WR-01, CR-02)
 
 ### Phase 5: Generated Views and Documentation Site
 
