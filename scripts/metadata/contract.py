@@ -34,6 +34,7 @@ from __future__ import annotations
 import configparser
 import datetime
 import json
+import os
 import re
 import subprocess
 import unicodedata
@@ -579,13 +580,22 @@ def _render_error(error):
 
 
 def _homework_directory(root, path):
-    """Return `homeworks/<dir>`'s `<dir>` when *path* is its `homework.yaml`."""
-    try:
-        parts = Path(path).resolve().relative_to(Path(root).resolve()).parts
-    except ValueError:
+    """Return `homeworks/<dir>`'s `<dir>` when *path* is its `homework.yaml`.
+
+    The derivation is lexical: `os.path.abspath` normalizes `.` and `..`
+    without following symlinks, so a candidate reached through a symlinked
+    ancestor still reports `homeworks/<dir>/homework.yaml` and the
+    id-equals-directory rule cannot be silently disabled (T-04-27). Never
+    resolve the path here — resolution is exactly the property that erases
+    `homeworks/<dir>` when the base is a link.
+    """
+    root_parts = Path(os.path.abspath(root)).parts
+    path_parts = Path(os.path.abspath(path)).parts
+    if path_parts[: len(root_parts)] != root_parts:
         return None
-    if len(parts) == 3 and parts[0] == "homeworks" and parts[2] == "homework.yaml":
-        return parts[1]
+    tail = path_parts[len(root_parts):]
+    if len(tail) == 3 and tail[0] == "homeworks" and tail[2] == "homework.yaml":
+        return tail[1]
     return None
 
 
