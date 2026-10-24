@@ -58,3 +58,20 @@ repos:
         entry: python3 scripts/check_architecture.py
         files: ^(lib/|homeworks/|scripts/architecture/|scripts/check_architecture\.py)
         pass_filenames: false
+
+      # D-13: the pre-commit hook builds its own isolated Python environment
+      # from these two pins and never depends on `uv`. The same two pins live in
+      # the PEP 723 header of both entry scripts; `scripts/tests/test_metadata_deps.py`
+      # parses all three declarations as text and fails when they diverge.
+      #
+      # `templates/` is deliberately absent from `files`: an unrendered
+      # `template.yaml`-era homework contains `{{homework_id}}` and is not valid
+      # metadata. `scripts/new_homework` is present so an edit to the scaffold
+      # that can change rendered metadata re-runs the gate (defense in depth).
+      - id: check-metadata
+        name: homework metadata contract
+        language: python
+        additional_dependencies: ["PyYAML==6.0.3", "jsonschema==4.26.0"]
+        entry: python scripts/check_metadata.py
+        files: ^(homeworks/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/metadata/)
+        pass_filenames: false
