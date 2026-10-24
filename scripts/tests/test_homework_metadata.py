@@ -440,12 +440,19 @@ class CyrillicGateTests(FixtureBase):
 
     def test_allowlisted_path_still_rejects_a_shape_violation(self):
         # The allowlist exempts the Cyrillic rule only; a content problem on
-        # the same reviewed file is still a violation (D-16).
+        # the same reviewed file is still a violation (D-16). The fixture
+        # carries both a Cyrillic word and a shape violation, so the method
+        # fails if `apply_allowlist` is never invoked (WR-08).
         self.write_homework(
-            task_text=TASK_TEMPLATE.replace(
+            task_text=self._cyrillic_task().replace(
                 "source_url: TODO", "source_url: not-a-url"
             )
         )
+        before = self.run_fixture()
+        self.assertEqual(1, before.returncode, combined(before))
+        self.assertIn("Cyrillic character", before.stdout)
+        self.assertIn("not an http(s) URL", before.stdout)
+
         self.write_allowlist(
             [
                 {
@@ -454,7 +461,9 @@ class CyrillicGateTests(FixtureBase):
                 }
             ]
         )
-        self.assert_rejected(self.run_fixture(), "not an http(s) URL")
+        after = self.run_fixture()
+        self.assert_rejected(after, "not an http(s) URL")
+        self.assertNotIn("Cyrillic character", after.stdout)
 
     def test_allowlist_entry_for_another_path_is_stale(self):
         self.write_homework(task_text=self._cyrillic_task())
