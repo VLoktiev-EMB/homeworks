@@ -1,43 +1,43 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 04
-current_phase_name: Metadata Contract and Scaffolding
-status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-10-24T22:32:09.044Z"
+current_phase: 5
+current_phase_name: Generated Views and Documentation Site
+status: planning
+stopped_at: Phase 04 complete, ready to plan Phase 5
+last_updated: "2026-10-24T23:01:17.362Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 04 execution started
-state_head: 0c301ffbfd6de337ac98e34768ca4406c59a1cd8
+last_activity_desc: Phase 04 complete, transitioned to Phase 5
+state_head: 70577df9ee3cd255d3f395dd94332f4f6a90f906
 progress:
   total_phases: 11
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 31
-  completed_plans: 30
-  percent: 27
+  completed_plans: 31
+  percent: 36
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-24)
+See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 04 — Metadata Contract and Scaffolding
+**Current focus:** Phase 05 — Generated Views and Documentation Site
 
 ## Current Position
 
-Phase: 04 (Metadata Contract and Scaffolding) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 04
-Last activity: 2026-10-25 — Phase 04 execution started
+Phase: 5 — Generated Views and Documentation Site
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-25 — Phase 04 complete, transitioned to Phase 5
 
-Progress: [███░░░░░░░] 27%
+Progress: [████░░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 31
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -48,6 +48,7 @@ Progress: [███░░░░░░░] 27%
 | 01 | 8 | - | - |
 | 02 | 5 | - | - |
 | 03 | 9 | - | - |
+| 04 | 9 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -75,6 +76,10 @@ Recent decisions affecting current work:
 - Phase 3: I2C/SPI framework adapters are deferred (ADR-0008 D-08); the post-Phase-3 target-compile gate is owned by Phase 4 SC2 and Phase 8 SC2.
 - Phase 3: the native gate is 73 Unity cases in 7 suites with 20 identical digests; `RUNS = 20` is a constant and every subprocess has a timeout.
 - Phase 3: the architecture allowlist stays empty; any future entry must name a path, a known rule and a non-empty reason, and a stale entry fails the run.
+- Phase 4: `schema/homework.schema.json` is the single metadata contract; `additionalProperties: false` at every level means a new field is a schema change, never an extra key.
+- Phase 4: `scripts/new_homework` is the only scaffold path — idempotent, `--dry-run`, no overwrite, no symlink traversal; both templates build immediately.
+- Phase 4: Python deps are pinned once (PyYAML 6.0.3, jsonschema 4.26.0) in the PEP 723 headers and the pre-commit hook; drift fails `test_metadata_deps`.
+- Phase 4: paraphrase originality is not machine-verifiable; it is deferred to the first real `task.md` (UAT Test 1).
 
 ### Pending Todos
 
@@ -89,9 +94,9 @@ None yet.
 - Resolved in Phase 3: CR-01 (`partitions/default_16MB.csv` moved to a permanent location with
   existence tests) and WR-01..WR-04 (smoke-project test reads removed, ADR-0007 corrected,
   version single-sourced in `library.json`, `.gitignore` narrowed).
-- **[Phase 3 follow-up]** Target compilation of the Arduino and ESP-IDF adapters is deferred;
-  the smoke project was retired by design. Owners: Phase 4 SC2 (a scaffolded project builds
-  immediately) and Phase 8 SC2 (CI builds changed projects).
+- Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
+  templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
+- **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven.
 
 ## Deferred Items
 
@@ -99,10 +104,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| Target compile | Arduino/ESP-IDF adapter target builds (03-06.6) — smoke project retired by design | Deferred to Phase 4 SC2 and Phase 8 SC2 | 2026-10-24 | v1 |
+| Target compile | Arduino/ESP-IDF adapter target builds (03-06.6) — smoke project retired by design | Closed in Phase 4 — both scaffolded templates build | 2026-10-24 | v1 |
+| Human review | UAT Test 1 — paraphrase originality of the first real `task.md` | Deferred until the first homework exists | 2026-10-25 | v1 |
 
 ## Session Continuity
 
-Last session: 2026-10-24T20:00:52.856Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-metadata-contract-and-scaffolding/04-CONTEXT.md
+Last session: 2026-10-25T00:00:00.000Z
+Stopped at: Phase 04 complete, ready to plan Phase 5
+Resume file: None
