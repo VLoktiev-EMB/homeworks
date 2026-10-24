@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Homework metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "board",
+    "framework",
+    "language",
+    "status",
+    "source",
+    "toolchain"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[0-9]+_[0-9]+-[a-z0-9-]+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "board": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "framework": { "enum": ["arduino", "espidf"] },
+    "language": { "enum": ["c", "cpp"] },
+    "status": { "enum": ["planned", "in-progress", "complete", "verified"] },
+    "source": { "$ref": "#/$defs/source" },
+    "toolchain": { "$ref": "#/$defs/toolchain" },
+    "simulation": { "$ref": "#/$defs/simulation" },
+    "tests": { "$ref": "#/$defs/tests" },
+    "report": { "$ref": "#/$defs/report" },
+    "assets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference"],
+      "properties": {
+        "reference": { "type": "string", "minLength": 1 }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platformio", "platform"],
+      "properties": {
+        "platformio": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "platform": { "type": "string", "pattern": "^[a-z0-9-]+@[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "status"],
+      "properties": {
+        "tool": { "enum": ["wokwi", "velxio", "renode", "fritzing", "none"] },
+        "diagram": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+        },
+        "status": { "enum": ["none", "pending", "verified"] }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["framework", "native", "coverage"],
+      "properties": {
+        "framework": { "enum": ["unity", "none"] },
+        "native": { "type": "boolean" },
+        "coverage": { "type": "boolean" }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+        },
+        "status": { "enum": ["placeholder", "draft", "complete"] }
+      }
+    }
+  }
+}
