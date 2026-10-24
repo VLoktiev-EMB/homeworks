@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../schema/homework.schema.json
+schema_version: 1
+id: "1_3-fixture"
+title: "Fixture"
+board: esp32-s3-devkitc-1
+framework: arduino
+language: cpp
+status: planned
+source:
+  reference: TODO
+toolchain:
+  platformio: "6.2.0"
+  platform: "espressif32@8.0.0"
+tests:
+  framework: unity
+  native: true
+  coverage: false
