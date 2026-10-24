@@ -22,6 +22,12 @@ decision. `AGENTS.md` forbids rewriting published history, so `c904062` stays ex
 the only available remedy is forward-only. How should the squash commit title and body be
 composed so that no unreviewed branch subject can silently reach the default branch?
 
+GitHub accepts only four combinations of the two settings: `PR_TITLE` with `PR_BODY`,
+`PR_TITLE` with `BLANK`, `PR_TITLE` with `COMMIT_MESSAGES`, and `COMMIT_OR_PR_TITLE` with
+`COMMIT_MESSAGES`. A patch that pairs `COMMIT_OR_PR_TITLE` with `PR_BODY` is rejected with
+HTTP 422 and the error code `invalid_squash_commit_setting_combo`, so the decision must choose
+a valid pair rather than each value independently.
+
 ## Decision Drivers
 
 * The merge commit message must be authored and reviewable, not an automatic concatenation of
@@ -31,35 +37,38 @@ composed so that no unreviewed branch subject can silently reach the default bra
   to `COMMIT_MESSAGES`.
 * Published history is never rewritten, so the fix must change future squashes only and must
   not touch `c904062`.
-* The squash title should stay stable across a multi-commit pull request, while a
-  single-commit pull request may still take its commit subject as the title; that residual
-  behavior is a documented risk rather than something this setting removes.
-* A skip token deliberately placed in a pull-request body or in a single commit subject can
-  still suppress a push, so the rulebook expectation that ship notes never carry a skip token
-  in the pull-request body remains in force.
+* The chosen title and message values must form one of the combinations GitHub accepts, because
+  an invalid pair cannot be applied and therefore cannot be drift-checked either.
+* The squash title should be stable for every pull request, including a single-commit one, so
+  that a commit subject cannot become the permanent default-branch title by accident.
+* A skip token deliberately placed in a pull-request body or in a commit subject can still
+  suppress a push, so the rulebook expectation that ship notes never carry a skip token in the
+  pull-request body remains in force.
 
 ## Considered Options
 
-* `COMMIT_OR_PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`.
-* Keep `COMMIT_MESSAGES` and rely on review discipline alone.
+* `PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`.
+* Keep the `COMMIT_MESSAGES` body and rely on review discipline alone.
 * `PR_TITLE` plus `BLANK`.
+* `COMMIT_OR_PR_TITLE` plus `PR_BODY`.
 * A commit-msg hook that rejects skip tokens, keeping `COMMIT_MESSAGES`.
 
 ## Decision Outcome
 
-Chosen option: "`COMMIT_OR_PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`",
-because the title stays stable for a multi-commit pull request and the body becomes the reviewed
-pull-request description rather than an automatic concatenation of every branch subject, while
-the two keys are compared leaf by leaf by the existing drift checker.
+Chosen option: "`PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`", because it is
+one of the four combinations GitHub accepts, the title is always the reviewed pull-request
+title, and the body is the reviewed pull-request description rather than an automatic
+concatenation of every branch subject.
 
-GitHub then derives the title from the pull-request title whenever the branch carries more than
-one commit (the single-commit exception is accepted and recorded above) and takes the body from
-the pull-request description that a reviewer has already read. Because the two fields are now
-part of the committed policy, `--check` reports a mismatch if live GitHub state is changed back
-to `COMMIT_MESSAGES`, the same way it already reports drift in branch protection.
+`PR_TITLE` uses the pull-request title as the squash title for every pull request, including a
+single-commit one, so there is no longer a path by which one commit subject becomes the default
+branch title. `PR_BODY` uses the pull-request description, which a reviewer has already read,
+so the automatic composition of branch commit subjects is gone. The two fields are part of the
+committed policy, and `--check` reports a mismatch when live GitHub state differs, the same way
+it already reports drift in branch protection.
 
 The change is forward-only. `c904062` keeps the composed body and the missing `security`
-check-runs; no rebase, force-push, or history edit is proposed, because rotation of a published
+check-runs; no rebase, force-push, or history edit is proposed, because rewriting a published
 commit is exactly what the Git policy prohibits.
 
 ### Consequences
@@ -69,13 +78,13 @@ commit is exactly what the Git policy prohibits.
   the default branch through automatic composition.
 * Good, because both fields are declared in `policy/repository.json` and the existing generic
   projection compares them, so drift is detected without a checker change.
-* Good, because the squash title stays stable across a multi-commit pull request, which keeps
-  the permanent record readable.
+* Good, because the squash title is always the reviewed pull-request title, which removes the
+  single-commit subject exception that `COMMIT_OR_PR_TITLE` would have kept.
 * Bad, because a skip token deliberately written in the pull-request body still suppresses the
   push, so the setting removes the automatic path but not every path; review must keep ship
   notes clean.
-* Bad, because a single-commit pull request may still use that commit's subject as the squash
-  title, so a skip token in that one subject can still suppress a push.
+* Bad, because every squash title now comes from the pull-request title, so a non-conventional
+  pull-request title becomes a non-conventional commit subject; reviewers own that text.
 * Neutral, because the fix does not recover the missing `security` check-runs for `c904062`;
   that gap is recorded and closed only by the next push to `main`.
 
@@ -96,22 +105,23 @@ because the committed value is the expected value and no separate watch job is i
 
 ## Pros and Cons of the Options
 
-### `COMMIT_OR_PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`
+### `PR_TITLE` plus `PR_BODY`, declared in `policy/repository.json`
 
-The title is the pull-request title for a multi-commit branch, and the body is the pull-request
-description that a reviewer approved; both keys are part of the committed policy.
+The title is the pull-request title and the body is the pull-request description that a reviewer
+approved; both keys are part of the committed policy.
 
 * Good, because the body becomes reviewed prose instead of an automatic list of branch commit
   subjects.
 * Good, because the committed declaration makes the setting drift-checkable with the checker
   that already exists.
-* Good, because the merge title remains stable and predictable for a multi-commit pull request.
-* Neutral, because the single-commit title exception remains, so the setting narrows the skip
-  token path rather than eliminating it.
+* Good, because the title is stable and reviewed for every pull request, including a
+  single-commit one.
+* Neutral, because the title follows the pull-request title, so reviewers must keep that title
+  in the Conventional Commits form the rulebook expects.
 * Bad, because a skip token placed in the pull-request body still suppresses the push, so review
   discipline is still required.
 
-### Keep `COMMIT_MESSAGES` and rely on review discipline alone
+### Keep the `COMMIT_MESSAGES` body and rely on review discipline alone
 
 The repository default is left in place, and reviewers are expected to notice a skip token in
 any branch commit subject before merging.
@@ -132,6 +142,16 @@ The squash body is left empty and only the pull-request title is retained.
 * Bad, because the reviewed pull-request rationale is discarded from the permanent record,
   leaving only a title where the project expects the why of a change.
 
+### `COMMIT_OR_PR_TITLE` plus `PR_BODY`
+
+The title keeps the single-commit subject exception while the body takes the pull-request
+description.
+
+* Good, because the body would be reviewed prose rather than a concatenation of subjects.
+* Neutral, because the intent matches the chosen outcome for multi-commit pull requests.
+* Bad, because GitHub rejects this pair with HTTP 422 and
+  `invalid_squash_commit_setting_combo`, so it can neither be applied nor drift-checked.
+
 ### A commit-msg hook that rejects skip tokens, keeping `COMMIT_MESSAGES`
 
 A local and pre-commit hook rejects any commit message containing a skip token, while the
@@ -149,16 +169,23 @@ The incident is visible in the published history: commit `c904062` carries the c
 the absence of `security` check-runs. This record does not claim any workflow run or check-run
 that does not exist, and it deliberately does not propose editing that commit.
 
+During implementation, a live PATCH of `COMMIT_OR_PR_TITLE` with `PR_BODY` returned HTTP 422
+with the message: "Sorry, invalid setting combination. The following are valid combinations for
+the squash commit title and message: PR_TITLE and PR_BODY, PR_TITLE and BLANK, PR_TITLE and
+COMMIT_MESSAGES, COMMIT_OR_PR_TITLE and COMMIT_MESSAGES." The accepted pair was therefore
+`PR_TITLE` and `PR_BODY`, which satisfies the objective and removes the single-commit subject
+exception as a side effect.
+
 Related records:
 
-* `docs/decisions/0003-git-policy-and-protected-main.md` establishes linear history and
-  the no-rewrite rule that makes this decision forward-only.
+* `docs/decisions/0003-git-policy-and-protected-main.md` establishes linear history and the
+  no-rewrite rule that makes this decision forward-only.
 * `docs/decisions/0010-python-dependency-policy.md` is the precedent for binding a rule to a
   runnable drift test rather than to a convention.
 
-The policy pair is `squash_merge_commit_title=COMMIT_OR_PR_TITLE` and
+The policy pair is `squash_merge_commit_title=PR_TITLE` and
 `squash_merge_commit_message=PR_BODY` in `policy/repository.json`; the checker requires no
 change because it flattens every declared leaf and PATCHes the same keys. Revisit this decision
 if GitHub adds a per-pull-request squash-message override that makes the repository setting
-irrelevant, or if the rulebook later decides that a single-commit title exception is
-unacceptable.
+irrelevant, or if the repository decides that an empty squash body is preferable to carrying the
+pull-request description.
