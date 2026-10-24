@@ -18,7 +18,7 @@ The repository uses two licenses, declared once in `REUSE.toml`:
 
 ### MADR decision-record template
 
-`docs/decisions/template.md` is derived from the MADR 4.0.0 template
+`templates/adr/template.md` is derived from the MADR 4.0.0 template
 (<https://github.com/adr/madr>), which is licensed under the MIT License.
 The adaptation changes section guidance and cross-references only; the
 section structure and option/pro-con conventions come from the upstream

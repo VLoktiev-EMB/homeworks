@@ -3,7 +3,7 @@
 This directory records the irreversible and cross-cutting decisions that shape the
 repository: the layout, the architecture, the Git policy, the licensing boundary, and the
 asset policy. Each record follows the [MADR 4.0](https://adr.github.io/madr/) full template
-([`template.md`](template.md)) and states the context, the drivers, the options considered,
+([`template.md`](../../templates/adr/template.md)) and states the context, the drivers, the options considered,
 the outcome, and how compliance is confirmed. Code shows what the system does; these records
 explain why it does it that way.
 
