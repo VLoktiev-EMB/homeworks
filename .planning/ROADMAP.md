@@ -132,7 +132,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `task.md` contains an English paraphrase, the source reference, retrieval date, and attribution, and no original internal material.
   5. `templates/` provides the Arduino homework, ESP-IDF homework, report, task, ADR, and board-profile templates.
 
-**Plans:** 7 plans (5 executed, 2 gap-closure pending)
+**Plans:** 7/7 plans executed (5 executed, 2 gap-closure pending)
 
 **Wave 1**
 - [x] 04-01-PLAN.md — Contract core: JSON Schema, shared validation module, checker exit codes (tracer)
@@ -148,8 +148,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04-05-PLAN.md — ADR-0009/0010, AGENTS.md and REUSE.toml updates, phase build gate (tracer: ADRs)
 
 **Gap closure** *(wave 1, after verification)*
-- [ ] 04-06-PLAN.md — Refuse symlinked and non-directory target components in `scripts/new_homework` (CR-01, WR-02)
-- [ ] 04-07-PLAN.md — Whole-path allowlist suppression and composed-YAML-key ERROR records (WR-01, CR-02)
+- [x] 04-06-PLAN.md — Refuse symlinked and non-directory target components in `scripts/new_homework` (CR-01, WR-02)
+- [x] 04-07-PLAN.md — Whole-path allowlist suppression and composed-YAML-key ERROR records (WR-01, CR-02)
 
 ### Phase 5: Generated Views and Documentation Site
 
@@ -257,7 +257,7 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | 1. Repository Foundation and Policy Gate | 8/8 | Complete    | 2026-10-23 |
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
-| 4. Metadata Contract and Scaffolding | 5/5 | In Progress | - |
+| 4. Metadata Contract and Scaffolding | 7/7 | In Progress | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
