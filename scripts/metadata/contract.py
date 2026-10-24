@@ -582,21 +582,26 @@ def _render_error(error):
 def _homework_directory(root, path):
     """Return `homeworks/<dir>`'s `<dir>` when *path* is its `homework.yaml`.
 
-    The derivation is lexical: `os.path.abspath` normalizes `.` and `..`
-    without following symlinks, so a candidate reached through a symlinked
-    ancestor still reports `homeworks/<dir>/homework.yaml` and the
-    id-equals-directory rule cannot be silently disabled (T-04-27). Never
-    resolve the path here — resolution is exactly the property that erases
-    `homeworks/<dir>` when the base is a link.
+    The `homeworks` component and everything below it stay lexical: the
+    directory name is taken from the `os.path.abspath` parts, which normalize
+    `.` and `..` without following symlinks, so a candidate reached through a
+    symlinked ancestor still reports `homeworks/<dir>/homework.yaml` and the
+    id-equals-directory rule cannot be silently disabled (T-04-27, T-04-30).
+
+    Only the ancestor prefix before `homeworks` is reconciled. `resolve_root()`
+    canonicalizes the root (for example `/private/tmp/...`) while an explicit
+    absolute positional keeps the caller's spelling (`/tmp/...`), so the prefix
+    comparison must resolve both sides (T-04-29). The resolution boundary is
+    exactly the `homeworks` component: resolving it, the containing directory,
+    or the document itself would erase the identity comparison (T-04-27).
     """
-    root_parts = Path(os.path.abspath(root)).parts
-    path_parts = Path(os.path.abspath(path)).parts
-    if path_parts[: len(root_parts)] != root_parts:
+    parts = Path(os.path.abspath(path)).parts
+    if len(parts) < 4 or parts[-1] != "homework.yaml" or parts[-3] != "homeworks":
         return None
-    tail = path_parts[len(root_parts):]
-    if len(tail) == 3 and tail[0] == "homeworks" and tail[2] == "homework.yaml":
-        return tail[1]
-    return None
+    ancestor = Path(*parts[:-3])
+    if ancestor != Path(root) and ancestor.resolve() != Path(root).resolve():
+        return None
+    return parts[-2]
 
 
 def validate_homework_text(text, *, root, path):
