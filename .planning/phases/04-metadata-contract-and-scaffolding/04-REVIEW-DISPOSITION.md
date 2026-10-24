@@ -3,6 +3,42 @@ phase: 04
 review: 04-REVIEW.md
 titles: json
 findings:
+  - id: WR-06
+    severity: warning
+    disposition: open
+    title: "Symlink на самому `homeworks/` обходить контейнмент і тихо вимикає перевірку `id`"
+  - id: WR-07
+    severity: warning
+    disposition: open
+    title: "Між планом і записом шлях перевіряється лише один раз (TOCTOU)"
+  - id: WR-08
+    severity: warning
+    disposition: open
+    title: "Тест «allowlisted path still rejects a shape violation» не перевіряє пригнічення"
+  - id: IN-03
+    severity: info
+    disposition: open
+    title: "YAML merge-ключі відхиляються як «invalid YAML»"
+  - id: IN-05
+    severity: info
+    disposition: open
+    title: "Файли скаффолда отримують mode 0600; SIGKILL лишає temp-файли"
+  - id: IN-07
+    severity: info
+    disposition: open
+    title: "Недосяжний `except CheckError` у фазі запису"
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "Каскадна помилка `task.md` при невалідному `homework.yaml`"
+  - id: IN-09
+    severity: info
+    disposition: open
+    title: "Дублікати allowlist-entry ніколи не стають stale"
+  - id: IN-10
+    severity: info
+    disposition: open
+    title: "Літеральний BOM-символ у виклику `lstrip`"
   - id: CR-01
     severity: critical
     disposition: open
@@ -39,54 +75,43 @@ findings:
     severity: info
     disposition: open
     title: "`toolchain.platformio` не звіряється з `PLATFORMIO_CORE`"
-  - id: IN-03
-    severity: info
-    disposition: open
-    title: "YAML merge-ключі відхиляються як «invalid YAML»"
   - id: IN-04
     severity: info
     disposition: open
     title: "Не-рядкове значення provenance повідомляється як «value is empty»"
-  - id: IN-05
-    severity: info
-    disposition: open
-    title: "Файли скаффолда отримують mode 0600; SIGKILL лишає temp-файли"
   - id: IN-06
     severity: info
     disposition: open
     title: "`temp_root.render_tree` — мертвий код"
-  - id: IN-07
-    severity: info
-    disposition: open
-    title: "Недосяжний `except CheckError` у фазі запису"
-  - id: IN-08
-    severity: info
-    disposition: open
-    title: "Каскадна помилка `task.md` при невалідному `homework.yaml`"
-open: 15
-total: 15
-recorded: 2026-10-24T21:22:31.904Z
+open: 20
+total: 20
+recorded: 2026-10-24T21:49:11.063Z
 ---
 
 # Phase 04: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
+| WR-06 | warning | open | - |
+| WR-07 | warning | open | - |
+| WR-08 | warning | open | - |
 | IN-03 | info | open | - |
-| IN-04 | info | open | - |
 | IN-05 | info | open | - |
-| IN-06 | info | open | - |
 | IN-07 | info | open | - |
 | IN-08 | info | open | - |
+| IN-09 | info | open | - |
+| IN-10 | info | open | - |
+| CR-01 | critical | open | - (not in the current review) |
+| CR-02 | critical | open | - (not in the current review) |
+| WR-01 | warning | open | - (not in the current review) |
+| WR-02 | warning | open | - (not in the current review) |
+| WR-03 | warning | open | - (not in the current review) |
+| WR-04 | warning | open | - (not in the current review) |
+| WR-05 | warning | open | - (not in the current review) |
+| IN-01 | info | open | - (not in the current review) |
+| IN-02 | info | open | - (not in the current review) |
+| IN-04 | info | open | - (not in the current review) |
+| IN-06 | info | open | - (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
