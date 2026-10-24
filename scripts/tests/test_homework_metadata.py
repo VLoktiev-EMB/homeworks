@@ -1,0 +1,523 @@
+"""Prove the homework metadata contract end to end.
+
+The checker is invoked as a subprocess (`uv run scripts/check_metadata.py`)
+because the validator imports PyYAML and jsonschema, and D-14 keeps this suite
+dependency-free: no test module may import either library. Every fixture is a
+temporary root that contains a copy of `schema/` and `platformio.shared.ini`,
+so the real tree is never touched and a negative case can fail only because of
+its single mutation.
+
+Coverage: the minimal and full documents, an unknown key at the root and in
+every nested block, every required root key and every required `$defs` member,
+the optional `simulation.diagram`, the research probe matrix, the identity
+invariant `id == homeworks/<dir>`, malformed YAML / non-mapping / duplicated
+keys / the 64 KiB cap, toolchain drift and a broken shared configuration, the
+`--json` record shape, determinism and read-only behaviour, and the one
+canonical homework-ID literal shared by the schema, `contract.py`, `AGENTS.md`
+and `test_homework_id.py`.
+
+Provenance semantics for `task.md` are owned by plan 04-03; this module does
+not assert the D-39 sentinel branch and its fixtures contain no timestamp.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+from scripts.tests.test_homework_id import EXPECTED_PATTERN
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = REPO_ROOT / "scripts" / "check_metadata.py"
+CONTRACT = REPO_ROOT / "scripts" / "metadata" / "contract.py"
+SCHEMA = REPO_ROOT / "schema" / "homework.schema.json"
+AGENTS = REPO_ROOT / "AGENTS.md"
+
+ROOT_ORDER = (
+    "schema_version",
+    "id",
+    "title",
+    "board",
+    "framework",
+    "language",
+    "status",
+    "source",
+    "toolchain",
+)
+
+SCALAR_CHUNKS = {
+    "schema_version": "schema_version: 1\n",
+    "id": "id: {homework_id}\n",
+    "title": "title: Good homework\n",
+    "board": "board: esp32-s3-devkitc-1\n",
+    "framework": "framework: arduino\n",
+    "language": "language: cpp\n",
+    "status": "status: planned\n",
+}
+
+DEFS_CHUNKS = {
+    "source": {"reference": "  reference: TODO\n"},
+    "toolchain": {
+        "platformio": "  platformio: 6.2.0\n",
+        "platform": "  platform: espressif32@8.0.0\n",
+    },
+    "simulation": {"tool": "  tool: none\n", "status": "  status: none\n"},
+    "tests": {
+        "framework": "  framework: unity\n",
+        "native": "  native: true\n",
+        "coverage": "  coverage: false\n",
+    },
+    "report": {
+        "path": "  path: report/report.md\n",
+        "status": "  status: placeholder\n",
+    },
+}
+
+DEFS_REQUIRED = {
+    "source": ("reference",),
+    "toolchain": ("platformio", "platform"),
+    "simulation": ("tool", "status"),
+    "tests": ("framework", "native", "coverage"),
+    "report": ("path", "status"),
+}
+
+OPTIONAL_BLOCKS = ("simulation", "tests", "report")
+ASSETS_CHUNK = "assets:\n  - assets/wiring.png\n"
+
+
+def run_checker(*args: str, cwd: Path = REPO_ROOT) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["uv", "run", str(SCRIPT), *args],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+
+
+def combined(result: subprocess.CompletedProcess) -> str:
+    return result.stdout + result.stderr
+
+
+def git_status() -> str:
+    return subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    ).stdout
+
+
+def setUpModule():
+    """Warm uv's script environment before the first asserted run.
+
+    Environment creation can print an install line on stderr once; a warm run
+    keeps the determinism assertion about the checker, not about uv.
+    """
+    result = run_checker("--help")
+    if result.returncode != 0:
+        raise RuntimeError(f"uv could not run the checker: {combined(result)}")
+
+
+def block_text(name, omit=()):
+    body = "".join(
+        chunk for key, chunk in DEFS_CHUNKS[name].items() if key not in omit
+    )
+    return f"{name}:\n{body}"
+
+
+def document(
+    *,
+    homework_id="1_3-good",
+    omit_root=(),
+    omit_defs=(),
+    optional=True,
+    with_diagram=False,
+    assets=None,
+):
+    """Render a `homework.yaml` payload by string assembly, never with `yaml`."""
+    omitted = set(omit_defs)
+    chunks = []
+    for key in ROOT_ORDER:
+        if key in omit_root:
+            continue
+        if key in SCALAR_CHUNKS:
+            chunks.append(SCALAR_CHUNKS[key])
+        else:
+            chunks.append(block_text(key, {m for b, m in omitted if b == key}))
+    if optional:
+        for name in OPTIONAL_BLOCKS:
+            if name == "simulation" and with_diagram:
+                chunks.append(
+                    "simulation:\n"
+                    "  tool: none\n"
+                    "  diagram: assets/diagram.svg\n"
+                    "  status: none\n"
+                )
+                continue
+            chunks.append(block_text(name, {m for b, m in omitted if b == name}))
+        chunks.append(ASSETS_CHUNK if assets is None else assets)
+    return "".join(chunks).format(homework_id=homework_id)
+
+
+class FixtureBase(unittest.TestCase):
+    """A temporary root with the schema and the shared configuration copied in."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory(prefix="metadata-")
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        shutil.copytree(REPO_ROOT / "schema", self.root / "schema")
+        shutil.copy2(
+            REPO_ROOT / "platformio.shared.ini",
+            self.root / "platformio.shared.ini",
+        )
+
+    def write_homework(self, text=None, homework_id="1_3-good", directory=None):
+        directory = directory or homework_id
+        path = self.root / "homeworks" / directory / "homework.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if text is None:
+            text = document(homework_id=homework_id)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def run_fixture(self, *args):
+        return run_checker("--dir", str(self.root), *args)
+
+    def assert_accepted(self, result):
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertIn(": OK — ", result.stdout)
+
+    def assert_rejected(self, result, fragment=None):
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertIn(": ERROR — ", result.stdout)
+        if fragment:
+            self.assertIn(fragment, result.stdout)
+
+    def assert_environment_error(self, result, fragment=None):
+        self.assertEqual(2, result.returncode, combined(result))
+        self.assertIn("ERROR:", result.stderr)
+        if fragment:
+            self.assertIn(fragment, result.stderr)
+
+
+class SchemaShapeTest(unittest.TestCase):
+    """The committed schema stays strict and never relies on `format`."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+    def test_schema_declares_additional_properties_everywhere(self):
+        self.assertIs(False, self.schema.get("additionalProperties"))
+        self.assertEqual(
+            {"source", "toolchain", "simulation", "tests", "report"},
+            set(self.schema.get("$defs", {})),
+        )
+        for name, block in self.schema["$defs"].items():
+            with self.subTest(block=name):
+                self.assertIs(False, block.get("additionalProperties"))
+
+    def test_schema_contains_no_format_keyword(self):
+        # Pitfall P1: `format: uri` accepts "not a url" without a checker, so
+        # every shape must be an anchored pattern instead.
+        self.assertNotIn('"format"', json.dumps(self.schema))
+
+
+class BaselineTests(FixtureBase):
+    """The fixture harness starts from a document the contract accepts."""
+
+    def test_minimal_document_is_accepted(self):
+        self.write_homework(document(optional=False))
+        self.assert_accepted(self.run_fixture())
+
+    def test_full_document_with_every_optional_block_is_accepted(self):
+        self.write_homework(document())
+        self.assert_accepted(self.run_fixture())
+
+
+class UnknownKeyTests(FixtureBase):
+    """`additionalProperties: false` holds at the root and in every block."""
+
+    NESTED_ANCHORS = {
+        "source": ("source:\n  reference: TODO\n", "  unexpected: true\n"),
+        "toolchain": (
+            "toolchain:\n  platformio: 6.2.0\n",
+            "  unexpected: true\n",
+        ),
+        "simulation": ("simulation:\n  tool: none\n", "  unexpected: true\n"),
+        "tests": ("tests:\n  framework: unity\n", "  unexpected: true\n"),
+        "report": ("report:\n  path: report/report.md\n", "  unexpected: true\n"),
+    }
+
+    def test_unknown_top_level_key_is_error(self):
+        text = document(optional=False).replace(
+            "status: planned\n", "status: planned\nunexpected: true\n", 1
+        )
+        self.write_homework(text)
+        self.assert_rejected(self.run_fixture(), "unexpected")
+
+    def test_unknown_nested_key_is_error(self):
+        for name, (anchor, injection) in self.NESTED_ANCHORS.items():
+            with self.subTest(block=name):
+                text = document().replace(anchor, anchor + injection, 1)
+                self.assertNotEqual(document(), text, f"anchor missing for {name}")
+                self.write_homework(text)
+                self.assert_rejected(self.run_fixture(), "unexpected")
+
+
+class RequiredKeyTests(FixtureBase):
+    """Every required key is proven separately, not just the first one."""
+
+    def test_every_required_root_key_is_required(self):
+        for key in ROOT_ORDER:
+            with self.subTest(key=key):
+                self.write_homework(
+                    document(omit_root=(key,), optional=False)
+                )
+                self.assert_rejected(self.run_fixture())
+
+    def test_every_required_defs_member_is_required(self):
+        for block, members in DEFS_REQUIRED.items():
+            for member in members:
+                with self.subTest(block=block, member=member):
+                    self.write_homework(
+                        document(omit_defs=((block, member),))
+                    )
+                    self.assert_rejected(self.run_fixture())
+
+    def test_optional_simulation_diagram_is_accepted(self):
+        self.write_homework(document(with_diagram=True))
+        self.assert_accepted(self.run_fixture())
+
+
+class ResearchProbeTests(FixtureBase):
+    """Every probe from the research matrix is rejected."""
+
+    def test_research_probes_are_rejected(self):
+        minimal = document(optional=False)
+        cases = {
+            "id police-flasher": document(homework_id="police-flasher", optional=False),
+            "status draft": minimal.replace("status: planned", "status: draft"),
+            "framework stm32": minimal.replace(
+                "framework: arduino", "framework: stm32"
+            ),
+            "platformio 6.2": minimal.replace(
+                "platformio: 6.2.0", "platformio: 6.2"
+            ),
+            "duplicate assets": minimal + "assets:\n  - a.png\n  - a.png\n",
+            "absolute asset path": minimal + "assets:\n  - /etc/passwd\n",
+            "dotdot asset path": minimal + "assets:\n  - ../escape.png\n",
+            "backslash asset path": minimal + "assets:\n  - 'dir\\x.png'\n",
+            "trailing slash asset path": minimal + "assets:\n  - assets/\n",
+        }
+        for name, text in cases.items():
+            with self.subTest(probe=name):
+                self.write_homework(text)
+                self.assert_rejected(self.run_fixture())
+
+
+class IdentityTests(FixtureBase):
+    """`id` is the single source of identity and must name its directory."""
+
+    def test_matching_id_is_accepted(self):
+        self.write_homework(document(homework_id="1_3-good", optional=False))
+        self.assert_accepted(self.run_fixture())
+
+    def test_id_must_match_containing_directory(self):
+        self.write_homework(
+            document(homework_id="1_3-other", optional=False),
+            homework_id="1_3-good",
+        )
+        self.assert_rejected(self.run_fixture(), "containing directory")
+
+
+class PayloadTests(FixtureBase):
+    """Content problems are ERROR records at exit 1, never environment errors."""
+
+    def test_malformed_yaml_is_error(self):
+        self.write_homework('title: "unclosed\n')
+        self.assert_rejected(self.run_fixture(), "invalid YAML")
+
+    def test_non_mapping_payload_is_error(self):
+        self.write_homework("just a scalar\n")
+        self.assert_rejected(self.run_fixture(), "not a YAML mapping")
+
+    def test_duplicate_mapping_key_is_error(self):
+        text = document(optional=False) + "source:\n  reference: again\n"
+        self.write_homework(text)
+        self.assert_rejected(self.run_fixture(), "duplicate key 'source'")
+
+    def test_nested_duplicate_mapping_key_is_error(self):
+        text = document(optional=False).replace(
+            "source:\n  reference: TODO\n",
+            "source:\n  reference: TODO\n  reference: again\n",
+            1,
+        )
+        self.write_homework(text)
+        self.assert_rejected(self.run_fixture(), "duplicate key 'reference'")
+
+    def test_oversized_document_is_error(self):
+        text = document(optional=False) + "# " + ("x" * (64 * 1024)) + "\n"
+        self.write_homework(text)
+        self.assert_rejected(self.run_fixture(), "larger than 65536 bytes")
+
+
+class ToolchainTests(FixtureBase):
+    """The toolchain pins are cross-checked against the shared configuration."""
+
+    def test_platform_mismatch_is_error(self):
+        text = document(optional=False).replace(
+            "platform: espressif32@8.0.0", "platform: espressif32@9.9.9"
+        )
+        self.write_homework(text)
+        self.assert_rejected(self.run_fixture(), "toolchain.platform")
+
+    def test_inconsistent_shared_sections_exit_2(self):
+        (self.root / "platformio.shared.ini").write_text(
+            "[esp32s3_arduino]\n"
+            "platform = espressif32@8.0.0\n"
+            "[esp32s3_espidf]\n"
+            "platform = espressif32@7.0.0\n",
+            encoding="utf-8",
+        )
+        self.write_homework(document(optional=False))
+        self.assert_environment_error(self.run_fixture(), "disagree")
+
+    def test_missing_shared_section_exit_2(self):
+        (self.root / "platformio.shared.ini").write_text(
+            "[esp32s3_arduino]\nplatform = espressif32@8.0.0\n",
+            encoding="utf-8",
+        )
+        self.write_homework(document(optional=False))
+        self.assert_environment_error(self.run_fixture(), "esp32s3_espidf")
+
+    def test_missing_shared_ini_exit_2(self):
+        (self.root / "platformio.shared.ini").unlink()
+        self.write_homework(document(optional=False))
+        self.assert_environment_error(self.run_fixture(), "platformio.shared.ini")
+
+
+class JsonOutputTests(FixtureBase):
+    """`--json` is the stable CI surface: records only, no prose."""
+
+    def _mixed_fixture(self):
+        self.write_homework(document(optional=False))
+        self.write_homework(
+            document(homework_id="2_4-bad", optional=False).replace(
+                "title: Good homework", "title: Bad\nunexpected: true", 1
+            ),
+            homework_id="2_4-bad",
+        )
+
+    def test_json_records_have_exactly_three_keys(self):
+        self._mixed_fixture()
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        self.assertEqual(2, len(payload))
+        for record in payload:
+            with self.subTest(path=record.get("path")):
+                self.assertEqual({"path", "status", "reason"}, set(record))
+
+    def test_json_statuses_and_sorting(self):
+        self._mixed_fixture()
+        result = self.run_fixture("--json")
+        payload = json.loads(result.stdout)
+        statuses = {record["path"]: record["status"] for record in payload}
+        self.assertEqual("OK", statuses["homeworks/1_3-good/homework.yaml"])
+        self.assertEqual("ERROR", statuses["homeworks/2_4-bad/homework.yaml"])
+        self.assertEqual(
+            sorted(statuses), [record["path"] for record in payload]
+        )
+
+    def test_json_real_tree_is_empty_array(self):
+        result = run_checker("--json")
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertEqual([], json.loads(result.stdout))
+        self.assertEqual("", result.stderr)
+
+
+class RealTreeTests(unittest.TestCase):
+    """The shipped (still empty) tree passes, and the checker is read-only."""
+
+    def test_real_tree_passes(self):
+        result = run_checker()
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertIn("PASS: metadata contract satisfied", result.stdout)
+
+    def test_second_run_is_identical_and_read_only(self):
+        before = git_status()
+        first = run_checker()
+        second = run_checker()
+        after = git_status()
+
+        self.assertEqual(0, first.returncode, combined(first))
+        self.assertEqual(0, second.returncode, combined(second))
+        self.assertEqual(
+            (first.returncode, first.stdout, first.stderr),
+            (second.returncode, second.stdout, second.stderr),
+        )
+        self.assertEqual(before, after, "the checker modified the working tree")
+
+
+class CanonicalIdTest(unittest.TestCase):
+    """One literal, checked in four places at once."""
+
+    def test_canonical_id_literal_is_identical_in_four_places(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        schema_pattern = schema["properties"]["id"]["pattern"]
+
+        contract_source = CONTRACT.read_text(encoding="utf-8")
+        match = re.search(
+            r'HOMEWORK_ID = re\.compile\(r"([^"]+)"\)', contract_source
+        )
+        self.assertIsNotNone(match, "HOMEWORK_ID literal not found in contract.py")
+
+        agents_text = AGENTS.read_text(encoding="utf-8")
+        spans = [
+            span
+            for span in re.findall(r"`([^`\n]+)`", agents_text)
+            if span.startswith("^") and span.endswith("$")
+        ]
+        self.assertEqual(
+            1,
+            len(spans),
+            f"expected exactly one anchored pattern in AGENTS.md, found {spans}",
+        )
+
+        self.assertEqual(
+            {schema_pattern, match.group(1), EXPECTED_PATTERN, spans[0]},
+            {EXPECTED_PATTERN},
+            "the canonical homework-ID literal drifted between its four homes",
+        )
+
+
+class CliContractTests(unittest.TestCase):
+    """The command-line surface is stable for Phase 8 CI."""
+
+    def test_help_exits_zero(self):
+        result = run_checker("--help")
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertIn("homework metadata contract", result.stdout)
+
+    def test_unknown_argument_exits_two(self):
+        # argparse owns this failure path and prints its own usage; the exit
+        # code, not our ERROR prefix, is the contract.
+        result = run_checker("--no-such-option")
+        self.assertEqual(2, result.returncode, combined(result))
+        self.assertIn("unrecognized arguments", result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()

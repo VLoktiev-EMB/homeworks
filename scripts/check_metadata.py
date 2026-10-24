@@ -12,7 +12,7 @@ finds the documents, hands their text to the shared module, and renders the
 records. No validation rule lives here.
 
 Usage:
-  uv run scripts/check_metadata.py [--dir PATH] [PATH...]
+  uv run scripts/check_metadata.py [--dir PATH] [--json] [PATH...]
 
 Exit codes (a CI contract from Phase 8 onward):
   0  every scanned document satisfies the contract
@@ -26,12 +26,15 @@ disagrees with its directory, or a toolchain pin that drifted from
 `platformio.shared.ini` — stays at exit 1. Only the environment exits 2.
 
 The checker is read-only: it never writes to the tree, never reads the clock,
-and two consecutive runs produce byte-identical output.
+and two consecutive runs produce byte-identical output. With `--json` it
+prints one JSON array of `{"path", "status", "reason"}` objects and nothing
+else, so Phase 8 CI can consume the same records without parsing prose (D-23).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -85,6 +88,11 @@ def main(argv=None):
         help="repository root to check (default: git rev-parse --show-toplevel)",
     )
     parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one JSON array of records on stdout (no summary line)",
+    )
+    parser.add_argument(
         "paths",
         nargs="*",
         metavar="PATH",
@@ -117,10 +125,23 @@ def main(argv=None):
         return 2
 
     records.sort(key=lambda item: item["path"])
+    violations = sum(1 for record in records if record["status"] == "ERROR")
+
+    if args.json:
+        payload = [
+            {
+                "path": record["path"],
+                "status": record["status"],
+                "reason": record["reason"],
+            }
+            for record in records
+        ]
+        print(json.dumps(payload, indent=2))
+        return 1 if violations else 0
+
     for record in records:
         print(f"{record['path']}: {record['status']} — {record['reason']}")
 
-    violations = sum(1 for record in records if record["status"] == "ERROR")
     print()
     if violations:
         print(f"FAIL: {violations} metadata violation(s)")
