@@ -1,0 +1,540 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["PyYAML==6.0.3", "jsonschema==4.26.0"]
+# ///
+"""Create a homework project from a template, without ever overwriting one.
+
+`scripts/new_homework` is the only supported path to a new `homeworks/<id>/`
+directory (D-18, D-19). It renders `templates/homework-<name>/` plus
+`templates/task/task.md`, validates the whole candidate through the shared
+metadata module (D-12), prints the per-path plan, and only then writes.
+
+Usage:
+  uv run scripts/new_homework <id> --template <name> [--dry-run] [--json]
+                              [--dir PATH]
+
+Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
+  0  every record is CREATE or UNCHANGED
+  1  at least one record is CONFLICT or ERROR; nothing was written
+  2  usage or environment error (bad arguments, an invalid id or template
+     name, a missing template manifest or `templates/task/task.md`, an unknown
+     `{{placeholder}}`, a `${...}` occurrence, an unreadable template entry, a
+     symlink at `homeworks/` itself, a `homeworks` path that exists and is not
+     a directory, a `homeworks` base that does not resolve to
+     `<root>/homeworks`, a target that escapes `homeworks/`, a symlink at
+     `homeworks/<id>`, or an OS-level write failure)
+
+The semantics that protect a published homework are content-based (D-20):
+
+  * an absent target path is CREATE;
+  * a target whose bytes are identical is UNCHANGED;
+  * any other existing content is CONFLICT, including a symlink at any
+    intermediate or final candidate component and a non-directory intermediate
+    component; each is classified with `lstat`, named in the reason, and never
+    followed;
+  * there is no `--force`, and no file is normalized or reformatted to
+    manufacture an UNCHANGED result.
+
+The plan is the production algorithm (D-21): compute every rendered file in
+memory, classify every target, validate the candidate through
+`scripts.metadata.contract.validate_candidate`, print the records, and only
+then write. `--dry-run` stops after printing, so it creates no directory.
+
+Recoverable guarantee (D-24): validation and conflict detection happen before
+the first `mkdir`, so a validation or conflict failure cannot leave a partial
+project. A crash or an OS-level failure *during* the write phase can leave a
+partially written project; it is not transactionally rolled back, because POSIX
+offers no atomic multi-file commit. Each individual file appears whole or not
+at all: the bytes go to a temporary file in the target's own directory and are
+moved into place with `os.replace`.
+
+The scaffold never invokes PlatformIO (D-22) and never reads the clock
+(Pitfall P10); a second run is byte-identical.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import stat
+import sys
+import tempfile
+from pathlib import Path
+
+import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.metadata.contract import (  # noqa: E402
+    HOMEWORK_ID,
+    PLATFORMIO_CORE,
+    CheckError,
+    derive_parts,
+    read_shared_platform_pin,
+    resolve_root,
+    validate_candidate,
+)
+
+TEMPLATE_NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+# D-25/D-33: a closed placeholder vocabulary, and `${...}` is never allowed
+# because PlatformIO, CMake and SCons own that syntax.
+PLACEHOLDER = re.compile(r"\{\{([^{}]*)\}\}")
+DOLLAR_BRACE = re.compile(r"\$\{[^}]*\}")
+
+MANIFEST_NAME = "template.yaml"
+HOMEWORK_YAML = "homework.yaml"
+TASK_MD = "task.md"
+TASK_TEMPLATE = Path("templates") / "task" / TASK_MD
+
+# D-05: the metadata carries a board id, never inline board details.
+BOARD = "esp32-s3-devkitc-1"
+
+CONFLICT_STATUSES = ("CONFLICT", "ERROR")
+
+
+def _template_directory(root, name):
+    """Resolve `templates/homework-<name>/` dynamically; never a fixed registry.
+
+    D-19 makes a template a new directory, so the name is validated by shape
+    only and then resolved by path. A symlinked template directory is refused
+    for the same reason a symlinked template entry is: the scaffold must not
+    write bytes it never inspected.
+    """
+    if not TEMPLATE_NAME.match(name):
+        raise CheckError(
+            f"invalid template name {name!r}; expected ^[a-z0-9][a-z0-9-]*$"
+        )
+    directory = root / "templates" / f"homework-{name}"
+    if directory.is_symlink():
+        raise CheckError(
+            f"template directory templates/homework-{name} is a symlink; refusing"
+        )
+    if not directory.is_dir():
+        raise CheckError(
+            f"unknown template {name!r}; no directory at templates/homework-{name}"
+        )
+    return directory
+
+
+def _template_manifest(template_dir):
+    """Read `template.yaml`; a missing manifest or key is a usage error."""
+    manifest_path = template_dir / MANIFEST_NAME
+    if not manifest_path.is_file():
+        raise CheckError(
+            f"template templates/{template_dir.name} has no {MANIFEST_NAME}"
+        )
+    try:
+        text = manifest_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise CheckError(f"{MANIFEST_NAME} is not valid UTF-8: {exc}") from exc
+    except OSError as exc:
+        raise CheckError(f"cannot read {MANIFEST_NAME}: {exc}") from exc
+    try:
+        document = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise CheckError(f"{MANIFEST_NAME} is not valid YAML: {exc}") from exc
+    if not isinstance(document, dict):
+        raise CheckError(f"{MANIFEST_NAME} must be a YAML mapping")
+    for key in ("framework", "description"):
+        value = document.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise CheckError(
+                f"{MANIFEST_NAME} must declare a non-empty {key}"
+            )
+    return document
+
+
+def _template_files(template_dir):
+    """Yield `(relative path, source path)` for every regular template file.
+
+    The root `template.yaml` is the manifest, not a rendered file, so it is
+    skipped. `os.walk(..., followlinks=False)` plus an explicit `is_symlink`
+    check means a symlinked entry is reported and stops the run instead of
+    being silently followed (T-04-03).
+    """
+    entries = []
+    for current, dirnames, filenames in os.walk(template_dir, followlinks=False):
+        current_path = Path(current)
+        for name in sorted(dirnames):
+            candidate = current_path / name
+            if candidate.is_symlink():
+                relative = candidate.relative_to(template_dir).as_posix()
+                raise CheckError(
+                    f"template entry {relative} is a symlink; refusing to follow it"
+                )
+        for name in sorted(filenames):
+            candidate = current_path / name
+            if candidate.is_symlink():
+                relative = candidate.relative_to(template_dir).as_posix()
+                raise CheckError(
+                    f"template entry {relative} is a symlink; refusing to follow it"
+                )
+            relative = candidate.relative_to(template_dir)
+            if relative == Path(MANIFEST_NAME):
+                continue
+            entries.append((relative, candidate))
+    return sorted(entries, key=lambda item: item[0].as_posix())
+
+
+def _candidates(root, template_dir):
+    """Return the complete candidate set: template files plus `task.md`.
+
+    `task.md` is composed from `templates/task/task.md`, not shipped in a
+    homework template (D-30, Open Question 6). Two entries that would map to
+    the same target are a usage error rather than a silent last-one-wins.
+    """
+    candidates = _template_files(template_dir)
+    task_template = root / TASK_TEMPLATE
+    if task_template.is_symlink():
+        raise CheckError(
+            "templates/task/task.md is a symlink; refusing to follow it"
+        )
+    if not task_template.is_file():
+        raise CheckError("missing templates/task/task.md")
+    candidates.append((Path(TASK_MD), task_template))
+
+    seen = set()
+    for relative, _ in candidates:
+        if relative in seen:
+            raise CheckError(
+                f"two template entries map to the target path {relative.as_posix()}"
+            )
+        seen.add(relative)
+    return sorted(candidates, key=lambda item: item[0].as_posix())
+
+
+def _mapping(root, homework_id, manifest):
+    """Build the closed substitution map (D-25, D-33)."""
+    parts = derive_parts(homework_id)
+    return {
+        "homework_id": homework_id,
+        "title": parts["title"],
+        "framework": manifest["framework"].strip(),
+        "board": BOARD,
+        "platformio_version": PLATFORMIO_CORE,
+        "platform_version": read_shared_platform_pin(root),
+    }
+
+
+def _render(text, mapping, display):
+    """Substitute the closed map; an unknown token or `${...}` stops the run."""
+    if DOLLAR_BRACE.search(text):
+        raise CheckError(
+            f"{display}: dollar-brace interpolation '${{...}}' is not allowed"
+        )
+
+    def replace(match):
+        token = match.group(1)
+        if token not in mapping:
+            raise CheckError(
+                f"{display}: unknown placeholder " + "{{" + token + "}}"
+            )
+        return mapping[token]
+
+    return PLACEHOLDER.sub(replace, text)
+
+
+def _read_text(source, display):
+    """Read one template file as UTF-8; failure is an environment error."""
+    try:
+        return source.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise CheckError(f"{display}: template file is not valid UTF-8: {exc}") from exc
+    except OSError as exc:
+        raise CheckError(f"cannot read template file {display}: {exc}") from exc
+
+
+def _component_conflict(base, relative):
+    """Walk `relative` from `base` with `lstat`; never resolve a component.
+
+    T-04-22: checking only the final target path lets an intermediate symlink
+    resolve elsewhere and a write escape `homeworks/`. Every component is
+    inspected first, so a symlink on any prefix is refused before `exists()`,
+    `is_file()` or `read_bytes()` can traverse it. A missing component means
+    the rest of the path is absent and safe to create.
+
+    Returns `None` when the path is safe, otherwise a `(status, reason)` tuple
+    naming the offending path.
+    """
+    consumed = Path("homeworks")
+    parts = relative.parts
+    for index, part in enumerate(parts):
+        consumed = consumed / part
+        current = base / Path(*parts[: index + 1])
+        try:
+            mode = os.lstat(current).st_mode
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise CheckError(
+                f"cannot inspect {consumed.as_posix()}: {exc}"
+            ) from exc
+        if index == len(parts) - 1:
+            if stat.S_ISLNK(mode):
+                return (
+                    "CONFLICT",
+                    "target is a symlink; refusing to follow or overwrite it",
+                )
+            return None
+        if stat.S_ISLNK(mode):
+            return (
+                "CONFLICT",
+                f"intermediate path {consumed.as_posix()} is a symlink; "
+                "refusing to follow it",
+            )
+        if not stat.S_ISDIR(mode):
+            return (
+                "CONFLICT",
+                f"intermediate path {consumed.as_posix()} exists and is not "
+                "a directory",
+            )
+    return None
+
+
+def _classify(base, target, data):
+    """Classify one target path without ever following a symlink.
+
+    The component walk runs first, so `exists()`, `is_file()` and
+    `read_bytes()` are only reached once every component has been inspected
+    with `lstat` and no symlinked parent can be traversed (T-04-22). Byte
+    equality is the only definition of UNCHANGED (D-20): no whitespace
+    normalization, no line-ending translation, no reformatting.
+    """
+    relative = target.relative_to(base)
+    conflict = _component_conflict(base, relative)
+    if conflict is not None:
+        return conflict
+    if not target.exists():
+        return "CREATE", "target does not exist"
+    if not target.is_file():
+        return "CONFLICT", "target exists and is not a regular file"
+    try:
+        existing = target.read_bytes()
+    except OSError as exc:
+        raise CheckError(f"cannot read existing target {target}: {exc}") from exc
+    if existing == data:
+        return "UNCHANGED", "target bytes are identical"
+    return "CONFLICT", "target exists with different content"
+
+
+def _contained_target(root, homework_id):
+    """Inspect `homeworks/` and `homeworks/<id>`, proving containment (D-24).
+
+    The `homeworks` base itself is inspected first with `lstat`: a symlink, a
+    non-directory or a base that resolves anywhere other than `<root>/homeworks`
+    is a `CheckError` (exit 2) raised before `_build_plan` runs, so no plan
+    record can be printed and no write can be redirected outside the repository
+    root (T-04-26). `lstat` on the target then runs before `resolve()`, so a
+    symlink at the target directory is refused instead of being resolved into
+    an accepted destination. The `resolve()` plus `relative_to()` containment
+    proof remains as defense in depth, but the unresolved path is returned:
+    every later step must see the path that was inspected, never a link target.
+    """
+    base = root / "homeworks"
+    try:
+        base_mode = os.lstat(base).st_mode
+    except FileNotFoundError:
+        base_mode = None
+    except OSError as exc:
+        raise CheckError(f"cannot inspect homeworks: {exc}") from exc
+    if base_mode is not None:
+        if stat.S_ISLNK(base_mode):
+            raise CheckError(
+                "homeworks is a symlink; refusing to follow it"
+            )
+        if not stat.S_ISDIR(base_mode):
+            raise CheckError("homeworks exists and is not a directory")
+    if base.resolve() != root / "homeworks":
+        raise CheckError(
+            "homeworks base resolves outside the repository root; refusing "
+            "to scaffold"
+        )
+    target = base / homework_id
+    try:
+        mode = os.lstat(target).st_mode
+    except FileNotFoundError:
+        mode = None
+    except OSError as exc:
+        raise CheckError(
+            f"cannot inspect homeworks/{homework_id}: {exc}"
+        ) from exc
+    if mode is not None:
+        if stat.S_ISLNK(mode):
+            raise CheckError(
+                f"target homeworks/{homework_id} is a symlink; refusing to "
+                "follow it"
+            )
+        if not stat.S_ISDIR(mode):
+            raise CheckError(
+                f"homeworks/{homework_id} exists and is not a directory"
+            )
+    resolved = target.resolve()
+    try:
+        resolved.relative_to(base.resolve())
+    except ValueError as exc:
+        raise CheckError(
+            f"target homeworks/{homework_id} escapes the homeworks directory"
+        ) from exc
+    return target
+
+
+def _build_plan(root, homework_id, target_dir, candidates, mapping):
+    """Render every candidate, classify every target, and validate the pair."""
+    records = []
+    payloads = {}
+    rendered = {}
+    base = target_dir.parent
+    for relative, source in candidates:
+        display = (Path("homeworks") / homework_id / relative).as_posix()
+        text = _read_text(source, display)
+        output = _render(text, mapping, display)
+        data = output.encode("utf-8")
+        status, reason = _classify(base, target_dir / relative, data)
+        records.append({"path": display, "status": status, "reason": reason})
+        payloads[display] = (target_dir / relative, data)
+        rendered[relative.as_posix()] = output
+
+    for required in (HOMEWORK_YAML, TASK_MD):
+        if required not in rendered:
+            raise CheckError(f"the candidate set provides no {required}")
+
+    candidate_records = validate_candidate(
+        rendered[HOMEWORK_YAML],
+        rendered[TASK_MD],
+        root=root,
+        homework_path=target_dir / HOMEWORK_YAML,
+        task_path=target_dir / TASK_MD,
+    )
+    for item in candidate_records:
+        if item["status"] == "ERROR":
+            records.append(
+                {
+                    "path": item["path"],
+                    "status": "ERROR",
+                    "reason": item["reason"],
+                }
+            )
+    return records, payloads
+
+
+def _write_atomic(target, data):
+    """Write *data* so each file appears whole or not at all (D-24)."""
+    descriptor, temporary = tempfile.mkstemp(
+        dir=target.parent, prefix=".new_homework-"
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+        os.replace(temporary, target)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
+def _write_all(payloads, ordered):
+    """Write every CREATE record; UNCHANGED targets are left untouched."""
+    for record in ordered:
+        if record["status"] != "CREATE":
+            continue
+        target, data = payloads[record["path"]]
+        # D-24: the parent is created in the write phase, immediately before
+        # the temporary file, so an aborted run creates no directory.
+        target.parent.mkdir(parents=True, exist_ok=True)
+        _write_atomic(target, data)
+
+
+def _emit(records, as_json):
+    """Print the plan sorted by path and return the ordered records."""
+    ordered = sorted(
+        records, key=lambda item: (item["path"], item["status"], item["reason"])
+    )
+    if as_json:
+        payload = [
+            {
+                "path": item["path"],
+                "status": item["status"],
+                "reason": item["reason"],
+            }
+            for item in ordered
+        ]
+        print(json.dumps(payload, indent=2))
+    else:
+        for item in ordered:
+            print(f"{item['path']}: {item['status']} — {item['reason']}")
+    return ordered
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="new_homework",
+        description="Create a homework project from a template.",
+    )
+    parser.add_argument(
+        "homework_id",
+        metavar="ID",
+        help="homework id matching ^[0-9]+_[0-9]+-[a-z0-9-]+$",
+    )
+    parser.add_argument(
+        "--template",
+        metavar="NAME",
+        required=True,
+        help="template name; resolves to templates/homework-NAME/",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the same plan and exit code without writing anything",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one sorted JSON array of {path, status, reason} records",
+    )
+    parser.add_argument(
+        "--dir",
+        metavar="PATH",
+        help="repository root to scaffold into (default: git rev-parse --show-toplevel)",
+    )
+    args = parser.parse_args(argv)
+
+    try:
+        root = resolve_root(args.dir)
+        if not HOMEWORK_ID.match(args.homework_id):
+            raise CheckError(
+                f"invalid homework id {args.homework_id!r}; expected "
+                "module_lesson-name matching ^[0-9]+_[0-9]+-[a-z0-9-]+$"
+            )
+        template_dir = _template_directory(root, args.template)
+        manifest = _template_manifest(template_dir)
+        candidates = _candidates(root, template_dir)
+        mapping = _mapping(root, args.homework_id, manifest)
+        target_dir = _contained_target(root, args.homework_id)
+        records, payloads = _build_plan(
+            root, args.homework_id, target_dir, candidates, mapping
+        )
+        ordered = _emit(records, args.json)
+    except CheckError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    blocked = any(item["status"] in CONFLICT_STATUSES for item in ordered)
+    if args.dry_run or blocked:
+        return 1 if blocked else 0
+
+    try:
+        _write_all(payloads, ordered)
+    except CheckError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"ERROR: write failed: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

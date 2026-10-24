@@ -1,0 +1,8 @@
+id: esp32-s3-devkitc-1
+soc: esp32-s3
+flash_mb: 16
+psram: octal
+frameworks:
+  - arduino
+  - espidf
+pinout_url: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html

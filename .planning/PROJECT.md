@@ -32,19 +32,30 @@ artifact — code, evidence, and report — that can be understood and verified 
   pre-commit — Phase 3 (ARCH-05)
 - ✓ A top-level `tests/` PlatformIO project compiles `common` and `port` natively and runs
   the Unity suite: 73 cases in 7 suites, identical results over 20 runs — Phase 3 (ARCH-06)
+- ✓ `homework.yaml` validated by a JSON Schema 2020-12 with `additionalProperties: false`
+  at every level; the checker exits 0 on a valid tree and 1 on every invalid probe — Phase 4
+  (META-01)
+- ✓ Six templates (`homework-arduino`, `homework-espidf`, `task`, `report`, `adr`,
+  `board-profile`) exist and are covered by the template test suite — Phase 4 (META-03)
+- ✓ `scripts/new_homework` is the only scaffold path: it is idempotent, supports `--dry-run`,
+  refuses every overwrite and symlink escape, and produces a project that builds immediately
+  (Arduino and ESP-IDF) — Phase 4 (FOUND-01, META-04)
+- ✓ Homework IDs follow `^[0-9]+_[0-9]+-[a-z0-9-]+$` and must match the containing
+  `homeworks/<dir>/`; the scaffold and checker enforce the same anchored pattern — Phase 4
+- ✓ `task.md` carries the four provenance fields and a Cyrillic gate with an exact-path
+  allowlist; paraphrase originality remains a human review item on the first real homework —
+  Phase 4 (META-02, deferred)
 
 ### Active
 
 **Repository and tooling**
 
-- [ ] Monorepo with one independent PlatformIO project per homework under `homeworks/`.
 - [ ] Shared libraries in `lib/` (`common`, `port`, `arduino`, `espidf`, `host`) consumed
       through `lib_deps = <name>=symlink://../../lib/<name>` with a `library.json` per
       library and a generated `platformio.shared.ini`; `lib_extra_dirs` remains a
       generator fallback only.
 - [ ] Toolchain is pinned: PlatformIO Core 6.2.0, `platformio/espressif32` 8.0.0, and
       explicit ESP32-S3-DevKitC-1 N16R8 overrides (16 MB flash, octal PSRAM).
-- [ ] Homework directories named `module_lesson-name`, e.g. `1_3-police-flasher`.
 - [ ] Multi-root VS Code workspace containing `repo`, `docs`, `lib`, `scripts`, and each
       homework; generated from metadata and committed.
 - [ ] `AGENTS.md` as the canonical rulebook (up to ~300 lines) with enforcement tags,
@@ -54,10 +65,6 @@ artifact — code, evidence, and report — that can be understood and verified 
 
 **Homework artifacts**
 
-- [ ] Every homework contains `task.md` (English paraphrase + source), `homework.yaml`
-      (validated metadata), `README.md` (academic report), `assets/`, code, and tests.
-- [ ] `homework.yaml` is validated by a JSON Schema and records identity, board,
-      framework, language, simulation, tests, report, assets, status, and source.
 - [ ] Reports use the 10-section academic structure: title/metadata, objective,
       assumptions, theory, hardware and wiring, methodology, results, analysis
       (including industry notes), conclusions, and IEEE references.
@@ -90,8 +97,6 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] Arduino code is idiomatic C++ with minimal STL; ESP-IDF code is C11; shared logic
       is pure C with `extern "C"` headers.
 - [ ] Reusable drivers abstract the bus (I2C/SPI), not the whole driver.
-- [ ] Both `framework = arduino` and `framework = espidf` are supported through separate
-      homework templates.
 - [ ] A PlatformIO + export path covers course requirements that mandate another IDE.
 
 **Quality**
@@ -250,7 +255,9 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | — Pending |
 | clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | — Pending |
 | 10-section report with BOM, calculations, safety, and industry notes | Academic completeness plus engineering rigor | — Pending |
-| `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | — Pending |
+| `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | ✓ Phase 4 — schema-validated contract; `task.md` carries provenance frontmatter (ADR-0009) |
+| JSON Schema 2020-12 as the single metadata contract | One declarative field set read by editors, the checker, the scaffold and Phase 5 generators; anchored patterns instead of `format` | ✓ Phase 4 — `additionalProperties: false` at every level; unknown keys rejected |
+| Pinned Python dependencies via PEP 723 + pre-commit `additional_dependencies` | One pin set shared by the scaffold, the checker and the hook; drift fails the suite | ✓ Phase 4 — ADR-0010; PyYAML 6.0.3 and jsonschema 4.26.0 |
 | Unity + native environment | Fast, deterministic tests for pure logic | ✓ Phase 3 — 73 cases, 7 suites, 20 identical runs |
 | Tiered testing | Avoids overhead while keeping evidence proportional to the work | — Pending |
 | TDD for pure logic | Improves design and guarantees testability | — Pending |
@@ -267,7 +274,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Pilot 1.3 with all extensions in guided mode | Validates the full workflow before scaling to 30+ homeworks | — Pending |
 | Seven thin skills, two fully implemented | Complete inventory without premature design | — Pending |
 | Four deterministic scripts | Guarantees consistency for scaffolding, index, workspace, and validation | — Pending |
-| Full template set from the first phase | Makes the correct structure the easiest path | — Pending |
+| Full template set from the first phase | Makes the correct structure the easiest path | ✓ Phase 4 — six templates, golden-tree tests, both homework templates build |
 | `AGENTS.md` as canonical, imported by `CLAUDE.md` | Portable rules for Claude and Antigravity without duplication | — Pending |
 
 ## Evolution
@@ -291,4 +298,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-24 after Phase 3*
+*Last updated: 2026-10-25 after Phase 4*

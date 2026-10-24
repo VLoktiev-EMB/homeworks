@@ -3,7 +3,7 @@
 This directory records the irreversible and cross-cutting decisions that shape the
 repository: the layout, the architecture, the Git policy, the licensing boundary, and the
 asset policy. Each record follows the [MADR 4.0](https://adr.github.io/madr/) full template
-([`template.md`](template.md)) and states the context, the drivers, the options considered,
+([`template.md`](../../templates/adr/template.md)) and states the context, the drivers, the options considered,
 the outcome, and how compliance is confirmed. Code shows what the system does; these records
 explain why it does it that way.
 
@@ -29,5 +29,7 @@ explain why it does it that way.
 | 0006 | Public commit identity | accepted | 2026-10-23 |
 | 0007 | Symlinked shared libraries via lib_deps and library.json | accepted | 2026-10-23 |
 | 0008 | Common depends on port; ports are consumer-owned | accepted | 2026-10-24 |
+| 0009 | Homework metadata contract | accepted | 2026-10-24 |
+| 0010 | Python dependency policy | accepted | 2026-10-24 |
 
-Next number: **0009**.
+Next number: **0011**.

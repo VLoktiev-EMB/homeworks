@@ -21,8 +21,10 @@ path = "**"
 SPDX-FileCopyrightText = "2026 VLoktiev-EMB"
 SPDX-License-Identifier = "MIT"
 
-# Documentation, homework reports, and planning artifacts.
+# Documentation, homework reports, planning artifacts, and document templates.
+# Template configuration and manifest files (`.ini`, `.json`) and `schema/**`
+# deliberately stay on the MIT catch-all: they are machine contracts, not prose.
 [[annotations]]
-path = ["*.md", "docs/**", "homeworks/**/*.md", ".planning/**"]
+path = ["*.md", "docs/**", "homeworks/**/*.md", "templates/**/*.md", ".planning/**"]
 SPDX-FileCopyrightText = "2026 VLoktiev-EMB"
 SPDX-License-Identifier = "CC-BY-4.0"

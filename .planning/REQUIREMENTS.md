@@ -11,7 +11,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Repository Foundation and Policy
 
-- [ ] **FOUND-01**: The repository contains one independent PlatformIO project per
+- [x] **FOUND-01**: The repository contains one independent PlatformIO project per
       homework under `homeworks/<id>/`, with its own `platformio.ini`, `src/`, `include/`,
       `test/`, `assets/`, `README.md`, `task.md`, and `homework.yaml`.
 - [x] **FOUND-02**: Homework IDs follow `module_lesson-name` (for example,
@@ -38,15 +38,17 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Metadata and Generation
 
-- [ ] **META-01**: `homework.yaml` is validated by a JSON Schema with
+- [x] **META-01**: `homework.yaml` is validated by a JSON Schema with
       `additionalProperties: false` and records identity, board, framework, language,
       simulation, tests, report, assets, status, source, and toolchain.
 - [ ] **META-02**: `task.md` contains an English paraphrase, the source reference, the
       retrieval date, and attribution; it never contains the original internal material.
-- [ ] **META-03**: `templates/` provides an Arduino homework template, an ESP-IDF
+      *Shape, sentinel and Cyrillic rules are enforced by the checker; paraphrase
+      originality is deferred to the first real homework (Phase 999.1).*
+- [x] **META-03**: `templates/` provides an Arduino homework template, an ESP-IDF
       homework template, a report template, a task template, an ADR template, and a
       board-profile template.
-- [ ] **META-04**: `scripts/new_homework` scaffolds a homework from a template, is
+- [x] **META-04**: `scripts/new_homework` scaffolds a homework from a template, is
       idempotent, supports `--dry-run`, and refuses to overwrite existing files.
 - [ ] **META-05**: The README index, MkDocs navigation, multi-root workspace file,
       `platformio.shared.ini`, and CI matrix are generated from `homework.yaml`; every
@@ -224,7 +226,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 4 | Pending |
+| FOUND-01 | Phase 4 | Complete |
 | FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
@@ -234,10 +236,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-08 | Phase 1 | Complete |
 | FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 1 | Complete |
-| META-01 | Phase 4 | Pending |
-| META-02 | Phase 4 | Pending |
-| META-03 | Phase 4 | Pending |
-| META-04 | Phase 4 | Pending |
+| META-01 | Phase 4 | Complete |
+| META-02 | Phase 4 | Deferred (999.1) |
+| META-03 | Phase 4 | Complete |
+| META-04 | Phase 4 | Complete |
 | META-05 | Phase 5 | Pending |
 | META-06 | Phase 5 | Pending |
 | META-07 | Phase 5 | Pending |
