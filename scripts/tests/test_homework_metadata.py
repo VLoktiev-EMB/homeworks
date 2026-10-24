@@ -229,6 +229,15 @@ class FixtureBase(unittest.TestCase):
         path.write_text(TASK_TEMPLATE if text is None else text, encoding="utf-8")
         return path
 
+    def write_allowlist(self, entries):
+        """Write a temporary-root allowlist; the committed file stays empty."""
+        path = self.root / "scripts" / "metadata" / "allowlist.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"version": 1, "entries": entries}), encoding="utf-8"
+        )
+        return path
+
     def run_fixture(self, *args):
         return run_checker("--dir", str(self.root), *args)
 
@@ -312,6 +321,207 @@ class TaskProvenanceTests(FixtureBase):
         self.assert_rejected(
             self.run_fixture(), "unexpected: unknown frontmatter key"
         )
+
+
+class ProvenanceShapeTests(FixtureBase):
+    """D-15/D-16: every field shape is proven accepted and rejected."""
+
+    def test_unquoted_iso_timestamp_stays_a_string(self):
+        # The base loader is what makes this pass: SafeLoader would turn the
+        # scalar into a datetime before the string checks run.
+        text = TASK_TEMPLATE.replace(
+            "retrieved: TODO", "retrieved: 2026-10-24T20:01:00Z"
+        )
+        self.write_homework(task_text=text)
+        self.assert_accepted(self.run_fixture())
+
+    def test_valid_url_timestamp_and_license_are_accepted(self):
+        for retrieved in ("2026-10-24T20:01:00Z", "2026-10-24T20:01:00+02:00"):
+            for license_value in ("MIT", "CC-BY-4.0"):
+                with self.subTest(retrieved=retrieved, license=license_value):
+                    text = (
+                        TASK_TEMPLATE.replace(
+                            "source_url: TODO",
+                            "source_url: https://example.com/assignment",
+                        )
+                        .replace("retrieved: TODO", f"retrieved: {retrieved}")
+                        .replace("license: TODO", f"license: {license_value}")
+                    )
+                    self.write_homework(task_text=text)
+                    self.assert_accepted(self.run_fixture())
+
+    def test_invalid_shapes_are_rejected(self):
+        cases = {
+            "bare date": TASK_TEMPLATE.replace(
+                "retrieved: TODO", "retrieved: 2026-10-24"
+            ),
+            "non-url source_url": TASK_TEMPLATE.replace(
+                "source_url: TODO", "source_url: example.com/x"
+            ),
+            "empty attribution": TASK_TEMPLATE.replace(
+                "attribution: TODO", "attribution: ''"
+            ),
+            "license with space": TASK_TEMPLATE.replace(
+                "license: TODO", "license: 'cc by'"
+            ),
+            "license with underscore": TASK_TEMPLATE.replace(
+                "license: TODO", "license: CC_BY"
+            ),
+        }
+        for name, text in cases.items():
+            with self.subTest(case=name):
+                self.write_homework(task_text=text)
+                self.assert_rejected(
+                    self.run_fixture(), "homeworks/1_3-good/task.md: ERROR — "
+                )
+
+
+class CyrillicGateTests(FixtureBase):
+    """T-04-05: the name-based scan covers every Cyrillic block."""
+
+    WORD = "поліцейський"
+
+    def _cyrillic_task(self):
+        return TASK_TEMPLATE + self.WORD + "\n"
+
+    def test_cyrillic_word_is_rejected_with_line_number(self):
+        self.write_homework(task_text=self._cyrillic_task())
+        result = self.run_fixture()
+        self.assert_rejected(result, "homeworks/1_3-good/task.md: ERROR — ")
+        expected_line = TASK_TEMPLATE.count("\n") + 1
+        self.assertIn(f"line {expected_line}:", result.stdout)
+        self.assertIn("Cyrillic character", result.stdout)
+
+    def test_extended_b_character_is_rejected(self):
+        # U+A647 CYRILLIC SMALL LETTER IOTA: outside the basic block.
+        self.write_homework(task_text=TASK_TEMPLATE + "ꙇ\n")
+        self.assert_rejected(self.run_fixture(), "Cyrillic character")
+
+    def test_latin_homoglyph_is_not_rejected(self):
+        # U+0065 LATIN SMALL LETTER E looks like U+0435 CYRILLIC SMALL LETTER IE.
+        self.write_homework(task_text=TASK_TEMPLATE + "e\n")
+        self.assert_accepted(self.run_fixture())
+
+    def test_allowlist_suppresses_the_exact_path(self):
+        self.write_homework(task_text=self._cyrillic_task())
+        self.write_allowlist(
+            [
+                {
+                    "path": "homeworks/1_3-good/task.md",
+                    "reason": "the reviewed translation note quotes the source term",
+                }
+            ]
+        )
+        self.assert_accepted(self.run_fixture())
+
+    def test_allowlist_entry_for_another_path_is_stale(self):
+        self.write_homework(task_text=self._cyrillic_task())
+        self.write_allowlist(
+            [
+                {
+                    "path": "homeworks/2_4-other/task.md",
+                    "reason": "not this file",
+                }
+            ]
+        )
+        self.assert_rejected(
+            self.run_fixture(),
+            "stale allowlist entry homeworks/2_4-other/task.md",
+        )
+
+    def test_allowlist_entry_without_reason_exits_two(self):
+        self.write_allowlist([{"path": "homeworks/1_3-good/task.md"}])
+        self.write_homework()
+        self.assert_environment_error(self.run_fixture(), "non-empty reason")
+
+    def test_missing_allowlist_exits_two(self):
+        (self.root / "scripts" / "metadata" / "allowlist.json").unlink()
+        self.write_homework()
+        self.assert_environment_error(self.run_fixture(), "allowlist")
+
+    def test_json_failure_carries_task_path_and_error(self):
+        self.write_homework(task_text=self._cyrillic_task())
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        task_records = [
+            item
+            for item in payload
+            if item["path"] == "homeworks/1_3-good/task.md"
+        ]
+        self.assertTrue(task_records)
+        self.assertTrue(
+            all(item["status"] == "ERROR" for item in task_records)
+        )
+
+
+class CrossValidationTests(FixtureBase):
+    """D-17: the two documents must agree on the source URL."""
+
+    URL = "https://example.com/a"
+
+    def _homework_with(self, reference):
+        return document().replace(
+            "  reference: TODO\n", f"  reference: {reference}\n"
+        )
+
+    def test_identical_reference_and_source_url_is_accepted(self):
+        self.write_homework(
+            self._homework_with(self.URL),
+            task_text=TASK_TEMPLATE.replace(
+                "source_url: TODO", f"source_url: {self.URL}"
+            ),
+        )
+        self.assert_accepted(self.run_fixture())
+
+    def test_mismatched_reference_and_source_url_is_error(self):
+        self.write_homework(
+            self._homework_with(self.URL),
+            task_text=TASK_TEMPLATE.replace(
+                "source_url: TODO", "source_url: https://example.com/b"
+            ),
+        )
+        self.assert_rejected(
+            self.run_fixture(), "disagrees with homework.yaml source.reference"
+        )
+
+
+class TaskInputHardeningTests(FixtureBase):
+    """T-04-15/T-04-21: malformed, duplicated and oversized input is exit 1."""
+
+    def test_malformed_frontmatter_is_error(self):
+        text = TASK_TEMPLATE.replace(
+            "source_url: TODO", 'source_url: "unclosed'
+        )
+        self.write_homework(task_text=text)
+        self.assert_rejected(self.run_fixture(), "invalid YAML frontmatter")
+
+    def test_non_mapping_frontmatter_is_error(self):
+        text = "---\njust a scalar\n---\n\n# Body\n"
+        self.write_homework(task_text=text)
+        self.assert_rejected(self.run_fixture(), "not a YAML mapping")
+
+    def test_duplicate_frontmatter_key_is_error(self):
+        text = TASK_TEMPLATE.replace(
+            "license: TODO\n", "license: TODO\nlicense: MIT\n"
+        )
+        self.write_homework(task_text=text)
+        self.assert_rejected(self.run_fixture(), "duplicate key 'license'")
+
+    def test_oversized_task_is_error(self):
+        text = TASK_TEMPLATE + "# " + ("x" * (64 * 1024)) + "\n"
+        self.write_homework(task_text=text)
+        self.assert_rejected(self.run_fixture(), "larger than 65536 bytes")
+
+    def test_orphan_directory_is_error(self):
+        (self.root / "homeworks" / "1_9-orphan").mkdir(parents=True)
+        self.assert_rejected(
+            self.run_fixture(), "homeworks/1_9-orphan: ERROR — "
+        )
+
+    def test_directory_with_only_task_is_error(self):
+        self.write_task()
+        self.assert_rejected(self.run_fixture(), "homework.yaml is missing")
 
 
 class UnknownKeyTests(FixtureBase):

@@ -251,6 +251,27 @@ def validate_task_text(text, *, status, reference=None, path, root=None):
     if not body.strip():
         errors.append("document body is empty")
 
+    # T-04-05: no Cyrillic anywhere in an authored task.md. One record per
+    # offending line (the first matched character), naming the line number.
+    # The scan covers the frontmatter too: attribution is prose as well.
+    cyrillic = []
+    for number, line_text in enumerate(text.splitlines(), start=1):
+        offending = next(
+            (character for character in line_text if is_cyrillic_char(character)),
+            None,
+        )
+        if offending is None:
+            continue
+        cyrillic.append(
+            record(
+                "ERROR",
+                f"line {number}: Cyrillic character {offending!r} is not allowed "
+                "in an authored task.md",
+                line=number,
+                rule=CYRILLIC_RULE,
+            )
+        )
+
     # D-17: when both documents name a URL they must agree, never warn.
     reference_value = reference.strip() if isinstance(reference, str) else None
     if (
@@ -275,9 +296,11 @@ def validate_task_text(text, *, status, reference=None, path, root=None):
             f"only while status is 'planned', not {status!r}"
         )
 
-    if not errors:
+    if not errors and not cyrillic:
         return [record("OK", "task provenance contract satisfied")]
-    return [record("ERROR", reason) for reason in sorted(set(errors))]
+    records = [record("ERROR", reason) for reason in sorted(set(errors))]
+    records.extend(cyrillic)
+    return records
 
 
 def _dedupe(records):
