@@ -260,6 +260,85 @@ class ConflictTests(ScaffoldTestBase):
             "a conflict must block every other write",
         )
 
+    def test_intermediate_directory_symlink_is_conflict_and_writes_nothing(
+        self,
+    ) -> None:
+        target = self.target(self.root)
+        target.mkdir(parents=True)
+        outside = self.workspace / "outside"
+        outside.mkdir()
+        (target / "src").symlink_to(outside)
+
+        result = self.scaffold(self.root)
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn(
+            "homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout
+        )
+        self.assertIn(
+            "intermediate path homeworks/1_3-fixture/src is a symlink; "
+            "refusing to follow it",
+            result.stdout,
+        )
+        self.assertTrue(
+            (target / "src").is_symlink(), "the symlink must be left intact"
+        )
+        self.assertEqual(
+            [],
+            sorted(path.name for path in outside.iterdir()),
+            "nothing may be written outside homeworks/",
+        )
+        self.assertEqual(
+            ["src"],
+            sorted(path.name for path in target.iterdir()),
+            "a conflict must block every other write",
+        )
+
+    def test_target_directory_symlink_exits_2(self) -> None:
+        destination = self.root / "homeworks" / "sub" / HOMEWORK_ID
+        destination.mkdir(parents=True)
+        link = self.target(self.root)
+        link.symlink_to(Path("sub") / HOMEWORK_ID)
+
+        result = self.scaffold(self.root, flags=("--json",))
+
+        self.assert_usage_error(result)
+        self.assertIn(
+            "homeworks/1_3-fixture is a symlink; refusing to follow it",
+            result.stderr,
+        )
+        self.assertTrue(link.is_symlink(), "the symlink must be left intact")
+        self.assertEqual(
+            [],
+            sorted(path.name for path in destination.iterdir()),
+            "nothing may be written through the symlinked target",
+        )
+
+    def test_regular_file_at_intermediate_path_is_conflict(self) -> None:
+        target = self.target(self.root)
+        target.mkdir(parents=True)
+        (target / "src").write_text("keep me\n", encoding="utf-8")
+
+        result = self.scaffold(self.root)
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn(
+            "homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout
+        )
+        self.assertIn(
+            "intermediate path homeworks/1_3-fixture/src exists and is not "
+            "a directory",
+            result.stdout,
+        )
+        self.assertEqual(
+            "keep me\n", (target / "src").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            ["src"],
+            sorted(path.name for path in target.iterdir()),
+            "a conflict must block every other write",
+        )
+
 
 class DryRunTests(ScaffoldTestBase):
     """D-21: `--dry-run` is the production algorithm with the write step skipped."""

@@ -20,14 +20,17 @@ Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
   2  usage or environment error (bad arguments, an invalid id or template
      name, a missing template manifest or `templates/task/task.md`, an unknown
      `{{placeholder}}`, a `${...}` occurrence, an unreadable template entry, a
-     target that escapes `homeworks/`, or an OS-level write failure)
+     target that escapes `homeworks/`, a symlink at `homeworks/<id>`, or an
+     OS-level write failure)
 
 The semantics that protect a published homework are content-based (D-20):
 
   * an absent target path is CREATE;
   * a target whose bytes are identical is UNCHANGED;
-  * any other existing content is CONFLICT, including a symlink, which is
-    classified without ever being followed;
+  * any other existing content is CONFLICT, including a symlink at any
+    intermediate or final candidate component and a non-directory intermediate
+    component; each is classified with `lstat`, named in the reason, and never
+    followed;
   * there is no `--force`, and no file is normalized or reformatted to
     manufacture an UNCHANGED result.
 
@@ -54,6 +57,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -242,14 +246,66 @@ def _read_text(source, display):
         raise CheckError(f"cannot read template file {display}: {exc}") from exc
 
 
-def _classify(target, data):
+def _component_conflict(base, relative):
+    """Walk `relative` from `base` with `lstat`; never resolve a component.
+
+    T-04-22: checking only the final target path lets an intermediate symlink
+    resolve elsewhere and a write escape `homeworks/`. Every component is
+    inspected first, so a symlink on any prefix is refused before `exists()`,
+    `is_file()` or `read_bytes()` can traverse it. A missing component means
+    the rest of the path is absent and safe to create.
+
+    Returns `None` when the path is safe, otherwise a `(status, reason)` tuple
+    naming the offending path.
+    """
+    consumed = Path("homeworks")
+    parts = relative.parts
+    for index, part in enumerate(parts):
+        consumed = consumed / part
+        current = base / Path(*parts[: index + 1])
+        try:
+            mode = os.lstat(current).st_mode
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise CheckError(
+                f"cannot inspect {consumed.as_posix()}: {exc}"
+            ) from exc
+        if index == len(parts) - 1:
+            if stat.S_ISLNK(mode):
+                return (
+                    "CONFLICT",
+                    "target is a symlink; refusing to follow or overwrite it",
+                )
+            return None
+        if stat.S_ISLNK(mode):
+            return (
+                "CONFLICT",
+                f"intermediate path {consumed.as_posix()} is a symlink; "
+                "refusing to follow it",
+            )
+        if not stat.S_ISDIR(mode):
+            return (
+                "CONFLICT",
+                f"intermediate path {consumed.as_posix()} exists and is not "
+                "a directory",
+            )
+    return None
+
+
+def _classify(base, target, data):
     """Classify one target path without ever following a symlink.
 
-    Byte equality is the only definition of UNCHANGED (D-20): no whitespace
+    The component walk runs first, so `exists()`, `is_file()` and
+    `read_bytes()` are only reached once every component has been inspected
+    with `lstat` and no symlinked parent can be traversed (T-04-22). Byte
+    equality is the only definition of UNCHANGED (D-20): no whitespace
     normalization, no line-ending translation, no reformatting.
     """
-    if target.is_symlink():
-        return "CONFLICT", "target is a symlink; refusing to follow or overwrite it"
+    relative = target.relative_to(base)
+    conflict = _component_conflict(base, relative)
+    if conflict is not None:
+        return conflict
     if not target.exists():
         return "CREATE", "target does not exist"
     if not target.is_file():
@@ -264,23 +320,42 @@ def _classify(target, data):
 
 
 def _contained_target(root, homework_id):
-    """Resolve `homeworks/<id>` and prove it stays under `homeworks/` (D-24).
+    """Inspect `homeworks/<id>` and prove it stays under `homeworks/` (D-24).
 
-    `resolve()` collapses `..` and symlinks, so a prefix test cannot be
-    bypassed; `relative_to()` is the containment proof.
+    `lstat` runs before `resolve()`, so a symlink at the target directory is
+    refused instead of being resolved into an accepted destination. The
+    `resolve()` plus `relative_to()` containment proof remains as defense in
+    depth, but the unresolved path is returned: every later step must see the
+    path that was inspected, never a link target.
     """
-    base = (root / "homeworks").resolve()
+    base = root / "homeworks"
     target = base / homework_id
+    try:
+        mode = os.lstat(target).st_mode
+    except FileNotFoundError:
+        mode = None
+    except OSError as exc:
+        raise CheckError(
+            f"cannot inspect homeworks/{homework_id}: {exc}"
+        ) from exc
+    if mode is not None:
+        if stat.S_ISLNK(mode):
+            raise CheckError(
+                f"target homeworks/{homework_id} is a symlink; refusing to "
+                "follow it"
+            )
+        if not stat.S_ISDIR(mode):
+            raise CheckError(
+                f"homeworks/{homework_id} exists and is not a directory"
+            )
     resolved = target.resolve()
     try:
-        resolved.relative_to(base)
+        resolved.relative_to(base.resolve())
     except ValueError as exc:
         raise CheckError(
             f"target homeworks/{homework_id} escapes the homeworks directory"
         ) from exc
-    if target.exists() and not target.is_dir():
-        raise CheckError(f"homeworks/{homework_id} exists and is not a directory")
-    return resolved
+    return target
 
 
 def _build_plan(root, homework_id, target_dir, candidates, mapping):
@@ -288,12 +363,13 @@ def _build_plan(root, homework_id, target_dir, candidates, mapping):
     records = []
     payloads = {}
     rendered = {}
+    base = target_dir.parent
     for relative, source in candidates:
         display = (Path("homeworks") / homework_id / relative).as_posix()
         text = _read_text(source, display)
         output = _render(text, mapping, display)
         data = output.encode("utf-8")
-        status, reason = _classify(target_dir / relative, data)
+        status, reason = _classify(base, target_dir / relative, data)
         records.append({"path": display, "status": status, "reason": reason})
         payloads[display] = (target_dir / relative, data)
         rendered[relative.as_posix()] = output
