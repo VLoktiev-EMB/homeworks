@@ -37,6 +37,7 @@ import json
 import re
 import subprocess
 import unicodedata
+from collections.abc import Hashable
 from pathlib import Path
 
 import yaml
@@ -88,6 +89,14 @@ class StrictSafeLoader(yaml.SafeLoader):
         seen = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)
+            # A composed (sequence or mapping) key is not hashable, so the
+            # membership test below would raise TypeError and escape as a
+            # traceback. Delegate to BaseConstructor.construct_mapping, which
+            # raises ConstructorError ("found unhashable key") — a
+            # yaml.YAMLError the caller renders as an ERROR record at exit 1
+            # (T-04-24).
+            if not isinstance(key, Hashable):
+                return super().construct_mapping(node, deep=deep)
             if key in seen:
                 raise ConstructorError(
                     "while constructing a mapping",
@@ -116,6 +125,11 @@ class StrictBaseLoader(yaml.BaseLoader):
         seen = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)
+            # Mirrors StrictSafeLoader: a composed key is not hashable, and
+            # delegating lets BaseConstructor raise ConstructorError instead
+            # of a TypeError traceback (T-04-24).
+            if not isinstance(key, Hashable):
+                return super().construct_mapping(node, deep=deep)
             if key in seen:
                 raise ConstructorError(
                     "while constructing a mapping",
