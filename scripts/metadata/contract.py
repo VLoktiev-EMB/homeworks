@@ -32,9 +32,11 @@ and two consecutive runs produce byte-identical output.
 from __future__ import annotations
 
 import configparser
+import datetime
 import json
 import re
 import subprocess
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -52,6 +54,18 @@ MAX_INPUT_BYTES = 64 * 1024
 SCHEMA_PATH = Path("schema") / "homework.schema.json"
 SHARED_INI_PATH = Path("platformio.shared.ini")
 ESP_SECTIONS = ("esp32s3_arduino", "esp32s3_espidf")
+
+ALLOWLIST_PATH = Path("scripts") / "metadata" / "allowlist.json"
+
+# Provenance lives in `task.md` frontmatter, in this order (D-15).
+PROVENANCE_FIELDS = ("source_url", "retrieved", "attribution", "license")
+TODO_SENTINEL = "TODO"
+URL_PATTERN = re.compile(r"^https?://[^\s]+$")
+SPDX_LIKE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
+
+# Internal record marker: only Cyrillic records may be suppressed by the
+# allowlist, and a stale entry always fails the run (D-16).
+CYRILLIC_RULE = "cyrillic"
 
 # The canonical homework-identifier literal. The schema's `id.pattern`, the
 # backticked span in `AGENTS.md` and `EXPECTED_PATTERN` in
@@ -83,6 +97,328 @@ class StrictSafeLoader(yaml.SafeLoader):
                 )
             seen.add(key)
         return super().construct_mapping(node, deep=deep)
+
+
+class FrontmatterError(Exception):
+    """A content problem in a `task.md`, reported as an ERROR record (exit 1)."""
+
+
+class StrictBaseLoader(yaml.BaseLoader):
+    """A `BaseLoader` that rejects a duplicated mapping key (Pitfall P2).
+
+    `BaseLoader` resolves every scalar to a string, so an unquoted ISO
+    timestamp stays text instead of becoming a `datetime` before validation.
+    The duplicate-key rejection mirrors `StrictSafeLoader`: a repeated
+    `source_url:` or `license:` must not silently keep the last value.
+    """
+
+    def construct_mapping(self, node, deep=False):
+        seen = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
+def valid_iso8601(value):
+    """True when *value* parses as ISO 8601 and carries a timezone."""
+    try:
+        parsed = datetime.datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return parsed.tzinfo is not None
+
+
+def is_cyrillic_char(character):
+    """True for an assigned character in any Cyrillic Unicode block.
+
+    The Unicode name is the authority, so the basic block, the Supplement,
+    Extended-A/B/C/D, combining marks and the historic blocks are all covered
+    without a hand-maintained range set that can silently miss a block. An
+    unassigned code point has no name and is not text a reviewer can read.
+    """
+    if not isinstance(character, str) or len(character) != 1:
+        return False
+    return "CYRILLIC" in unicodedata.name(character, "")
+
+
+def parse_task_frontmatter(text):
+    """Split a `task.md` into its frontmatter mapping and body.
+
+    Raises `FrontmatterError` for an absent or unclosed fence, an empty or
+    non-mapping block, malformed YAML and a duplicated key. Each is a content
+    problem: the caller reports an ERROR record at exit 1, never an
+    environment failure (T-04-15).
+    """
+    lines = text.lstrip("﻿").splitlines()
+    if not lines or lines[0].strip() != "---":
+        raise FrontmatterError("task.md has no leading '---' frontmatter fence")
+
+    closing = None
+    for index in range(1, len(lines)):
+        if lines[index].strip() == "---":
+            closing = index
+            break
+    if closing is None:
+        raise FrontmatterError("task.md frontmatter is not closed by '---'")
+
+    block = "\n".join(lines[1:closing])
+    if not block.strip():
+        raise FrontmatterError("task.md frontmatter is empty")
+
+    try:
+        document = yaml.load(block, Loader=StrictBaseLoader)
+    except yaml.YAMLError as exc:
+        raise FrontmatterError(f"invalid YAML frontmatter: {_one_line(exc)}") from exc
+    if not isinstance(document, dict):
+        raise FrontmatterError("task.md frontmatter is not a YAML mapping")
+
+    body = "\n".join(lines[closing + 1 :])
+    return document, body
+
+
+def validate_task_text(text, *, status, reference=None, path, root=None):
+    """Validate one `task.md` payload; return a list of records.
+
+    D-15/D-16 fix the four provenance fields and their shapes. The literal
+    `TODO` sentinel is legal only while the homework is `status: planned`
+    (D-39), and `source.reference` in `homework.yaml` follows the same branch
+    because it is the only other provenance-bearing field. Body prose is not
+    status-gated: a TODO in the body is a manual-review signal, not a machine
+    check.
+    """
+    display = relative_path(root, path) if root is not None else Path(path).as_posix()
+
+    def record(status_value, reason, line=0, rule=None):
+        item = {
+            "path": display,
+            "status": status_value,
+            "reason": reason,
+            "line": line,
+        }
+        if rule is not None:
+            item["rule"] = rule
+        return item
+
+    if len(text.encode("utf-8")) > MAX_INPUT_BYTES:
+        return [record("ERROR", f"document is larger than {MAX_INPUT_BYTES} bytes")]
+
+    try:
+        frontmatter, body = parse_task_frontmatter(text)
+    except FrontmatterError as exc:
+        return [record("ERROR", str(exc))]
+
+    errors = []
+    present = set(frontmatter)
+    expected = set(PROVENANCE_FIELDS)
+    for missing in sorted(expected - present):
+        errors.append(f"{missing}: required provenance field is missing")
+    for extra in sorted(present - expected):
+        errors.append(f"{extra}: unknown frontmatter key")
+
+    source_url = frontmatter.get("source_url")
+    for field in PROVENANCE_FIELDS:
+        if field not in frontmatter:
+            continue
+        value = frontmatter[field]
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{field}: value is empty")
+            continue
+        value = value.strip()
+        if value == TODO_SENTINEL:
+            if status != "planned":
+                errors.append(
+                    f"{field}: the sentinel {TODO_SENTINEL!r} is allowed only "
+                    f"while status is 'planned', not {status!r}"
+                )
+            continue
+        if field == "source_url" and not URL_PATTERN.match(value):
+            errors.append(f"source_url: {value!r} is not an http(s) URL")
+        elif field == "retrieved" and not valid_iso8601(value):
+            errors.append(
+                f"retrieved: {value!r} is not an ISO 8601 timestamp with a timezone"
+            )
+        elif field == "license" and not SPDX_LIKE.match(value):
+            errors.append(f"license: {value!r} is not an SPDX-like identifier")
+
+    if not body.strip():
+        errors.append("document body is empty")
+
+    # D-17: when both documents name a URL they must agree, never warn.
+    reference_value = reference.strip() if isinstance(reference, str) else None
+    if (
+        reference_value is not None
+        and isinstance(source_url, str)
+        and URL_PATTERN.match(source_url.strip())
+        and URL_PATTERN.match(reference_value)
+        and source_url.strip() != reference_value
+    ):
+        errors.append(
+            f"source_url: {source_url.strip()!r} disagrees with homework.yaml "
+            f"source.reference {reference_value!r}"
+        )
+
+    # D-39 extends to the only other provenance-bearing field.
+    if (
+        reference_value == TODO_SENTINEL
+        and status != "planned"
+    ):
+        errors.append(
+            "source.reference: the sentinel 'TODO' in homework.yaml is allowed "
+            f"only while status is 'planned', not {status!r}"
+        )
+
+    if not errors:
+        return [record("OK", "task provenance contract satisfied")]
+    return [record("ERROR", reason) for reason in sorted(set(errors))]
+
+
+def _dedupe(records):
+    """Drop byte-identical records while preserving order."""
+    unique = []
+    seen = set()
+    for item in records:
+        key = (item["path"], item["status"], item["reason"], item["line"])
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    return unique
+
+
+def validate_candidate(homework_yaml_text, task_md_text, *, root, homework_path, task_path):
+    """Validate one rendered homework candidate without touching the filesystem.
+
+    The scaffold calls this before its first write (D-12), so *homework_path*
+    and *task_path* are target paths that need not exist yet. The candidate
+    `id` is asserted against the target directory name explicitly here, not
+    only through `validate_homework_text`, because the scaffold validates
+    before any directory exists.
+    """
+    records = list(
+        validate_homework_text(homework_yaml_text, root=root, path=homework_path)
+    )
+
+    try:
+        document = yaml.load(homework_yaml_text, Loader=StrictSafeLoader)
+    except yaml.YAMLError:
+        document = {}
+    if not isinstance(document, dict):
+        document = {}
+
+    directory = _homework_directory(root, homework_path)
+    document_id = document.get("id")
+    if (
+        directory is not None
+        and isinstance(document_id, str)
+        and document_id != directory
+    ):
+        records.append(
+            {
+                "path": relative_path(root, homework_path),
+                "status": "ERROR",
+                "reason": (
+                    f"id: {document_id!r} does not match the containing "
+                    f"directory {directory!r}"
+                ),
+                "line": 0,
+            }
+        )
+
+    status = document.get("status")
+    source = document.get("source")
+    reference = source.get("reference") if isinstance(source, dict) else None
+
+    records.extend(
+        validate_task_text(
+            task_md_text,
+            status=status if isinstance(status, str) else None,
+            reference=reference if isinstance(reference, str) else None,
+            path=task_path,
+            root=root,
+        )
+    )
+    return _dedupe(records)
+
+
+def load_allowlist(root):
+    """Read the Cyrillic allowlist; any failure is an environment error (exit 2).
+
+    The allowlist is environment configuration, not authored homework content,
+    so its 64 KiB cap and every shape failure map to `CheckError`. An absent
+    file is an error, never an implicit empty allowlist: deny by default.
+    """
+    path = Path(root) / ALLOWLIST_PATH
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise CheckError(f"cannot read allowlist {path}: {exc}") from exc
+    if len(raw) > MAX_INPUT_BYTES:
+        raise CheckError(
+            f"allowlist {path} is {len(raw)} bytes; the cap is {MAX_INPUT_BYTES}"
+        )
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except UnicodeDecodeError as exc:
+        raise CheckError(f"allowlist {path} is not valid UTF-8: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise CheckError(f"allowlist {path} is not valid JSON: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise CheckError(f"allowlist {path} must be a JSON object")
+    version = data.get("version")
+    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
+        raise CheckError(f"allowlist {path} must declare version 1")
+    entries = data.get("entries")
+    if not isinstance(entries, list):
+        raise CheckError(f"allowlist {path} must declare an entries list")
+
+    validated = []
+    for index, entry in enumerate(entries):
+        where = f"allowlist entry {index}"
+        if not isinstance(entry, dict):
+            raise CheckError(f"{where} must be an object")
+        entry_path = entry.get("path")
+        if not isinstance(entry_path, str) or not entry_path.strip():
+            raise CheckError(f"{where} must carry a non-empty path")
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise CheckError(f"{where} must carry a non-empty reason")
+        validated.append(
+            {"path": entry_path.strip(), "reason": reason.strip()}
+        )
+    return validated
+
+
+def apply_allowlist(records, entries):
+    """Suppress Cyrillic records by exact path; return `(remaining, stale)`.
+
+    One entry matches one record path and is consumed once. Only the
+    Cyrillic rule is suppressible: a shape violation on an allowlisted file
+    is still a violation. An entry that matched nothing is stale and must
+    fail the run, so the allowlist cannot accumulate dead permissions.
+    """
+    remaining = []
+    matched = [False] * len(entries)
+    for item in records:
+        if item.get("rule") != CYRILLIC_RULE:
+            remaining.append(item)
+            continue
+        for index, entry in enumerate(entries):
+            if not matched[index] and entry["path"] == item["path"]:
+                matched[index] = True
+                break
+        else:
+            remaining.append(item)
+    stale = [entry for entry, used in zip(entries, matched) if not used]
+    return remaining, stale
 
 
 def resolve_root(explicit):

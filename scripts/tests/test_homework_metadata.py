@@ -16,8 +16,9 @@ keys / the 64 KiB cap, toolchain drift and a broken shared configuration, the
 canonical homework-ID literal shared by the schema, `contract.py`, `AGENTS.md`
 and `test_homework_id.py`.
 
-Provenance semantics for `task.md` are owned by plan 04-03; this module does
-not assert the D-39 sentinel branch and its fixtures contain no timestamp.
+Provenance semantics for `task.md` are owned by plan 04-03: every fixture now
+writes both `homework.yaml` and `task.md`, and this module asserts the D-39
+status branch, the four provenance fields and the shape rules.
 """
 
 from __future__ import annotations
@@ -89,6 +90,23 @@ DEFS_REQUIRED = {
 
 OPTIONAL_BLOCKS = ("simulation", "tests", "report")
 ASSETS_CHUNK = "assets:\n  - assets/wiring.png\n"
+
+# The scaffolded skeleton (D-39). `TODO` is literal and legal only while the
+# homework is `status: planned`; no timestamp is ever rendered (Pitfall P10).
+TASK_TEMPLATE = (
+    "---\n"
+    "source_url: TODO\n"
+    "retrieved: TODO\n"
+    "attribution: TODO\n"
+    "license: TODO\n"
+    "---\n"
+    "\n"
+    "# Good homework\n"
+    "\n"
+    "## Task\n"
+    "\n"
+    "TODO: English paraphrase.\n"
+)
 
 
 def run_checker(*args: str, cwd: Path = REPO_ROOT) -> subprocess.CompletedProcess:
@@ -181,14 +199,34 @@ class FixtureBase(unittest.TestCase):
             REPO_ROOT / "platformio.shared.ini",
             self.root / "platformio.shared.ini",
         )
+        allowlist = self.root / "scripts" / "metadata" / "allowlist.json"
+        allowlist.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(
+            REPO_ROOT / "scripts" / "metadata" / "allowlist.json", allowlist
+        )
 
-    def write_homework(self, text=None, homework_id="1_3-good", directory=None):
+    def write_homework(
+        self,
+        text=None,
+        homework_id="1_3-good",
+        directory=None,
+        with_task=True,
+        task_text=None,
+    ):
         directory = directory or homework_id
         path = self.root / "homeworks" / directory / "homework.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         if text is None:
             text = document(homework_id=homework_id)
         path.write_text(text, encoding="utf-8")
+        if with_task:
+            self.write_task(task_text, directory=directory)
+        return path
+
+    def write_task(self, text=None, directory="1_3-good"):
+        path = self.root / "homeworks" / directory / "task.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(TASK_TEMPLATE if text is None else text, encoding="utf-8")
         return path
 
     def run_fixture(self, *args):
@@ -244,6 +282,36 @@ class BaselineTests(FixtureBase):
     def test_full_document_with_every_optional_block_is_accepted(self):
         self.write_homework(document())
         self.assert_accepted(self.run_fixture())
+
+
+class TaskProvenanceTests(FixtureBase):
+    """D-15 / D-39: provenance is text, and the sentinel follows the status."""
+
+    def test_planned_task_sentinels_are_accepted(self):
+        self.write_homework()
+        self.assert_accepted(self.run_fixture())
+
+    def test_sentinel_is_rejected_once_status_leaves_planned(self):
+        self.write_homework(
+            document().replace("status: planned", "status: in-progress")
+        )
+        result = self.run_fixture()
+        self.assert_rejected(result, "homeworks/1_3-good/task.md: ERROR — ")
+        self.assertIn("source_url", result.stdout)
+        self.assertIn("'planned'", result.stdout)
+
+    def test_missing_task_md_is_error(self):
+        self.write_homework(with_task=False)
+        self.assert_rejected(self.run_fixture(), "task.md is missing")
+
+    def test_extra_task_frontmatter_key_is_error(self):
+        text = TASK_TEMPLATE.replace(
+            "license: TODO\n", "license: TODO\nunexpected: TODO\n"
+        )
+        self.write_homework(task_text=text)
+        self.assert_rejected(
+            self.run_fixture(), "unexpected: unknown frontmatter key"
+        )
 
 
 class UnknownKeyTests(FixtureBase):
@@ -425,7 +493,7 @@ class JsonOutputTests(FixtureBase):
         result = self.run_fixture("--json")
         self.assertEqual(1, result.returncode, combined(result))
         payload = json.loads(result.stdout)
-        self.assertEqual(2, len(payload))
+        self.assertEqual(4, len(payload))
         for record in payload:
             with self.subTest(path=record.get("path")):
                 self.assertEqual({"path", "status", "reason"}, set(record))
@@ -436,7 +504,9 @@ class JsonOutputTests(FixtureBase):
         payload = json.loads(result.stdout)
         statuses = {record["path"]: record["status"] for record in payload}
         self.assertEqual("OK", statuses["homeworks/1_3-good/homework.yaml"])
+        self.assertEqual("OK", statuses["homeworks/1_3-good/task.md"])
         self.assertEqual("ERROR", statuses["homeworks/2_4-bad/homework.yaml"])
+        self.assertEqual("OK", statuses["homeworks/2_4-bad/task.md"])
         self.assertEqual(
             sorted(statuses), [record["path"] for record in payload]
         )
