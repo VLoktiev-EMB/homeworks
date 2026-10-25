@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "Metadata reaches the published site as raw HTML — stored XSS via `title`, and unvalidated `report.path` breaks the link destination"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The generator follows symlinked `homework.yaml` and view templates, unlike every other input it guards"
   - id: WR-01
     severity: warning
@@ -17,11 +17,11 @@ findings:
     title: "`_escape_cell` does not escape backslashes, so its own escaping can be defeated"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`_nav_label` is not a YAML double-quoted-scalar encoder — a title/heading with `\\` or a newline emits an invalid `mkdocs.yml`"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A deleted generated whole file is unrecoverable — `DELETED` blocks every run and the manifest keeps listing it"
   - id: WR-04
     severity: warning
@@ -99,7 +99,7 @@ findings:
     severity: info
     disposition: open
     title: "`AGENTS.md` does not describe the new local gate or run the Python test suite"
-open: 24
+open: 20
 total: 24
 unparsed: 24
 recorded: 2026-10-26T00:00:00Z
@@ -109,11 +109,11 @@ recorded: 2026-10-26T00:00:00Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
+| CR-01 | critical | fixed | 05-REVIEW-FIX.md |
+| CR-02 | critical | fixed | 05-REVIEW-FIX.md |
 | WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| WR-02 | warning | fixed | 05-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 05-REVIEW-FIX.md |
 | WR-04 | warning | open | - |
 | WR-05 | warning | open | - |
 | WR-06 | warning | open | - |
