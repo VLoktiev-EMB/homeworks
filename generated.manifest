@@ -11,6 +11,13 @@
       "bytes": 326
     },
     {
+      "path": "docs/boards/esp32-s3-devkitc-1.md",
+      "owner": "docs",
+      "mode": "whole",
+      "sha256": "0eb2d0f5de50e5c94fa352f03fb88256115c4c220c0685b989446dadc088b858",
+      "bytes": 444
+    },
+    {
       "path": "docs/homeworks/1_3-police-flasher.md",
       "owner": "docs",
       "mode": "whole",

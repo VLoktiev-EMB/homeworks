@@ -1020,6 +1020,182 @@ class DocsPagesTests(ViewsTestBase):
             self.assertNotIn("../", text, page.name)
 
 
+class BoardPageTests(ViewsTestBase):
+    """D-04/D-10: one page per board profile, with resolvable homework links."""
+
+    BOARD_ID = "esp32-s3-devkitc-1"
+    PINOUT = (
+        "https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/"
+        "esp32-s3-devkitc-1/user_guide.html"
+    )
+
+    def board_page(self, board_id: str = BOARD_ID) -> str:
+        return (
+            self.root / "docs" / "boards" / f"{board_id}.md"
+        ).read_text(encoding="utf-8")
+
+    def profile_path(self, stem: str = BOARD_ID) -> Path:
+        return self.root / "boards" / f"{stem}.yaml"
+
+    def rewrite_profile(self, old: str, new: str) -> None:
+        path = self.profile_path()
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text)
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def write_profile(self, stem: str, body: str) -> None:
+        path = self.profile_path(stem)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+
+    def test_one_page_per_profile_starts_with_the_generated_header(self) -> None:
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        path = self.root / "docs" / "boards" / f"{self.BOARD_ID}.md"
+        self.assertTrue(path.is_file())
+        self.assertTrue(
+            path.read_text(encoding="utf-8").startswith(GENERATED_HEADER)
+        )
+
+    def test_table_renders_every_profile_field(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        text = self.board_page()
+
+        self.assertIn("\n# esp32-s3-devkitc-1\n", text)
+        for row in (
+            "| SoC | esp32-s3 |",
+            "| Flash | 16 MB |",
+            "| PSRAM | octal |",
+            "| Frameworks | arduino, espidf |",
+        ):
+            self.assertIn(row, text)
+
+    def test_pinout_url_is_a_markdown_link(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        text = self.board_page()
+
+        self.assertIn(f"| Pinout | [Official pinout]({self.PINOUT}) |", text)
+        self.assertNotIn(f"| Pinout | {self.PINOUT} |", text)
+
+    def test_homework_links_use_the_relative_docs_form_and_resolve(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        text = self.board_page()
+
+        self.assertIn("## Homeworks on this board", text)
+        self.assertIn("- [1.3 Alpha](../homeworks/1_3-alpha.md)", text)
+        self.assertIn("- [1.4 Beta](../homeworks/1_4-beta.md)", text)
+        for homework_id in ("1_3-alpha", "1_4-beta"):
+            self.assertTrue(
+                (self.root / "docs" / "homeworks" / f"{homework_id}.md").is_file(),
+                homework_id,
+            )
+        self.assertNotIn("../../", text)
+
+    def test_a_profile_with_no_homework_renders_the_empty_state(self) -> None:
+        self.write_profile(
+            "esp32-c3-mini",
+            "id: esp32-c3-mini\n"
+            "soc: esp32-c3\n"
+            "flash_mb: 4\n"
+            "psram: none\n"
+            "frameworks:\n"
+            "  - arduino\n"
+            "pinout_url: https://example.com/pinout\n",
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        text = self.board_page("esp32-c3-mini")
+        self.assertIn("## Homeworks on this board", text)
+        self.assertIn("_No homework uses this board yet._", text)
+
+    def test_a_duplicated_psram_key_exits_two(self) -> None:
+        self.rewrite_profile("psram: octal", "psram: octal\npsram: quad")
+
+        result = self.generate("docs")
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("", result.stdout, "a usage error must print no record")
+        self.assertIn("ERROR:", result.stderr)
+        self.assertIn("duplicate", result.stderr.lower())
+
+    def test_a_duplicated_pinout_url_key_exits_two(self) -> None:
+        self.rewrite_profile(
+            f"pinout_url: {self.PINOUT}",
+            f"pinout_url: {self.PINOUT}\npinout_url: https://example.com/other",
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("ERROR:", result.stderr)
+        self.assertIn("duplicate", result.stderr.lower())
+
+    def test_an_id_stem_mismatch_exits_two_naming_both(self) -> None:
+        self.write_profile(
+            "esp32-c9",
+            "id: esp32-c8\n"
+            "soc: esp32-c9\n"
+            "flash_mb: 4\n"
+            "psram: none\n"
+            "frameworks:\n"
+            "  - arduino\n"
+            "pinout_url: https://example.com/pinout\n",
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("ERROR:", result.stderr)
+        self.assertIn("esp32-c8", result.stderr)
+        self.assertIn("esp32-c9", result.stderr)
+        self.assertFalse((self.root / "docs" / "boards" / "esp32-c9.md").exists())
+
+    def test_a_stray_board_page_is_orphan_in_check_mode(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        ghost = self.root / "docs" / "boards" / "9_9-ghost.md"
+        ghost.write_text(GENERATED_HEADER + "\n\n# Ghost\n", encoding="utf-8")
+
+        result = self.generate("docs", "--check")
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("docs/boards/9_9-ghost.md: ORPHAN", result.stdout)
+        self.assertTrue(ghost.exists(), "check mode must not delete anything")
+
+    def test_a_second_run_reports_only_unchanged(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn(
+            f"docs/boards/{self.BOARD_ID}.md: UNCHANGED", result.stdout
+        )
+        self.assertIn("generated.manifest: UNCHANGED", result.stdout)
+        for status in ("CREATE", "MODIFIED", "DELETED", "ORPHAN", "ERROR"):
+            self.assertNotIn(f": {status}", result.stdout, result.stdout)
+
+    def test_real_tree_board_pages_only_use_homeworks_links(self) -> None:
+        pages = sorted((REPO_ROOT / "docs" / "boards").glob("*.md"))
+
+        self.assertTrue(pages, "the real tree must carry at least one board page")
+        for page in pages:
+            text = page.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith(GENERATED_HEADER), page.name)
+            self.assertNotIn("../../", text, page.name)
+            for fragment in text.split("../")[1:]:
+                self.assertTrue(
+                    fragment.startswith("homeworks/"),
+                    f"{page.name} has a parent segment outside ../homeworks/: "
+                    f"{fragment[:40]}",
+                )
+
+
 class RealTreeSmokeTest(unittest.TestCase):
     """One `--check` against the real tree, proving it is a pure check."""
 

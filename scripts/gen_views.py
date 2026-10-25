@@ -141,6 +141,9 @@ _SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 # the generator anchors the page stem to it so a page path can never carry a
 # character the profile contract forbids (T-5-20).
 _BOARD_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# The schema's `pinout_url` pattern; `|`, `<` and `>` are refused on top of it
+# because they would break the table cell or pass raw HTML through (T-5-19).
+_HTTPS_URL = re.compile(r"^https://[^\s]+$")
 
 
 def _escape_cell(value):
@@ -816,6 +819,149 @@ def _render_homework_page(root, homework):
     }
 
 
+def _load_boards(root):
+    """Load every `boards/*.yaml` with the strict loader (D-04).
+
+    A duplicated `id`, `psram` or `pinout_url` key, a non-mapping payload, a
+    missing `id`, a file stem that is not a valid board id, and an `id` that
+    differs from the file stem are all `CheckError` (exit 2). The schema check
+    belongs to `check_metadata.py`; the generator must neither skip a page
+    silently nor emit a page whose path contradicts the profile it renders
+    (T-5-33).
+    """
+    directory = root / "boards"
+    try:
+        directory_mode = os.lstat(directory).st_mode
+    except FileNotFoundError:
+        return []
+    except OSError as exc:
+        raise CheckError(f"cannot inspect boards: {exc}") from exc
+    if stat.S_ISLNK(directory_mode):
+        raise CheckError("boards is a symlink; refusing to follow it")
+    if not stat.S_ISDIR(directory_mode):
+        raise CheckError("boards exists and is not a directory")
+    try:
+        profiles = sorted(directory.iterdir(), key=lambda item: item.name)
+    except OSError as exc:
+        raise CheckError(f"cannot list boards: {exc}") from exc
+
+    records = []
+    for profile in profiles:
+        if profile.suffix != ".yaml":
+            continue
+        display = f"boards/{profile.name}"
+        try:
+            profile_mode = os.lstat(profile).st_mode
+        except OSError as exc:
+            raise CheckError(f"cannot inspect {display}: {exc}") from exc
+        if stat.S_ISLNK(profile_mode):
+            raise CheckError(f"{display} is a symlink; refusing to follow it")
+        if not stat.S_ISREG(profile_mode):
+            continue
+        if not _BOARD_ID.match(profile.stem):
+            raise CheckError(
+                f"{display}: file stem {profile.stem!r} is not a valid board id"
+            )
+        text = read_text(profile, display)
+        try:
+            document = yaml.load(text, Loader=StrictSafeLoader)
+        except yaml.YAMLError as exc:
+            raise CheckError(f"{display} is not valid YAML: {exc}") from exc
+        if not isinstance(document, dict):
+            raise CheckError(f"{display} must be a YAML mapping")
+        identifier = document.get("id")
+        if not isinstance(identifier, str) or not identifier:
+            raise CheckError(f"{display} has no board id")
+        if identifier != profile.stem:
+            raise CheckError(
+                f"{display}: id {identifier!r} does not match the file stem "
+                f"{profile.stem!r}"
+            )
+        records.append(
+            {"id": identifier, "display": display, "document": document}
+        )
+    return records
+
+
+def _board_homework_list(board, homeworks):
+    """Render the pre-rendered `{{board_homework_list}}` fragment.
+
+    The one relative link the generator may emit is `../homeworks/<id>.md`:
+    both pages live under `docs/`, so MkDocs resolves it, and it never leaves
+    `docs/` (Pitfall 3, T-5-20). The empty state is a single italic line, not a
+    dangling heading with no body.
+    """
+    lines = []
+    for homework in homeworks:
+        if homework["document"].get("board") != board["id"]:
+            continue
+        number = f"{homework['module']}.{homework['lesson']}"
+        title = _escape_cell(homework["title"])
+        lines.append(
+            f"- [{number} {title}](../homeworks/{homework['id']}.md)"
+        )
+    return "\n".join(lines) if lines else "_No homework uses this board yet._"
+
+
+def _pinout_link(document, display):
+    """Render `pinout_url` as a Markdown link, never as a bare long URL.
+
+    A bare Espressif user-guide URL wrecks the table on a narrow screen, and an
+    unvalidated one could break the cell or pass raw HTML through (T-5-19). The
+    schema pattern is re-checked here so the generator never depends on the
+    checker having run first (T-5-33).
+    """
+    url = document.get("pinout_url")
+    if not isinstance(url, str) or not _HTTPS_URL.match(url):
+        raise CheckError(f"{display} has no https pinout_url")
+    if any(character in url for character in "|<>"):
+        raise CheckError(
+            f"{display}: pinout_url contains a Markdown-unsafe character"
+        )
+    return f"[Official pinout]({url})"
+
+
+def _render_board_page(root, board, homeworks):
+    """Return the produced entry for one `docs/boards/<id>.md` (D-04/D-10)."""
+    identifier = board["id"]
+    document = board["document"]
+    display = f"docs/boards/{identifier}.md"
+    template_display = "templates/views/board-page.md.tmpl"
+    template = read_text(root / template_display, template_display)
+    flash_mb = document.get("flash_mb")
+    if isinstance(flash_mb, bool) or not isinstance(flash_mb, int):
+        raise CheckError(f"{board['display']} has no integer flash_mb")
+    frameworks = document.get("frameworks")
+    if not isinstance(frameworks, list) or not all(
+        isinstance(item, str) and item for item in frameworks
+    ):
+        raise CheckError(f"{board['display']} has no frameworks list")
+    rendered = render(
+        template,
+        {
+            "board_id": _escape_cell(identifier),
+            "soc": _escape_cell(document.get("soc")),
+            "flash_mb": _escape_cell(f"{flash_mb} MB"),
+            "psram": _escape_cell(document.get("psram")),
+            "frameworks": _escape_cell(", ".join(frameworks) or "none"),
+            "pinout_url": _pinout_link(document, board["display"]),
+            "board_homework_list": _board_homework_list(board, homeworks),
+        },
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "docs",
+        "mode": "whole",
+        "target": root / display,
+        "data": data,
+        "owned": data,
+    }
+
+
 def _render_docs(root, homeworks):
     """Return every `docs` target this plan implements.
 
@@ -823,9 +969,14 @@ def _render_docs(root, homeworks):
     the last task so each intermediate commit leaves `docs --check` green on
     the real tree.
     """
-    return [
+    entries = [
         _render_homework_page(root, homework) for homework in homeworks
     ]
+    entries.extend(
+        _render_board_page(root, board, homeworks)
+        for board in _load_boards(root)
+    )
+    return entries
 
 
 RENDERERS = {
