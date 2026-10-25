@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Completed 04.2-05-PLAN.md
-last_updated: "2026-10-25T19:19:39.076Z"
+stopped_at: Completed 04.2-06-PLAN.md
+last_updated: "2026-10-25T19:21:32.000Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 04.2 execution started
-state_head: 11ae4b2e2ebf2f3820101dd2bfa0c6ca26e4bdcf
+last_activity_desc: Completed plan 06 of Phase 04.2
+state_head: 3123183b27f11cf04d596df2e0fa39c297ea3c15
 progress:
   total_phases: 13
   completed_phases: 5
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
-Last activity: 2026-10-25 — Phase 04.2 execution started
+Last activity: 2026-10-25 — Completed plan 06 (single-project CI and manual integration)
 
 Progress: [████░░░░░░] 38%
 
@@ -65,6 +65,7 @@ Progress: [████░░░░░░] 38%
 | Phase 04.2 P03 | 1 min | 2 tasks | 7 files |
 | Phase 04.2 P04 | 2 min | 3 tasks | 2 files |
 | Phase 04.2 P05 | 1 min | 3 tasks | 2 files |
+| Phase 04.2 P06 | 1 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 04.2]: The measurement ledger keeps implementation commit 6a60426 in the metadata table and in every row, because main.cpp and controller.c did not change in plan 05.
 - [Phase 04.2]: No bench reading or serial log existed, so every bench row is not measured with the fixed reason bench equipment offline during automated tracer run; no measured value is inferred.
 - [Phase 04.2]: The report ledger uses the five D-13 labels plus the single qualified measured (observed); a bare observed is rejected, and every measured cell would carry a user-reported: or serial-log: prefix.
+- [Phase 04.2]: The homework workflow is one read-only job on ubuntu-24.04 with a 45-minute timeout, three action SHAs revalidated with git ls-remote, and only the two D-18 commands; metadata and architecture checks stay local until Phase 8.
+- [Phase 04.2]: platformio.shared.ini gains no per-homework entry; the root README row and the workspace folder are the only manual integration edits, and the SC3 wording conflict is recorded in the friction log.
+- [Phase 04.2]: Adding the workspace folder makes the PlatformIO IDE generate .gitignore and .vscode files inside the homework directory; they stay untracked and are recorded for the Phase 5 workspace generator.
 
 ### Pending Todos
 
@@ -157,6 +161,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:19:39.028Z
-Stopped at: Completed 04.2-05-PLAN.md
+Last session: 2026-10-25T19:21:32.000Z
+Stopped at: Completed 04.2-06-PLAN.md
 Resume file: None
