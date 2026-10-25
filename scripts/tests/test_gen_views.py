@@ -1506,6 +1506,23 @@ class NavTests(ViewsTestBase):
         self.assert_usage_error(result)
         self.assertIn("symlink", result.stderr)
 
+    def test_real_tree_all_check_is_clean(self) -> None:
+        result = run_gen_views("--all", "--check", "--dir", str(REPO_ROOT))
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        for path in (
+            "README.md",
+            "mkdocs.yml",
+            "homeworks.code-workspace",
+            "platformio.shared.ini",
+            "docs/index.md",
+            "docs/homeworks/1_3-police-flasher.md",
+            "docs/boards/esp32-s3-devkitc-1.md",
+            "generated.manifest",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(f"{path}: UNCHANGED", result.stdout)
+
 
 class RealTreeSmokeTest(unittest.TestCase):
     """One `--check` against the real tree, proving it is a pure check."""
