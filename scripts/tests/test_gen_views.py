@@ -480,6 +480,54 @@ class DriftTests(ViewsTestBase):
         self.assertEqual(before, snapshot(self.root), "a blocked run must not write")
 
 
+class WholeFileRecoveryTests(ViewsTestBase):
+    """WR-03: write mode repairs a deleted whole-owned file; check never passes it."""
+
+    def test_a_deleted_whole_file_is_deleted_in_check_and_recreated_in_write(
+        self,
+    ) -> None:
+        for view, target in (
+            ("workspace", "homeworks.code-workspace"),
+            ("shared-ini", "platformio.shared.ini"),
+            ("docs", "docs/homeworks/1_3-alpha.md"),
+        ):
+            with self.subTest(view=view, target=target):
+                self.assertEqual(
+                    0, self.generate(view).returncode, "fixture generation"
+                )
+                path = self.root / target
+                original = path.read_bytes()
+                path.unlink()
+
+                check = self.generate(view, "--check")
+
+                self.assertEqual(
+                    1, check.returncode, check.stdout + check.stderr
+                )
+                self.assertIn(f"{target}: DELETED", check.stdout)
+                self.assertFalse(path.exists(), "check mode must not write")
+
+                write = self.generate(view)
+
+                self.assertEqual(
+                    0, write.returncode, write.stdout + write.stderr
+                )
+                self.assertIn(f"{target}: CREATE", write.stdout)
+                self.assertTrue(path.is_file(), target)
+                self.assertEqual(original, path.read_bytes())
+                paths = [
+                    entry["path"] for entry in self.read_manifest()["entries"]
+                ]
+                self.assertIn(target, paths)
+
+                after = self.generate(view, "--check")
+
+                self.assertEqual(
+                    0, after.returncode, after.stdout + after.stderr
+                )
+                self.assertIn(f"{target}: UNCHANGED", after.stdout)
+
+
 class MarkerTests(ViewsTestBase):
     """D-14: an ambiguous marker layout is exit 2, never a silent region."""
 

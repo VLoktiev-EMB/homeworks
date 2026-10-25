@@ -115,9 +115,10 @@ ALLOWED_FILES = (
 )
 ALLOWED_PREFIXES = ("docs",)
 
-# Statuses that block write mode. DELETED is a whole-file view whose target is
-# absent; recreating it is a deliberate future decision, so it blocks today.
-BLOCKING_STATUSES = ("ERROR", "ORPHAN", "DELETED")
+# Statuses that block write mode. A whole-file target that is absent on disk is
+# a CREATE in write mode and a DELETED record only in check mode, so write mode
+# can always repair it (WR-03).
+BLOCKING_STATUSES = ("ERROR", "ORPHAN")
 
 TABLE_HEADER = "| ID | Project | Board | Framework | Status | Report |"
 TABLE_SEPARATOR = "|----|---------|-------|-----------|--------|--------|"
@@ -1203,13 +1204,18 @@ def _select_views(args):
     return (args.view,)
 
 
-def _classify_produced(root, entry, manifest_by_path):
+def _classify_produced(root, entry, manifest_by_path, check):
     """Classify one produced target; return `(record, payload, delete)`.
 
     A region target's owned bytes are the marker slice, both markers included,
     so an authored edit outside the region is not drift and a moved marker is.
     A region file that is absent on disk is an ERROR: write mode must never
     recreate an authored file and silently drop its prose.
+
+    A whole-file target that a selected view still produces is a CREATE in
+    write mode even when the manifest lists it, so a deleted generated page is
+    repaired by the documented `--all` repair path (WR-03). Check mode keeps
+    reporting that state as DELETED so the drift never passes silently.
     """
     path = entry["path"]
     target = entry["target"]
@@ -1276,7 +1282,7 @@ def _classify_produced(root, entry, manifest_by_path):
     # `docs` view will add generated pages on the same branch.
     data = entry["data"]
     if not target.exists():
-        if listed:
+        if listed and check:
             return (
                 {
                     "path": path,
@@ -1287,7 +1293,15 @@ def _classify_produced(root, entry, manifest_by_path):
                 None,
             )
         return (
-            {"path": path, "status": "CREATE", "reason": "target does not exist"},
+            {
+                "path": path,
+                "status": "CREATE",
+                "reason": (
+                    "manifest-listed file is absent; recreating it"
+                    if listed
+                    else "target does not exist"
+                ),
+            },
             data,
             None,
         )
@@ -1518,7 +1532,7 @@ def _build_plan(root, selected, check):
     for path in sorted(produced):
         entry = produced[path]
         record, payload, delete = _classify_produced(
-            root, entry, manifest_by_path
+            root, entry, manifest_by_path, check
         )
         records.append(record)
         if payload is not None:
