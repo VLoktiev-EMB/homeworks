@@ -10,7 +10,7 @@ from the projects' metadata, so this page and the repository index always list t
 work.
 
 The architecture and process decisions behind the repository live in the
-[decision records](decisions/).
+[decision records](decisions/README.md).
 
 ## Homeworks
 

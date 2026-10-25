@@ -16,8 +16,11 @@ browser and reviewed as text, so its byte count, code-point count and displayed
 content must agree; a UTF-8 comment would be a policy change, not a harmless
 tweak. RenderMathScriptTests enforces that policy.
 
-The `PinConsistencyTests` class belongs to a later plan that introduces the site
-configuration; this module starts as the vendoring and provenance gate.
+`PinConsistencyTests` closes the loop with the generated site configuration: it
+cross-checks `requirements-docs.txt`, `mkdocs.yml` and the vendored KaTeX
+directory, and proves the generated `nav:` lists every Markdown file under
+`docs/`. It reads committed bytes with `pathlib` and plain string handling, so
+the suite still never imports PyYAML (META-05, META-08, D-30).
 """
 
 from __future__ import annotations
@@ -33,6 +36,22 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VENDOR = REPO_ROOT / "docs" / "assets" / "vendor" / "katex" / "0.19.0"
+REQUIREMENTS = REPO_ROOT / "requirements-docs.txt"
+CONFIG = REPO_ROOT / "mkdocs.yml"
+DOCS = REPO_ROOT / "docs"
+
+PIN_LINES = frozenset(
+    {"mkdocs==1.6.1", "mkdocs-material==9.7.7", "pymdown-extensions==12.3"}
+)
+KATEX_ROOT = "assets/vendor/katex/0.19.0/"
+KATEX_STYLESHEET = f"{KATEX_ROOT}katex.min.css"
+KATEX_SCRIPTS = (
+    f"{KATEX_ROOT}katex.min.js",
+    f"{KATEX_ROOT}contrib/auto-render.min.js",
+    f"{KATEX_ROOT}render-math.js",
+)
+NAV_LINE = re.compile(r'^\s+- "[^"]+": (\S+\.md)$')
+DOCS_PATH = re.compile(r"[A-Za-z0-9_./-]+")
 
 LEDGER_NAME = "FILES.sha256"
 AUTHORED_FILES = frozenset({"render-math.js", "PROVENANCE.txt", LEDGER_NAME})
@@ -316,3 +335,160 @@ class RenderMathScriptTests(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertNotIn(token, self.text)
         self.assertNotIn("src=", self.text)
+
+
+class PinConsistencyTests(unittest.TestCase):
+    """META-05/META-08/D-30: pins, theme constraints and nav coverage agree.
+
+    No PyYAML: the generated configuration has one reviewed shape, so a
+    line-based reader is sufficient and keeps this module stdlib-only. The nav
+    matcher's contract (an ASCII docs-relative path with no whitespace and no
+    quote) is asserted before anything is matched, so a path the line regex
+    cannot represent fails by name instead of disappearing from the comparison.
+    """
+
+    def config_text(self) -> str:
+        return CONFIG.read_text(encoding="utf-8")
+
+    def section(self, key: str) -> list:
+        """Return the lines under top-level *key*, stopping at the next key."""
+        lines = self.config_text().splitlines()
+        start = lines.index(key) + 1
+        block = []
+        for line in lines[start:]:
+            if line and not line[0].isspace():
+                break
+            block.append(line)
+        return block
+
+    def entries(self, key: str) -> list:
+        return [
+            line.strip()[2:].strip()
+            for line in self.section(key)
+            if line.strip().startswith("- ")
+        ]
+
+    def nav_block(self) -> list:
+        return self.section("nav:")
+
+    def nav_targets(self) -> list:
+        return [
+            match.group(1)
+            for match in (NAV_LINE.match(line) for line in self.nav_block())
+            if match
+        ]
+
+    def docs_markdown_paths(self) -> list:
+        return sorted(
+            path.relative_to(DOCS).as_posix()
+            for path in DOCS.rglob("*.md")
+            if path.is_file()
+        )
+
+    def test_requirements_are_exactly_the_three_exact_pins(self) -> None:
+        lines = [
+            line.strip()
+            for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+
+        self.assertEqual(3, len(lines), lines)
+        self.assertEqual(PIN_LINES, set(lines))
+
+    def test_requirement_lines_carry_no_hash_or_extras_clause(self) -> None:
+        for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines():
+            if not line.strip() or line.strip().startswith("#"):
+                continue
+            with self.subTest(line=line):
+                self.assertNotIn("--hash", line)
+                self.assertNotIn("[", line)
+                self.assertNotIn(";", line)
+
+    def test_mkdocs_pin_satisfies_materials_constraint(self) -> None:
+        pin = next(
+            line.strip()
+            for line in REQUIREMENTS.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("mkdocs==")
+        )
+        version = pin.split("==", 1)[1]
+        parts = version.split(".")
+
+        self.assertEqual("1", parts[0], version)
+        self.assertGreaterEqual(int(parts[1]), 6, version)
+        self.assertLess(int(parts[0]), 2, version)
+
+    def test_theme_is_material_without_a_custom_dir(self) -> None:
+        theme = "\n".join(self.section("theme:"))
+
+        self.assertIn("name: material", theme)
+        self.assertNotIn("custom_dir", self.config_text())
+
+    def test_the_only_plugin_is_search(self) -> None:
+        self.assertEqual(["search"], self.entries("plugins:"))
+
+    def test_no_hooks_or_inherit_key(self) -> None:
+        text = self.config_text()
+
+        self.assertNotRegex(text, r"(?m)^hooks:")
+        self.assertNotIn("INHERIT:", text)
+
+    def test_site_url_is_the_project_url(self) -> None:
+        self.assertIn(
+            "site_url: https://vloktiev-emb.github.io/homeworks/\n",
+            self.config_text(),
+        )
+
+    def test_the_math_extension_path_is_complete(self) -> None:
+        block = "\n".join(self.section("markdown_extensions:"))
+
+        self.assertIn("  - pymdownx.arithmatex:\n      generic: true", block)
+        self.assertIn("  - pymdownx.superfences", block)
+        self.assertIn("  - pymdownx.highlight:", block)
+
+    def test_extra_css_is_the_exact_vendored_stylesheet(self) -> None:
+        self.assertEqual([KATEX_STYLESHEET], self.entries("extra_css:"))
+
+    def test_extra_javascript_lists_the_three_scripts_in_order(self) -> None:
+        entries = self.entries("extra_javascript:")
+
+        self.assertEqual(list(KATEX_SCRIPTS), entries)
+        for entry in entries:
+            with self.subTest(entry=entry):
+                self.assertIn(KATEX_ROOT, entry)
+
+    def test_katex_directory_has_exactly_the_pinned_version_child(self) -> None:
+        self.assertEqual(
+            ["0.19.0"], sorted(path.name for path in VENDOR.parent.iterdir())
+        )
+
+    def test_every_docs_markdown_path_matches_the_matcher_contract(self) -> None:
+        for path in self.docs_markdown_paths():
+            with self.subTest(path=path):
+                self.assertIsNotNone(
+                    re.fullmatch(DOCS_PATH, path),
+                    f"the nav matcher cannot represent {path!r}",
+                )
+
+    def test_nav_lists_every_markdown_file_under_docs(self) -> None:
+        docs = set(self.docs_markdown_paths())
+        targets = self.nav_targets()
+
+        self.assertEqual(len(targets), len(set(targets)), "duplicate nav target")
+        missing = sorted(docs - set(targets))
+        extra = sorted(set(targets) - docs)
+        self.assertEqual([], missing, f"the nav omits: {missing}")
+        self.assertEqual(
+            [], extra, f"the nav names paths that are not files under docs/: {extra}"
+        )
+
+    def test_no_nav_entry_is_a_single_quoted_scalar(self) -> None:
+        entries = [
+            line
+            for line in self.nav_block()
+            if line.strip().startswith("- ")
+        ]
+
+        self.assertTrue(entries, "the nav block must carry entries")
+        for line in entries:
+            with self.subTest(line=line):
+                self.assertFalse(line.rstrip().endswith('"'), line)

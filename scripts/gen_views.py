@@ -17,8 +17,8 @@ template under `templates/views/` is the only writer, and a folder display name
 or a pin value reaches it as one pre-rendered fragment. `shared-ini` refuses a
 pin disagreement instead of picking one homework's value (Pitfall 6).
 
-The `nav` subcommand renders the whole `mkdocs.yml`, including its `nav:` block,
-because D-06 gives one reviewed template the whole file. `--all` runs the
+The `nav` subcommand renders the whole `mkdocs.yml`, including its navigation
+block, because D-06 gives one reviewed template the whole file. `--all` runs the
 implemented views in the fixed order `readme`, `workspace`, `shared-ini`,
 `docs`, `nav`; a view that raises `CheckError` aborts the run with exit 2 and a
 stderr line naming it, so a zero-homework tree is never a partial success.
@@ -1006,11 +1006,156 @@ def _render_docs(root, homeworks):
     return entries
 
 
+def _nav_label(value):
+    """Make *value* safe inside a double-quoted YAML scalar (Pitfall 1).
+
+    The label is the only free text in a nav entry: a double quote would close
+    the scalar early, so it becomes a single quote. The separator colon between
+    label and path is never part of this string, which is why every entry stays
+    a YAML mapping rather than one quoted scalar (T-5-22).
+    """
+    return value.replace('"', "'")
+
+
+def _decision_label(name, text):
+    """Return an ADR's nav label: the first `# ` heading after frontmatter.
+
+    Every real ADR opens with a YAML frontmatter block (`---` through `---`), so
+    a first-line scan would label the page `status: accepted` rather than its
+    title. The block is skipped first; then the first ATX heading wins. No
+    heading falls back to the filename with its numeric prefix and extension
+    removed and hyphens replaced by spaces, title-cased (Pitfall 2, T-5-22).
+    """
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    if index < len(lines) and lines[index].strip() == "---":
+        index += 1
+        while index < len(lines) and lines[index].strip() != "---":
+            index += 1
+        index += 1  # the closing delimiter itself
+    for line in lines[index:]:
+        match = re.match(r"^#\s+(.+)$", line)
+        if match:
+            return match.group(1).strip()
+    stem = Path(name).stem
+    stem = re.sub(r"^[0-9]+[-_]?", "", stem)
+    return stem.replace("-", " ").title()
+
+
+def _homework_nav_entries(homeworks):
+    """Render `{{homework_nav_entries}}` in the `_load_homeworks` order (D-05)."""
+    lines = []
+    for homework in homeworks:
+        number = f"{homework['module']}.{homework['lesson']}"
+        label = _nav_label(f"{number} {homework['title']}")
+        lines.append(f'    - "{label}": homeworks/{homework["id"]}.md')
+    return "\n".join(lines)
+
+
+def _board_nav_entries(boards):
+    """Render `{{board_nav_entries}}` sorted by board id (D-04, D-10)."""
+    lines = []
+    for board in sorted(boards, key=lambda item: item["id"]):
+        label = _nav_label(board["id"])
+        lines.append(f'    - "{label}": boards/{board["id"]}.md')
+    return "\n".join(lines)
+
+
+def _decision_nav_entries(root):
+    """Render `{{decision_nav_entries}}` from the authored ADR directory.
+
+    Pitfall 2 is why this section is a directory scan rather than a hand-written
+    list: `validation.nav.omitted_files: warn` makes `--strict` fail when any
+    Markdown file under `docs/` is absent from `nav:`. `README.md` is the
+    directory index and is emitted by the template itself, so it is skipped
+    here; every other file is sorted by name and labelled from its heading.
+    A symlink is refused rather than followed: a nav entry must never point at
+    a page outside `docs/decisions/` (T-5-22).
+    """
+    directory = root / "docs" / "decisions"
+    try:
+        directory_mode = os.lstat(directory).st_mode
+    except FileNotFoundError:
+        return ""
+    except OSError as exc:
+        raise CheckError(f"cannot inspect docs/decisions: {exc}") from exc
+    if stat.S_ISLNK(directory_mode):
+        raise CheckError("docs/decisions is a symlink; refusing to follow it")
+    if not stat.S_ISDIR(directory_mode):
+        raise CheckError("docs/decisions exists and is not a directory")
+    try:
+        children = sorted(directory.iterdir(), key=lambda item: item.name)
+    except OSError as exc:
+        raise CheckError(f"cannot list docs/decisions: {exc}") from exc
+
+    lines = []
+    for child in children:
+        if child.suffix != ".md" or child.name == "README.md":
+            continue
+        display = f"docs/decisions/{child.name}"
+        try:
+            child_mode = os.lstat(child).st_mode
+        except OSError as exc:
+            raise CheckError(f"cannot inspect {display}: {exc}") from exc
+        if stat.S_ISLNK(child_mode):
+            raise CheckError(f"{display} is a symlink; refusing to follow it")
+        if not stat.S_ISREG(child_mode):
+            continue
+        try:
+            text = child.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise CheckError(f"{display} is not valid UTF-8: {exc}") from exc
+        except OSError as exc:
+            raise CheckError(f"cannot read {display}: {exc}") from exc
+        label = _nav_label(_decision_label(child.name, text))
+        lines.append(f'      - "{label}": decisions/{child.name}')
+    return "\n".join(lines)
+
+
+def _render_nav(root, homeworks):
+    """Return the produced entry for the whole `mkdocs.yml` (D-05/D-06/D-10).
+
+    The three repeated blocks arrive as pre-rendered fragments (D-20); every
+    label is quoted while the separator colon stays outside the quotes, so each
+    entry is a mapping rather than one quoted scalar (Pitfall 1). Building the
+    site is deliberately not part of this view: `nav --check` proves the
+    configuration is in sync with the tree, never that MkDocs accepts it.
+    """
+    display = "mkdocs.yml"
+    template_display = "templates/views/mkdocs.yml.tmpl"
+    template = read_text(root / template_display, template_display)
+    rendered = render(
+        template,
+        {
+            "homework_nav_entries": _homework_nav_entries(homeworks),
+            "board_nav_entries": _board_nav_entries(_load_boards(root)),
+            "decision_nav_entries": _decision_nav_entries(root),
+        },
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return [
+        {
+            "path": display,
+            "owner": "nav",
+            "mode": "whole",
+            "target": root / display,
+            "data": data,
+            "owned": data,
+        }
+    ]
+
+
 RENDERERS = {
     "readme": _render_readme,
     "workspace": _render_workspace,
     "shared-ini": _render_shared_ini,
     "docs": _render_docs,
+    "nav": _render_nav,
 }
 
 
