@@ -1,0 +1,66 @@
+name: docs
+
+# Publishing is a `main`-only action. Pull requests run the read-only
+# `generated-views` workflow instead, and a `workflow_dispatch` here exists to
+# re-publish or to exercise the build on demand, not to prove the deploy path:
+# `deploy-pages` needs the repository's Pages source and environment, which are
+# settings a feature branch cannot provide.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# OIDC deploy: `pages: write` and `id-token: write` are the two permissions
+# `deploy-pages` requires, and `contents: read` is the checkout. There is no
+# `contents: write`, no deploy key, no secret and no `gh-pages` branch, because
+# `mkdocs gh-deploy` would push around the branch and pull-request rules in
+# AGENTS.md.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build and deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Pinned to the v7.0.1 commit, not the mutable `v7` major tag: a tag can
+      # be repointed at other code between runs, a commit SHA cannot.
+      #
+      # `lfs: false` is explicit: Pages cannot serve LFS objects, so a checkout
+      # that fetched them would only hide the problem until the artefact was
+      # published. The guard step below fails the job instead.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      # CI installs the three exact pins from `requirements-docs.txt`; `uv` is a
+      # local convenience and would add a fourth action here for no gain.
+      - name: Install the docs requirements
+        run: python -m pip install -r requirements-docs.txt
+      # Separately named and separately failure-attributable: a warning in the
+      # generated tree must read as a docs warning, not as an upload problem.
+      - name: Build the site with warnings as errors
+        run: mkdocs build --strict
+      # Pitfall 12: a `site/` entry can be a 130-byte pointer when a tracked
+      # asset is LFS-backed. Fail before the artefact is packed.
+      - name: Guard the published tree against LFS pointers
+        run: bash scripts/ci/check_lfs_pointers.sh site
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
+        with:
+          path: site
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5
+        id: deployment
