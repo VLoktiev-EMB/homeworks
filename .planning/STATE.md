@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Completed 04.2-01-PLAN.md
-last_updated: "2026-10-25T19:04:11.985Z"
+stopped_at: Completed 04.2-02-PLAN.md
+last_updated: "2026-10-25T19:09:31.596Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 execution started
-state_head: e867945101448e27183572456d66527ecfcd273a
+state_head: b36f0d3e6166cee6aefe3af1d7c6b7666a0c6612
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 45
-  completed_plans: 39
+  completed_plans: 40
   percent: 38
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-10-25 — Phase 04.2 execution started
 
@@ -61,6 +61,7 @@ Progress: [████░░░░░░] 38%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 04.2 P01 | 2 min | 3 tasks | 9 files |
+| Phase 04.2 P02 | 2 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 04.2]: D-08 amended: retrieved is 2026-10-23T00:00:00Z, because valid_iso8601 requires a timezone and the bare date is rejected once status leaves planned.
 - [Phase 04.2]: The status flip, source.reference, four provenance values, and the simulation/report/assets blocks land in one commit; the TODO sentinels are legal only at status planned.
 - [Phase 04.2]: homework.yaml forward-declares assets/diagram.json and report.md; the schema checks the path pattern, not disk presence, so the metadata validates before Waves 3 and 4 create those files.
+- [Phase 04.2]: The pattern library lives at homeworks/1_3-police-flasher/lib/pattern with a manifest that omits frameworks and platforms, so both environments compile the same sources without a lib_deps entry or test_build_src.
+- [Phase 04.2]: PORT_GPIO_INPUT is a pin mode, not a write level: an all-off frame calls set_mode(INPUT) and leaving that state calls set_mode(OUTPUT) before the next write, so the controller tracks applied/as_input/level per pin.
+- [Phase 04.2]: The controller applies the current frame before reading the button, which makes a one-shot injected failure land on a pending write and lets a mode or speed change re-apply the new frame in the same tick.
+- [Phase 04.2]: The frame schedule advances at most one frame per tick and resyncs step_started_ms to now only when a stall leaves it more than one hold behind, so a late loop neither drifts nor bursts.
 
 ### Pending Todos
 
@@ -138,6 +143,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:04:11.936Z
-Stopped at: Completed 04.2-01-PLAN.md
+Last session: 2026-10-25T19:09:31.548Z
+Stopped at: Completed 04.2-02-PLAN.md
 Resume file: None
