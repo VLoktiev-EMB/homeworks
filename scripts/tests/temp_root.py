@@ -30,7 +30,6 @@ COPIED_PATHS = (
     "templates",
     "scripts/pio",
 )
-ALLOWLIST_PATH = Path("scripts") / "metadata" / "allowlist.json"
 
 
 def repository_root():
@@ -62,9 +61,9 @@ def build_root(base, *, source_root=None, homeworks=True):
     """Create a disposable repository root at *base* and return it.
 
     The root carries ``platformio.shared.ini``, ``partitions/``, ``schema/``,
-    ``templates/``, ``scripts/pio/`` and ``scripts/metadata/allowlist.json`` at
-    their repository-relative depths, plus a ``lib/`` symlink to the real
-    shared libraries. *homeworks* controls whether ``homeworks/`` is pre-created;
+    ``templates/`` and ``scripts/pio/`` at their repository-relative depths,
+    plus a ``lib/`` symlink to the real shared libraries. *homeworks* controls
+    whether ``homeworks/`` is pre-created;
     pass ``False`` to prove the scaffold creates its own directories.
     """
     root = Path(base)
@@ -75,10 +74,6 @@ def build_root(base, *, source_root=None, homeworks=True):
 
     for relative in COPIED_PATHS:
         _copy(repository / relative, root / relative)
-
-    allowlist = root / ALLOWLIST_PATH
-    allowlist.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(repository / ALLOWLIST_PATH, allowlist)
 
     link = root / "lib"
     if link.is_symlink() or link.exists():
