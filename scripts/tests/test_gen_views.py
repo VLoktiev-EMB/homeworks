@@ -35,6 +35,8 @@ GENERATED_HEADER = (
     "<!-- GENERATED — do not edit. Run: uv run scripts/gen_views.py --all -->"
 )
 REPOSITORY_URL = "https://github.com/VLoktiev-EMB/homeworks"
+DOCS_TABLE_HEADER = "| ID | Project | Board | Framework | Status | Report |"
+DOCS_TABLE_SEPARATOR = "|----|---------|-------|-----------|--------|--------|"
 
 # Captured from `platformio.shared.ini` before generation: the five-line SCons
 # block that a native build depends on. The test compares these bytes, not a
@@ -1009,6 +1011,105 @@ class DocsPagesTests(ViewsTestBase):
         self.assertIn("generated.manifest: UNCHANGED", result.stdout)
         for status in ("CREATE", "MODIFIED", "DELETED", "ORPHAN", "ERROR"):
             self.assertNotIn(f": {status}", result.stdout, result.stdout)
+
+    def index_path(self) -> Path:
+        return self.root / "docs" / "index.md"
+
+    def index_region(self) -> str:
+        text = self.index_path().read_text(encoding="utf-8")
+        start = text.index(BEGIN)
+        stop = text.index(END) + len(END)
+        return text[start:stop]
+
+    def test_index_and_readme_share_the_six_column_header(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        self.assertEqual(0, self.generate("readme").returncode)
+
+        readme = (self.root / "README.md").read_text(encoding="utf-8")
+        index = self.index_path().read_text(encoding="utf-8")
+
+        self.assertEqual(1, readme.count(DOCS_TABLE_HEADER))
+        self.assertEqual(1, index.count(DOCS_TABLE_HEADER))
+        self.assertIn(DOCS_TABLE_SEPARATOR, index)
+        self.assertTrue(index.startswith("# Homeworks\n"))
+        self.assertIn("This site is a catalog", index)
+
+    def test_index_rows_are_absolute_and_readme_rows_stay_relative(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        self.assertEqual(0, self.generate("readme").returncode)
+
+        region = self.index_region()
+        self.assertIn(
+            f"]({REPOSITORY_URL}/tree/main/homeworks/1_3-alpha/)", region
+        )
+        self.assertIn(
+            f"]({REPOSITORY_URL}/blob/main/homeworks/1_3-alpha/report.md)",
+            region,
+        )
+        self.assertNotIn("](homeworks/", region)
+
+        readme = (self.root / "README.md").read_text(encoding="utf-8")
+        start = readme.index(BEGIN)
+        stop = readme.index(END) + len(END)
+        readme_region = readme[start:stop]
+        self.assertIn("](homeworks/1_3-alpha/)", readme_region)
+        self.assertIn("](homeworks/1_3-alpha/report.md)", readme_region)
+        self.assertNotIn(REPOSITORY_URL, readme_region)
+
+    def test_a_prose_edit_outside_the_index_region_is_not_drift(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        text = self.index_path().read_text(encoding="utf-8")
+        self.index_path().write_text(
+            "# Homeworks\n\nRewritten authored prose.\n\n"
+            + text[text.index(BEGIN):],
+            encoding="utf-8",
+        )
+
+        result = self.generate("docs", "--check")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("docs/index.md: UNCHANGED", result.stdout)
+
+    def test_a_duplicated_begin_marker_is_exit_two(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        text = self.index_path().read_text(encoding="utf-8")
+        self.index_path().write_text(
+            text.replace(BEGIN, f"{BEGIN}\n{BEGIN}", 1), encoding="utf-8"
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("", result.stdout, "a usage error must print no record")
+        self.assertIn("ERROR:", result.stderr)
+
+    def test_a_missing_index_is_an_error_and_is_not_recreated(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        self.index_path().unlink()
+
+        check = self.generate("docs", "--check")
+
+        self.assertEqual(1, check.returncode, check.stdout + check.stderr)
+        self.assertIn("docs/index.md: ERROR", check.stdout)
+
+        write = self.generate("docs")
+
+        self.assertEqual(1, write.returncode, write.stdout + write.stderr)
+        self.assertFalse(
+            self.index_path().exists(),
+            "write mode must never recreate an authored file",
+        )
+
+    def test_real_tree_index_uses_the_same_headers_as_the_readme(self) -> None:
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        index = (REPO_ROOT / "docs" / "index.md").read_text(encoding="utf-8")
+
+        self.assertIn(DOCS_TABLE_HEADER, readme)
+        self.assertIn(DOCS_TABLE_HEADER, index)
+        self.assertIn(DOCS_TABLE_SEPARATOR, index)
+        region = index.split(BEGIN, 1)[1]
+        self.assertIn(REPOSITORY_URL, region)
+        self.assertNotIn("](homeworks/", region)
 
     def test_real_tree_homework_pages_have_no_parent_segment(self) -> None:
         pages = sorted((REPO_ROOT / "docs" / "homeworks").glob("*.md"))

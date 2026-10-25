@@ -25,6 +25,15 @@
       "bytes": 596
     },
     {
+      "path": "docs/index.md",
+      "owner": "docs",
+      "mode": "region",
+      "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
+      "marker_end": "<!-- END GENERATED -->",
+      "sha256": "2fe2abc291742028df1e4d0b99a424162f18a3fb0357f281bf8a5715d97ceda7",
+      "bytes": 430
+    },
+    {
       "path": "homeworks.code-workspace",
       "owner": "workspace",
       "mode": "whole",

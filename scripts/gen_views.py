@@ -962,13 +962,39 @@ def _render_board_page(root, board, homeworks):
     }
 
 
-def _render_docs(root, homeworks):
-    """Return every `docs` target this plan implements.
+def _render_docs_index(root, homeworks):
+    """Return the produced entry for the `docs/index.md` marker region (D-09).
 
-    This plan owns the page families first; the site home page joins them in
-    the last task so each intermediate commit leaves `docs --check` green on
-    the real tree.
+    The authored prose around the region is never rewritten. The table body is
+    the same `homeworks-table.md.tmpl` the README uses, rendered with absolute
+    repository URLs instead of relative ones, so the six columns are
+    byte-identical in both places and only the link style differs (D-11,
+    Pitfall 3).
     """
+    display = "docs/index.md"
+    template_display = "templates/views/homeworks-table.md.tmpl"
+    template = read_text(root / template_display, template_display)
+    rendered = render(
+        template,
+        {"homework_rows": _homework_rows(homeworks, link_style="absolute")},
+        template_display,
+    ).rstrip("\n")
+    owned = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "docs",
+        "mode": "region",
+        "target": root / display,
+        "owned": owned,
+        "marker_begin": MARKER_BEGIN,
+        "marker_end": MARKER_END,
+    }
+
+
+def _render_docs(root, homeworks):
+    """Return every `docs` target: the page families and the site home."""
     entries = [
         _render_homework_page(root, homework) for homework in homeworks
     ]
@@ -976,6 +1002,7 @@ def _render_docs(root, homeworks):
         _render_board_page(root, board, homeworks)
         for board in _load_boards(root)
     )
+    entries.append(_render_docs_index(root, homeworks))
     return entries
 
 
