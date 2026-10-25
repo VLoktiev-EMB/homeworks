@@ -25,7 +25,9 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shutil
 import stat
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -177,3 +179,140 @@ class KatexVendoringTests(unittest.TestCase):
         # A green discrimination case would be worthless if the helper always
         # passed, so the real tree must also be clean.
         self.assertEqual([], verify_tree(VENDOR))
+
+
+class KatexVendoringDiscriminationTests(unittest.TestCase):
+    """`verify_tree` fails for each reason it claims to detect.
+
+    Every case mutates a private copy of the vendor tree, so the committed
+    bytes are never touched and a negative case can fail only because of its
+    single mutation.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name) / "katex"
+        shutil.copytree(VENDOR, self.root)
+
+    def test_flipped_byte_is_a_named_digest_mismatch(self):
+        target = self.root / "fonts" / "KaTeX_Main-Regular.woff2"
+        data = bytearray(target.read_bytes())
+        data[0] ^= 0xFF
+        target.write_bytes(bytes(data))
+
+        problems = verify_tree(self.root)
+
+        self.assertTrue(
+            any(
+                "digest mismatch" in problem
+                and "KaTeX_Main-Regular.woff2" in problem
+                for problem in problems
+            ),
+            problems,
+        )
+
+    def test_deleted_face_is_a_named_missing_file(self):
+        (self.root / "fonts" / "KaTeX_Size4-Regular.woff2").unlink()
+
+        problems = verify_tree(self.root)
+
+        self.assertTrue(
+            any(
+                "missing listed file" in problem
+                and "KaTeX_Size4-Regular.woff2" in problem
+                for problem in problems
+            ),
+            problems,
+        )
+
+    def test_unlisted_file_is_reported(self):
+        (self.root / "fonts" / "KaTeX_Extra-Regular.woff2").write_bytes(b"not a font")
+
+        problems = verify_tree(self.root)
+
+        self.assertTrue(
+            any(
+                "unlisted file" in problem and "KaTeX_Extra-Regular.woff2" in problem
+                for problem in problems
+            ),
+            problems,
+        )
+
+    def test_fonts_subdirectory_is_reported(self):
+        (self.root / "fonts" / "sub").mkdir()
+
+        problems = verify_tree(self.root)
+
+        self.assertTrue(
+            any("subdirectory" in problem and "fonts/sub" in problem for problem in problems),
+            problems,
+        )
+
+    def test_removed_fonts_directory_reports_every_face(self):
+        shutil.rmtree(self.root / "fonts")
+
+        problems = verify_tree(self.root)
+        missing = [problem for problem in problems if "missing listed file" in problem]
+
+        self.assertEqual(20, len(missing), problems)
+        for face in ("KaTeX_AMS-Regular.woff2", "KaTeX_Typewriter-Regular.woff2"):
+            with self.subTest(face=face):
+                self.assertTrue(any(face in problem for problem in missing), problems)
+
+    def test_crlf_ledger_keeps_the_same_paths(self):
+        ledger = self.root / LEDGER_NAME
+        original = [relative for _, relative in read_ledger(ledger)]
+        ledger.write_bytes(
+            ledger.read_bytes().decode("utf-8").replace("\n", "\r\n").encode("utf-8")
+        )
+
+        parsed = [relative for _, relative in read_ledger(ledger)]
+
+        self.assertEqual(original, parsed)
+        self.assertEqual(24, len(parsed))
+        self.assertEqual([], verify_tree(self.root))
+
+    def test_real_tree_is_clean(self):
+        self.assertEqual([], verify_tree(VENDOR))
+
+
+class RenderMathScriptTests(unittest.TestCase):
+    """The authored browser script stays ASCII and integrates with Material.
+
+    `render-math.js` may cite its source URL in a comment; "no external host"
+    here means no CDN that could serve an asset and no externally loaded
+    script, because D-07 forbids a network dependency in the site build.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.path = VENDOR / "render-math.js"
+        cls.data = cls.path.read_bytes()
+        cls.text = cls.data.decode("ascii")  # raises if the policy is broken
+
+    def test_script_is_ascii(self):
+        self.assertTrue(self.data.isascii())
+
+    def test_script_subscribes_to_document(self):
+        self.assertIn("document$.subscribe", self.text)
+
+    def test_script_calls_render_math_in_element(self):
+        self.assertIn("renderMathInElement", self.text)
+
+    def test_script_declares_every_delimiter_pair(self):
+        for left, right in (
+            (r"$$", r"$$"),
+            (r"$", r"$"),
+            (r"\\(", r"\\)"),
+            (r"\\[", r"\\]"),
+        ):
+            with self.subTest(left=left, right=right):
+                self.assertIn(f'left: "{left}"', self.text)
+                self.assertIn(f'right: "{right}"', self.text)
+
+    def test_script_names_no_external_asset_host(self):
+        for token in ("cdn.", "unpkg.com", "jsdelivr"):
+            with self.subTest(token=token):
+                self.assertNotIn(token, self.text)
+        self.assertNotIn("src=", self.text)
