@@ -34,6 +34,7 @@ EMPTY_REGION = f"{BEGIN}\n{END}"
 GENERATED_HEADER = (
     "<!-- GENERATED — do not edit. Run: uv run scripts/gen_views.py --all -->"
 )
+REPOSITORY_URL = "https://github.com/VLoktiev-EMB/homeworks"
 
 # Captured from `platformio.shared.ini` before generation: the five-line SCons
 # block that a native build depends on. The test compares these bytes, not a
@@ -814,6 +815,209 @@ class SharedIniTests(ViewsTestBase):
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)
         self.assertIn("platformio.shared.ini: MODIFIED", result.stdout)
         self.assertEqual(before, snapshot(self.root), "--check must not write")
+
+
+class DocsPagesTests(ViewsTestBase):
+    """D-02/D-03: one metadata-card page per homework, escaped and absolute."""
+
+    HOMEWORK_PAGES = (
+        "docs/homeworks/1_3-alpha.md",
+        "docs/homeworks/1_4-beta.md",
+    )
+
+    def page(self, homework_id: str) -> str:
+        return (
+            self.root / "docs" / "homeworks" / f"{homework_id}.md"
+        ).read_text(encoding="utf-8")
+
+    def homework_yaml(self, homework_id: str) -> Path:
+        return self.root / "homeworks" / homework_id / "homework.yaml"
+
+    def rewrite_homework(self, homework_id: str, old: str, new: str) -> None:
+        path = self.homework_yaml(homework_id)
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text)
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def test_one_page_per_homework_starts_with_the_generated_header(self) -> None:
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        for relative in self.HOMEWORK_PAGES:
+            path = self.root / relative
+            self.assertTrue(path.is_file(), relative)
+            self.assertTrue(
+                path.read_text(encoding="utf-8").startswith(GENERATED_HEADER),
+                relative,
+            )
+
+    def test_metadata_card_carries_the_fixture_values(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        text = self.page("1_3-alpha")
+
+        self.assertTrue(text.startswith(GENERATED_HEADER), text[:120])
+        self.assertIn("\n# Alpha\n", text)
+        for row in (
+            "| ID | 1_3-alpha |",
+            "| Title | Alpha |",
+            "| Board | esp32-s3-devkitc-1 |",
+            "| Framework | arduino |",
+            "| Language | cpp |",
+            "| Status | in-progress |",
+            "| Toolchain | PlatformIO 6.2.0 · espressif32@8.0.0 |",
+            "| Simulation | wokwi (pending) |",
+        ):
+            self.assertIn(row, text)
+
+    def test_links_are_absolute_repository_urls(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        text = self.page("1_3-alpha")
+
+        self.assertIn(
+            f"- [Report]({REPOSITORY_URL}/blob/main/homeworks/1_3-alpha/report.md)",
+            text,
+        )
+        self.assertIn(
+            "- [Project README]("
+            f"{REPOSITORY_URL}/blob/main/homeworks/1_3-alpha/README.md)",
+            text,
+        )
+        self.assertNotIn("../", text)
+
+    def test_a_missing_simulation_block_renders_none(self) -> None:
+        self.rewrite_homework(
+            "1_4-beta", "simulation:\n  tool: none\n  status: none\n", ""
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("| Simulation | none |", self.page("1_4-beta"))
+        self.assertIn("| Simulation | wokwi (pending) |", self.page("1_3-alpha"))
+
+    def test_a_missing_report_block_renders_none_and_no_report_bullet(self) -> None:
+        self.rewrite_homework(
+            "1_3-alpha", "report:\n  path: report.md\n  status: draft\n", ""
+        )
+        program = (
+            "from pathlib import Path\n"
+            "from scripts.metadata.contract import validate_homework_text\n"
+            f"root = Path({str(self.root)!r})\n"
+            "path = root / 'homeworks' / '1_3-alpha' / 'homework.yaml'\n"
+            "records = validate_homework_text(\n"
+            "    path.read_text(encoding='utf-8'), root=root, path=path)\n"
+            "problems = [item for item in records if item['status'] != 'OK']\n"
+            "print(problems)\n"
+            "raise SystemExit(0 if not problems else 1)\n"
+        )
+        schema_check = run_contract_program(program)
+        self.assertEqual(
+            0, schema_check.returncode, schema_check.stdout + schema_check.stderr
+        )
+
+        self.assertEqual(0, self.generate("readme").returncode)
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        text = self.page("1_3-alpha")
+        self.assertNotIn("- [Report](", text)
+        self.assertIn(
+            "- [Project README]("
+            f"{REPOSITORY_URL}/blob/main/homeworks/1_3-alpha/README.md)",
+            text,
+        )
+        rows = [
+            line
+            for line in (self.root / "README.md").read_text(encoding="utf-8").splitlines()
+            if line.startswith("| 1.3 |")
+        ]
+        self.assertEqual(1, len(rows))
+        self.assertTrue(rows[0].endswith("| none |"), rows[0])
+        self.assertEqual(7, rows[0].count("|"), "the cell width must stay six columns")
+
+    def test_a_pipe_and_a_newline_become_one_escaped_cell(self) -> None:
+        self.rewrite_homework(
+            "1_3-alpha",
+            'title: "Alpha"',
+            'title: "Pipe | [bracket] split\\nline"',
+        )
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        text = self.page("1_3-alpha")
+        self.assertIn(r"| Title | Pipe \| \[bracket\] split line |", text)
+        self.assertNotIn("[bracket]", text)
+        self.assertNotIn("<b>", text)
+        self.assertEqual(1, text.count("| Title |"))
+
+    def test_a_hand_edit_is_modified_drift_and_check_writes_nothing(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        path = self.root / "docs" / "homeworks" / "1_3-alpha.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "| Status | in-progress |", "| Status | complete |"
+            ),
+            encoding="utf-8",
+        )
+        before = snapshot(self.root)
+
+        result = self.generate("docs", "--check")
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("docs/homeworks/1_3-alpha.md: MODIFIED", result.stdout)
+        self.assertEqual(before, snapshot(self.root), "--check must not write")
+
+    def test_a_hand_added_page_is_orphan_in_check_and_deleted_in_write(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        ghost = self.root / "docs" / "homeworks" / "9_9-ghost.md"
+        ghost.write_text(GENERATED_HEADER + "\n\n# Ghost\n", encoding="utf-8")
+
+        check = self.generate("docs", "--check")
+
+        self.assertEqual(1, check.returncode, check.stdout + check.stderr)
+        self.assertIn("docs/homeworks/9_9-ghost.md: ORPHAN", check.stdout)
+        self.assertTrue(ghost.exists(), "check mode must not delete anything")
+
+        write = self.generate("docs")
+
+        self.assertEqual(0, write.returncode, write.stdout + write.stderr)
+        self.assertIn("docs/homeworks/9_9-ghost.md: DELETE", write.stdout)
+        self.assertFalse(ghost.exists())
+
+    def test_an_unheadered_stray_page_blocks_write_mode(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+        ghost = self.root / "docs" / "homeworks" / "9_9-ghost.md"
+        ghost.write_text("# Authored page\n", encoding="utf-8")
+        before = snapshot(self.root)
+
+        result = self.generate("docs")
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("docs/homeworks/9_9-ghost.md: ORPHAN", result.stdout)
+        self.assertTrue(ghost.exists())
+        self.assertEqual(before, snapshot(self.root), "a blocked run must not write")
+
+    def test_a_second_run_reports_only_unchanged(self) -> None:
+        self.assertEqual(0, self.generate("docs").returncode)
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("generated.manifest: UNCHANGED", result.stdout)
+        for status in ("CREATE", "MODIFIED", "DELETED", "ORPHAN", "ERROR"):
+            self.assertNotIn(f": {status}", result.stdout, result.stdout)
+
+    def test_real_tree_homework_pages_have_no_parent_segment(self) -> None:
+        pages = sorted((REPO_ROOT / "docs" / "homeworks").glob("*.md"))
+
+        self.assertTrue(pages, "the real tree must carry at least one homework page")
+        for page in pages:
+            text = page.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith(GENERATED_HEADER), page.name)
+            self.assertNotIn("../", text, page.name)
 
 
 class RealTreeSmokeTest(unittest.TestCase):
