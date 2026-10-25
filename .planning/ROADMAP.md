@@ -250,7 +250,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The committed `homeworks.code-workspace` contains `repo`, `docs`, `lib`, `scripts`, and every homework as roots, with ASCII paths.
   4. `mkdocs build --strict` succeeds on the generated tree with MkDocs Material 9.7.7, a Zensical-compatible configuration, and vendored KaTeX; GitHub Pages deploys the artifact.
 
-**Plans**: 3/9 plans executed
+**Plans**: 5/9 plans executed
 
 **Wave 1**
 - [x] 05-01-PLAN.md — Shared renderer, stdlib-only path helpers and strict loader, `platformio.ini` readers, Wave 0 test fixture, docs pins (tracer: renderer extraction)
@@ -258,8 +258,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 05-06-PLAN.md — Vendored KaTeX 0.19.0, checksum ledger, stdlib integrity tests (tracer: the vendored tree)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 05-03-PLAN.md — Generator spine, `generated.manifest`, drift detection, the README index (tracer: `readme`)
-- [ ] 05-04-PLAN.md — `scripts/affected.py`: diff to build and simulation matrix with `lib/**` fanout, including the top-level `tests/` consumer (tracer: one project)
+- [x] 05-03-PLAN.md — Generator spine, `generated.manifest`, drift detection, the README index (tracer: `readme`)
+- [x] 05-04-PLAN.md — `scripts/affected.py`: diff to build and simulation matrix with `lib/**` fanout, including the top-level `tests/` consumer (tracer: one project)
 
 **Wave 3** *(blocked on Wave 2)*
 - [ ] 05-05-PLAN.md — Workspace and shared-ini whole-file views, pin disagreement refused (tracer: `workspace`)
@@ -375,7 +375,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
-| 5. Generated Views and Documentation Site | 3/9 | In Progress | - |
+| 5. Generated Views and Documentation Site | 5/9 | In Progress | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
