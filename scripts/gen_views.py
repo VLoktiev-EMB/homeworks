@@ -12,9 +12,10 @@ the `readme` view first and keeps the whole spine — one metadata loader, one
 ownership manifest, one plan-then-apply classifier and one drift reporter — so
 every later subcommand reuses it instead of inventing its own.
 
-The `workspace` subcommand owns its whole file: the reviewed template under
-`templates/views/` is the only writer, and a folder display name or path reaches
-it as one pre-rendered fragment.
+The `workspace` and `shared-ini` subcommands own their whole file: the reviewed
+template under `templates/views/` is the only writer, and a folder display name
+or a pin value reaches it as one pre-rendered fragment. `shared-ini` refuses a
+pin disagreement instead of picking one homework's value (Pitfall 6).
 
 The `nav` subcommand renders the whole `mkdocs.yml`, including its `nav:` block,
 because D-06 gives one reviewed template the whole file. `--all` runs the
@@ -532,6 +533,20 @@ def _render_readme(root, homeworks):
     }
 
 
+class _ContentErrors(Exception):
+    """A view produced blocking ERROR records instead of a target.
+
+    `shared-ini` uses this for a pin disagreement: the run prints one record per
+    homework, writes nothing at all and exits 1. That is content drift (exit 1),
+    never a `CheckError` (exit 2), because no environment is broken — two
+    homework documents simply disagree.
+    """
+
+    def __init__(self, records):
+        super().__init__("content errors")
+        self.records = records
+
+
 def _workspace_folders(homeworks):
     """Render the `{{workspace_folders}}` fragment (D-15, META-07).
 
@@ -594,9 +609,89 @@ def _render_workspace(root, homeworks):
     }
 
 
+def _shared_pin_pair(homeworks):
+    """Return the single `(platformio, platform)` pair across *homeworks*.
+
+    Pitfall 6: the shared ini is a projection of the metadata while
+    `check_metadata.py` treats the ini as the authority, so "the" pin is only
+    defined when every document agrees. Zero documents is exit 2 (nothing to
+    derive the pins from); more than one distinct pair is one ERROR record per
+    homework naming its pair (exit 1) and writes nothing. There is no
+    tie-break, default or partial write (T-5-16).
+    """
+    if not homeworks:
+        raise CheckError("no homework metadata to derive the pins from")
+    pairs = {}
+    for homework in homeworks:
+        toolchain = homework["document"].get("toolchain")
+        platformio = (
+            toolchain.get("platformio") if isinstance(toolchain, dict) else None
+        )
+        platform = (
+            toolchain.get("platform") if isinstance(toolchain, dict) else None
+        )
+        if not isinstance(platformio, str) or not platformio:
+            raise CheckError(
+                f"{homework['display']} has no toolchain.platformio pin"
+            )
+        if not isinstance(platform, str) or not platform:
+            raise CheckError(
+                f"{homework['display']} has no toolchain.platform pin"
+            )
+        pairs.setdefault((platformio, platform), []).append(homework)
+    if len(pairs) > 1:
+        records = []
+        for homework in homeworks:
+            toolchain = homework["document"]["toolchain"]
+            records.append(
+                {
+                    "path": homework["display"],
+                    "status": "ERROR",
+                    "reason": (
+                        "toolchain pins disagree across homeworks: "
+                        f"platformio={toolchain['platformio']!r}, "
+                        f"platform={toolchain['platform']!r}"
+                    ),
+                }
+            )
+        raise _ContentErrors(records)
+    (platformio, platform), _ = next(iter(pairs.items()))
+    return platformio, platform
+
+
+def _render_shared_ini(root, homeworks):
+    """Return the produced entry for the whole `platformio.shared.ini`.
+
+    Only the two pin values are substituted; the three environment sections and
+    the SCons comment above `[native_unity]` come from the reviewed template
+    verbatim. No homework id ever enters this file (04.2/D-17, F-14).
+    """
+    platformio, platform = _shared_pin_pair(homeworks)
+    display = "platformio.shared.ini"
+    template_display = "templates/views/shared-ini.ini.tmpl"
+    template = read_text(root / template_display, template_display)
+    rendered = render(
+        template,
+        {"platform_pin": platform, "platformio_pin": platformio},
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "shared-ini",
+        "mode": "whole",
+        "target": root / display,
+        "data": data,
+        "owned": data,
+    }
+
+
 RENDERERS = {
     "readme": _render_readme,
     "workspace": _render_workspace,
+    "shared-ini": _render_shared_ini,
 }
 
 
@@ -814,6 +909,11 @@ def _build_plan(root, selected, check):
     for view in selected:
         try:
             entry = RENDERERS[view](root, homeworks)
+        except _ContentErrors as exc:
+            # A view reported blocking content errors: emit its records, write
+            # nothing at all (no view, no manifest) and let write mode exit 1.
+            records.extend(exc.records)
+            return records, {}, [], None
         except CheckError as exc:
             # The view name is part of the diagnostic: in `--all`, the operator
             # must know which view made the run abort.
