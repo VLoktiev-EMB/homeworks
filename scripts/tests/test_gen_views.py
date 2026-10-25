@@ -17,6 +17,7 @@ from __future__ import annotations
 import configparser
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -1295,6 +1296,215 @@ class BoardPageTests(ViewsTestBase):
                     f"{page.name} has a parent segment outside ../homeworks/: "
                     f"{fragment[:40]}",
                 )
+
+
+class NavTests(ViewsTestBase):
+    """D-05/D-06/D-10: one whole generated `mkdocs.yml` with four nav sections."""
+
+    SECTIONS = (
+        '  - "Home": index.md',
+        '  - "Homeworks":',
+        '  - "Boards":',
+        '  - "Decisions":',
+    )
+    ENTRY = re.compile(r'^\s+- "[^"]+": \S+\.md$')
+    SECTION = re.compile(r'^\s+- "[^"]+":$')
+
+    def nav_path(self) -> Path:
+        return self.root / "mkdocs.yml"
+
+    def nav_text(self) -> str:
+        return self.nav_path().read_text(encoding="utf-8")
+
+    def nav_block(self) -> list:
+        """Return the lines between `nav:` and the next top-level key."""
+        lines = self.nav_text().splitlines()
+        start = lines.index("nav:") + 1
+        block = []
+        for line in lines[start:]:
+            if line and not line[0].isspace():
+                break
+            block.append(line)
+        return block
+
+    def nav_targets(self) -> list:
+        return [
+            match.group(1)
+            for match in (
+                re.match(r'^\s+- "[^"]+": (\S+\.md)$', line)
+                for line in self.nav_block()
+            )
+            if match
+        ]
+
+    def write_decision(self, name: str, text: str) -> Path:
+        path = self.root / "docs" / "decisions" / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def label_for(self, target: str) -> str:
+        pattern = r'^\s+- "([^"]+)": ' + re.escape(target) + r"$"
+        matches = re.findall(pattern, self.nav_text(), re.M)
+        self.assertEqual(1, len(matches), f"{target}: {matches}")
+        return matches[0]
+
+    def test_the_four_sections_appear_once_in_order(self) -> None:
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        text = self.nav_text()
+
+        positions = [text.index(section) for section in self.SECTIONS]
+        self.assertEqual(sorted(positions), positions, text)
+        for section in self.SECTIONS:
+            with self.subTest(section=section):
+                self.assertEqual(1, text.count(section), text)
+
+    def test_every_homework_board_and_decision_target_appears_once(self) -> None:
+        self.write_decision(
+            "0002-second.md",
+            "---\nstatus: accepted\n---\n\n# Second decision\n",
+        )
+
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        targets = self.nav_targets()
+
+        self.assertEqual(len(targets), len(set(targets)), targets)
+        for target in (
+            "index.md",
+            "homeworks/1_3-alpha.md",
+            "homeworks/1_4-beta.md",
+            "boards/esp32-s3-devkitc-1.md",
+            "decisions/README.md",
+            "decisions/0002-second.md",
+        ):
+            with self.subTest(target=target):
+                self.assertEqual(1, targets.count(target), targets)
+        self.assertEqual(
+            "Decision record index", self.label_for("decisions/README.md")
+        )
+
+    def test_every_entry_uses_an_unquoted_separator_colon(self) -> None:
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        entries = [
+            line
+            for line in self.nav_block()
+            if line.strip().startswith("- ")
+        ]
+
+        self.assertTrue(entries, "the nav block must carry entries")
+        for line in entries:
+            with self.subTest(line=line):
+                if self.SECTION.match(line):
+                    continue
+                self.assertRegex(line, self.ENTRY)
+                self.assertFalse(
+                    line.rstrip().endswith('"'),
+                    f"whole-entry quoted scalar: {line!r}",
+                )
+
+    def test_a_second_run_reports_only_unchanged(self) -> None:
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        result = self.generate("nav")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("mkdocs.yml: UNCHANGED", result.stdout)
+        self.assertIn("generated.manifest: UNCHANGED", result.stdout)
+        for status in ("CREATE", "MODIFIED", "DELETED", "ORPHAN", "ERROR"):
+            self.assertNotIn(f": {status}", result.stdout, result.stdout)
+
+    def test_a_hand_edit_is_modified_drift_and_check_writes_nothing(self) -> None:
+        self.assertEqual(0, self.generate("nav").returncode)
+        path = self.nav_path()
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "site_name: Homeworks", "site_name: Renamed"
+            ),
+            encoding="utf-8",
+        )
+        before = snapshot(self.root)
+
+        result = self.generate("nav", "--check")
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("mkdocs.yml: MODIFIED", result.stdout)
+        self.assertEqual(before, snapshot(self.root), "--check must not write")
+
+    def test_a_quoted_heading_becomes_a_single_quote_label(self) -> None:
+        self.write_decision(
+            "0003-quoted.md",
+            '---\nstatus: accepted\n---\n\n# A "quoted" decision\n',
+        )
+
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        self.assertEqual(
+            "A 'quoted' decision", self.label_for("decisions/0003-quoted.md")
+        )
+        self.assertNotIn('"A "quoted" decision"', self.nav_text())
+
+    def test_a_heading_with_a_colon_stays_one_valid_entry(self) -> None:
+        self.write_decision(
+            "0004-colon.md",
+            "---\nstatus: accepted\n---\n\n# Scope: boundaries\n",
+        )
+
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        self.assertEqual(
+            "Scope: boundaries", self.label_for("decisions/0004-colon.md")
+        )
+        self.assertRegex(
+            self.nav_text(),
+            r'(?m)^\s+- "Scope: boundaries": decisions/0004-colon\.md$',
+        )
+
+    def test_frontmatter_and_prose_only_files_label_from_their_heading(self) -> None:
+        self.write_decision(
+            "0005-frontmatter.md",
+            "---\nstatus: accepted\ndate: 2026-10-23\n---\n\n# With frontmatter\n",
+        )
+        self.write_decision(
+            "0006-prose.md",
+            "# Without frontmatter\n\nAuthored body.\n",
+        )
+
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        self.assertEqual(
+            "With frontmatter", self.label_for("decisions/0005-frontmatter.md")
+        )
+        self.assertEqual(
+            "Without frontmatter", self.label_for("decisions/0006-prose.md")
+        )
+        text = self.nav_text()
+        self.assertNotIn('- "accepted"', text)
+        self.assertNotIn('- "2026-10-23"', text)
+        self.assertNotIn('- "status: accepted"', text)
+
+    def test_a_file_without_a_heading_falls_back_to_the_title_cased_slug(self) -> None:
+        self.write_decision(
+            "0007-no-heading.md",
+            "---\nstatus: accepted\n---\n\nOnly prose, no ATX heading.\n",
+        )
+
+        self.assertEqual(0, self.generate("nav").returncode)
+
+        self.assertEqual(
+            "No Heading", self.label_for("decisions/0007-no-heading.md")
+        )
+
+    def test_a_decision_symlink_is_refused(self) -> None:
+        target = self.write_decision("0008-real.md", "# Real\n")
+        link = self.root / "docs" / "decisions" / "0008-link.md"
+        link.symlink_to(target)
+
+        result = self.generate("nav")
+
+        self.assert_usage_error(result)
+        self.assertIn("symlink", result.stderr)
 
 
 class RealTreeSmokeTest(unittest.TestCase):
