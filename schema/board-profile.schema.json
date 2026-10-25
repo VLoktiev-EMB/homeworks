@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Board profile",
+  "description": "The machine-readable contract for `boards/<id>.yaml`, the flash, memory and pinout facts of one board.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "soc",
+    "flash_mb",
+    "psram",
+    "frameworks",
+    "pinout_url"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "soc": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "flash_mb": { "type": "integer", "minimum": 1 },
+    "psram": { "enum": ["none", "quad", "octal"] },
+    "frameworks": {
+      "description": "The frameworks the board can run. The enum is the same two values `schema/homework.schema.json` allows for a homework's `framework`, so a board can never advertise a framework no homework can declare.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["arduino", "espidf"] }
+    },
+    "pinout_url": { "type": "string", "pattern": "^https://[^\\s]+$" }
+  }
+}
