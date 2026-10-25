@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Completed 04.2-04-PLAN.md
-last_updated: "2026-10-25T19:16:40.784Z"
+stopped_at: Completed 04.2-05-PLAN.md
+last_updated: "2026-10-25T19:19:39.076Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 execution started
-state_head: 7e499f4fac846098fe992b2c041883943e940280
+state_head: 11ae4b2e2ebf2f3820101dd2bfa0c6ca26e4bdcf
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 45
-  completed_plans: 42
+  completed_plans: 43
   percent: 38
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-10-25 — Phase 04.2 execution started
 
@@ -64,6 +64,7 @@ Progress: [████░░░░░░] 38%
 | Phase 04.2 P02 | 2 min | 3 tasks | 9 files |
 | Phase 04.2 P03 | 1 min | 2 tasks | 7 files |
 | Phase 04.2 P04 | 2 min | 3 tasks | 2 files |
+| Phase 04.2 P05 | 1 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 04.2]: BOM refs are the diagram part ids (esp, r1, led1, led2, r2, led3, btn1) so every physical part maps to a row without a second naming scheme.
 - [Phase 04.2]: The reverse-voltage calculation excludes the all-off INPUT frame because node X floats; the off LED reverse voltage is not well-defined in that state.
 - [Phase 04.2]: No value in report sections 1-6 is labelled measured; inputs are datasheet or calculated, and bench inputs are pending measurement until plan 05.
+- [Phase 04.2]: The measurement ledger keeps implementation commit 6a60426 in the metadata table and in every row, because main.cpp and controller.c did not change in plan 05.
+- [Phase 04.2]: No bench reading or serial log existed, so every bench row is not measured with the fixed reason bench equipment offline during automated tracer run; no measured value is inferred.
+- [Phase 04.2]: The report ledger uses the five D-13 labels plus the single qualified measured (observed); a bare observed is rejected, and every measured cell would carry a user-reported: or serial-log: prefix.
 
 ### Pending Todos
 
@@ -153,6 +157,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:16:37.388Z
-Stopped at: Completed 04.2-04-PLAN.md
+Last session: 2026-10-25T19:19:39.028Z
+Stopped at: Completed 04.2-05-PLAN.md
 Resume file: None
