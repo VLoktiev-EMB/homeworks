@@ -7,9 +7,11 @@
 
 `schema/homework.schema.json` is the machine-readable contract for every
 `homeworks/<id>/homework.yaml`, and `scripts/metadata/contract.py` is the one
-implementation that applies it (D-12). This script is the thin entry point: it
-finds the documents, hands their text to the shared module, and renders the
-records. No validation rule lives here.
+implementation that applies it (D-12). `schema/board-profile.schema.json` is the
+contract for every `boards/<id>.yaml`, applied by
+`scripts/metadata/board_profile.py` (D-27). This script is the thin entry point
+for both families: it finds the documents, hands their text to the shared
+modules, and renders the records. No validation rule lives here.
 
 Usage:
   uv run scripts/check_metadata.py [--dir PATH] [--json] [PATH...]
@@ -25,6 +27,13 @@ a non-mapping payload, a duplicated key, a schema violation, an `id` that
 disagrees with its directory, or a toolchain pin that drifted from
 `platformio.shared.ini` — stays at exit 1. Only the environment exits 2.
 
+A positional argument selects the family it names. A path under `<root>/boards/`
+that ends in `.yaml` is a board profile; anything else is a homework directory or
+one of its contract files. When positionals are given, a family with no selected
+path is scanned not at all: a board-only run never widens to every homework, and
+a homework-only run never widens to every board profile. With no positionals
+both families scan everything.
+
 The checker is read-only: it never writes to the tree, never reads the clock,
 and two consecutive runs produce byte-identical output. With `--json` it
 prints one JSON array of `{"path", "status", "reason"}` objects and nothing
@@ -35,11 +44,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from scripts.metadata.board_profile import (  # noqa: E402
+    load_board_schema,
+    validate_board_text,
+)
 from scripts.metadata.contract import (  # noqa: E402
     CheckError,
     load_schema,
@@ -141,16 +155,17 @@ def _validate_directory(root, directory):
     return records
 
 
-def _directories(root, positionals):
+def _directories(root, positionals=None):
     """Return the sorted `homeworks/<id>/` directories this run should read.
 
-    With no positional every direct child directory of `homeworks/` is
-    scanned. A positional may name that directory, its `homework.yaml` or its
-    `task.md`. A path that does not resolve to a directory is a usage error
-    (exit 2).
+    With `positionals` `None` every direct child directory of `homeworks/` is
+    scanned. With a list — even an empty one — exactly the named directories are
+    used, so a board-only invocation never widens to every homework. A
+    positional may name that directory, its `homework.yaml` or its `task.md`. A
+    path that does not resolve to a directory is a usage error (exit 2).
     """
     root = Path(root)
-    if positionals:
+    if positionals is not None:
         targets = []
         for raw in positionals:
             candidate = Path(raw)
@@ -179,6 +194,117 @@ def _directories(root, positionals):
     return sorted(unique.values(), key=lambda item: item.as_posix())
 
 
+def _relative_lexical(root, path):
+    """Render *path* relative to *root* without resolving a symlink.
+
+    A refused symlink must be named by the path the repository contains, not by
+    whatever file it points at. Resolution would either echo the target inside
+    the root or degrade to a bare name when the target is outside; the lexical
+    form keeps the `boards/<stem>.yaml` identity and never leaks an absolute
+    path.
+    """
+    root = Path(os.path.abspath(root))
+    candidate = Path(os.path.abspath(path))
+    try:
+        return candidate.relative_to(root).as_posix()
+    except ValueError:
+        return candidate.name
+
+
+def _partition_paths(root, paths):
+    """Split positional paths into the board and homework families.
+
+    A path is a board profile when it is lexically under `<root>/boards/` and
+    names a `.yaml` file. The classification is lexical on purpose: a symlinked
+    document must still be classified as a board path, so `_board_documents`
+    can refuse it instead of following it into whatever family its target
+    lives in.
+    """
+    root = Path(root)
+    boards = root / "boards"
+    board_paths = []
+    homework_paths = []
+    for raw in paths:
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        normalized = Path(os.path.abspath(candidate))
+        if normalized.suffix == ".yaml" and boards in normalized.parents:
+            board_paths.append(raw)
+        else:
+            homework_paths.append(raw)
+    return board_paths, homework_paths
+
+
+def _board_documents(root, positionals=None):
+    """Return `(documents, records)` for this run's board profiles.
+
+    `documents` is the sorted list of regular `boards/*.yaml` files to read.
+    `records` carries one ERROR record for each selected document that is a
+    symlink; such a document is never followed, matching the homework checker's
+    lexical, containment-only posture.
+
+    With `positionals` `None` the whole `boards/` directory is scanned. With a
+    list — even an empty one — exactly the named documents are used, so a
+    homework-only invocation never widens to every board profile. A missing
+    `boards/` is not an error, because the metadata fixtures carry only
+    `schema/` and `platformio.shared.ini`; a `boards/` that exists and is a
+    symlink or is not a directory is an environment error (exit 2).
+    """
+    root = Path(root)
+    boards = root / "boards"
+
+    if positionals is None:
+        if boards.is_symlink():
+            raise CheckError(
+                f"{relative_path(root, boards)} is a symlink; refusing to follow it"
+            )
+        if not boards.exists():
+            return [], []
+        if not boards.is_dir():
+            raise CheckError(f"{relative_path(root, boards)} is not a directory")
+        candidates = sorted(
+            (path for path in boards.iterdir() if path.suffix == ".yaml"),
+            key=lambda item: item.as_posix(),
+        )
+        strict = False
+    else:
+        candidates = []
+        for raw in positionals:
+            candidate = Path(raw)
+            if not candidate.is_absolute():
+                candidate = root / candidate
+            candidates.append(candidate)
+        strict = True
+
+    documents = []
+    records = []
+    for candidate in candidates:
+        if candidate.is_symlink():
+            records.append(
+                {
+                    "path": _relative_lexical(root, candidate),
+                    "status": "ERROR",
+                    "reason": "board document is a symlink; refusing to follow it",
+                    "line": 0,
+                }
+            )
+            continue
+        if not candidate.is_file():
+            if strict:
+                raise CheckError(
+                    f"no board profile at {_relative_lexical(root, candidate)}"
+                )
+            continue
+        documents.append(candidate)
+
+    unique = {}
+    for document in documents:
+        unique[document.as_posix()] = document
+    ordered = sorted(unique.values(), key=lambda item: item.as_posix())
+    return ordered, records
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Verify the homework metadata contract."
@@ -197,15 +323,29 @@ def main(argv=None):
         "paths",
         nargs="*",
         metavar="PATH",
-        help="homework directory or homework.yaml to check (default: all)",
+        help=(
+            "homework directory, homework.yaml, or boards/<id>.yaml to check "
+            "(default: every document of both families)"
+        ),
     )
     args = parser.parse_args(argv)
 
     try:
         root = resolve_root(args.dir)
         load_schema(root)
-        records = []
-        for directory in _directories(root, args.paths):
+        load_board_schema(root)
+        if args.paths:
+            board_paths, homework_paths = _partition_paths(root, args.paths)
+        else:
+            board_paths = homework_paths = None
+        board_documents, records = _board_documents(root, board_paths)
+        for document in board_documents:
+            text, failure = _read_document(root, document)
+            if failure is not None:
+                records.append(failure)
+                continue
+            records.extend(validate_board_text(text, root=root, path=document))
+        for directory in _directories(root, homework_paths):
             records.extend(_validate_directory(root, directory))
     except CheckError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
