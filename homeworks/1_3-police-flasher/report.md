@@ -320,15 +320,96 @@ which is why they carry the stated uncertainty rather than a measured value's to
 
 ## 8. Analysis
 
-_Pending: plan 04.2-05 adds the analysis and the industry notes._
+The firmware separates the pattern schedule from the platform in a way that changes what can be
+tested. A state machine that reads an injected clock returns from every call, so a test can
+place the clock at 399 ms and then at 400 ms and observe the frame boundary exactly, without
+waiting. A `delay()`-based loop would make the same boundary a property of wall-clock time and
+of the scheduler, and the 22 controller cases in this suite could not exist in their present
+form; the five-tick drift and one-frame stall cases are expressible only because the elapsed
+time is an argument rather than an ambient fact [3].
+
+The half-bridge is the design correction that makes the single-GPIO requirement real. A literal
+anti-parallel pair returned to ground can light only the LED whose anode faces the pin; on a low
+output the other LED would need current to flow from ground into the GPIO, which it cannot.
+The implemented circuit returns LED1 to ground and LED2 to the 3.3 V rail through the same
+resistor, so a high output forward-biases LED1 and a low output forward-biases LED2. The
+resistor therefore sets the current in both halves, and the datasheet limit of 40 mA per pin
+[1] bounds the design: C-06 computes 9.33 mA and a 30.67 mA margin, so the 150 ohm choice is
+conservative by a factor of about four rather than marginal [5].
+
+Two behaviours of the profile are honestly simulation approximations. The all-off frame leaves
+GPIO4 high-impedance, so node X floats near the clamp voltage of whichever LED leaks; "both
+LEDs dark" describes the model, not the board, and the off-state node voltage is consequently
+`not measured` rather than calculated. In SOLID the precedence rule drives the pin high, so
+only the HIGH-side LED of the pair lights. Presenting either behaviour as a hardware result
+would overstate the evidence, and both are recorded in the decision appendix and the
+traceability matrix.
+
+The forward-voltage comparison teaches the same lesson at the component level. A diode-mode
+reading is taken at a test current far below the 9.3 mA operating point, so it is lower than
+the value the junction presents in service; the calculations therefore keep the datasheet
+typical value and carry its uncertainty, while a diode-mode row records an independent check of
+the part. This is also why no bench quantity is inferred: a calculated value transferred into a
+measured row would erase the distinction the evidence depends on.
+
+Industry note: the non-blocking loop is the difference between a beacon that responds to its
+button and one that does not. Embedded practice is to give every periodic task a deadline and a
+tick, never a busy wait, because a blocking delay in one feature silently becomes the latency
+of every other feature. The 30 ms debounce and the 600 ms long-press threshold are constants of
+the same schedule, and the controller applies at most one frame per tick so a late loop cannot
+produce a visible burst.
+
+Industry note: hardware abstraction earns its keep only when it is narrower than the framework.
+This homework uses `port_gpio_t` and `port_time_t` for exactly the two capabilities the logic
+needs, and keeps the Arduino adapters at the composition root [6]; it does not wrap the whole
+Arduino API, which would become a shadow framework and would hide the framework the course
+teaches. The private library then compiles unchanged into the target and the host suite, so the
+abstraction cost is paid once and the test seam comes with it.
+
+Industry note: provenance in a measurement report is what lets a reviewer separate evidence
+from expectation. A row that says `not measured` with a reason, an instrument, and a method is
+more useful a year later than a plausible number with no trail, because the reviewer can see
+which claims are still open and which phase owns them. The same discipline applies to the
+simulation: an unexecuted scenario is a `simulated` expectation, and a lint result is not an
+observation.
 
 ## 9. Conclusions
 
-_Pending: plan 04.2-05 adds the evidence-bound conclusions and the honest status._
+The evidence supports four claims. The ESP32-S3 Arduino target builds from the same tree the
+report describes, and the 38-case native suite passes, so the pattern logic and the controller
+seam are exercised independently of the board. The four D-02 extensions are present in the
+frame tables and reachable through the mode and speed cycles, and the native cases pin each
+one. The wiring in `assets/diagram.json` lints against the Wokwi diagram format, and the pin
+map, BOM, and calculations trace to its part ids and nets. The half-bridge is a correct
+realization of the single-GPIO requirement, with its two fidelity limits stated rather than
+hidden.
+
+The evidence does not support any claim about the bench, the serial port, or the simulator.
+No measured values were captured in this session: the supply voltage, LED current, blink
+period, forward voltage in diode mode, and button debounce are all `not measured` with the
+fixed reason recorded in the ledger, and no measurement has been inferred from a calculation.
+The Wokwi scenario has not been executed, so the expected timing is `simulated`, not observed.
+
+Status: the homework is in progress. No `hw/` tag exists; a tag is created only through
+`scripts/tag_homework.sh <id>` after merge, and Phase 11 owns it. Simulation execution is
+pending Phase 7, which also owns the simulator decision record. Phase 5 owns the generators for
+the index, workspace, shared configuration, and documentation site; Phase 6 owns formatting,
+clang-tidy, and the developer environment; Phase 8 owns the real CI matrix; Phase 10 owns the
+report contract and its checker; Phase 11 owns the polished pilot, the tag, and scale-out.
 
 ## 10. References
 
-_Pending: plan 04.2-05 adds the IEEE reference list._
+[1] Espressif Systems, "ESP32-S3 Series Datasheet," Espressif Systems, 2025. [Online]. Available: https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
+
+[2] Espressif Systems, "ESP32-S3-DevKitC-1 User Guide," Espressif Systems. [Online]. Available: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html
+
+[3] PlatformIO, "Unit Testing: Shared Code," PlatformIO documentation. [Online]. Available: https://docs.platformio.org/en/latest/advanced/unit-testing/structure/shared-code.html
+
+[4] Wokwi, "Diagram Format," Wokwi documentation. [Online]. Available: https://docs.wokwi.com/diagram-format
+
+[5] VLoktiev-EMB, "ADR-0007: Symlinked shared libraries via lib_deps and library.json," Homeworks repository, Oct. 2026. [Online]. Available: https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0007-symlink-shared-libraries.md
+
+[6] VLoktiev-EMB, "ADR-0008: Common depends on port; ports are consumer-owned," Homeworks repository, Oct. 2026. [Online]. Available: https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0008-common-depends-on-port.md
 
 ## Decision Appendix
 
