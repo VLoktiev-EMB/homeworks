@@ -10,8 +10,15 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # Vendored third-party bytes are pinned by
+      # `docs/assets/vendor/katex/0.19.0/FILES.sha256` (D-07). The upstream
+      # minified JavaScript carries no final newline, so a normalizing hook
+      # would rewrite it and break the integrity gate. The vendor tree is
+      # therefore excluded from both text-normalizing hooks.
       - id: trailing-whitespace
+        exclude: ^docs/assets/vendor/
       - id: end-of-file-fixer
+        exclude: ^docs/assets/vendor/
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1024]
@@ -68,10 +75,42 @@ repos:
       # `template.yaml`-era homework contains `{{homework_id}}` and is not valid
       # metadata. `scripts/new_homework` is present so an edit to the scaffold
       # that can change rendered metadata re-runs the gate (defense in depth).
+      # `scripts/gen_views.py` is present for the same reason: it reads
+      # `homework.yaml` through the shared loader, so an edit to the generator
+      # must re-run the metadata gate too.
+      # `boards/` is present so a board-profile edit re-runs this same
+      # validator, which now checks `boards/<id>.yaml` as a second family.
       - id: check-metadata
         name: homework metadata contract
         language: python
         additional_dependencies: ["PyYAML==6.0.3", "jsonschema==4.26.0"]
         entry: python scripts/check_metadata.py
-        files: ^(homeworks/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/metadata/)
+        files: ^(homeworks/|boards/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/gen_views\.py$|scripts/metadata/)
+        pass_filenames: false
+
+      # D-21: the drift contract needs a local enforcement point, not only the
+      # `generated-views` pull-request workflow. This hook is CHECK-ONLY: it
+      # never regenerates and never stages a file, so it cannot repair the
+      # drift it is meant to catch. When it fails, fix the tree yourself with
+      #   uv run scripts/gen_views.py --all
+      # review the diff, and commit the regenerated output.
+      #
+      # The isolated hook environment carries only PyYAML. That pin set is
+      # correct because 05-01 split the pure path helpers
+      # (`scripts/metadata/paths.py`) and the strict loader
+      # (`scripts/metadata/yaml_loader.py`) out of the jsonschema-importing
+      # `contract.py`. If this hook ever exits with
+      # `ModuleNotFoundError: jsonschema`, the import boundary regressed: fix
+      # the boundary rather than adding jsonschema to this environment.
+      #
+      # `files` names the generator, its metadata helpers and every input a
+      # view reads, because a change to any of them can change the output
+      # without touching a generated file. `pass_filenames` is false: the
+      # command is `--all`, and a per-file argument would narrow it.
+      - id: gen-views-check
+        name: generated views are in sync
+        language: python
+        additional_dependencies: ["PyYAML==6.0.3"]
+        entry: python scripts/gen_views.py --all --check
+        files: ^(README\.md$|docs/|templates/views/|boards/|schema/|homeworks/|scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$|mkdocs\.yml$|platformio\.shared\.ini$|homeworks\.code-workspace$)
         pass_filenames: false

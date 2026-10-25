@@ -25,18 +25,42 @@ Run from the repository root, in this order, before opening a pull request.
 
 ## Repository layout
 
-Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gitattributes`, `.pre-commit-config.yaml`, and the paths below.
+Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gitattributes`,
+`.pre-commit-config.yaml`, `mkdocs.yml`, `requirements-docs.txt`, `generated.manifest`, and
+the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
 - `.github/workflows/security.yml` — the full-history secret scan.
-- `docs/decisions/` — the decision table and the archived ADR records.
-- `scripts/` — deterministic checks and the tag script; `scripts/tests/` — the test suite.
+- `docs/` — the documentation site source: the authored `decisions/` tree plus the generated
+  `index.md`, `homeworks/`, `boards/` and `assets/vendor/`.
+- `boards/` — one YAML profile per board, validated by the same metadata checker.
+- `scripts/` — deterministic checks, the view generator and the tag script; `scripts/tests/`
+  — the test suite.
 - `schema/` — `homework.schema.json`, the JSON Schema 2020-12 metadata contract.
-- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`.
+- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`, plus
+  `templates/views/` — the text templates `scripts/gen_views.py` renders.
 - `lib/` — `port`, `common`, `host`, and the thin Arduino and ESP-IDF adapters.
 - `homeworks/<id>/` — one project per assignment, created only by `scripts/new_homework`.
 
-Planned: `docs/standards/` (report structure, Phase 5) and project skills under `.claude/skills/` or `.agents/skills/` (Phase 9).
+The generated paths — the table region in `README.md`, `homeworks.code-workspace`,
+`platformio.shared.ini`, `mkdocs.yml` and the generated pages under `docs/` — are committed
+and registered in `generated.manifest`. The `gen-views-check` pre-commit hook and the
+`generated-views` pull-request workflow both run `scripts/gen_views.py --all --check` and
+fail on drift; the fix is `uv run scripts/gen_views.py --all`, never a hand edit. `site/` is
+the only build output and stays ignored.
+
+`scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
+`platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
+explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `templates/views/`,
+`boards/` and the generated view files) selects nothing, and any unrecognised path widens to
+every project.
+
+The first Pages deployment requires `Settings -> Pages -> Build and deployment -> Source` to
+be `GitHub Actions`; that is a maintainer action completed before the first push to `main`,
+not something the `docs` workflow can set for itself.
+
+Planned: `docs/standards/` (report structure, Phase 10) and project skills under
+`.claude/skills/` or `.agents/skills/` (Phase 9).
 
 ## Definition of Done
 
@@ -189,7 +213,7 @@ Good:  feat(1_3): add police flasher state machine
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
 | Inspect or extend the secret gate | `.pre-commit-config.yaml` and `.github/workflows/security.yml` |
 | Choose a branch name | this file, "Git, branches, and history" |
-| Report structure and formatting rationale | `docs/standards/` (planned, Phase 5) |
+| Report structure and formatting rationale | `docs/standards/` (planned, Phase 10) |
 | Reuse a versioned workflow skill | project skills under `.claude/skills/` (planned, Phase 9) |
 
 ## Precedence

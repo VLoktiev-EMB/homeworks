@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": "README.md",
+      "owner": "readme",
+      "mode": "region",
+      "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
+      "marker_end": "<!-- END GENERATED -->",
+      "sha256": "0182decc2e13142bbdb9a6e1dde7ebfc4117c41405eb0512348ecefb913ff968",
+      "bytes": 326
+    },
+    {
+      "path": "docs/boards/esp32-s3-devkitc-1.md",
+      "owner": "docs",
+      "mode": "whole",
+      "sha256": "0eb2d0f5de50e5c94fa352f03fb88256115c4c220c0685b989446dadc088b858",
+      "bytes": 444
+    },
+    {
+      "path": "docs/homeworks/1_3-police-flasher.md",
+      "owner": "docs",
+      "mode": "whole",
+      "sha256": "8d3efe93a78e669f7a7e563dfa95efdfb93a2c943ae569775038f26711f4243e",
+      "bytes": 596
+    },
+    {
+      "path": "docs/index.md",
+      "owner": "docs",
+      "mode": "region",
+      "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
+      "marker_end": "<!-- END GENERATED -->",
+      "sha256": "2fe2abc291742028df1e4d0b99a424162f18a3fb0357f281bf8a5715d97ceda7",
+      "bytes": 430
+    },
+    {
+      "path": "homeworks.code-workspace",
+      "owner": "workspace",
+      "mode": "whole",
+      "sha256": "32e0a757901a13cff7d490d8e84ea6e0930060396709df43548ba2314658462a",
+      "bytes": 475
+    },
+    {
+      "path": "mkdocs.yml",
+      "owner": "nav",
+      "mode": "whole",
+      "sha256": "667117a73a6d81ec4ebf5d548019c81aa714246065d1ac7b60710b3102fa3eee",
+      "bytes": 2589
+    },
+    {
+      "path": "platformio.shared.ini",
+      "owner": "shared-ini",
+      "mode": "whole",
+      "sha256": "542ad3b2f2fc2cedb300af8dc2daa756e341028aa25e923eceb9a7799b1198ad",
+      "bytes": 1241
+    }
+  ]
+}

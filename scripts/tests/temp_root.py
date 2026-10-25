@@ -5,15 +5,20 @@ throwaway copy of the repository inputs it reads — the schema, the templates,
 the shared PlatformIO configuration and the partition table — never against the
 repository itself. This module is that harness.
 
-Both helpers are read-only with respect to the repository: ``build_root`` only
-copies out of it and symlinks ``lib/`` into the disposable root, and
-``render_tree`` only reads a template source. ``render_tree`` performs the same
-plain ``{{name}}`` substitution the scaffold performs; it exists to build the
-committed golden fixtures and is never imported by the scaffold.
+``build_root`` serves the scaffold and metadata suites. ``write_synthetic_root``
+serves the generator and diff-mapper suites: it writes a small, metadata-complete
+tree from string assembly instead of copying the authored ``docs/`` and
+``homeworks/`` trees, so those tests cannot depend on authored content.
+
+Every helper is read-only with respect to the repository: they only copy out of
+it, and ``render_tree`` only reads a template source. ``render_tree`` performs
+the same plain ``{{name}}`` substitution the scaffold performs; it exists to
+build the committed golden fixtures and is never imported by the scaffold.
 """
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -80,6 +85,269 @@ def build_root(base, *, source_root=None, homeworks=True):
         link.unlink()
     link.symlink_to(repository / "lib")
     return root
+
+
+def write_synthetic_root(
+    base,
+    *,
+    source_root=None,
+    homeworks=True,
+    docs=True,
+    tests_project=True,
+    boards=True,
+):
+    """Create a metadata-complete disposable root at *base* and return it.
+
+    This is the fixture builder for the generated-view and diff-mapper suites
+    (D-29). It writes, by string assembly and never with PyYAML:
+
+    * ``platformio.shared.ini`` and ``schema/homework.schema.json``, copied
+      from the repository;
+    * ``templates/views/``, copied when that directory exists, so the
+      generator tests render the real templates;
+    * the leaf libraries ``common``, ``port`` and ``host``, each a
+      ``library.json`` carrying only ``name``, ``version`` and ``build`` —
+      the manifest shape every real library has today (RESEARCH Pitfall 9) —
+      plus one source file;
+    * when *homeworks* is true, the two homework projects ``1_3-alpha``
+      (Arduino, Wokwi) and ``1_4-beta`` (ESP-IDF, no simulation). The two are
+      deliberately disjoint consumers: ``1_3-alpha`` lists only ``common`` and
+      ``1_4-beta`` lists only ``port``, while the ``tests/`` project consumes
+      ``common``, ``port`` and ``host`` — so a ``lib/common`` change must reach
+      ``1_3-alpha`` and ``tests`` but not ``1_4-beta``. When *homeworks* is
+      false the directory exists but is empty, which is the zero-homework mode
+      the ``shared-ini`` exit-2 case needs;
+    * when *tests_project* is true, the top-level ``tests/`` consumer. It is
+      mandatory for the diff-mapper matrix (05-04's HIGH finding): without it
+      the fixture cannot prove that a ``lib/**`` change reaches the shared
+      native suite, and without ``extends = native_unity`` the environment has
+      no resolvable ``platform``;
+    * when *docs* is true, a ``docs/index.md`` carrying two sentences of
+      authored prose around the ``homeworks`` marker region, plus
+      ``docs/decisions/README.md``. The markers are mandatory because 05-07
+      treats a region file without them as an ``ERROR``;
+    * when *boards* is true, ``boards/esp32-s3-devkitc-1.yaml`` copied from
+      ``templates/board-profile/profile.yaml``.
+
+    Non-copy list, deliberately unlike ``build_root``: this builder does **not**
+    copy ``partitions/``, the authored ``docs/decisions/`` tree, the real
+    ``homeworks/`` tree, or any template other than ``templates/views/``, and
+    it does **not** symlink ``lib/`` into the root. ``build_root`` copies
+    ``partitions/`` because the scaffold validates a rendered homework against
+    it; the diff mapper instead reads the fixture libraries' own manifests, so
+    a symlinked real ``lib/`` would defeat the fixture. The difference is
+    intentional, not an omission.
+    """
+    root = Path(base)
+    repository = Path(source_root) if source_root is not None else repository_root()
+    root.mkdir(parents=True, exist_ok=True)
+
+    _copy(repository / "platformio.shared.ini", root / "platformio.shared.ini")
+    _copy(
+        repository / "schema" / "homework.schema.json",
+        root / "schema" / "homework.schema.json",
+    )
+
+    views = repository / "templates" / "views"
+    if views.is_dir():
+        _copy(views, root / "templates" / "views")
+
+    for name, build in SYNTHETIC_LIBRARY_BUILD.items():
+        library = {
+            "name": name,
+            "version": "0.2.0",
+            "build": build,
+        }
+        manifest = root / "lib" / name / "library.json"
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(
+            json.dumps(library, indent=2) + "\n", encoding="utf-8"
+        )
+        source = root / "lib" / name / "src" / f"{name}.c"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            f"/* Synthetic fixture source for the {name} library. */\n"
+            f"int {name}_fixture_symbol(void) {{ return 0; }}\n",
+            encoding="utf-8",
+        )
+
+    homeworks_dir = root / "homeworks"
+    homeworks_dir.mkdir(parents=True, exist_ok=True)
+    if homeworks:
+        _write_synthetic_homework(
+            homeworks_dir / "1_3-alpha",
+            "1_3-alpha",
+            "Alpha",
+            "arduino",
+            {"tool": "wokwi", "diagram": "assets/diagram.json", "status": "pending"},
+            "esp32s3_arduino",
+            ("common",),
+            native=True,
+        )
+        _write_synthetic_homework(
+            homeworks_dir / "1_4-beta",
+            "1_4-beta",
+            "Beta",
+            "espidf",
+            {"tool": "none", "status": "none"},
+            "esp32s3_espidf",
+            ("port",),
+            native=False,
+        )
+
+    if tests_project:
+        _write_synthetic_tests_project(root / "tests")
+
+    if docs:
+        (root / "docs").mkdir(parents=True, exist_ok=True)
+        (root / "docs" / "index.md").write_text(
+            "# Homeworks\n"
+            "\n"
+            "This site is a catalog of the homework projects in the repository.\n"
+            "Every page under Homeworks is generated from `homework.yaml`.\n"
+            "\n"
+            "<!-- BEGIN GENERATED: homeworks -->\n"
+            "<!-- END GENERATED -->\n",
+            encoding="utf-8",
+        )
+        decisions = root / "docs" / "decisions"
+        decisions.mkdir(parents=True, exist_ok=True)
+        (decisions / "README.md").write_text(
+            "# Decision records\n"
+            "\n"
+            "| Date | Decision | Why | Change cost | Status | Record |\n"
+            "|------|----------|-----|-------------|--------|--------|\n",
+            encoding="utf-8",
+        )
+
+    if boards:
+        _copy(
+            repository / "templates" / "board-profile" / "profile.yaml",
+            root / "boards" / "esp32-s3-devkitc-1.yaml",
+        )
+
+    return root
+
+
+# The leaf manifest shape every real library has today: `name`, `version` and
+# `build`, with no `dependencies` key (RESEARCH Pitfall 9).
+SYNTHETIC_LIBRARY_BUILD = {
+    "common": {"srcDir": "src", "includeDir": "include"},
+    "port": {"includeDir": "include"},
+    "host": {"srcDir": "src", "includeDir": "include"},
+}
+
+
+def _write_synthetic_homework(
+    project, homework_id, title, framework, simulation, env, libraries, *, native
+):
+    """Write one synthetic homework project by string assembly."""
+    project.mkdir(parents=True, exist_ok=True)
+
+    lines = [
+        "schema_version: 1",
+        f'id: "{homework_id}"',
+        f'title: "{title}"',
+        "board: esp32-s3-devkitc-1",
+        f"framework: {framework}",
+        "language: cpp",
+        "status: in-progress",
+        "source:",
+        "  reference: https://github.com/VLoktiev-EMB/homeworks",
+        "toolchain:",
+        '  platformio: "6.2.0"',
+        '  platform: "espressif32@8.0.0"',
+        "simulation:",
+        f"  tool: {simulation['tool']}",
+    ]
+    if "diagram" in simulation:
+        lines.append(f"  diagram: {simulation['diagram']}")
+    lines.extend(
+        [
+            f"  status: {simulation['status']}",
+            "tests:",
+            "  framework: unity",
+            "  native: true",
+            "  coverage: false",
+            "report:",
+            "  path: report.md",
+            "  status: draft",
+        ]
+    )
+    (project / "homework.yaml").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
+
+    (project / "task.md").write_text(
+        "---\n"
+        "source_url: https://github.com/VLoktiev-EMB/homeworks\n"
+        "retrieved: 2026-10-23T00:00:00Z\n"
+        "attribution: Synthetic fixture for the generated-view tests\n"
+        "license: MIT\n"
+        "---\n"
+        "\n"
+        f"# {title}\n"
+        "\n"
+        "Synthetic homework fixture.\n",
+        encoding="utf-8",
+    )
+    (project / "README.md").write_text(
+        f"# {title}\n\nSynthetic homework fixture.\n", encoding="utf-8"
+    )
+    (project / "report.md").write_text(
+        f"# {title} report\n\nSynthetic homework fixture.\n", encoding="utf-8"
+    )
+
+    deps = "".join(
+        f"    {name}=symlink://../../lib/{name}\n" for name in libraries
+    )
+    ini = (
+        "; Synthetic fixture: a homework project lives two levels below the root.\n"
+        "[platformio]\n"
+        f"default_envs = {env}\n"
+        "extra_configs = ../../platformio.shared.ini\n"
+        "\n"
+        f"[env:{env}]\n"
+        f"extends = {env}\n"
+        "lib_deps =\n"
+        f"{deps}"
+    )
+    if native:
+        ini += "\n[env:native]\nextends = native_unity\n"
+    (project / "platformio.ini").write_text(ini, encoding="utf-8")
+
+
+def _write_synthetic_tests_project(project):
+    """Write the top-level ``tests/`` consumer the diff-mapper matrix needs."""
+    project.mkdir(parents=True, exist_ok=True)
+    (project / "platformio.ini").write_text(
+        "; Synthetic fixture: extra_configs resolves one level up from here.\n"
+        "[platformio]\n"
+        "default_envs = native\n"
+        "extra_configs = ../platformio.shared.ini\n"
+        "\n"
+        "[env:native]\n"
+        "extends = native_unity\n"
+        "lib_deps =\n"
+        "    common=symlink://../lib/common\n"
+        "    port=symlink://../lib/port\n"
+        "    host=symlink://../lib/host\n",
+        encoding="utf-8",
+    )
+    test_file = project / "test" / "test_main.c"
+    test_file.parent.mkdir(parents=True, exist_ok=True)
+    test_file.write_text(
+        "#include <unity.h>\n"
+        "\n"
+        "void setUp(void) {}\n"
+        "void tearDown(void) {}\n"
+        "\n"
+        "int main(void) {\n"
+        "    UNITY_BEGIN();\n"
+        "    return UNITY_END();\n"
+        "}\n",
+        encoding="utf-8",
+    )
 
 
 def render_tree(source, target, mapping, skip=()):
