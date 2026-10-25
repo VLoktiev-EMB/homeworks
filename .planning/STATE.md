@@ -128,7 +128,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — Phase 4.1 delivered every item except the global `/gsd-fast` staging correction, which lives in `~/.claude/gsd-core/workflows/fast.md` (upstream install, outside this repository).
+- [2026-10-25] [docs] Expand homework README and add a proper SVG schematic — [todo file](.planning/todos/pending/2026-10-25-expand-homework-readme-and-add-a-proper-svg-schematic.md) — Needs TBD — candidate shape:.
+- [unknown] [general] Trim governance ceremony (Phase 4.1) — [todo file](.planning/todos/pending/trim-ceremony.md)
 
 ### Blockers/Concerns
 
