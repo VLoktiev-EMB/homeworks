@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
-status: executing
-stopped_at: Completed 04.2-06-PLAN.md
-last_updated: "2026-10-25T19:21:32.000Z"
+status: completed
+stopped_at: Completed 04.2-07-PLAN.md
+last_updated: "2026-10-25T19:25:41.000Z"
 last_activity: 2026-10-25
-last_activity_desc: Completed plan 06 of Phase 04.2
-state_head: 3123183b27f11cf04d596df2e0fa39c297ea3c15
+last_activity_desc: Completed plan 07 of Phase 04.2
+state_head: 076d3179d11cfee9bdf4ba630f55d3c247492a31
 progress:
   total_phases: 13
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 45
-  completed_plans: 43
-  percent: 38
+  completed_plans: 44
+  percent: 46
 ---
 
 # Project State
@@ -27,17 +27,17 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 
 ## Current Position
 
-Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
+Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — COMPLETE
 Plan: 7 of 7
-Status: Ready to execute
-Last activity: 2026-10-25 — Completed plan 06 (single-project CI and manual integration)
+Status: Phase complete
+Last activity: 2026-10-25 — Completed plan 07 (friction synthesis, full phase gate, prepared pull-request body); the D-09 human review and the first `workflow_dispatch` run remain pending
 
-Progress: [████░░░░░░] 38%
+Progress: [█████░░░░░] 46%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 44
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -50,6 +50,7 @@ Progress: [████░░░░░░] 38%
 | 03 | 9 | - | - |
 | 04 | 9 | - | - |
 | 04.1 | 7 | - | - |
+| 04.2 | 7 | 7 | 1.6 min |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -66,6 +67,7 @@ Progress: [████░░░░░░] 38%
 | Phase 04.2 P04 | 2 min | 3 tasks | 2 files |
 | Phase 04.2 P05 | 1 min | 3 tasks | 2 files |
 | Phase 04.2 P06 | 1 min | 2 tasks | 4 files |
+| Phase 04.2 P07 | 2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -117,6 +119,12 @@ Recent decisions affecting current work:
 - [Phase 04.2]: The homework workflow is one read-only job on ubuntu-24.04 with a 45-minute timeout, three action SHAs revalidated with git ls-remote, and only the two D-18 commands; metadata and architecture checks stay local until Phase 8.
 - [Phase 04.2]: platformio.shared.ini gains no per-homework entry; the root README row and the workspace folder are the only manual integration edits, and the SC3 wording conflict is recorded in the friction log.
 - [Phase 04.2]: Adding the workspace folder makes the PlatformIO IDE generate .gitignore and .vscode files inside the homework directory; they stay untracked and are recorded for the Phase 5 workspace generator.
+- [Phase 04.2]: The friction-log synthesis owns every candidate: 11 rows name Phases 5-11 and 2 record `not built` with a reason, so no automation is left unowned and no one-off event became a recurring job.
+- [Phase 04.2]: The phase gate runs both native suites (homework 38 cases, shared `tests/` 73 cases), the offline Wokwi lint, the metadata and architecture checkers, 81 Python tests, and `pre-commit run --all-files`; all eight commands exited 0.
+- [Phase 04.2]: The Phase 4 real-tree JSON test asserted an empty array; the first real homework makes that stale, so it now asserts every real-tree record is `OK`, exists on disk, and is sorted by path.
+- [Phase 04.2]: D-09 is recorded as a human checklist with its mechanical checks passing and the originality review pending; no completed user sign-off is claimed.
+- [Phase 04.2]: Wokwi execution stays deferred to Phase 7 with `simulation.status: pending`; only `wokwi-cli lint --offline` is a verified simulation result.
+- [Phase 04.2]: No `hw/1_3-police-flasher` tag exists; the tag belongs to Phase 11 and `scripts/tag_homework.sh` was not run.
 
 ### Pending Todos
 
@@ -161,6 +169,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:21:32.000Z
-Stopped at: Completed 04.2-06-PLAN.md
+Last session: 2026-10-25T19:25:41.000Z
+Stopped at: Completed 04.2-07-PLAN.md
 Resume file: None

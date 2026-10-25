@@ -46,7 +46,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [ ] **META-02**: `task.md` contains an English paraphrase, the source reference, the
       retrieval date, and attribution; it never contains the original internal material.
       *Shape, sentinel and Cyrillic rules are enforced by the checker; paraphrase
-      originality is deferred to the first real homework (Phase 999.1).*
+      originality is deferred to the first real homework (Phase 4.2, D-09 review).*
       *(Mechanism simplified 2026-10-25: one grep, no allowlist.)*
 - [x] **META-03**: `templates/` provides an Arduino homework template, an ESP-IDF
       homework template, a report template, a task template, an ADR template, and a
@@ -186,17 +186,17 @@ acceptance checklist with a short Definition of Done. The reasoning lives in
 
 ### Invariants
 
-- [ ] **INV-01 (Public safety)**: No secret, private datum, or original internal course
+- [x] **INV-01 (Public safety)**: No secret, private datum, or original internal course
       material ever enters the public history. gitleaks runs in pre-commit and over the
       full history in CI; repository artifacts are English-only. Enforcement is a secret
       scan plus a Cyrillic grep, not a licence-compliance pipeline.
-- [ ] **INV-02 (Build and tests)**: Every homework builds for its declared target
+- [x] **INV-02 (Build and tests)**: Every homework builds for its declared target
       environment; pure logic has native Unity tests. The invariant is the green build
       and the green suite, not a fixed number of tests or a determinism proof.
-- [ ] **INV-03 (Uniform structure)**: Every homework directory carries `task.md`,
+- [x] **INV-03 (Uniform structure)**: Every homework directory carries `task.md`,
       `homework.yaml`, `README.md`, and a report skeleton, and validates against
       `schema/homework.schema.json`. IDs follow `^[0-9]+_[0-9]+-[a-z0-9-]+$`.
-- [ ] **INV-04 (Architecture boundary)**: `lib/common` and `lib/port` contain no
+- [x] **INV-04 (Architecture boundary)**: `lib/common` and `lib/port` contain no
       framework headers; `common` does not depend on adapters. One lightweight check
       enforces the edge.
 
@@ -296,7 +296,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 1 | Complete |
 | META-01 | Phase 4 | Complete |
-| META-02 | Phase 4 | Deferred (999.1) |
+| META-02 | Phase 4 | In review (D-09 paraphrase check) |
 | META-03 | Phase 4 | Complete |
 | META-04 | Phase 4 | Complete |
 | META-05 | Phase 5 | Pending |
