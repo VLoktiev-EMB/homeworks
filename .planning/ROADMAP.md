@@ -203,7 +203,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. A friction log exists in the phase directory with one entry per friction point: step, what hurt, frequency, cheap fix, automation candidate.
   6. The deferred UAT item on `task.md` paraphrase originality is reviewed on this first real homework.
 
-**Plans**: 7/7 plans complete
+**Plans**: 7/11 plans complete
 
 **Wave 1**
 - [x] 04.2-01-PLAN.md — Scaffold, provenance, English paraphrase, friction-log start (tracer)
@@ -225,6 +225,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [x] 04.2-07-PLAN.md — Friction synthesis, automation candidates, phase gate (tracer)
+
+**Gap-closure plans** *(from the 2026-10-25 verification: 65/69 truths, four gaps)*
+
+**Wave 1**
+- [ ] 04.2-08-PLAN.md — G1: project-relative Wokwi option paths, corrected README, F-08/F-10, new F-19
+- [ ] 04.2-09-PLAN.md — G3: real implementation commit, honest debounce row, handshake-only serial text
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 04.2-10-PLAN.md — G2: D-09 write-back into the PR body and report appendix, closed review ledger
+
+**Wave 3** *(blocked on Waves 1 and 2)*
+- [ ] 04.2-11-PLAN.md — G4: open the pull request and confirm the first CI run (human checkpoint)
 
 ### Phase 5: Generated Views and Documentation Site
 
