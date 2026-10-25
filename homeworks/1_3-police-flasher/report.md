@@ -345,7 +345,7 @@ evidence does not exist yet and the row names the phase that owns it.
 | T-10 | Electrical calculations (REPORT-04) | C-01 to C-06 in section 5 | recomputation from each printed formula and input | six rows carry formula, units, provenance, result, uncertainty, and assumption effect | verified |
 | T-11 | Measurement ledger (REPORT-06) | ledger in section 7 | label and prefix check over L-01 to L-12 | 12 rows; labels within the five-label set plus `measured (observed)`; no `measured` row; the fixed `not measured` reason is present | verified |
 | T-12 | Traceability matrix (REPORT-07) | this table | manual review of claim coverage | this file | manual |
-| T-13 | English paraphrase and provenance (META-02) | `task.md` | D-09 checklist and `check_metadata.py` | no verbatim sentence, no distinctive phrasing, no original file; the checker exits 0 | manual |
+| T-13 | English paraphrase and provenance (META-02) | `task.md` | D-09 checklist confirmed by the repository owner on 2026-10-25 and `check_metadata.py` | repository owner confirmed on 2026-10-25: no verbatim sentence, no distinctive phrasing, no original file committed; the checker exits 0 | manual |
 | T-14 | Architecture boundary (INV-04) | `lib/` and `scripts/check_architecture.py` | `python3 scripts/check_architecture.py` | exit 0; the private library lives outside `lib/` | verified |
 | T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `merge_firmware.py` | `wokwi-cli lint --offline`; execution requires `WOKWI_CLI_TOKEN` | lint exits 0; execution was not observed and `simulation.status` stays `pending` | pending |
 | T-16 | High-impedance off-state behaviour is implemented and tested | controller mode change in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` all-off frame case; report statement | the fake records `INPUT` on the all-off frame; the hardware off-state node voltage is `not measured` (L-12) | verified |
@@ -478,11 +478,12 @@ report contract and its checker; Phase 11 owns the polished pilot, the tag, and 
    homework-local at `lib/pattern` with a manifest that declares no frameworks; the controller
    takes `port_gpio_t` and `port_time_t` by value; the Arduino adapters live only in the
    composition root. Promotion to `lib/common` waits for real duplication across homeworks.
-9. **D-09 paraphrase review record.** The checklist was applied to the final `task.md`: no
-   verbatim sentence from the access-restricted original, no distinctive phrasing, and no
-   original file committed; the document is English-only and carries the public repository URL
-   rather than the LMS URL. The user's confirmation is recorded in the pull request before merge
-   (plan 07).
+9. **D-09 paraphrase review record.** The repository owner performed the D-09 comparison against
+   the access-restricted original on 2026-10-25 and confirmed three results: no verbatim sentence,
+   no distinctive phrasing, and no original file committed. The document is English-only, contains
+   zero Cyrillic codepoints, and names the public repository URL rather than the LMS URL. The
+   review is a completed record, and `04-UAT.md` plus `04.2-SECURITY.md` T-4.2-02 hold the same
+   confirmation and date.
 10. **No release tag.** No `hw/` tag exists. The tag is created only through
     `scripts/tag_homework.sh <id>` after the pull request is merged, and Phase 11 owns that step;
     this phase ends with the homework in progress.
