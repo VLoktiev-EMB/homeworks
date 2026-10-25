@@ -172,7 +172,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Pilot
 
-- [ ] **PILOT-01**: Homework 1.3 (Police Flasher) is delivered end to end in guided mode
+- [x] **PILOT-01**: Homework 1.3 (Police Flasher) is delivered end to end in guided mode
       with all optional extensions: third LED, variable speed, complex pattern, and
       single-GPIO operation.
 - [ ] **PILOT-02**: The pilot validates the template, skill, report, native tests, local
@@ -337,7 +337,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLOW-05 | Phase 9 | Pending |
 | FLOW-06 | Phase 9 | Pending |
 | FLOW-07 | Phase 9 | Pending |
-| PILOT-01 | Phase 11 | Pending |
+| PILOT-01 | Phase 11 | Complete |
 | PILOT-02 | Phase 11 | Pending |
 
 **Coverage:**
