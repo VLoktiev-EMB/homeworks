@@ -203,7 +203,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. A friction log exists in the phase directory with one entry per friction point: step, what hurt, frequency, cheap fix, automation candidate.
   6. The deferred UAT item on `task.md` paraphrase originality is reviewed on this first real homework.
 
-**Plans**: 9/11 plans executed
+**Plans**: 10/11 plans executed
 
 **Wave 1**
 - [x] 04.2-01-PLAN.md — Scaffold, provenance, English paraphrase, friction-log start (tracer)
@@ -233,7 +233,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04.2-09-PLAN.md — G3: real implementation commit, honest debounce row, handshake-only serial text
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 04.2-10-PLAN.md — G2: D-09 write-back into the PR body and report appendix, closed review ledger
+- [x] 04.2-10-PLAN.md — G2: D-09 write-back into the PR body and report appendix, closed review ledger
 
 **Wave 3** *(blocked on Waves 1 and 2)*
 - [ ] 04.2-11-PLAN.md — G4: open the pull request and confirm the first CI run (human checkpoint)
@@ -353,7 +353,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
-| 4.2. Tracer Homework 1.3 | 9/11 | Gaps found | — |
+| 4.2. Tracer Homework 1.3 | 10/11 | Gaps found | — |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
