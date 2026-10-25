@@ -129,6 +129,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - [2026-10-25] [docs] Expand homework README and add a proper SVG schematic — [todo file](.planning/todos/pending/2026-10-25-expand-homework-readme-and-add-a-proper-svg-schematic.md) — Needs TBD — candidate shape:.
+- [2026-10-25] [tooling] Standardize pull request titles across homeworks — [todo file](.planning/todos/pending/2026-10-25-standardize-pull-request-titles-across-homeworks.md) — Needs TBD — candidate shape:.
 - [unknown] [general] Trim governance ceremony (Phase 4.1) — [todo file](.planning/todos/pending/trim-ceremony.md)
 
 ### Blockers/Concerns
