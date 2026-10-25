@@ -573,12 +573,12 @@ class ModuleBoundaryTests(unittest.TestCase):
     """
 
     # Module stems (under scripts/metadata/) that must import stdlib only.
-    STDLIB_ONLY_MODULES = ("render", "paths")
+    STDLIB_ONLY_MODULES = ("render", "paths", "platformio")
     # Modules that legitimately import PyYAML but never jsonschema.
     PYYAML_ONLY_MODULES = ("yaml_loader",)
 
     def test_in_process_import_adds_no_validation_stack(self) -> None:
-        from scripts.metadata import errors, paths, render  # noqa: F401
+        from scripts.metadata import errors, paths, platformio, render  # noqa: F401
 
         for forbidden in ("yaml", "jsonschema", "scripts.metadata.contract"):
             with self.subTest(module=forbidden):
@@ -637,6 +637,7 @@ REEXPORT_PROGRAM = """
 import scripts.metadata.contract as contract
 import scripts.metadata.errors as errors
 import scripts.metadata.paths as paths
+import scripts.metadata.platformio as platformio
 import scripts.metadata.render as render
 import scripts.metadata.yaml_loader as yaml_loader
 
@@ -645,6 +646,7 @@ assert contract.resolve_root is paths.resolve_root
 assert contract.relative_path is paths.relative_path
 assert contract.derive_parts is paths.derive_parts
 assert contract.StrictSafeLoader is yaml_loader.StrictSafeLoader
+assert platformio.CheckError is errors.CheckError
 """
 
 
