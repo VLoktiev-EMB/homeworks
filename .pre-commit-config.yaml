@@ -10,8 +10,15 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # Vendored third-party bytes are pinned by
+      # `docs/assets/vendor/katex/0.19.0/FILES.sha256` (D-07). The upstream
+      # minified JavaScript carries no final newline, so a normalizing hook
+      # would rewrite it and break the integrity gate. The vendor tree is
+      # therefore excluded from both text-normalizing hooks.
       - id: trailing-whitespace
+        exclude: ^docs/assets/vendor/
       - id: end-of-file-fixer
+        exclude: ^docs/assets/vendor/
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1024]
