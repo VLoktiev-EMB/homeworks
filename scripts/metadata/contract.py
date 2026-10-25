@@ -57,17 +57,11 @@ SCHEMA_PATH = Path("schema") / "homework.schema.json"
 SHARED_INI_PATH = Path("platformio.shared.ini")
 ESP_SECTIONS = ("esp32s3_arduino", "esp32s3_espidf")
 
-ALLOWLIST_PATH = Path("scripts") / "metadata" / "allowlist.json"
-
 # Provenance lives in `task.md` frontmatter, in this order (D-15).
 PROVENANCE_FIELDS = ("source_url", "retrieved", "attribution", "license")
 TODO_SENTINEL = "TODO"
 URL_PATTERN = re.compile(r"^https?://[^\s]+$")
 SPDX_LIKE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
-
-# Internal record marker: only Cyrillic records may be suppressed by the
-# allowlist, and a stale entry always fails the run (D-16).
-CYRILLIC_RULE = "cyrillic"
 
 # The canonical homework-identifier literal. The schema's `id.pattern`, the
 # backticked span in `AGENTS.md` and `EXPECTED_PATTERN` in
@@ -211,16 +205,13 @@ def validate_task_text(text, *, status, reference=None, path, root=None):
     """
     display = relative_path(root, path) if root is not None else Path(path).as_posix()
 
-    def record(status_value, reason, line=0, rule=None):
-        item = {
+    def record(status_value, reason, line=0):
+        return {
             "path": display,
             "status": status_value,
             "reason": reason,
             "line": line,
         }
-        if rule is not None:
-            item["rule"] = rule
-        return item
 
     if len(text.encode("utf-8")) > MAX_INPUT_BYTES:
         return [record("ERROR", f"document is larger than {MAX_INPUT_BYTES} bytes")]
@@ -283,7 +274,6 @@ def validate_task_text(text, *, status, reference=None, path, root=None):
                 f"line {number}: Cyrillic character {offending!r} is not allowed "
                 "in an authored task.md",
                 line=number,
-                rule=CYRILLIC_RULE,
             )
         )
 
@@ -384,79 +374,6 @@ def validate_candidate(homework_yaml_text, task_md_text, *, root, homework_path,
         )
     )
     return _dedupe(records)
-
-
-def load_allowlist(root):
-    """Read the Cyrillic allowlist; any failure is an environment error (exit 2).
-
-    The allowlist is environment configuration, not authored homework content,
-    so its 64 KiB cap and every shape failure map to `CheckError`. An absent
-    file is an error, never an implicit empty allowlist: deny by default.
-    """
-    path = Path(root) / ALLOWLIST_PATH
-    try:
-        raw = path.read_bytes()
-    except OSError as exc:
-        raise CheckError(f"cannot read allowlist {path}: {exc}") from exc
-    if len(raw) > MAX_INPUT_BYTES:
-        raise CheckError(
-            f"allowlist {path} is {len(raw)} bytes; the cap is {MAX_INPUT_BYTES}"
-        )
-    try:
-        data = json.loads(raw.decode("utf-8"))
-    except UnicodeDecodeError as exc:
-        raise CheckError(f"allowlist {path} is not valid UTF-8: {exc}") from exc
-    except json.JSONDecodeError as exc:
-        raise CheckError(f"allowlist {path} is not valid JSON: {exc}") from exc
-
-    if not isinstance(data, dict):
-        raise CheckError(f"allowlist {path} must be a JSON object")
-    version = data.get("version")
-    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
-        raise CheckError(f"allowlist {path} must declare version 1")
-    entries = data.get("entries")
-    if not isinstance(entries, list):
-        raise CheckError(f"allowlist {path} must declare an entries list")
-
-    validated = []
-    for index, entry in enumerate(entries):
-        where = f"allowlist entry {index}"
-        if not isinstance(entry, dict):
-            raise CheckError(f"{where} must be an object")
-        entry_path = entry.get("path")
-        if not isinstance(entry_path, str) or not entry_path.strip():
-            raise CheckError(f"{where} must carry a non-empty path")
-        reason = entry.get("reason")
-        if not isinstance(reason, str) or not reason.strip():
-            raise CheckError(f"{where} must carry a non-empty reason")
-        validated.append(
-            {"path": entry_path.strip(), "reason": reason.strip()}
-        )
-    return validated
-
-
-def apply_allowlist(records, entries):
-    """Suppress every Cyrillic record for an allowlisted path.
-
-    Suppression is keyed on the exact record path, so one entry exempts every
-    Cyrillic record for that path instead of being consumed by the first one
-    (D-16, WR-01). Only the Cyrillic rule is suppressible: a shape violation on
-    an allowlisted file is still a violation. An entry whose path suppressed no
-    record is stale and must fail the run, so the allowlist cannot accumulate
-    dead permissions.
-
-    Returns `(remaining, stale)`.
-    """
-    allowed_paths = {entry["path"] for entry in entries}
-    used_paths = set()
-    remaining = []
-    for item in records:
-        if item.get("rule") == CYRILLIC_RULE and item["path"] in allowed_paths:
-            used_paths.add(item["path"])
-            continue
-        remaining.append(item)
-    stale = [entry for entry in entries if entry["path"] not in used_paths]
-    return remaining, stale
 
 
 def resolve_root(explicit):

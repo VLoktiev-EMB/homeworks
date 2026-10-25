@@ -199,11 +199,6 @@ class FixtureBase(unittest.TestCase):
             REPO_ROOT / "platformio.shared.ini",
             self.root / "platformio.shared.ini",
         )
-        allowlist = self.root / "scripts" / "metadata" / "allowlist.json"
-        allowlist.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(
-            REPO_ROOT / "scripts" / "metadata" / "allowlist.json", allowlist
-        )
 
     def write_homework(
         self,
@@ -227,15 +222,6 @@ class FixtureBase(unittest.TestCase):
         path = self.root / "homeworks" / directory / "task.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(TASK_TEMPLATE if text is None else text, encoding="utf-8")
-        return path
-
-    def write_allowlist(self, entries):
-        """Write a temporary-root allowlist; the committed file stays empty."""
-        path = self.root / "scripts" / "metadata" / "allowlist.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps({"version": 1, "entries": entries}), encoding="utf-8"
-        )
         return path
 
     def run_fixture(self, *args):
@@ -401,94 +387,6 @@ class CyrillicGateTests(FixtureBase):
         # U+0065 LATIN SMALL LETTER E looks like U+0435 CYRILLIC SMALL LETTER IE.
         self.write_homework(task_text=TASK_TEMPLATE + "e\n")
         self.assert_accepted(self.run_fixture())
-
-    def test_allowlist_suppresses_the_exact_path(self):
-        self.write_homework(task_text=self._cyrillic_task())
-        self.write_allowlist(
-            [
-                {
-                    "path": "homeworks/1_3-good/task.md",
-                    "reason": "the reviewed translation note quotes the source term",
-                }
-            ]
-        )
-        self.assert_accepted(self.run_fixture())
-
-    def test_allowlist_suppresses_every_record_for_the_path(self):
-        # One path-scoped entry must exempt every Cyrillic record for that
-        # path, not consume itself on the first line (D-16, WR-01).
-        self.write_homework(
-            task_text=TASK_TEMPLATE + self.WORD + "\n" + self.WORD + "\n"
-        )
-        self.write_allowlist(
-            [
-                {
-                    "path": "homeworks/1_3-good/task.md",
-                    "reason": "the reviewed translation note quotes the source term",
-                }
-            ]
-        )
-        self.assert_accepted(self.run_fixture())
-        result = self.run_fixture("--json")
-        self.assertEqual(0, result.returncode, combined(result))
-        payload = json.loads(result.stdout)
-        self.assertTrue(payload)
-        self.assertFalse(
-            [item for item in payload if item["status"] == "ERROR"],
-            payload,
-        )
-
-    def test_allowlisted_path_still_rejects_a_shape_violation(self):
-        # The allowlist exempts the Cyrillic rule only; a content problem on
-        # the same reviewed file is still a violation (D-16). The fixture
-        # carries both a Cyrillic word and a shape violation, so the method
-        # fails if `apply_allowlist` is never invoked (WR-08).
-        self.write_homework(
-            task_text=self._cyrillic_task().replace(
-                "source_url: TODO", "source_url: not-a-url"
-            )
-        )
-        before = self.run_fixture()
-        self.assertEqual(1, before.returncode, combined(before))
-        self.assertIn("Cyrillic character", before.stdout)
-        self.assertIn("not an http(s) URL", before.stdout)
-
-        self.write_allowlist(
-            [
-                {
-                    "path": "homeworks/1_3-good/task.md",
-                    "reason": "the reviewed translation note quotes the source term",
-                }
-            ]
-        )
-        after = self.run_fixture()
-        self.assert_rejected(after, "not an http(s) URL")
-        self.assertNotIn("Cyrillic character", after.stdout)
-
-    def test_allowlist_entry_for_another_path_is_stale(self):
-        self.write_homework(task_text=self._cyrillic_task())
-        self.write_allowlist(
-            [
-                {
-                    "path": "homeworks/2_4-other/task.md",
-                    "reason": "not this file",
-                }
-            ]
-        )
-        self.assert_rejected(
-            self.run_fixture(),
-            "stale allowlist entry homeworks/2_4-other/task.md",
-        )
-
-    def test_allowlist_entry_without_reason_exits_two(self):
-        self.write_allowlist([{"path": "homeworks/1_3-good/task.md"}])
-        self.write_homework()
-        self.assert_environment_error(self.run_fixture(), "non-empty reason")
-
-    def test_missing_allowlist_exits_two(self):
-        (self.root / "scripts" / "metadata" / "allowlist.json").unlink()
-        self.write_homework()
-        self.assert_environment_error(self.run_fixture(), "allowlist")
 
     def test_json_failure_carries_task_path_and_error(self):
         self.write_homework(task_text=self._cyrillic_task())
