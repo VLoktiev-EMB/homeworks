@@ -137,6 +137,13 @@ WORKSPACE_FIXED_ROOTS = (
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
 _SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+# `schema/board-profile.schema.json` fixes this shape for both `id` and `soc`;
+# the generator anchors the page stem to it so a page path can never carry a
+# character the profile contract forbids (T-5-20).
+_BOARD_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# The schema's `pinout_url` pattern; `|`, `<` and `>` are refused on top of it
+# because they would break the table cell or pass raw HTML through (T-5-19).
+_HTTPS_URL = re.compile(r"^https://[^\s]+$")
 
 
 def _escape_cell(value):
@@ -239,16 +246,25 @@ def _homework_rows(homeworks, *, link_style):
         title = _escape_cell(homework["title"])
         report = document.get("report")
         report_path = report.get("path") if isinstance(report, dict) else None
-        if not isinstance(report_path, str) or not report_path:
-            report_path = "report.md"
         if link_style == "relative":
             project_link = f"homeworks/{identifier}/"
-            report_link = f"homeworks/{identifier}/{report_path}"
         else:
             project_link = f"{REPOSITORY_URL}/tree/main/homeworks/{identifier}/"
-            report_link = (
-                f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/{report_path}"
-            )
+        # Review finding 8: `report` is optional, and an absent block has one
+        # defined rendering — the literal token `none` in the cell. No guessed
+        # `report.md` URL is ever emitted, and the six-column width never
+        # changes (T-5-33).
+        if isinstance(report_path, str) and report_path:
+            if link_style == "relative":
+                report_link = f"homeworks/{identifier}/{report_path}"
+            else:
+                report_link = (
+                    f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/"
+                    f"{report_path}"
+                )
+            report_cell = f"[report]({report_link})"
+        else:
+            report_cell = "none"
         rows.append(
             "| "
             + " | ".join(
@@ -258,7 +274,7 @@ def _homework_rows(homeworks, *, link_style):
                     _escape_cell(document.get("board")),
                     _escape_cell(document.get("framework")),
                     _escape_cell(document.get("status")),
-                    f"[report]({report_link})",
+                    report_cell,
                 )
             )
             + " |"
@@ -522,15 +538,17 @@ def _render_readme(root, homeworks):
     owned = rendered.encode("utf-8")
     _allowed_target(Path(display))
     _component_conflict(root, Path(display))
-    return {
-        "path": display,
-        "owner": "readme",
-        "mode": "region",
-        "target": root / display,
-        "owned": owned,
-        "marker_begin": MARKER_BEGIN,
-        "marker_end": MARKER_END,
-    }
+    return [
+        {
+            "path": display,
+            "owner": "readme",
+            "mode": "region",
+            "target": root / display,
+            "owned": owned,
+            "marker_begin": MARKER_BEGIN,
+            "marker_end": MARKER_END,
+        }
+    ]
 
 
 class _ContentErrors(Exception):
@@ -599,14 +617,16 @@ def _render_workspace(root, homeworks):
     data = rendered.encode("utf-8")
     _allowed_target(Path(display))
     _component_conflict(root, Path(display))
-    return {
-        "path": display,
-        "owner": "workspace",
-        "mode": "whole",
-        "target": root / display,
-        "data": data,
-        "owned": data,
-    }
+    return [
+        {
+            "path": display,
+            "owner": "workspace",
+            "mode": "whole",
+            "target": root / display,
+            "data": data,
+            "owned": data,
+        }
+    ]
 
 
 def _shared_pin_pair(homeworks):
@@ -678,9 +698,120 @@ def _render_shared_ini(root, homeworks):
     data = rendered.encode("utf-8")
     _allowed_target(Path(display))
     _component_conflict(root, Path(display))
+    return [
+        {
+            "path": display,
+            "owner": "shared-ini",
+            "mode": "whole",
+            "target": root / display,
+            "data": data,
+            "owned": data,
+        }
+    ]
+
+
+def _toolchain_text(homework):
+    """Render the metadata card's `Toolchain` value from the two pins.
+
+    The schema requires both pins, so an absent or empty one is an environment
+    problem (exit 2) naming the document: the card must never show a half-built
+    toolchain or a default that is not in the metadata.
+    """
+    toolchain = homework["document"].get("toolchain")
+    platformio = toolchain.get("platformio") if isinstance(toolchain, dict) else None
+    platform = toolchain.get("platform") if isinstance(toolchain, dict) else None
+    if not isinstance(platformio, str) or not platformio:
+        raise CheckError(
+            f"{homework['display']} has no toolchain.platformio pin"
+        )
+    if not isinstance(platform, str) or not platform:
+        raise CheckError(f"{homework['display']} has no toolchain.platform pin")
+    return f"PlatformIO {platformio} · {platform}"
+
+
+def _simulation_text(document):
+    """Render the metadata card's `Simulation` value (D-02).
+
+    An absent block renders the same fixed token as an absent `report` block:
+    `none`. A `tool` of `none` also renders `none`, so the Wokwi-deferred
+    homework and a homework with no simulation read identically. The cell is
+    never empty (T-5-33).
+    """
+    simulation = document.get("simulation")
+    if not isinstance(simulation, dict):
+        return "none"
+    tool = simulation.get("tool")
+    status = simulation.get("status")
+    if not isinstance(tool, str) or not tool or tool == "none":
+        return "none"
+    if isinstance(status, str) and status:
+        return f"{tool} ({status})"
+    return "none"
+
+
+def _homework_links(homework):
+    """Render the pre-rendered `{{links}}` fragment for one homework page.
+
+    D-02: the report body is never copied; both bullets are absolute
+    `REPOSITORY_URL` blob URLs because MkDocs resolves a relative `.md` link
+    docs-relative and `--strict` would fail on a target that does not exist
+    there (Pitfall 3, T-5-19). The Report bullet disappears when the document
+    has no `report` block, and no URL is ever built from a guessed path: the
+    Project README bullet always stays.
+    """
+    identifier = homework["id"]
+    readme_url = f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/README.md"
+    lines = []
+    report = homework["document"].get("report")
+    report_path = report.get("path") if isinstance(report, dict) else None
+    if isinstance(report_path, str) and report_path:
+        report_url = (
+            f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/{report_path}"
+        )
+        lines.append(f"- [Report]({report_url})")
+    lines.append(f"- [Project README]({readme_url})")
+    return "\n".join(lines)
+
+
+def _render_homework_page(root, homework):
+    """Return the produced entry for one `docs/homeworks/<id>.md` (D-02/D-03).
+
+    Every metadata value reaches the template through `_escape_cell`, so a pipe,
+    a newline or a bracket in a title cannot break the card or open a nested
+    link (T-5-19). The H1 is the same escaped title: the renderer never
+    truncates, it only neutralizes. An escaped-to-empty title is refused rather
+    than shipped as a blank page.
+    """
+    display = f"docs/homeworks/{homework['id']}.md"
+    template_display = "templates/views/homework-page.md.tmpl"
+    template = read_text(root / template_display, template_display)
+    document = homework["document"]
+    title = _escape_cell(homework["title"])
+    if not title:
+        raise CheckError(
+            f"{homework['display']} has a title that escapes to empty"
+        )
+    rendered = render(
+        template,
+        {
+            "title": title,
+            "homework_id": _escape_cell(homework["id"]),
+            "board": _escape_cell(document.get("board")),
+            "framework": _escape_cell(document.get("framework")),
+            "language": _escape_cell(document.get("language")),
+            "status": _escape_cell(document.get("status")),
+            "toolchain": _escape_cell(_toolchain_text(homework)),
+            "simulation": _escape_cell(_simulation_text(document)),
+            "links": _homework_links(homework),
+        },
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
     return {
         "path": display,
-        "owner": "shared-ini",
+        "owner": "docs",
         "mode": "whole",
         "target": root / display,
         "data": data,
@@ -688,10 +819,198 @@ def _render_shared_ini(root, homeworks):
     }
 
 
+def _load_boards(root):
+    """Load every `boards/*.yaml` with the strict loader (D-04).
+
+    A duplicated `id`, `psram` or `pinout_url` key, a non-mapping payload, a
+    missing `id`, a file stem that is not a valid board id, and an `id` that
+    differs from the file stem are all `CheckError` (exit 2). The schema check
+    belongs to `check_metadata.py`; the generator must neither skip a page
+    silently nor emit a page whose path contradicts the profile it renders
+    (T-5-33).
+    """
+    directory = root / "boards"
+    try:
+        directory_mode = os.lstat(directory).st_mode
+    except FileNotFoundError:
+        return []
+    except OSError as exc:
+        raise CheckError(f"cannot inspect boards: {exc}") from exc
+    if stat.S_ISLNK(directory_mode):
+        raise CheckError("boards is a symlink; refusing to follow it")
+    if not stat.S_ISDIR(directory_mode):
+        raise CheckError("boards exists and is not a directory")
+    try:
+        profiles = sorted(directory.iterdir(), key=lambda item: item.name)
+    except OSError as exc:
+        raise CheckError(f"cannot list boards: {exc}") from exc
+
+    records = []
+    for profile in profiles:
+        if profile.suffix != ".yaml":
+            continue
+        display = f"boards/{profile.name}"
+        try:
+            profile_mode = os.lstat(profile).st_mode
+        except OSError as exc:
+            raise CheckError(f"cannot inspect {display}: {exc}") from exc
+        if stat.S_ISLNK(profile_mode):
+            raise CheckError(f"{display} is a symlink; refusing to follow it")
+        if not stat.S_ISREG(profile_mode):
+            continue
+        if not _BOARD_ID.match(profile.stem):
+            raise CheckError(
+                f"{display}: file stem {profile.stem!r} is not a valid board id"
+            )
+        text = read_text(profile, display)
+        try:
+            document = yaml.load(text, Loader=StrictSafeLoader)
+        except yaml.YAMLError as exc:
+            raise CheckError(f"{display} is not valid YAML: {exc}") from exc
+        if not isinstance(document, dict):
+            raise CheckError(f"{display} must be a YAML mapping")
+        identifier = document.get("id")
+        if not isinstance(identifier, str) or not identifier:
+            raise CheckError(f"{display} has no board id")
+        if identifier != profile.stem:
+            raise CheckError(
+                f"{display}: id {identifier!r} does not match the file stem "
+                f"{profile.stem!r}"
+            )
+        records.append(
+            {"id": identifier, "display": display, "document": document}
+        )
+    return records
+
+
+def _board_homework_list(board, homeworks):
+    """Render the pre-rendered `{{board_homework_list}}` fragment.
+
+    The one relative link the generator may emit is `../homeworks/<id>.md`:
+    both pages live under `docs/`, so MkDocs resolves it, and it never leaves
+    `docs/` (Pitfall 3, T-5-20). The empty state is a single italic line, not a
+    dangling heading with no body.
+    """
+    lines = []
+    for homework in homeworks:
+        if homework["document"].get("board") != board["id"]:
+            continue
+        number = f"{homework['module']}.{homework['lesson']}"
+        title = _escape_cell(homework["title"])
+        lines.append(
+            f"- [{number} {title}](../homeworks/{homework['id']}.md)"
+        )
+    return "\n".join(lines) if lines else "_No homework uses this board yet._"
+
+
+def _pinout_link(document, display):
+    """Render `pinout_url` as a Markdown link, never as a bare long URL.
+
+    A bare Espressif user-guide URL wrecks the table on a narrow screen, and an
+    unvalidated one could break the cell or pass raw HTML through (T-5-19). The
+    schema pattern is re-checked here so the generator never depends on the
+    checker having run first (T-5-33).
+    """
+    url = document.get("pinout_url")
+    if not isinstance(url, str) or not _HTTPS_URL.match(url):
+        raise CheckError(f"{display} has no https pinout_url")
+    if any(character in url for character in "|<>"):
+        raise CheckError(
+            f"{display}: pinout_url contains a Markdown-unsafe character"
+        )
+    return f"[Official pinout]({url})"
+
+
+def _render_board_page(root, board, homeworks):
+    """Return the produced entry for one `docs/boards/<id>.md` (D-04/D-10)."""
+    identifier = board["id"]
+    document = board["document"]
+    display = f"docs/boards/{identifier}.md"
+    template_display = "templates/views/board-page.md.tmpl"
+    template = read_text(root / template_display, template_display)
+    flash_mb = document.get("flash_mb")
+    if isinstance(flash_mb, bool) or not isinstance(flash_mb, int):
+        raise CheckError(f"{board['display']} has no integer flash_mb")
+    frameworks = document.get("frameworks")
+    if not isinstance(frameworks, list) or not all(
+        isinstance(item, str) and item for item in frameworks
+    ):
+        raise CheckError(f"{board['display']} has no frameworks list")
+    rendered = render(
+        template,
+        {
+            "board_id": _escape_cell(identifier),
+            "soc": _escape_cell(document.get("soc")),
+            "flash_mb": _escape_cell(f"{flash_mb} MB"),
+            "psram": _escape_cell(document.get("psram")),
+            "frameworks": _escape_cell(", ".join(frameworks) or "none"),
+            "pinout_url": _pinout_link(document, board["display"]),
+            "board_homework_list": _board_homework_list(board, homeworks),
+        },
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "docs",
+        "mode": "whole",
+        "target": root / display,
+        "data": data,
+        "owned": data,
+    }
+
+
+def _render_docs_index(root, homeworks):
+    """Return the produced entry for the `docs/index.md` marker region (D-09).
+
+    The authored prose around the region is never rewritten. The table body is
+    the same `homeworks-table.md.tmpl` the README uses, rendered with absolute
+    repository URLs instead of relative ones, so the six columns are
+    byte-identical in both places and only the link style differs (D-11,
+    Pitfall 3).
+    """
+    display = "docs/index.md"
+    template_display = "templates/views/homeworks-table.md.tmpl"
+    template = read_text(root / template_display, template_display)
+    rendered = render(
+        template,
+        {"homework_rows": _homework_rows(homeworks, link_style="absolute")},
+        template_display,
+    ).rstrip("\n")
+    owned = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "docs",
+        "mode": "region",
+        "target": root / display,
+        "owned": owned,
+        "marker_begin": MARKER_BEGIN,
+        "marker_end": MARKER_END,
+    }
+
+
+def _render_docs(root, homeworks):
+    """Return every `docs` target: the page families and the site home."""
+    entries = [
+        _render_homework_page(root, homework) for homework in homeworks
+    ]
+    entries.extend(
+        _render_board_page(root, board, homeworks)
+        for board in _load_boards(root)
+    )
+    entries.append(_render_docs_index(root, homeworks))
+    return entries
+
+
 RENDERERS = {
     "readme": _render_readme,
     "workspace": _render_workspace,
     "shared-ini": _render_shared_ini,
+    "docs": _render_docs,
 }
 
 
@@ -893,6 +1212,95 @@ def _classify_orphan(root, entry, check):
     )
 
 
+def _scan_orphans(root, directory, manifest_entries, produced, check):
+    """Return `(records, deletes)` for stray `.md` files in one owned directory.
+
+    D-03/D-17: `docs/homeworks/` and `docs/boards/` are owned directories, so a
+    `.md` file there that the previous manifest does not list and this run does
+    not produce is an `ORPHAN`. Check mode reports it and exits 1. Write mode
+    deletes it only when its first line is the generated-file header, so an
+    authored page dropped into an owned directory is reported and blocks the
+    run rather than disappearing (T-5-21).
+
+    `docs/decisions/` is never scanned: that directory is authored.
+    """
+    base = root / directory
+    try:
+        mode = os.lstat(base).st_mode
+    except FileNotFoundError:
+        return [], []
+    except OSError as exc:
+        raise CheckError(f"cannot inspect {directory}: {exc}") from exc
+    if stat.S_ISLNK(mode):
+        raise CheckError(f"{directory} is a symlink; refusing to follow it")
+    if not stat.S_ISDIR(mode):
+        raise CheckError(f"{directory} exists and is not a directory")
+    try:
+        children = sorted(base.iterdir(), key=lambda item: item.name)
+    except OSError as exc:
+        raise CheckError(f"cannot list {directory}: {exc}") from exc
+
+    listed = {entry["path"] for entry in manifest_entries}
+    records = []
+    deletes = []
+    for child in children:
+        if child.suffix != ".md":
+            continue
+        relative = f"{directory}/{child.name}"
+        if relative in produced or relative in listed:
+            continue
+        try:
+            child_mode = os.lstat(child).st_mode
+        except OSError as exc:
+            raise CheckError(f"cannot inspect {relative}: {exc}") from exc
+        if not stat.S_ISREG(child_mode):
+            records.append(
+                {
+                    "path": relative,
+                    "status": "ORPHAN",
+                    "reason": "stray path is not a regular file; refusing to touch it",
+                }
+            )
+            continue
+        if check:
+            records.append(
+                {
+                    "path": relative,
+                    "status": "ORPHAN",
+                    "reason": "owned directory holds a page this run does not produce",
+                }
+            )
+            continue
+        try:
+            with child.open(encoding="utf-8") as handle:
+                first_line = handle.readline().rstrip("\n")
+        except UnicodeDecodeError:
+            first_line = ""
+        except OSError as exc:
+            raise CheckError(f"cannot read {relative}: {exc}") from exc
+        if first_line != GENERATED_HEADER:
+            records.append(
+                {
+                    "path": relative,
+                    "status": "ORPHAN",
+                    "reason": (
+                        "stray page does not carry the generated-file header; "
+                        "refusing to delete it"
+                    ),
+                }
+            )
+            continue
+        records.append(
+            {
+                "path": relative,
+                "status": "DELETE",
+                "reason": "stray page carries the generated-file header",
+            }
+        )
+        deletes.append(child)
+    return records, deletes
+
+
 def _build_plan(root, selected, check):
     """Classify every selected target and the manifest; write nothing.
 
@@ -908,7 +1316,7 @@ def _build_plan(root, selected, check):
     records = []
     for view in selected:
         try:
-            entry = RENDERERS[view](root, homeworks)
+            entries = RENDERERS[view](root, homeworks)
         except _ContentErrors as exc:
             # A view reported blocking content errors: emit its records, write
             # nothing at all (no view, no manifest) and let write mode exit 1.
@@ -918,9 +1326,12 @@ def _build_plan(root, selected, check):
             # The view name is part of the diagnostic: in `--all`, the operator
             # must know which view made the run abort.
             raise CheckError(f"{view}: {exc}") from exc
-        if entry["path"] in produced:
-            raise CheckError(f"two views produce {entry['path']}")
-        produced[entry["path"]] = entry
+        # A view may own more than one target now: `docs` produces one page per
+        # homework and per board profile plus the site home region.
+        for entry in entries:
+            if entry["path"] in produced:
+                raise CheckError(f"two views produce {entry['path']}")
+            produced[entry["path"]] = entry
 
     writes = {}
     deletes = []
@@ -946,6 +1357,16 @@ def _build_plan(root, selected, check):
         records.append(record)
         if delete is not None:
             deletes.append(delete)
+
+    # The `docs` view owns two whole directories, so it is the one view that
+    # also scans the filesystem for pages the manifest never saw (D-03, T-5-21).
+    if "docs" in selected_owners:
+        for directory in ("docs/homeworks", "docs/boards"):
+            scan_records, scan_deletes = _scan_orphans(
+                root, directory, manifest_entries, produced, check
+            )
+            records.extend(scan_records)
+            deletes.extend(scan_deletes)
 
     # Preserve entries this run does not own; replace produced paths; drop the
     # selected-owner orphans (write mode may delete them; a blocked run writes
