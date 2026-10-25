@@ -243,12 +243,80 @@ the reading is evidence about the part, not a substitute for the datasheet value
 current calculation.
 
 The serial log also records the debounce outcome and every mode and speed transition with a
-timestamp. That record is labelled observed rather than measured, because the serial path
-adds buffering and scheduling delay that the bench instruments do not characterise.
+timestamp. That record is the one case the ledger labels `measured (observed)`: it is a
+measurement whose instrument is the firmware's own log, and the qualifier is required because
+the serial path adds buffering and scheduling delay that the bench instruments do not
+characterise. `observed` is never used as a label of its own.
 
 ## 7. Results
 
-_Pending: plan 04.2-05 adds the build, native-test, serial, and bench results._
+The target environment builds and the native suite runs on the host. The bench quantities are
+reported through the ledger below; no serial log and no bench reading were supplied in this
+session, so those rows are `not measured` and no value is inferred from the calculations.
+
+**Target build.** `pio run -d homeworks/1_3-police-flasher` reports `SUCCESS` for
+`esp32s3_arduino`. The incremental run that re-verified the report's code tree took 0.54 s;
+the cold build of the same tree earlier in the phase took 8.21 s. The linker reports 22,752 of
+327,680 bytes of RAM (6.9 percent) and 313,604 of 6,553,600 bytes of flash (4.8 percent). The
+resolved dependency graph names `common`, `port`, `arduino`, and the homework-local `pattern`
+library at version 0.1.0.
+
+**Native suite.** `pio test -d homeworks/1_3-police-flasher -e native` reports 38 test cases
+in three suites, all passed, in 1.429 s: `test_homework` (2 cases), `test_pattern` (14 cases),
+and `test_controller` (22 cases). The suite covers the four frame tables and their rational
+holds, the 399/400 ms debounce boundary, short and long presses, both GPIO profiles, the
+schedule stall and 32-bit wrap behaviour, and the read and write retry paths.
+
+**Serial observation.** No serial log was captured in this session, so the mode and speed
+transitions that the firmware reports through the serial port were not observed on the board.
+The `pattern ready` handshake described in the methodology is the only serial event the
+firmware is designed to emit; it was not recorded here either.
+
+**Bench results.** No bench reading was supplied in this session. The supply voltage, the LED
+current, the blink period, the forward voltage in diode mode, and the button debounce are
+therefore `not measured` in the ledger, with the fixed reason `bench equipment offline during
+automated tracer run`, rather than estimated from the calculations.
+No measured values were captured in this session.
+
+**Simulation.** The canonical diagram passed `wokwi-cli lint --offline`; the scenario has not
+been executed because `WOKWI_CLI_TOKEN` is absent. The expected alternating timing is therefore
+`simulated`, not observed, and Phase 7 owns the execution and the simulator decision.
+
+### Measurement Ledger
+
+The label column uses exactly the five D-13 labels — `measured`, `calculated`, `simulated`,
+`datasheet`, and `not measured` — plus the single qualified form `measured (observed)` that
+D-14 reserves for a debounce result read from the firmware's serial log. A bare `observed` is
+not a label. A `measured` value cell begins with `user-reported:` when the value was supplied
+verbatim as a bench reading in the session, or `serial-log:` when it was read from the
+firmware's own log; no other row carries the `measured` label. The implementation commit is
+the code the report describes, and every row names the same commit as the metadata table.
+
+| ID | Quantity | Value | Label | Instrument | Method | Uncertainty | Implementation commit |
+|----|----------|-------|-------|------------|--------|-------------|-----------------------|
+| L-01 | Supply voltage at `3V3.1` | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts across `3V3.1` and `GND.1`, procedure 1 in the methodology | not applicable: no reading was taken | `6a60426` |
+| L-02 | LED current through LED1 | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC current in series with the LED1 cathode, procedure 2 in the methodology | not applicable: no reading was taken | `6a60426` |
+| L-03 | Blink period on GPIO4 | not measured: bench equipment offline during automated tracer run | not measured | oscilloscope or logic analyzer | interval between ten rising edges divided by ten, procedure 3 in the methodology | not applicable: no reading was taken | `6a60426` |
+| L-04 | Forward voltage in diode mode | not measured: bench equipment offline during automated tracer run | not measured | multimeter | diode mode across LED1, forward biased, compared with the datasheet typical value | not applicable: no reading was taken | `6a60426` |
+| L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `6a60426` |
+| L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `6a60426` |
+| L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `6a60426` |
+| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | none (Wokwi was not executed) | `scenario.yaml` read against the frame table; only the offline lint was run | expected timing only; no observed period exists because the token is absent | `6a60426` |
+| L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `6a60426` |
+| L-10 | Button debounce | not measured: bench equipment offline during automated tracer run, and no serial log was captured | not measured | none (serial log or logic analyzer would be required) | serial timestamps of the mode and speed transitions, or a logic-analyzer capture of GPIO7 | not applicable: no observation was captured | `6a60426` |
+| L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `6a60426` |
+| L-12 | Off-state node voltage at node X | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts at node X while the all-off frame leaves GPIO4 high-impedance | not applicable: no reading was taken, and the floating node has no well-defined value | `6a60426` |
+
+### Interpreting the Forward-Voltage Row
+
+The forward voltage in the multimeter's diode mode would not equal the datasheet value used in
+the calculations. Diode mode injects a small test current, typically well below one
+milliampere, while the operating point of this circuit is about 9.3 mA; at the higher current
+the junction is further forward biased, so the operating forward voltage is higher than the
+diode-mode reading. The comparison is therefore evidence about the part, not a replacement for
+the datasheet value in C-01 and C-02. In this session neither reading exists: the diode-mode
+row is `not measured`, and the calculations continue to use the 1.9 V datasheet typical value,
+which is why they carry the stated uncertainty rather than a measured value's tolerance.
 
 ## 8. Analysis
 
