@@ -48,7 +48,7 @@ as pending in the later evidence sections rather than assumed to have passed.
 | A-04 | R1 and R2 are 150 ohm parts with 5 percent tolerance. | The operating current changes by up to 5 percent beyond the calculated value. | Measure each resistor with a multimeter before assembly. |
 | A-05 | BTN1 is a normally open momentary button wired to ground with the internal pull-up enabled. | A press reads inverted or never registers, so neither mode nor speed can be changed. | Continuity test with the board unpowered; observe the mode and speed changes over the serial log. |
 | A-06 | The loop period is much shorter than the shortest half-hold, which is 50 ms at speed index 2 in CHASE. | Frame timing quantizes, and the beacon shows visible jitter at the fastest speed. | Measure the loop period or the GPIO4 period on the bench. |
-| A-07 | GPIO4, GPIO6, and GPIO7 are safe, non-strapping pins for these signals. | A strapping pin can change the boot mode or the flash configuration at reset. | Check the datasheet strapping-pin table; confirm that the build flashes and boots. |
+| A-07 | GPIO4, GPIO6, and GPIO7 are safe, non-strapping pins for these signals. | A strapping pin can change the boot mode or the flash configuration at reset. | Check the datasheet strapping-pin table [1]; confirm that the build flashes and boots. |
 | A-08 | `GND.1`, `GND.2`, and `GND.3` are one common board ground. | Separate returns create a ground offset and make the shared-current path unpredictable. | Continuity check between the three ground pins. |
 
 ## 4. Theory
@@ -129,21 +129,23 @@ would overstate the evidence.
 
 The circuit is the ESP32-S3-DevKitC-1 with seven physical parts. The diagram at
 [assets/diagram.json](assets/diagram.json) declares `flashSize: "16"`, `psramType: "octal"`,
-and `psramSize: "8"`, and it is the source of truth for every connection below. The serial
-monitor pair in the diagram is a virtual instrument connected to `TX` and `RX`, not a
-physical part.
+and `psramSize: "8"`, and it is the source of truth for every connection below. The board pin
+names and the `3V3.1`, `GND.1`, `GND.2`, and `GND.3` labels follow the ESP32-S3-DevKitC-1 user
+guide [2], and the board attribute names follow the Wokwi diagram-format documentation [4].
+The serial monitor pair in the diagram is a virtual instrument connected to `TX` and `RX`,
+not a physical part.
 
 ### Bill of Materials
 
 | Ref | Part or value | Quantity | Package | Source or link | Notes |
 |-----|---------------|----------|---------|----------------|-------|
-| ESP | ESP32-S3-DevKitC-1, N16R8 (16 MB flash, 8 MB octal PSRAM) | 1 | DevKitC-1 module | n/a (standard) | Course board; 3.3 V regulator; the flash and PSRAM settings match the diagram attributes. |
-| R1 | 150 ohm resistor | 1 | axial, 0.25 W | n/a (standard) | Series resistor from GPIO4 to node X. |
-| LED1 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at node X, cathode at `GND.1`; lights when GPIO4 is high. |
-| LED2 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at `3V3.1`, cathode at node X; lights when GPIO4 is low. |
-| R2 | 150 ohm resistor | 1 | axial, 0.25 W | n/a (standard) | Series resistor from GPIO6 to the LED3 anode. |
-| LED3 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at R2, cathode at `GND.2`. |
-| BTN1 | Momentary pushbutton, normally open | 1 | through-hole | n/a (standard) | One contact to GPIO7, the other to `GND.3`; the internal pull-up holds the pin high. |
+| esp | ESP32-S3-DevKitC-1, N16R8 (16 MB flash, 8 MB octal PSRAM) | 1 | DevKitC-1 module | n/a (standard) | Course board; 3.3 V regulator; the flash and PSRAM settings match the diagram attributes. |
+| r1 | 150 ohm resistor | 1 | axial, 0.25 W | n/a (standard) | Series resistor from GPIO4 to node X. |
+| led1 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at node X, cathode at `GND.1`; lights when GPIO4 is high. |
+| led2 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at `3V3.1`, cathode at node X; lights when GPIO4 is low. |
+| r2 | 150 ohm resistor | 1 | axial, 0.25 W | n/a (standard) | Series resistor from GPIO6 to the LED3 anode. |
+| led3 | Red LED, 5 mm | 1 | through-hole | n/a (standard) | Anode at r2, cathode at `GND.2`. |
+| btn1 | Momentary pushbutton, normally open | 1 | through-hole | n/a (standard) | One contact to GPIO7, the other to `GND.3`; the internal pull-up holds the pin high. |
 
 ### Pin Map
 
@@ -213,12 +215,12 @@ The pure logic is exercised on the host with Unity:
 pio test -d homeworks/1_3-police-flasher -e native
 ```
 
-The native environment compiles the same `lib/pattern` sources as the target, with
-`test_build_src = false`, and supplies `host/fake_gpio` and `host/fake_time` as deterministic
-doubles. The suite covers the four mode tables, the mode and speed cycles, the hold
-arithmetic, the debounce boundary, short and long presses, both GPIO profiles, and the
-failure-retry paths. The Arduino composition root is not unit-tested; it is covered by the
-target build and by the serial handshake.
+The native environment follows the PlatformIO unit-testing structure [3]: it compiles the same
+`lib/pattern` sources as the target, with `test_build_src = false`, and supplies
+`host/fake_gpio` and `host/fake_time` as deterministic doubles. The suite covers the four mode
+tables, the mode and speed cycles, the hold arithmetic, the debounce boundary, short and long
+presses, both GPIO profiles, and the failure-retry paths. The Arduino composition root is not
+unit-tested; it is covered by the target build and by the serial handshake.
 
 The three D-11 bench measurements are taken with the following instruments and procedures.
 Each result belongs in the measurement ledger, labelled with its instrument, method,
@@ -239,6 +241,10 @@ The forward voltage is additionally checked in the multimeter's diode mode and c
 the datasheet value. Diode mode tests at a much lower current than the operating point, so
 the reading is evidence about the part, not a substitute for the datasheet value in the
 current calculation.
+
+The serial log also records the debounce outcome and every mode and speed transition with a
+timestamp. That record is labelled observed rather than measured, because the serial path
+adds buffering and scheduling delay that the bench instruments do not characterise.
 
 ## 7. Results
 
