@@ -138,6 +138,29 @@ stay Phase 10. No new capability is added to the homework workflow.
 - **D-24:** Phase 6 does not edit CI workflows. The quality layers are local only; CI
   wiring, the matrix, and PR-time checks remain Phase 8.
 
+### Research-driven amendments (plan-phase, 2026-10-26)
+
+Three discuss-phase decisions were contradicted by measured behaviour. The user chose the
+effective rule below; the original wording stands as the historical record.
+
+- **D-19a (supersedes D-19's editor-contract mechanics):** the editor contract is emitted
+  twice and kept equal by a drift test — once as a `settings` object in
+  `templates/views/workspace.json.tmpl` (so `gen_views.py` owns it) and once as the committed
+  root `.vscode/settings.json`. `clangd.path` is `${env:HOME}/.local/bin/clangd-wrapper`,
+  and the onboarding guide carries exactly one symlink step. Rationale: a root
+  `.vscode/settings.json` does not reach the other multi-root folders, and
+  `${workspaceFolder}` is `undefined` there. Disabled cpptools IntelliSense,
+  format-on-save, `--background-index`, and the existing `unwantedRecommendations` block
+  all stay as D-19 specified.
+- **D-08a (narrows D-08's clang-tidy scope):** clang-tidy runs over `lib/common`, `lib/port`
+  and `lib/host` only. Native test sources are out of scope because `pio test` has no
+  compiledb target and the test TU fails on a missing `unity_config.h`; the gap is recorded
+  in the clang-tidy ADR and handed to Phase 8, where CI owns database generation.
+- **D-07a (closes the clang-tidy backlog inside this phase):** `portability-avoid-pragma-once`
+  is disabled in the committed `.clang-tidy`, and the seven `bugprone-signed-bitwise`
+  findings in `hex.c` are fixed in the cleanup commit. `WarningsAsErrors` stays empty
+  (warnings-first). The phase gate must be green without documented exceptions.
+
 ### Claude's Discretion
 
 - The exact `.clang-tidy` check set and options, provided it covers bugprone, cert,
