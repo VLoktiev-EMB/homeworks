@@ -1,0 +1,39 @@
+name: homework
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  homework-1_3-police-flasher:
+    name: 1_3-police-flasher
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      # Pinned to the v7.0.1 commit, not the mutable `v7` major tag: a tag can
+      # be repointed at other code between runs, a commit SHA cannot.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install PlatformIO Core
+        run: python -m pip install platformio==6.2.0
+      - name: Build the target environment
+        run: pio run -d homeworks/1_3-police-flasher
+      - name: Run native unit tests
+        run: pio test -d homeworks/1_3-police-flasher -e native
