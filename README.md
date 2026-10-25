@@ -7,14 +7,17 @@ Markdown, wiring, a bill of materials, engineering calculations, and measured ev
 all understandable and verifiable a year later.
 
 **Status:** the first homework, [1.3 Police Flasher](homeworks/1_3-police-flasher/), is in
-progress (Phase 4.2). The repository holds the shared libraries, the metadata contract, the
-scaffold, the local gate, and that first homework project.
+progress. The repository holds the shared libraries, the metadata contract, the scaffold, the
+generated views, and that first homework project; the documentation site is generated from the
+same metadata.
 
 ## Homeworks
 
-| ID | Project | Status | Report |
-|----|---------|--------|--------|
-| 1.3 | [1.3 Police Flasher](homeworks/1_3-police-flasher/) | in progress | [report](homeworks/1_3-police-flasher/report.md) |
+<!-- BEGIN GENERATED: homeworks -->
+| ID | Project | Board | Framework | Status | Report |
+|----|---------|-------|-----------|--------|--------|
+| 1.3 | [1.3 Police Flasher](homeworks/1_3-police-flasher/) | esp32-s3-devkitc-1 | arduino | in-progress | [report](homeworks/1_3-police-flasher/report.md) |
+<!-- END GENERATED -->
 
 ## Repository rules
 

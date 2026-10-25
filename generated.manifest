@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": "README.md",
+      "owner": "readme",
+      "mode": "region",
+      "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
+      "marker_end": "<!-- END GENERATED -->",
+      "sha256": "0182decc2e13142bbdb9a6e1dde7ebfc4117c41405eb0512348ecefb913ff968",
+      "bytes": 326
+    }
+  ]
+}
