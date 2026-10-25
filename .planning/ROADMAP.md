@@ -171,7 +171,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
   6. `docs/decisions/README.md` is a one-page decision table linking to the 11 existing ADRs; a new decision defaults to a row, and an ADR file is created only when the decision needs real argumentation; superseded decisions are marked in the table.
 
-**Plans**: TBD
+**Plans**: 7 plans
+- [ ] 04.1-01-PLAN.md — Decouple the survivors (allowlist removal, canonical-ID move); Wave 0 repair.
+- [ ] 04.1-02-PLAN.md — Delete policy-as-code and PR-template drift tooling with their tests.
+- [ ] 04.1-03-PLAN.md — Delete the licence split, its CI job, and the ADR index test.
+- [ ] 04.1-04-PLAN.md — Rewrite AGENTS.md, README.md, the decision table, and add the default PR template.
+- [ ] 04.1-05-PLAN.md — Reduce tag_homework.sh to the minimal script.
+- [ ] 04.1-06-PLAN.md — Delete the remaining independent meta-tests; prove the architecture rule green.
+- [ ] 04.1-07-PLAN.md — Phase gate: smoke builds, full suites, pre-commit, structural assertions.
 
 ### Phase 4.2: Tracer Homework 1.3 (INSERTED)
 
