@@ -6,8 +6,9 @@ self-contained, reproducible engineering artifact: code, tests, an academic repo
 Markdown, wiring, a bill of materials, engineering calculations, and measured evidence —
 all understandable and verifiable a year later.
 
-**Status:** early foundation phase, Phase 1 of 11. The repository currently holds the
-policy, licensing, and contribution foundation; homework projects arrive from Phase 2.
+**Status:** the trimmed foundation, ready for the first homework. The repository holds the
+shared libraries, the metadata contract, the scaffold, and the local gate; homework
+projects arrive from Phase 4.2.
 
 ## Repository rules
 
@@ -17,14 +18,13 @@ duplicating it.
 
 ## Decisions
 
-Infrastructure decisions are recorded as MADR documents under
-[docs/decisions/](docs/decisions/README.md). Numbers are permanent; the index states each
-record's status and the next free number.
+Decisions are recorded in a one-page table at
+[docs/decisions/](docs/decisions/README.md). The table is the index and the default
+record; a deeper ADR file is created only when a decision needs real argumentation.
 
 ## License
 
-- **Code:** original source code is licensed under the MIT license — see
-  [LICENSE](LICENSE).
-- **Documentation and reports:** documentation and homework reports are licensed under
-  CC-BY-4.0 — see [NOTICE](NOTICE) and the canonical texts under [LICENSES/](LICENSES/).
-- **Copyright holder:** VLoktiev-EMB.
+Original code, documentation, and homework reports are released under the MIT license —
+see [LICENSE](LICENSE).
+
+**Copyright holder:** VLoktiev-EMB.
