@@ -1,18 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: "04.2"
-current_phase_name: Tracer Homework 1.3
-status: "Phase 04.1 shipped — PR #9"
-stopped_at: Phase 04.1 complete, ready to plan Phase 04.2
-last_updated: "2026-10-25T01:20:53.851Z"
+current_phase: 5
+current_phase_name: Generated Views and Documentation Site
+status: planning
+stopped_at: Phase 04.2 complete, ready to plan Phase 5
+last_updated: "2026-10-25T20:50:21.041Z"
 last_activity: 2026-10-25
-state_head: d6636c0e8e4c9078dffdce15c5110c42459ed30c
+last_activity_desc: Phase 04.2 complete, transitioned to Phase 5
+state_head: 241d3929e93200abed354a124722259d4578a046
 progress:
   total_phases: 13
-  completed_phases: 5
-  total_plans: 38
-  completed_plans: 38
-  percent: 38
+  completed_phases: 6
+  total_plans: 49
+  completed_plans: 49
+  percent: 46
 ---
 
 # Project State
@@ -22,21 +23,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 04.2 — Tracer Homework 1.3
+**Current focus:** Phase 5 — Generated Views and Documentation Site
 
 ## Current Position
 
-Phase: 04.2 — Tracer Homework 1.3
+Phase: 5 — Generated Views and Documentation Site
 Plan: Not started
-Status: Phase 04.1 shipped — PR #9
-Last activity: 2026-10-25
+Status: Ready to plan
+Last activity: 2026-10-25 — Phase 04.2 complete, transitioned to Phase 5
 
-Progress: [████░░░░░░] 38%
+Progress: [█████░░░░░] 46%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 49
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -49,12 +50,24 @@ Progress: [████░░░░░░] 38%
 | 03 | 9 | - | - |
 | 04 | 9 | - | - |
 | 04.1 | 7 | - | - |
+| 04.2 | 11 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
 - Trend: —
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 04.2 P01 | 2 min | 3 tasks | 9 files |
+| Phase 04.2 P02 | 2 min | 3 tasks | 9 files |
+| Phase 04.2 P03 | 1 min | 2 tasks | 7 files |
+| Phase 04.2 P04 | 2 min | 3 tasks | 2 files |
+| Phase 04.2 P05 | 1 min | 3 tasks | 2 files |
+| Phase 04.2 P06 | 1 min | 2 tasks | 4 files |
+| Phase 04.2 P07 | 2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,10 +97,43 @@ Recent decisions affecting current work:
 - 2026-10-25: decision records are table-first — `docs/decisions/README.md` becomes the index and default record; the 11 existing ADRs stay as the archive; a new ADR file is created only when a decision needs real argumentation and is linked from the table.
 - 2026-10-25: two tooling corrections accompany the proportional rule — `/gsd-fast` must stage only touched files instead of `git add -A`, and trivial changes no longer need a `STATE.md` quick-task row.
 - 2026-10-25: Phase 4.2 runs homework 1.3 manually as a tracer and records a friction log; Phases 5–10 automate only what the log proves painful.
+- [Phase 04.2]: 1_3 homework scaffolded only through scripts/new_homework; the dry run plans eight CREATE records and a re-run returns eight UNCHANGED records, so the verification accepts both states.
+- [Phase 04.2]: D-08 amended: retrieved is 2026-10-23T00:00:00Z, because valid_iso8601 requires a timezone and the bare date is rejected once status leaves planned.
+- [Phase 04.2]: The status flip, source.reference, four provenance values, and the simulation/report/assets blocks land in one commit; the TODO sentinels are legal only at status planned.
+- [Phase 04.2]: homework.yaml forward-declares assets/diagram.json and report.md; the schema checks the path pattern, not disk presence, so the metadata validates before Waves 3 and 4 create those files.
+- [Phase 04.2]: The pattern library lives at homeworks/1_3-police-flasher/lib/pattern with a manifest that omits frameworks and platforms, so both environments compile the same sources without a lib_deps entry or test_build_src.
+- [Phase 04.2]: PORT_GPIO_INPUT is a pin mode, not a write level: an all-off frame calls set_mode(INPUT) and leaving that state calls set_mode(OUTPUT) before the next write, so the controller tracks applied/as_input/level per pin.
+- [Phase 04.2]: The controller applies the current frame before reading the button, which makes a one-shot injected failure land on a pending write and lets a mode or speed change re-apply the new frame in the same tick.
+- [Phase 04.2]: The frame schedule advances at most one frame per tick and resyncs step_started_ms to now only when a stall leaves it more than one hold behind, so a late loop neither drifts nor bursts.
+- [Phase 04.2]: The Wokwi diagram is the canonical wiring source: GPIO4 through one 150 ohm resistor to node X, LED1 anode at X and cathode at GND, LED2 anode at 3V3 and cathode at X, the third LED on GPIO6, and the MODE button from GPIO7 to GND.
+- [Phase 04.2]: merge_firmware.py stays project-local: espressif32@8.0.0 renamed tool-esptoolpy to tool-esptool and ships esptool 5 merge-bin with --flash-mode and --flash-size, so the published Wokwi script cannot run; promotion to scripts/pio/ waits for Phase 7/8.
+- [Phase 04.2]: Simulation execution is deferred to Phase 7 with simulation.status pending: only wokwi-cli lint --offline is a verified result, and the repo-relative --diagram-file and --scenario command is recorded in the homework README.
+- [Phase 04.2]: Report headings are numbered from title and metadata as 1: objective 2, theory 4, hardware 5, methodology 6, results 7, analysis 8, conclusions 9, references 10; plan 05 asserts the same literal text.
+- [Phase 04.2]: Report metadata records implementation commit 6a60426; plan 05 must reuse that hash in every ledger row or refresh both records in one commit.
+- [Phase 04.2]: BOM refs are the diagram part ids (esp, r1, led1, led2, r2, led3, btn1) so every physical part maps to a row without a second naming scheme.
+- [Phase 04.2]: The reverse-voltage calculation excludes the all-off INPUT frame because node X floats; the off LED reverse voltage is not well-defined in that state.
+- [Phase 04.2]: No value in report sections 1-6 is labelled measured; inputs are datasheet or calculated, and bench inputs are pending measurement until plan 05.
+- [Phase 04.2]: The measurement ledger keeps implementation commit 6a60426 in the metadata table and in every row, because main.cpp and controller.c did not change in plan 05.
+- [Phase 04.2]: No bench reading or serial log existed, so every bench row is not measured with the fixed reason bench equipment offline during automated tracer run; no measured value is inferred.
+- [Phase 04.2]: The report ledger uses the five D-13 labels plus the single qualified measured (observed); a bare observed is rejected, and every measured cell would carry a user-reported: or serial-log: prefix.
+- [Phase 04.2]: The homework workflow is one read-only job on ubuntu-24.04 with a 45-minute timeout, three action SHAs revalidated with git ls-remote, and only the two D-18 commands; metadata and architecture checks stay local until Phase 8.
+- [Phase 04.2]: platformio.shared.ini gains no per-homework entry; the root README row and the workspace folder are the only manual integration edits, and the SC3 wording conflict is recorded in the friction log.
+- [Phase 04.2]: Adding the workspace folder makes the PlatformIO IDE generate .gitignore and .vscode files inside the homework directory; they stay untracked and are recorded for the Phase 5 workspace generator.
+- [Phase 04.2]: The friction-log synthesis owns every candidate: 11 rows name Phases 5-11 and 2 record `not built` with a reason, so no automation is left unowned and no one-off event became a recurring job.
+- [Phase 04.2]: The phase gate runs both native suites (homework 38 cases, shared `tests/` 73 cases), the offline Wokwi lint, the metadata and architecture checkers, 81 Python tests, and `pre-commit run --all-files`; all eight commands exited 0.
+- [Phase 04.2]: The Phase 4 real-tree JSON test asserted an empty array; the first real homework makes that stale, so it now asserts every real-tree record is `OK`, exists on disk, and is sorted by path.
+- [Phase 04.2]: D-09 is recorded as a human checklist with its mechanical checks passing and the originality review pending; no completed user sign-off is claimed.
+- [Phase 04.2]: Wokwi execution stays deferred to Phase 7 with `simulation.status: pending`; only `wokwi-cli lint --offline` is a verified simulation result.
+- [Phase 04.2]: No `hw/1_3-police-flasher` tag exists; the tag belongs to Phase 11 and `scripts/tag_homework.sh` was not run.
+- [Phase 04.2]: D-09 is closed — the repository owner performed the paraphrase comparison on 2026-10-25 and confirmed no verbatim sentence, no distinctive phrasing, and no original file committed. The result is recorded in 04-UAT.md, 04.2-SECURITY.md T-4.2-02, 04.2-VALIDATION.md (META-02), the PR body, and report appendix item 9 / T-13; this entry supersedes the earlier originality-review-pending note, which stays as the historical record.
+- [Phase 04.2]: The "18"-entry count in 04.2-PR-BODY.md stays as submitted. 04.2-FRICTION-LOG.md is the canonical count and holds 19 entries since plan 08 added F-19. The tracked body is not edited after PR #10 opened (plan 11), and no live-description edit is made here because changing PR #10 is an outward-facing owner action confirmed separately; a correction would update the tracked file and PR #10 together in one owner-approved action.
 
 ### Pending Todos
 
-- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — Phase 4.1 delivered every item except the global `/gsd-fast` staging correction, which lives in `~/.claude/gsd-core/workflows/fast.md` (upstream install, outside this repository).
+- [2026-10-25] [docs] Expand homework README and add a proper SVG schematic — [todo file](.planning/todos/pending/2026-10-25-expand-homework-readme-and-add-a-proper-svg-schematic.md) — Needs TBD — candidate shape:.
+- [2026-10-25] [tooling] Promote merge_firmware.py into a shared tool — [todo file](.planning/todos/pending/2026-10-25-promote-merge-firmware-py-into-a-shared-tool.md) — Needs TBD — candidate shape:.
+- [2026-10-25] [tooling] Standardize pull request titles across homeworks — [todo file](.planning/todos/pending/2026-10-25-standardize-pull-request-titles-across-homeworks.md) — Needs TBD — candidate shape:.
+- [unknown] [general] Trim governance ceremony (Phase 4.1) — [todo file](.planning/todos/pending/trim-ceremony.md)
 
 ### Blockers/Concerns
 
@@ -104,12 +150,16 @@ Recent decisions affecting current work:
 - **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
 - **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
+- **[Phase 4.2, open]** PR #10 is open and its `pull_request` run is green, but the post-run commits (friction-log CI record, phase verification, quick fix, phase completion) are not yet pushed and the PR is not merged. Pushing them triggers a second CI run.
+- **[Phase 4.2, traceability warning]** `phase.complete` reports that ROADMAP Phase 04.2 cites INV-01..INV-04, which are defined in `REQUIREMENTS.md` under "Invariants" but absent from its Traceability table. The IDs are legitimate; the table is the missing half.
+- **[Phase 4.2, info]** `REQUIREMENTS.md` still says META-02 `In review (D-09 paraphrase check)` although the owner confirmed it; the requirement table is orchestrator-level and was not part of the phase's artifact scope. Untracked IDE files `homeworks/1_3-police-flasher/.gitignore` and `.vscode/` remain by design (recorded for the Phase 5 workspace generator).
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
+| 261025-vih | Fix the six residual findings from the Phase 04.2 verification | 2026-10-25 | 50d82ff | [261025-vih-fix-the-six-residual-findings-from-the-p](./quick/261025-vih-fix-the-six-residual-findings-from-the-p/) |
 
 ### Roadmap Evolution
 
@@ -128,6 +178,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T01:45:00.000Z
-Stopped at: Phase 04.1 complete, ready to plan Phase 04.2
+Last session: 2026-10-25T20:50:21.000Z
+Stopped at: Phase 04.2 complete and verified (95/95 must-haves, 6/6 roadmap criteria); ready to plan Phase 5
 Resume file: None

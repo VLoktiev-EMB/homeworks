@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "author": "VLoktiev-EMB",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "flashSize": "16",
+        "psramType": "octal",
+        "psramSize": "8"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -60,
+      "left": 300,
+      "attrs": { "value": "150" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -100,
+      "left": 220,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": -140,
+      "left": 220,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": -200,
+      "left": 300,
+      "attrs": { "value": "150" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": -240,
+      "left": 220,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": -300,
+      "left": 220,
+      "attrs": { "color": "green", "label": "MODE" }
+    }
+  ],
+  "connections": [
+    [ "esp:4", "r1:1", "green", [] ],
+    [ "r1:2", "led1:A", "blue", [] ],
+    [ "led1:C", "esp:GND.1", "black", [] ],
+    [ "led2:A", "esp:3V3.1", "red", [] ],
+    [ "led2:C", "r1:2", "blue", [] ],
+    [ "esp:6", "r2:1", "green", [] ],
+    [ "r2:2", "led3:A", "red", [] ],
+    [ "led3:C", "esp:GND.2", "black", [] ],
+    [ "btn1:1.l", "esp:7", "green", [] ],
+    [ "btn1:2.l", "esp:GND.3", "black", [] ],
+    [ "esp:TX", "$serialMonitor:RX", "green", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "green", [] ]
+  ]
+}

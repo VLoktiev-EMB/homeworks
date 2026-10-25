@@ -789,15 +789,30 @@ class JsonOutputTests(FixtureBase):
             sorted(statuses), [record["path"] for record in payload]
         )
 
-    def test_json_real_tree_is_empty_array(self):
+    def test_json_real_tree_records_are_all_ok(self):
+        # The real tree gained its first homework in Phase 4.2, so the JSON
+        # surface is no longer an empty array. What must hold for any shipped
+        # tree is that every record is an OK metadata document for a path that
+        # exists, that the order is by path, and that no prose reaches stderr.
         result = run_checker("--json")
         self.assertEqual(0, result.returncode, combined(result))
-        self.assertEqual([], json.loads(result.stdout))
         self.assertEqual("", result.stderr)
+        payload = json.loads(result.stdout)
+        for record in payload:
+            with self.subTest(path=record.get("path")):
+                self.assertEqual({"path", "status", "reason"}, set(record))
+                self.assertEqual("OK", record["status"], record)
+                self.assertTrue(
+                    (REPO_ROOT / record["path"]).is_file(), record["path"]
+                )
+        self.assertEqual(
+            sorted(record["path"] for record in payload),
+            [record["path"] for record in payload],
+        )
 
 
 class RealTreeTests(unittest.TestCase):
-    """The shipped (still empty) tree passes, and the checker is read-only."""
+    """The shipped tree passes, and the checker is read-only."""
 
     def test_real_tree_passes(self):
         result = run_checker()

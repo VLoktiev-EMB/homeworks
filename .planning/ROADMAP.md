@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
 - [x] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework` (completed 2026-10-25)
 - [x] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done (completed 2026-10-25)
-- [ ] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log
+- [x] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log (verification gaps open — see `.planning/phases/04.2-tracer-homework-1-3/04.2-VERIFICATION.md`) (completed 2026-10-25)
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
 - [ ] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004
@@ -203,7 +203,40 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. A friction log exists in the phase directory with one entry per friction point: step, what hurt, frequency, cheap fix, automation candidate.
   6. The deferred UAT item on `task.md` paraphrase originality is reviewed on this first real homework.
 
-**Plans**: TBD
+**Plans**: 11/11 plans complete
+
+**Wave 1**
+- [x] 04.2-01-PLAN.md — Scaffold, provenance, English paraphrase, friction-log start (tracer)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 04.2-02-PLAN.md — Pattern library, controller seam, composition root, native suites (tracer)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 04.2-03-PLAN.md — Wokwi diagram, scenario, merged image, offline lint (tracer)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 04.2-04-PLAN.md — Report sections 1-6, BOM, pin map, calculations, safety (tracer)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 04.2-05-PLAN.md — Results, five-label ledger, analysis, traceability, decision appendix (tracer)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 04.2-06-PLAN.md — Single-project CI, root README, workspace, SC3 finding (tracer)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 04.2-07-PLAN.md — Friction synthesis, automation candidates, phase gate (tracer)
+
+**Gap-closure plans** *(from the 2026-10-25 verification: 65/69 truths, four gaps)*
+
+**Wave 1**
+- [x] 04.2-08-PLAN.md — G1: project-relative Wokwi option paths, corrected README, F-08/F-10, new F-19
+- [x] 04.2-09-PLAN.md — G3: real implementation commit, honest debounce row, handshake-only serial text
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 04.2-10-PLAN.md — G2: D-09 write-back into the PR body and report appendix, closed review ledger
+
+**Wave 3** *(blocked on Waves 1 and 2)*
+- [x] 04.2-11-PLAN.md — G4: open the pull request and confirm the first CI run (human checkpoint)
 
 ### Phase 5: Generated Views and Documentation Site
 
@@ -320,7 +353,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
-| 4.2. Tracer Homework 1.3 | 0/TBD | Not started | - |
+| 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
