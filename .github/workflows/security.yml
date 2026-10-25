@@ -38,22 +38,3 @@ jobs:
           install -m 0755 "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
       - name: Scan full history
         run: gitleaks git --redact --verbose --log-opts="--all"
-
-  reuse:
-    name: reuse lint (license split)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Install reuse
-        env:
-          REUSE_VERSION: 6.2.0
-        run: |
-          set -euo pipefail
-          # An isolated venv keeps the job independent of the runner's system
-          # Python (PEP 668) and pins the exact tool version.
-          python3 -m venv "$RUNNER_TEMP/reuse-venv"
-          "$RUNNER_TEMP/reuse-venv/bin/pip" install --disable-pip-version-check \
-            "reuse==${REUSE_VERSION}"
-          echo "$RUNNER_TEMP/reuse-venv/bin" >> "$GITHUB_PATH"
-      - name: Check the MIT / CC-BY-4.0 split
-        run: reuse --no-multiprocessing lint

@@ -61,8 +61,8 @@ repos:
 
       # D-13: the pre-commit hook builds its own isolated Python environment
       # from these two pins and never depends on `uv`. The same two pins live in
-      # the PEP 723 header of both entry scripts; `scripts/tests/test_metadata_deps.py`
-      # parses all three declarations as text and fails when they diverge.
+      # the PEP 723 header of both entry scripts, so a bump changes three
+      # declarations that are reviewed together.
       #
       # `templates/` is deliberately absent from `files`: an unrendered
       # `template.yaml`-era homework contains `{{homework_id}}` and is not valid

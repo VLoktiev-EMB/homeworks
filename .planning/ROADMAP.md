@@ -2,13 +2,14 @@
 
 ## Overview
 
-Build the repository as a policy-gated monorepo of independent PlatformIO projects over a
-small, enforced C core, with every repeated artifact generated from one metadata contract.
-The journey starts with the irreversible decisions (public history, licensing, assets),
-proves the pinned toolchain and shared-library wiring, then adds the shared core, the
-metadata contract, developer experience, the simulation spike, fast CI, the agent skills,
-and the report system. It closes with homework 1.3 delivered end to end as the reference
-artifact before scaling to 30+ homeworks.
+Build the repository as a monorepo of independent PlatformIO projects over a small,
+enforced C core, with every repeated artifact generated from one metadata contract. Four
+foundation phases proved the toolchain, the shared core, and the metadata contract. Phase
+4.1 removes governance ceremony that a single-author course repository does not need;
+Phase 4.2 runs homework 1.3 end to end manually as a tracer and records the friction.
+Phases 5–10 then automate only what that log proves painful — generated views, developer
+experience, the simulation decision, CI, the agent skills, and the report system — before
+Phase 11 ships the polished pilot and scales to 30+ homeworks.
 
 ## Phases
 
@@ -22,15 +23,19 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries (completed 2026-10-23)
 - [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
 - [x] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework` (completed 2026-10-25)
+- [x] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done (completed 2026-10-25)
+- [ ] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
 - [ ] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004
 - [ ] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation
 - [ ] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented
 - [ ] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric
-- [ ] **Phase 11: Pilot Homework 1.3** - Police Flasher delivered end to end with all extensions
+- [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
 
 ## Phase Details
+
+> **Automation rule (Phases 5–10)**: Each phase in this group automates only work that the Phase 4.2 friction log proves painful. An automation with no entry in the log is not built.
 
 ### Phase 1: Repository Foundation and Policy Gate
 
@@ -153,10 +158,58 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04-07-PLAN.md — Whole-path allowlist suppression and composed-YAML-key ERROR records (WR-01, CR-02)
 - [x] 04-08-PLAN.md — Refuse a symlinked `homeworks` base and derive the id-match directory lexically (CR-01 one component higher)
 
+### Phase 4.1: Ceremony Trim (INSERTED)
+
+**Goal**: Remove the governance ceremony that costs time on every change while keeping the four cross-cutting invariants and a short homework Definition of Done.
+**Depends on**: Phase 4
+**Requirements**: INV-01, INV-02, INV-03, INV-04 (cross-cutting)
+**Success Criteria** (what must be TRUE):
+  1. `policy/`, `check_policy.py`, `REUSE.toml`, `NOTICE`, `LICENSES/`, the `reuse` CI job, `check_pr_templates.py`, the three-template split, the Cyrillic allowlist, and the tag preconditions are gone; one MIT `LICENSE` and one default PR template remain.
+  2. `scripts/tests/` keeps only the metadata and scaffold smoke modules; the other meta-test modules are deleted.
+  3. `AGENTS.md` has a four-step quick-start, no policy/licence-split/PR-drift rules, a proportional GSD rule (`/gsd-fast` for trivial, `/gsd-quick` for multi-step, the phase workflow for architectural work or homework delivery), and a short Definition of Done.
+  4. `pio test -d tests -e native`, the smoke build, `pre-commit run --all-files`, and `python3 scripts/check_metadata.py` pass after the trim.
+  5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
+  6. `docs/decisions/README.md` is a one-page decision table linking to the 11 existing ADRs; a new decision defaults to a row, and an ADR file is created only when the decision needs real argumentation; superseded decisions are marked in the table.
+
+**Plans**: 7/7 plans complete
+**Wave 1**
+- [x] 04.1-01-PLAN.md — Decouple the survivors (allowlist removal, canonical-ID move); Wave 0 repair.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 04.1-02-PLAN.md — Delete policy-as-code and PR-template drift tooling with their tests.
+- [x] 04.1-03-PLAN.md — Delete the licence split, its CI job, and the ADR index test.
+- [x] 04.1-05-PLAN.md — Reduce tag_homework.sh to the minimal script.
+- [x] 04.1-06-PLAN.md — Delete the remaining independent meta-tests; prove the architecture rule green.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 04.1-04-PLAN.md — Rewrite AGENTS.md, README.md, the decision table, and add the default PR template.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 04.1-07-PLAN.md — Phase gate: smoke builds, full suites, pre-commit, structural assertions.
+
+**Cross-cutting constraints:**
+- The surviving Python suite stays green after each deletion group.
+
+### Phase 4.2: Tracer Homework 1.3 (INSERTED)
+
+**Goal**: Run homework 1.3 through the complete cycle manually with the trimmed tooling and record every friction point, so Phases 5–10 automate only what the log proves painful.
+**Depends on**: Phase 4.1
+**Requirements**: INV-01, INV-02, INV-03, INV-04, PILOT-01 (first pass), META-02 (paraphrase check)
+**Success Criteria** (what must be TRUE):
+  1. `homeworks/1_3-police-flasher/` is scaffolded through `scripts/new_homework`, builds for ESP32-S3 N16R8, and its pure pattern logic has native Unity tests.
+  2. The homework contains a real `assets/diagram.json`, a Wokwi scenario, and a report with BOM, pin map, calculations, measurement ledger, and traceability.
+  3. README index, workspace, shared ini, and CI matrix entries are edited manually and are correct for the one real homework.
+  4. The pull request passes CI, and no `hw/` tag is created in this phase.
+  5. A friction log exists in the phase directory with one entry per friction point: step, what hurt, frequency, cheap fix, automation candidate.
+  6. The deferred UAT item on `task.md` paraphrase originality is reviewed on this first real homework.
+
+**Plans**: TBD
+
 ### Phase 5: Generated Views and Documentation Site
 
 **Goal**: Every repeated view of the repository is generated from `homework.yaml`, and the documentation site builds and deploys from that tree.
-**Depends on**: Phase 4
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for generated views or the docs site; otherwise the automation is not built.
+**Depends on**: Phase 4.2
 **Requirements**: META-05, META-06, META-07, META-08
 **Success Criteria** (what must be TRUE):
   1. The README index, MkDocs navigation, multi-root workspace, `platformio.shared.ini`, and CI matrix regenerate from `homework.yaml`; each generator's `--check` exits non-zero on drift.
@@ -169,7 +222,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 6: Developer Experience and Quality Layering
 
 **Goal**: A novice can open the workspace, get correct ESP32 IntelliSense, and have formatting and layered quality checks run without guesswork.
-**Depends on**: Phase 4
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for formatting, IntelliSense, or local feedback; otherwise the tooling is not added.
+**Depends on**: Phase 4.2
 **Requirements**: TOOL-01, TOOL-02, TOOL-03, TOOL-04
 **Success Criteria** (what must be TRUE):
   1. `clang-format --dry-run --Werror` passes with 4-space indent, a 120-column limit, and function braces on a new line, documented as an ESP-IDF approximation rather than equivalence.
@@ -183,7 +237,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 7: Simulation Spike
 
 **Goal**: An evidence-based simulator decision recorded in ADR-0004, with measured costs and fidelity limits.
-**Depends on**: Phase 4
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for simulation or wiring; otherwise the spike is not run.
+**Depends on**: Phase 4.2
 **Requirements**: SIM-02, SIM-03
 **Success Criteria** (what must be TRUE):
   1. ADR-0004 records measured cold start, compile time, serial reliability, simulated minutes, and fidelity limits for Wokwi, Velxio, Renode, and Fritzing.
@@ -197,7 +252,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 8: Fast CI
 
 **Goal**: Pull requests are gated by a fast, changed-only CI pipeline with one required check; simulation is optional and never blocks forks.
-**Depends on**: Phase 3, Phase 4, Phase 7
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for CI feedback time or changed-only builds; otherwise the pipeline is not built.
+**Depends on**: Phase 3, Phase 4.2, Phase 5, Phase 6, Phase 7
 **Requirements**: TOOL-05, TOOL-06, SIM-04
 **Success Criteria** (what must be TRUE):
   1. A pull request runs a fast `meta` job (schema, `--check` drift, lint, gitleaks, architecture, `wokwi-cli lint`) and a `changes` job that computes the affected matrix.
@@ -210,7 +266,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 9: Agent Workflow and Skills
 
 **Goal**: Seven versioned agent skills exist, with `new-homework` and `hw-build` fully usable in guided and one-shot modes.
-**Depends on**: Phase 4
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for the intake, build, or report workflow; otherwise the corresponding skill is not written.
+**Depends on**: Phase 4.2
 **Requirements**: FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05, FLOW-06, FLOW-07
 **Success Criteria** (what must be TRUE):
   1. Seven skills exist at version 0.1 in the project skills directory, each carrying a changelog and lessons-learned section.
@@ -224,7 +281,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 10: Report and Evidence System
 
 **Goal**: A report and evidence contract that every homework must satisfy, with automated checks and a self-audit rubric.
-**Depends on**: Phase 4
+**Friction-log justification**: The Phase 4.2 log must contain at least one entry for report structure, BOM, calculations, measurements, or traceability; otherwise the checker is not built.
+**Depends on**: Phase 4.2
 **Requirements**: REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, REPORT-06, REPORT-07, REPORT-08, TOOL-08
 **Success Criteria** (what must be TRUE):
   1. The report template and check enforce the 10 academic sections plus BOM, pin map, calculations, safety checklist, measurement ledger, traceability matrix, honest status, and IEEE references.
@@ -234,25 +292,26 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Plans**: TBD
 
-### Phase 11: Pilot Homework 1.3
+### Phase 11: Pilot Homework 1.3 — Finalization
 
-**Goal**: Homework 1.3 ships end to end as the reference artifact and validates the whole system before scale-out.
-**Depends on**: Phase 4, Phase 5, Phase 7, Phase 8, Phase 9, Phase 10
+**Goal**: The tracer from Phase 4.2 becomes the shipped reference artifact: polished, verified through the complete automated chain, tagged, and ready to scale to the remaining homeworks.
+**Depends on**: Phase 4.2, Phase 5, Phase 7, Phase 8, Phase 9, Phase 10
 **Requirements**: PILOT-01, PILOT-02, SIM-01
 **Success Criteria** (what must be TRUE):
   1. `homeworks/1_3-police-flasher/` contains the scaffolded artifacts, native tests, and all four extensions: third LED, variable speed, complex pattern, and single-GPIO operation.
   2. Native tests pass and the Wokwi simulation reproduces the four patterns with provenance-labeled evidence.
   3. The report satisfies Phase 10 and includes measured versus simulated values, commit hashes, known limitations, and next steps.
-  4. The README index, workspace, and docs site include homework 1.3, and the documented local simulation path is recorded.
+  4. The README index, workspace, and docs site include homework 1.3 through the generated path, and the documented local simulation path is recorded.
   5. The pull request passes CI and the merged commit is tagged `hw/1_3-police-flasher`.
+  6. The Phase 4.2 friction log is closed: every automation candidate has a phase or a recorded decision not to build it.
 
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11.
-Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phase 8 needs 3, 4, and 7; Phase 11 needs 4–10.
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 4.2 → 5 → 6 → 7 → 8 → 9 → 10 → 11.
+Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction log. Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4.2 is complete and are justified by the log; Phase 8 needs 3, 4.2, 5, 6, and 7; Phase 11 needs 4.2 and 5–10.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -260,13 +319,15 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
+| 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
+| 4.2. Tracer Homework 1.3 | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
-| 11. Pilot Homework 1.3 | 0/TBD | Not started | - |
+| 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -277,3 +338,15 @@ Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4 is complete; Phas
 **Deferred at:** 2026-10-25 during /gsd-verify-work 04 session completion
 **Follow-ups:**
 - [ ] Test 1: No homework exists yet; review paraphrase originality when the first real task.md lands. (deferred 2026-10-25)
+  *Phase 4.2 resolves this: the tracer is the first real `task.md`.*
+
+### Phase 999.2: Return bureaucracy after stabilization, if needed (BACKLOG)
+
+**Goal:** Reintroduce governance ceremony only if the repository gains contributors or a second maintainer.
+**Source phase:** 04.1
+**Deferred at:** 2026-10-25 during the ceremony trim exploration
+**Candidate items:**
+- [ ] Policy-as-code and a live ruleset drift check
+- [ ] REUSE/SPDX licence compliance and the MIT/CC-BY split
+- [ ] Multi-type PR templates and the shared-header drift check
+- [ ] The ADR status index and ADR-per-decision rule

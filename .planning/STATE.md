@@ -1,19 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 5
-current_phase_name: Generated Views and Documentation Site
-status: "Phase 04 shipped — PR #7"
-stopped_at: Phase 04 complete, ready to plan Phase 5
-last_updated: "2026-10-24T23:21:30.256Z"
+current_phase: "04.2"
+current_phase_name: Tracer Homework 1.3
+status: "Phase 04.1 shipped — PR #9"
+stopped_at: Phase 04.1 complete, ready to plan Phase 04.2
+last_updated: "2026-10-25T01:20:53.851Z"
 last_activity: 2026-10-25
-state_head: 3e6dd898473e123fe4c142b4b6e4caceec4c3336
+state_head: d6636c0e8e4c9078dffdce15c5110c42459ed30c
 progress:
-  total_phases: 11
-  completed_phases: 4
-  total_plans: 31
-  completed_plans: 31
-  percent: 36
-last_activity_desc: Phase 04 shipped as PR
+  total_phases: 13
+  completed_phases: 5
+  total_plans: 38
+  completed_plans: 38
+  percent: 38
 ---
 
 # Project State
@@ -23,21 +22,21 @@ last_activity_desc: Phase 04 shipped as PR
 See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 05 — Generated Views and Documentation Site
+**Current focus:** Phase 04.2 — Tracer Homework 1.3
 
 ## Current Position
 
-Phase: 5 — Generated Views and Documentation Site
+Phase: 04.2 — Tracer Homework 1.3
 Plan: Not started
-Status: Phase 04 shipped — PR #7
-Last activity: 2026-10-25 - Completed quick task 261025-349: Fix the squash-merge commit body policy
+Status: Phase 04.1 shipped — PR #9
+Last activity: 2026-10-25
 
-Progress: [████░░░░░░] 36%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31
+- Total plans completed: 38
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -49,6 +48,7 @@ Progress: [████░░░░░░] 36%
 | 02 | 5 | - | - |
 | 03 | 9 | - | - |
 | 04 | 9 | - | - |
+| 04.1 | 7 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -80,10 +80,14 @@ Recent decisions affecting current work:
 - Phase 4: `scripts/new_homework` is the only scaffold path — idempotent, `--dry-run`, no overwrite, no symlink traversal; both templates build immediately.
 - Phase 4: Python deps are pinned once (PyYAML 6.0.3, jsonschema 4.26.0) in the PEP 723 headers and the pre-commit hook; drift fails `test_metadata_deps`.
 - Phase 4: paraphrase originality is not machine-verifiable; it is deferred to the first real `task.md` (UAT Test 1).
+- 2026-10-25: ceremony trim — bureaucracy (policy-as-code, REUSE/SPDX, PR-template drift, tag gates, meta-tests, the blanket GSD-on-every-edit mandate, the mandatory ADR-per-decision and status-index upkeep) is removed; the GSD fast/quick/phase tiers and the atomic-commit culture stay, and the rule becomes proportional. Engineering tooling stays in the roadmap. The rule is frequency of execution, not appearance. See `.planning/notes/ceremony-vs-engineering-principle.md`.
+- 2026-10-25: decision records are table-first — `docs/decisions/README.md` becomes the index and default record; the 11 existing ADRs stay as the archive; a new ADR file is created only when a decision needs real argumentation and is linked from the table.
+- 2026-10-25: two tooling corrections accompany the proportional rule — `/gsd-fast` must stage only touched files instead of `git add -A`, and trivial changes no longer need a `STATE.md` quick-task row.
+- 2026-10-25: Phase 4.2 runs homework 1.3 manually as a tracer and records a friction log; Phases 5–10 automate only what the log proves painful.
 
 ### Pending Todos
 
-None yet.
+- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — Phase 4.1 delivered every item except the global `/gsd-fast` staging correction, which lives in `~/.claude/gsd-core/workflows/fast.md` (upstream install, outside this repository).
 
 ### Blockers/Concerns
 
@@ -97,12 +101,20 @@ None yet.
 - Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
   templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
 - **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven.
+- **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
+- **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
+- **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
+
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Ceremony Trim (URGENT)
+- Phase 4.2 inserted after Phase 4: Tracer Homework 1.3 (URGENT)
 
 ## Deferred Items
 
@@ -111,10 +123,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | Target compile | Arduino/ESP-IDF adapter target builds (03-06.6) — smoke project retired by design | Closed in Phase 4 — both scaffolded templates build | 2026-10-24 | v1 |
-| Human review | UAT Test 1 — paraphrase originality of the first real `task.md` | Deferred until the first homework exists | 2026-10-25 | v1 |
+| Human review | UAT Test 1 — paraphrase originality of the first real `task.md` | Resolved by Phase 4.2 (the tracer is the first real task) | 2026-10-25 | v1 |
+| Governance | Return bureaucracy after stabilization — policy-as-code, REUSE/SPDX, multi-template PRs, ADR status index | Backlog 999.2 | 2026-10-25 | v1 |
 
 ## Session Continuity
 
-Last session: 2026-10-25T00:00:00.000Z
-Stopped at: Phase 04 complete, ready to plan Phase 5
+Last session: 2026-10-25T01:45:00.000Z
+Stopped at: Phase 04.1 complete, ready to plan Phase 04.2
 Resume file: None

@@ -41,10 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.metadata.contract import (  # noqa: E402
-    ALLOWLIST_PATH,
     CheckError,
-    apply_allowlist,
-    load_allowlist,
     load_schema,
     relative_path,
     resolve_root,
@@ -207,20 +204,9 @@ def main(argv=None):
     try:
         root = resolve_root(args.dir)
         load_schema(root)
-        entries = load_allowlist(root)
         records = []
         for directory in _directories(root, args.paths):
             records.extend(_validate_directory(root, directory))
-        records, stale = apply_allowlist(records, entries)
-        records.extend(
-            _record(
-                root,
-                Path(root) / ALLOWLIST_PATH,
-                "ERROR",
-                f"stale allowlist entry {entry['path']}",
-            )
-            for entry in stale
-        )
     except CheckError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
