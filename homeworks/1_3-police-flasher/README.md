@@ -15,15 +15,31 @@ every relative path — including the shared partition table — resolves.
 ## Simulation
 
 `wokwi.toml` points at `.pio/build/esp32s3_arduino/firmware.merged.bin`, so build the
-target before running the scenario. `wokwi-cli` resolves `--diagram-file` and
-`--scenario` against the working directory, not the project directory, so pass both
-paths repo-relative from the repository root:
+target before running the scenario. `wokwi-cli` 0.28.1 joins the values of
+`--diagram-file` and `--scenario` to the positional project directory, not to the shell
+working directory. Pass both option values relative to the project directory; passing
+repository-root paths makes the CLI join the project path twice and abort before it
+opens a connection. From the repository root:
 
 ```sh
 pio run -d homeworks/1_3-police-flasher
-wokwi-cli homeworks/1_3-police-flasher --diagram-file homeworks/1_3-police-flasher/assets/diagram.json --scenario homeworks/1_3-police-flasher/scenario.yaml
+wokwi-cli homeworks/1_3-police-flasher --diagram-file assets/diagram.json --scenario scenario.yaml
 ```
 
-Execution needs `WOKWI_CLI_TOKEN`; `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json`
-validates the wiring without one. The run is deferred to Phase 7, so
-`simulation.status` in `homework.yaml` stays `pending`.
+The equivalent form enters the project first, passes `.` as the positional project
+argument, and keeps the same two option values:
+
+```sh
+cd homeworks/1_3-police-flasher
+pio run
+wokwi-cli . --diagram-file assets/diagram.json --scenario scenario.yaml
+```
+
+Execution needs `WOKWI_CLI_TOKEN`, and a missing token aborts earlier than path
+resolution, so it cannot prove the paths. Run the command with
+`WOKWI_CLI_TOKEN=dummy` to prove both paths resolve locally: the run reaches the
+WebSocket connection or token stage without a real credential. The only token value
+that belongs in this file is `dummy`; never write a real token here.
+`wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` validates the
+wiring without one. The run is deferred to Phase 7, so `simulation.status` in
+`homework.yaml` stays `pending`.
