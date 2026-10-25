@@ -40,6 +40,14 @@ CONTRACT = REPO_ROOT / "scripts" / "metadata" / "contract.py"
 SCHEMA = REPO_ROOT / "schema" / "homework.schema.json"
 AGENTS = REPO_ROOT / "AGENTS.md"
 
+# D-04/D-27: the board-profile contract and its one real document. The template
+# text is the known-good payload every board fixture is derived from; reading it
+# with `Path` keeps this module free of a PyYAML import (04/D-14).
+BOARD_SCHEMA = REPO_ROOT / "schema" / "board-profile.schema.json"
+BOARD_TEMPLATE = (
+    REPO_ROOT / "templates" / "board-profile" / "profile.yaml"
+).read_text(encoding="utf-8")
+
 ROOT_ORDER = (
     "schema_version",
     "id",
@@ -265,6 +273,166 @@ class SchemaShapeTest(unittest.TestCase):
         # Pitfall P1: `format: uri` accepts "not a url" without a checker, so
         # every shape must be an anchored pattern instead.
         self.assertNotIn('"format"', json.dumps(self.schema))
+
+    def test_board_schema_is_strict_and_describes_frameworks(self):
+        # The board profile keeps the homework envelope's strictness: no unknown
+        # key anywhere, no `format` keyword, and an enum whose rationale is
+        # written down rather than implied.
+        board = json.loads(BOARD_SCHEMA.read_text(encoding="utf-8"))
+        self.assertIs(False, board.get("additionalProperties"))
+        self.assertNotIn('"format"', json.dumps(board))
+        frameworks = board["properties"]["frameworks"]
+        self.assertEqual("array", frameworks["type"])
+        self.assertIs(True, frameworks.get("uniqueItems"))
+        self.assertEqual({"arduino", "espidf"}, set(frameworks["items"]["enum"]))
+        self.assertTrue(frameworks.get("description"))
+
+
+class BoardProfileTests(FixtureBase):
+    """D-27: `boards/<id>.yaml` has the same machine-enforced contract."""
+
+    STEM = "esp32-s3-devkitc-1"
+
+    def write_board(self, text=None, stem=None, directory="boards"):
+        """Write a board document by string assembly, never with PyYAML."""
+        path = self.root / directory / f"{stem or self.STEM}.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            BOARD_TEMPLATE if text is None else text, encoding="utf-8"
+        )
+        return path
+
+    def board_path(self, stem=None):
+        return f"boards/{stem or self.STEM}.yaml"
+
+    def test_accepted_profile_is_ok(self):
+        self.write_board()
+        result = self.run_fixture()
+        self.assert_accepted(result)
+        self.assertIn(f"{self.board_path()}: OK — ", result.stdout)
+
+    def test_id_must_match_the_file_stem(self):
+        self.write_board(stem="other-board")
+        self.assert_rejected(self.run_fixture(), "does not match the file stem")
+
+    def test_unknown_key_is_error(self):
+        self.write_board(BOARD_TEMPLATE + "unexpected: true\n")
+        self.assert_rejected(self.run_fixture(), "unexpected")
+
+    def test_missing_required_key_is_error(self):
+        self.write_board(BOARD_TEMPLATE.replace("flash_mb: 16\n", ""))
+        self.assert_rejected(self.run_fixture(), "flash_mb")
+
+    def test_psram_outside_the_enum_is_error(self):
+        self.write_board(BOARD_TEMPLATE.replace("psram: octal", "psram: hex"))
+        self.assert_rejected(self.run_fixture(), "psram")
+
+    def test_non_https_pinout_url_is_error(self):
+        self.write_board(
+            BOARD_TEMPLATE.replace(
+                "https://docs.espressif.com", "http://docs.espressif.com"
+            )
+        )
+        self.assert_rejected(self.run_fixture(), "pinout_url")
+
+    def test_duplicate_frameworks_entry_is_error(self):
+        duplicated = BOARD_TEMPLATE.replace(
+            "frameworks:\n  - arduino\n  - espidf\n",
+            "frameworks:\n  - arduino\n  - arduino\n",
+        )
+        self.assertNotEqual(BOARD_TEMPLATE, duplicated)
+        self.write_board(duplicated)
+        self.assert_rejected(self.run_fixture(), "frameworks")
+
+    def test_duplicate_psram_key_is_error(self):
+        # `yaml.safe_load` would keep the last value silently; StrictSafeLoader
+        # turns the merge accident into a content problem.
+        duplicated = BOARD_TEMPLATE.replace(
+            "psram: octal\n", "psram: octal\npsram: octal\n"
+        )
+        self.assertNotEqual(BOARD_TEMPLATE, duplicated)
+        self.write_board(duplicated)
+        self.assert_rejected(self.run_fixture(), "duplicate key 'psram'")
+
+    def test_duplicate_pinout_url_key_is_error(self):
+        last_line = BOARD_TEMPLATE.splitlines(keepends=True)[-1]
+        self.write_board(BOARD_TEMPLATE + last_line)
+        self.assert_rejected(self.run_fixture(), "duplicate key 'pinout_url'")
+
+    def test_symlinked_boards_directory_is_refused(self):
+        outside = Path(tempfile.mkdtemp(prefix="boards-outside-"))
+        self.addCleanup(shutil.rmtree, outside, ignore_errors=True)
+        (outside / f"{self.STEM}.yaml").write_text(
+            BOARD_TEMPLATE, encoding="utf-8"
+        )
+        (self.root / "boards").symlink_to(outside, target_is_directory=True)
+        self.assert_environment_error(self.run_fixture(), "boards")
+
+    def test_symlinked_board_document_is_refused_not_followed(self):
+        outside = Path(tempfile.mkdtemp(prefix="boards-outside-"))
+        self.addCleanup(shutil.rmtree, outside, ignore_errors=True)
+        target = outside / "profile.yaml"
+        target.write_text(BOARD_TEMPLATE, encoding="utf-8")
+        boards = self.root / "boards"
+        boards.mkdir()
+        (boards / f"{self.STEM}.yaml").symlink_to(target)
+        result = self.run_fixture()
+        self.assert_rejected(result, "symlink")
+        self.assertIn(f"{self.board_path()}: ERROR — ", result.stdout)
+
+    def test_missing_boards_directory_is_not_an_error(self):
+        result = self.run_fixture()
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertNotIn("boards/", result.stdout)
+
+    def test_board_only_positional_scans_no_homework(self):
+        self.write_homework()
+        self.write_board()
+        result = self.run_fixture("--json", self.board_path())
+        self.assertEqual(0, result.returncode, combined(result))
+        paths = [record["path"] for record in json.loads(result.stdout)]
+        self.assertEqual([self.board_path()], paths)
+
+    def test_homework_only_positional_scans_no_board(self):
+        self.write_homework()
+        self.write_board()
+        result = self.run_fixture("--json", "homeworks/1_3-good")
+        self.assertEqual(0, result.returncode, combined(result))
+        paths = [record["path"] for record in json.loads(result.stdout)]
+        self.assertTrue(paths)
+        self.assertTrue(
+            all(path.startswith("homeworks/") for path in paths), paths
+        )
+
+    def test_mixed_positionals_scan_exactly_the_named_families(self):
+        # A homework positional expands to that directory's two contract
+        # documents; what must not happen is a board or homework family being
+        # widened to "all" because the other family was named.
+        self.write_homework()
+        self.write_board()
+        result = self.run_fixture(
+            "--json", self.board_path(), "homeworks/1_3-good"
+        )
+        self.assertEqual(0, result.returncode, combined(result))
+        paths = [record["path"] for record in json.loads(result.stdout)]
+        self.assertEqual(
+            sorted(
+                [
+                    self.board_path(),
+                    "homeworks/1_3-good/homework.yaml",
+                    "homeworks/1_3-good/task.md",
+                ]
+            ),
+            paths,
+        )
+
+    def test_missing_board_schema_is_exit_two(self):
+        self.write_board()
+        (self.root / "schema" / "board-profile.schema.json").unlink()
+        result = self.run_fixture()
+        self.assertEqual(2, result.returncode, combined(result))
+        self.assertEqual("", result.stdout)
+        self.assertIn("ERROR:", result.stderr)
 
 
 class BaselineTests(FixtureBase):

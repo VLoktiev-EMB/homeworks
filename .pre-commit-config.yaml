@@ -68,10 +68,12 @@ repos:
       # `template.yaml`-era homework contains `{{homework_id}}` and is not valid
       # metadata. `scripts/new_homework` is present so an edit to the scaffold
       # that can change rendered metadata re-runs the gate (defense in depth).
+      # `boards/` is present so a board-profile edit re-runs this same
+      # validator, which now checks `boards/<id>.yaml` as a second family.
       - id: check-metadata
         name: homework metadata contract
         language: python
         additional_dependencies: ["PyYAML==6.0.3", "jsonschema==4.26.0"]
         entry: python scripts/check_metadata.py
-        files: ^(homeworks/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/metadata/)
+        files: ^(homeworks/|boards/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/metadata/)
         pass_filenames: false
