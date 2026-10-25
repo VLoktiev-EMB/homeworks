@@ -23,7 +23,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 04.2 — Tracer Homework 1.3 (INSERTED)
+**Current focus:** Phase 5 — Generated Views and Documentation Site
 
 ## Current Position
 
@@ -150,6 +150,9 @@ Recent decisions affecting current work:
 - **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
 - **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
+- **[Phase 4.2, open]** PR #10 is open and its `pull_request` run is green, but the post-run commits (friction-log CI record, phase verification, quick fix, phase completion) are not yet pushed and the PR is not merged. Pushing them triggers a second CI run.
+- **[Phase 4.2, traceability warning]** `phase.complete` reports that ROADMAP Phase 04.2 cites INV-01..INV-04, which are defined in `REQUIREMENTS.md` under "Invariants" but absent from its Traceability table. The IDs are legitimate; the table is the missing half.
+- **[Phase 4.2, info]** `REQUIREMENTS.md` still says META-02 `In review (D-09 paraphrase check)` although the owner confirmed it; the requirement table is orchestrator-level and was not part of the phase's artifact scope. Untracked IDE files `homeworks/1_3-police-flasher/.gitignore` and `.vscode/` remain by design (recorded for the Phase 5 workspace generator).
 
 ### Quick Tasks Completed
 
@@ -175,6 +178,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:25:41.000Z
-Stopped at: Phase 04.2 complete, ready to plan Phase 5
+Last session: 2026-10-25T20:50:21.000Z
+Stopped at: Phase 04.2 complete and verified (95/95 must-haves, 6/6 roadmap criteria); ready to plan Phase 5
 Resume file: None

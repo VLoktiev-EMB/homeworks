@@ -43,8 +43,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 - ✓ Homework IDs follow `^[0-9]+_[0-9]+-[a-z0-9-]+$` and must match the containing
   `homeworks/<dir>/`; the scaffold and checker enforce the same anchored pattern — Phase 4
 - ✓ `task.md` carries the four provenance fields and a Cyrillic gate with an exact-path
-  allowlist; paraphrase originality remains a human review item on the first real homework —
-  Phase 4 (META-02, deferred)
+  allowlist; the paraphrase-originality review was confirmed by the repository owner on
+  2026-10-25 against the first real homework — Phase 4, confirmed in Phase 4.2 (META-02)
+- ✓ Homework 1.3 runs end to end through the trimmed tooling as the tracer: scaffold,
+  pattern library, Wokwi wiring, report, single-project CI, and a recorded friction log —
+  Phase 4.2 (PILOT-01 first pass)
 
 ### Active
 
@@ -280,6 +283,10 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Decision records are table-first | A six-column index answers most questions without an ADR file | ✓ Phase 4.1 — `docs/decisions/README.md` is the index; 11 ADR bodies archived |
 | One default PR template | Three type-specific templates were ceremony; one Definition of Done covers every type | ✓ Phase 4.1 — `.github/pull_request_template.md` is the only template |
 | Minimal `tag_homework.sh` (D-3) | Git's own refusal semantics already prevent moving a published tag | ✓ Phase 4.1 — fetch and directory/merged-PR gates removed; consequences accepted as review rules (CR-01/CR-02 deferred in the review ledger) |
+| Tracer before automation | Running homework 1.3 by hand records which friction is real; Phases 5–10 automate only what the log proves painful | ✓ Phase 4.2 — 19-entry friction log; every candidate owned by Phases 5–11 or recorded `not built` |
+| One read-only CI job per homework | The first real run proves the job, not a matrix; matrix expansion waits for measured need | ✓ Phase 4.2 — `homework-1_3-police-flasher` green in 1m38s against a 45-minute timeout |
+| `merge_firmware.py` stays project-local | espressif32@8.0.0 ships esptool 5 (`merge-bin`), so the published Wokwi script cannot run; promotion to `scripts/pio/` waits for Phase 7/8 | — Pending (tracked as a todo) |
+| Wokwi execution deferred to Phase 7 | Only `wokwi-cli lint --offline` is a verified result; a simulation claim needs an executed run | ✓ Phase 4.2 — `simulation.status: pending`; the runnable command is documented |
 
 ## Evolution
 
@@ -302,4 +309,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-25 after Phase 4.1*
+*Last updated: 2026-10-25 after Phase 4.2*
