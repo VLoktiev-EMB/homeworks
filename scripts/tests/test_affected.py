@@ -163,3 +163,147 @@ class TracerTests(PathsTestBase):
         self.assertIn(
             "simulate homeworks/1_3-alpha esp32s3_arduino arduino", lines
         )
+
+
+class FanoutTests(PathsTestBase):
+    """A `lib/**` change reaches exactly its consumers; shared paths widen."""
+
+    def test_lib_common_reaches_alpha_and_tests(self) -> None:
+        payload = self.payload(["lib/common/src/common.c"])
+
+        self.assertEqual(
+            ["homeworks/1_3-alpha", "tests"], projects_of(payload["build"])
+        )
+        self.assertEqual(
+            ["homeworks/1_3-alpha"], projects_of(payload["simulate"])
+        )
+        self.assertIn("tests", projects_of(payload["build"]))
+        self.assertNotIn("tests", projects_of(payload["simulate"]))
+        self.assertNotIn("homeworks/1_4-beta", projects_of(payload["build"]))
+
+    def test_lib_port_reaches_beta_and_tests(self) -> None:
+        payload = self.payload(["lib/port/src/port.c"])
+
+        self.assertEqual(
+            ["homeworks/1_4-beta", "tests"], projects_of(payload["build"])
+        )
+        self.assertEqual([], payload["simulate"])
+        self.assertIn("tests", projects_of(payload["build"]))
+        self.assertNotIn("homeworks/1_3-alpha", projects_of(payload["build"]))
+
+    def test_lib_host_reaches_only_the_top_level_consumer(self) -> None:
+        payload = self.payload(["lib/host/src/host.c"])
+
+        self.assertEqual(["tests"], projects_of(payload["build"]))
+        self.assertEqual(["native"], envs_of(payload["build"], "tests"))
+        self.assertEqual([], payload["simulate"])
+
+    def test_shared_paths_widen_to_every_project(self) -> None:
+        for path in (
+            "platformio.shared.ini",
+            "partitions/default_16MB.csv",
+            "scripts/pio/compiledb.py",
+            "schema/homework.schema.json",
+            "scripts/affected.py",
+        ):
+            with self.subTest(path=path):
+                payload = self.payload([path])
+                self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+                self.assertIn("tests", projects_of(payload["build"]))
+                self.assertNotIn("tests", projects_of(payload["simulate"]))
+
+    def test_unrecognised_shared_path_widens(self) -> None:
+        payload = self.payload(["scripts/unrelated.py"])
+
+        self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+
+    def test_trailing_slash_homework_path_behaves_like_the_bare_path(self) -> None:
+        bare = self.payload(["homeworks/1_3-alpha"])
+        dashed = self.payload(["homeworks/1_3-alpha/"])
+
+        self.assertEqual(bare, dashed)
+        self.assertEqual(["homeworks/1_3-alpha"], projects_of(bare["build"]))
+
+    def test_prefix_adjacent_library_name_widens(self) -> None:
+        payload = self.payload(["lib/commonplace/src/x.c"])
+
+        self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+
+
+class NoBuildImpactTests(PathsTestBase):
+    """Documentation and view inputs rebuild nothing; the fail-safe stays."""
+
+    NO_BUILD_IMPACT_PATHS = (
+        ".planning/notes/x.md",
+        "docs/index.md",
+        ".github/workflows/docs.yml",
+        "templates/views/mkdocs.yml.tmpl",
+        "boards/esp32-s3-devkitc-1.yaml",
+        "generated.manifest",
+        "mkdocs.yml",
+        "requirements-docs.txt",
+        "homeworks.code-workspace",
+        "README.md",
+        "AGENTS.md",
+        "LICENSE",
+    )
+
+    def test_every_no_build_impact_path_yields_empty_arrays(self) -> None:
+        for path in self.NO_BUILD_IMPACT_PATHS:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    {"build": [], "simulate": []}, self.payload([path])
+                )
+
+    def test_views_only_diff_rebuilds_nothing(self) -> None:
+        payload = self.payload(
+            ["generated.manifest", "mkdocs.yml", "docs/index.md"]
+        )
+
+        self.assertEqual({"build": [], "simulate": []}, payload)
+
+    def test_mixed_diff_still_selects_the_homework(self) -> None:
+        payload = self.payload(
+            ["generated.manifest", "homeworks/1_3-alpha/src/main.cpp"]
+        )
+
+        self.assertEqual(
+            ["homeworks/1_3-alpha"], projects_of(payload["build"])
+        )
+
+
+class PathsFromTests(PathsTestBase):
+    """The changed-path file format and the unsafe-spelling fail-safe."""
+
+    def test_newline_separated_file_matches_the_nul_file(self) -> None:
+        nul = self.payload(["homeworks/1_3-alpha/src/main.cpp"])
+        newline = self.payload(
+            ["homeworks/1_3-alpha/src/main.cpp"], nul=False
+        )
+
+        self.assertEqual(nul, newline)
+
+    def test_blank_lines_are_skipped(self) -> None:
+        payload = self.payload(
+            ["", "homeworks/1_3-alpha/src/main.cpp", "", ""], nul=False
+        )
+
+        self.assertEqual(
+            ["homeworks/1_3-alpha"], projects_of(payload["build"])
+        )
+
+    def test_absolute_path_widens_and_is_not_echoed(self) -> None:
+        result = self.affected(["/etc/passwd"])
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+        self.assertNotIn("/etc/passwd", result.stdout)
+
+    def test_parent_segment_widens_and_is_not_echoed(self) -> None:
+        result = self.affected(["../outside/src/x.c"])
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+        self.assertNotIn("..", result.stdout)
