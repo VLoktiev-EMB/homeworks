@@ -22,8 +22,8 @@ artifact — code, evidence, and report — that can be understood and verified 
   ESP32-S3-DevKitC-1 N16R8 target (native, Arduino and ESP-IDF) with 16 MB flash and octal
   PSRAM proven from build artifacts — Phase 2 (FOUND-09)
 - ✓ Shared libraries consumed through `lib_deps = <name>=symlink://../../lib/<name>` with one
-  `library.json` per library; `platformio.shared.ini` is hand-authored in Phase 2 and its
-  generator remains Phase 5 — Phase 2 (ARCH-04)
+  `library.json` per library; `platformio.shared.ini` was hand-authored in Phase 2 and is
+  generated from the metadata pins since Phase 5 — Phase 2 (ARCH-04)
 - ✓ Framework-free `lib/port` function-pointer contracts and pure `lib/common` primitives,
   with thin Arduino/ESP-IDF adapters and host fakes — Phase 3 (ARCH-01, ARCH-02, ARCH-03,
   ARCH-07)
@@ -48,6 +48,18 @@ artifact — code, evidence, and report — that can be understood and verified 
 - ✓ Homework 1.3 runs end to end through the trimmed tooling as the tracer: scaffold,
   pattern library, Wokwi wiring, report, single-project CI, and a recorded friction log —
   Phase 4.2 (PILOT-01 first pass)
+- ✓ One generator owns every repeated view: `scripts/gen_views.py` writes the root README
+  index, `homeworks.code-workspace`, `platformio.shared.ini`, `docs/index.md`, one page per
+  homework and per board profile, and `mkdocs.yml` from `homework.yaml`, recorded in a
+  committed `generated.manifest` with a SHA-256 and byte count per entry; `--check` reports
+  drift and never writes — Phase 5 (META-05, META-07)
+- ✓ `scripts/affected.py` maps a git diff to a build/simulation matrix with `lib/**` fanout
+  to every consumer, an explicit no-build-impact set, and fail-safe widening for any
+  unrecognised path — Phase 5 (META-06)
+- ✓ A MkDocs Material 9.7.7 site is generated from the same tree and published to GitHub
+  Pages by an OIDC workflow after a warnings-as-errors build; the generated navigation and
+  the vendored KaTeX 0.19.0 (checksum-pinned, no CDN) were verified on the live site —
+  Phase 5 (META-08)
 
 ### Active
 
@@ -59,8 +71,6 @@ artifact — code, evidence, and report — that can be understood and verified 
       generator fallback only.
 - [ ] Toolchain is pinned: PlatformIO Core 6.2.0, `platformio/espressif32` 8.0.0, and
       explicit ESP32-S3-DevKitC-1 N16R8 overrides (16 MB flash, octal PSRAM).
-- [ ] Multi-root VS Code workspace containing `repo`, `docs`, `lib`, `scripts`, and each
-      homework; generated from metadata and committed.
 - [ ] `AGENTS.md` as the canonical rulebook (up to ~300 lines) with enforcement tags,
       short good/bad examples, and an agent quick-start; `.claude/CLAUDE.md` imports it.
 - [ ] `docs/` organized into `boards/`, `protocols/`, `components/`, `theory/`,
@@ -110,8 +120,6 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] esp-clangd (Espressif's LLVM fork) serves the workspace through
       `scripts/clangd-wrapper.sh`, with per-project `.clangd` files and explicit
       `--query-driver` toolchain globs.
-- [ ] `scripts/affected.py` maps a git diff to a build/simulation matrix, including
-      fanout from `lib/**` changes to every consumer.
 - [ ] `scripts/check_architecture.py` and a native compile gate enforce the dependency
       rule.
 - [ ] Reports include a measurement ledger labelling every value as measured,
@@ -153,9 +161,8 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] The repository is public under the MIT license.
 - [ ] Internal course materials are never committed; assignments are paraphrased in
       English with attribution.
-- [ ] A README index and a MkDocs Material 9.7.7 site are generated from `homework.yaml`;
-      the configuration stays Zensical-compatible and is re-evaluated in Q1 2027 before
-      the 2027-05-05 end-of-life.
+- [ ] The MkDocs Material configuration is re-evaluated in Q1 2027, before the 2027-05-05
+      end-of-life; it stays Zensical-compatible until then.
 - [ ] Infrastructure decisions are recorded as ADRs; homework assumptions are recorded in
       the report.
 
@@ -253,7 +260,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Thin core + port + adapters | Reuse without building a shadow framework | ✓ Phase 3 — five libraries, 21 headers, no framework leakage |
 | No universal HAL | Hardware abstractions leak; the course must teach framework APIs | ✓ Phase 3 — bus-level I2C/SPI contracts; framework bus adapters deferred (ADR-0008 D-08) |
 | Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | ✓ Phase 2 — ADR-0007; all three environments resolve the symlinked libraries |
-| Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | — Pending |
+| Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | ✓ Phase 5 — generated whole from a template, committed, drift-checked |
 | esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | — Pending |
 | Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | — Pending |
 | clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | — Pending |
@@ -287,6 +294,10 @@ artifact — code, evidence, and report — that can be understood and verified 
 | One read-only CI job per homework | The first real run proves the job, not a matrix; matrix expansion waits for measured need | ✓ Phase 4.2 — `homework-1_3-police-flasher` green in 1m38s against a 45-minute timeout |
 | `merge_firmware.py` stays project-local | espressif32@8.0.0 ships esptool 5 (`merge-bin`), so the published Wokwi script cannot run; promotion to `scripts/pio/` waits for Phase 7/8 | — Pending (tracked as a todo) |
 | Wokwi execution deferred to Phase 7 | Only `wokwi-cli lint --offline` is a verified result; a simulation claim needs an executed run | ✓ Phase 4.2 — `simulation.status: pending`; the runnable command is documented |
+| One generator + one committed manifest own every repeated view | A single owner removes the per-homework manual edits F-01/F-14/F-18 recorded, and a manifest with a digest per entry makes drift detectable without re-rendering | ✓ Phase 5 — `scripts/gen_views.py` over 8 paths; `--check` fails on `MODIFIED`/`DELETED`/`ORPHAN` and never writes |
+| `--check` is a pure check, enforced at two points | A hook that repairs drift makes the gate meaningless; local feedback and a PR gate catch different trust boundaries | ✓ Phase 5 — check-only pre-commit hook plus a read-only PR job; `docs.yml` deploys only from `main` |
+| Vendor third-party site assets, never a CDN | `--strict` builds must not depend on the network, and a missing `extra_css` target produces no MkDocs warning at all | ✓ Phase 5 — KaTeX 0.19.0 pinned with a 24-entry SHA-256 ledger and a discrimination test |
+| Two critical code-review findings fixed before merge | A title could reach the published site as live HTML, and the generator followed symlinked inputs it otherwise refused | ✓ Phase 5 — `_escape_cell` escapes `&`/`<`/`>`; `read_regular_text` refuses symlinks; 20 lower findings recorded in the disposition ledger |
 
 ## Evolution
 
@@ -309,4 +320,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-25 after Phase 4.2*
+*Last updated: 2026-10-26 after Phase 5*

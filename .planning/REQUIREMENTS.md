@@ -53,15 +53,15 @@ Requirements for the initial release. Each maps to a roadmap phase.
       board-profile template.
 - [x] **META-04**: `scripts/new_homework` scaffolds a homework from a template, is
       idempotent, supports `--dry-run`, and refuses to overwrite existing files.
-- [ ] **META-05**: The README index, MkDocs navigation, multi-root workspace file,
+- [x] **META-05**: The README index, MkDocs navigation, multi-root workspace file,
       `platformio.shared.ini`, and CI matrix are generated from `homework.yaml`; every
       generator supports `--check` and CI fails on drift.
-- [ ] **META-06**: `scripts/affected.py` maps a git diff to a build and simulation
+- [x] **META-06**: `scripts/affected.py` maps a git diff to a build and simulation
       matrix, including fanout from `lib/**` changes to every consumer.
-- [ ] **META-07**: A committed multi-root `homeworks.code-workspace` is generated with
+- [x] **META-07**: A committed multi-root `homeworks.code-workspace` is generated with
       `repo`, `docs`, `lib`, `scripts`, and every homework as a root; display names may
       use emoji, paths remain ASCII.
-- [ ] **META-08**: MkDocs Material 9.7.7 builds a site from the generated docs tree; the
+- [x] **META-08**: MkDocs Material 9.7.7 builds a site from the generated docs tree; the
       configuration stays Zensical-compatible, uses vendored KaTeX, and deploys to
       GitHub Pages through artifact upload.
 
@@ -296,13 +296,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 1 | Complete |
 | META-01 | Phase 4 | Complete |
-| META-02 | Phase 4 | In review (D-09 paraphrase check) |
+| META-02 | Phase 4 | Complete — D-09 paraphrase check confirmed by the owner 2026-10-25 |
 | META-03 | Phase 4 | Complete |
 | META-04 | Phase 4 | Complete |
-| META-05 | Phase 5 | Pending |
-| META-06 | Phase 5 | Pending |
-| META-07 | Phase 5 | Pending |
-| META-08 | Phase 5 | Pending |
+| META-05 | Phase 5 | Complete — the CI-matrix clause is deferred to Phase 8 (05-CONTEXT D-26) |
+| META-06 | Phase 5 | Complete |
+| META-07 | Phase 5 | Complete |
+| META-08 | Phase 5 | Complete |
 | ARCH-01 | Phase 3 | Complete |
 | ARCH-02 | Phase 3 | Complete |
 | ARCH-03 | Phase 3 | Complete |

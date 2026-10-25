@@ -1,43 +1,43 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 05
-current_phase_name: Generated Views and Documentation Site
-status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-10-25T22:23:16.014Z"
+current_phase: 6
+current_phase_name: Developer Experience and Quality Layering
+status: planning
+stopped_at: Phase 05 complete, ready to plan Phase 6
+last_updated: "2026-10-25T23:26:08.791Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 05 execution started
-state_head: 78f1e7c5ae520b471ebd9699b2b9eb98c7f94f39
+last_activity_desc: Phase 05 complete, transitioned to Phase 6
+state_head: 7c71519453826f9f26b6eb2a1512a450fcb77b44
 progress:
   total_phases: 13
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 58
-  completed_plans: 49
-  percent: 46
+  completed_plans: 58
+  percent: 54
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-25)
+See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 05 — Generated Views and Documentation Site
+**Current focus:** Phase 6 — Developer Experience and Quality Layering
 
 ## Current Position
 
-Phase: 05 (Generated Views and Documentation Site) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 05
-Last activity: 2026-10-26 — Phase 05 execution started
+Phase: 6 — Developer Experience and Quality Layering
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-26 — Phase 05 complete, transitioned to Phase 6
 
-Progress: [█████░░░░░] 46%
+Progress: [█████░░░░░] 54%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 49
+- Total plans completed: 58
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -51,6 +51,7 @@ Progress: [█████░░░░░] 46%
 | 04 | 9 | - | - |
 | 04.1 | 7 | - | - |
 | 04.2 | 11 | - | - |
+| 05 | 9 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -75,6 +76,14 @@ Progress: [█████░░░░░] 46%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+- Phase 5: one generator (`scripts/gen_views.py`) plus one committed `generated.manifest` own every repeated view; the manifest records a SHA-256 and byte count per entry and never lists itself.
+- Phase 5: `--check` is a pure check enforced at exactly two points — a check-only pre-commit hook and a read-only PR job. `docs.yml` builds with warnings-as-errors and deploys through OIDC Pages from `main` only.
+- Phase 5: third-party site assets are vendored, never CDN-loaded; KaTeX 0.19.0 ships with a 24-entry checksum ledger because a missing `extra_css` target produces no MkDocs warning at all.
+- Phase 5: the shared `{{name}}` renderer and the `platformio.ini` readers live in `scripts/metadata/`, so the scaffold, the architecture gate and the generator cannot hold two implementations of one fact.
+- Phase 5: `scripts/affected.py` fails safe — `lib/**` fans out to every consumer and an unrecognised path widens to every project rather than being dropped.
+- Phase 5: code review found two critical defects, both fixed before merge — HTML in a `title` reached the published site as live markup, and the generator followed symlinked `homework.yaml`/template inputs it otherwise refused. 20 lower-severity findings stay open in `05-REVIEW-DISPOSITION.md`; WR-13 (no PR-time site build or Python suite) belongs to Phase 8.
+- Phase 5: the site is live at https://vloktiev-emb.github.io/homeworks/ (PR #12, `0384ed7`); the `build and deploy` run and the rendered pages were verified after merge.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -146,13 +155,12 @@ Recent decisions affecting current work:
   version single-sourced in `library.json`, `.gitignore` narrowed).
 - Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
   templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
-- **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven.
+- **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven, and `scripts/affected.py` already produces the matrix Phase 8 will consume. PR-time site building and the stdlib suite in CI remain Phase 8 scope (code-review finding WR-13).
 - **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
 - **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
-- **[Phase 4.2, open]** PR #10 is open and its `pull_request` run is green, but the post-run commits (friction-log CI record, phase verification, quick fix, phase completion) are not yet pushed and the PR is not merged. Pushing them triggers a second CI run.
-- **[Phase 4.2, traceability warning]** `phase.complete` reports that ROADMAP Phase 04.2 cites INV-01..INV-04, which are defined in `REQUIREMENTS.md` under "Invariants" but absent from its Traceability table. The IDs are legitimate; the table is the missing half.
-- **[Phase 4.2, info]** `REQUIREMENTS.md` still says META-02 `In review (D-09 paraphrase check)` although the owner confirmed it; the requirement table is orchestrator-level and was not part of the phase's artifact scope. Untracked IDE scaffolding (`homeworks/*/.gitignore`, `homeworks/*/.vscode/*`) is now ignored by the root `.gitignore` and the extension recommendations live in `homeworks.code-workspace`, so the Phase 5 workspace generator no longer owns them.
+- **[Phase 5, open findings]** 20 of 24 code-review findings remain `open` in `05-REVIEW-DISPOSITION.md` (0 critical; the two criticals and WR-02/WR-03 were fixed before merge). None breaks a phase must-have. The ones worth naming: WR-01 (backslash not escaped in `_escape_cell`), WR-04 (absolute board positionals misclassified under a differently-spelled root), WR-10 (a project with `platformio.ini` but no `[env:]` contributes no matrix entry), WR-13 (PR-time site build and Python suite absent from CI — Phase 8).
+- **[Phase 5, resolved]** The deploy path is no longer unverified: PR #12 merged as `0384ed7`, the `docs` workflow's `build and deploy` job succeeded, and the live Pages site was checked page by page.
 
 ### Quick Tasks Completed
 
@@ -179,6 +187,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T21:32:34.647Z
-Stopped at: Phase 5 context gathered
+Last session: 2026-10-26T00:00:00Z
+Stopped at: Phase 05 complete, ready to plan Phase 6
 Resume file: .planning/phases/05-generated-views-and-documentation-site/05-CONTEXT.md
