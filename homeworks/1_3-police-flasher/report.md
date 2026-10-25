@@ -16,10 +16,13 @@ patterns, three run-time speeds, and a single-GPIO half-bridge profile.
 | Platform | `platformio/espressif32` 8.0.0 |
 | Homework status | `in-progress` |
 | Report status | `draft` |
-| Implementation commit | `6a60426` |
+| Implementation commit | `9e1238d` |
 | Wiring source of truth | [assets/diagram.json](assets/diagram.json) |
 
-The report describes the firmware at the implementation commit recorded above. The wiring
+The recorded commit is the last commit that changes the homework's source, build, or
+simulation inputs; every commit after it changes only documentation, and the source, build,
+and simulation diff from `9e1238d` to the working tree is empty. The report describes the
+firmware at the implementation commit recorded above. The wiring
 diagram is canonical: where this report and the diagram disagree, the diagram wins and this
 report is corrected.
 
@@ -294,18 +297,18 @@ the code the report describes, and every row names the same commit as the metada
 
 | ID | Quantity | Value | Label | Instrument | Method | Uncertainty | Implementation commit |
 |----|----------|-------|-------|------------|--------|-------------|-----------------------|
-| L-01 | Supply voltage at `3V3.1` | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts across `3V3.1` and `GND.1`, procedure 1 in the methodology | not applicable: no reading was taken | `6a60426` |
-| L-02 | LED current through LED1 | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC current in series with the LED1 cathode, procedure 2 in the methodology | not applicable: no reading was taken | `6a60426` |
-| L-03 | Blink period on GPIO4 | not measured: bench equipment offline during automated tracer run | not measured | oscilloscope or logic analyzer | interval between ten rising edges divided by ten, procedure 3 in the methodology | not applicable: no reading was taken | `6a60426` |
-| L-04 | Forward voltage in diode mode | not measured: bench equipment offline during automated tracer run | not measured | multimeter | diode mode across LED1, forward biased, compared with the datasheet typical value | not applicable: no reading was taken | `6a60426` |
-| L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `6a60426` |
-| L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `6a60426` |
-| L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `6a60426` |
-| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | none (Wokwi was not executed) | `scenario.yaml` read against the frame table; only the offline lint was run | expected timing only; no observed period exists because the token is absent | `6a60426` |
-| L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `6a60426` |
-| L-10 | Button debounce | not measured: bench equipment offline during automated tracer run, and no serial log was captured | not measured | none (serial log or logic analyzer would be required) | serial timestamps of the mode and speed transitions, or a logic-analyzer capture of GPIO7 | not applicable: no observation was captured | `6a60426` |
-| L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `6a60426` |
-| L-12 | Off-state node voltage at node X | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts at node X while the all-off frame leaves GPIO4 high-impedance | not applicable: no reading was taken, and the floating node has no well-defined value | `6a60426` |
+| L-01 | Supply voltage at `3V3.1` | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts across `3V3.1` and `GND.1`, procedure 1 in the methodology | not applicable: no reading was taken | `9e1238d` |
+| L-02 | LED current through LED1 | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC current in series with the LED1 cathode, procedure 2 in the methodology | not applicable: no reading was taken | `9e1238d` |
+| L-03 | Blink period on GPIO4 | not measured: bench equipment offline during automated tracer run | not measured | oscilloscope or logic analyzer | interval between ten rising edges divided by ten, procedure 3 in the methodology | not applicable: no reading was taken | `9e1238d` |
+| L-04 | Forward voltage in diode mode | not measured: bench equipment offline during automated tracer run | not measured | multimeter | diode mode across LED1, forward biased, compared with the datasheet typical value | not applicable: no reading was taken | `9e1238d` |
+| L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `9e1238d` |
+| L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `9e1238d` |
+| L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `9e1238d` |
+| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | none (Wokwi was not executed) | `scenario.yaml` read against the frame table; only the offline lint was run | expected timing only; no observed period exists because the token is absent | `9e1238d` |
+| L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `9e1238d` |
+| L-10 | Button debounce | not measured: bench equipment offline during automated tracer run, and no serial log was captured | not measured | none (serial log or logic analyzer would be required) | serial timestamps of the mode and speed transitions, or a logic-analyzer capture of GPIO7 | not applicable: no observation was captured | `9e1238d` |
+| L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `9e1238d` |
+| L-12 | Off-state node voltage at node X | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts at node X while the all-off frame leaves GPIO4 high-impedance | not applicable: no reading was taken, and the floating node has no well-defined value | `9e1238d` |
 
 ### Interpreting the Forward-Voltage Row
 
