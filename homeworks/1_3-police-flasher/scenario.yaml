@@ -1,0 +1,12 @@
+name: Police flasher smoke
+version: 1
+author: VLoktiev-EMB
+steps:
+  - wait-serial: "pattern ready"
+  # Frame 0 of the alternating mode drives GPIO4 HIGH and holds 400 ms at speed
+  # index 0, so a 100 ms delay stays inside the frame where the pin is high.
+  - delay: 100ms
+  - expect-pin:
+      part-id: esp
+      name: 4
+      value: 1
