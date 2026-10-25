@@ -63,9 +63,12 @@ Task IDs are filled by the planner; the requirement-level mapping below is the c
 
 - [ ] `scripts/tests/test_gen_views.py` — META-05, META-07 (planned in 05-03, grown in 05-05, 05-07, 05-08)
 - [ ] `scripts/tests/test_affected.py` — META-06 (planned in 05-04)
+- [ ] `scripts/tests/test_platformio_readers.py` — the shared `extra_configs`/`extends`/`lib_deps` reader (planned in 05-01)
+- [ ] `scripts/tests/test_ci_workflows.py` — the LFS-pointer guard and workflow-shape assertions (planned in 05-09)
 - [ ] `scripts/tests/test_docs_pins.py` — META-08 pins and KaTeX checksums (planned in 05-06 and 05-08; the predecessor `test_metadata_deps.py` was deleted in `597bd7a`, so this is a new file, not an extension)
-- [ ] `scripts/tests/temp_root.py` — `write_synthetic_root`, a two-homework two-library builder that does not copy the authored `docs/` tree (planned in 05-01)
+- [ ] `scripts/tests/temp_root.py` — `write_synthetic_root`, a two-homework three-library builder that also writes the top-level `tests/` consumer, a marker-bounded `docs/index.md`, a board profile, and a `homeworks=False` mode; it does not copy the authored `docs/` tree (planned in 05-01)
 - [ ] `requirements-docs.txt` — `mkdocs==1.6.1`, `mkdocs-material==9.7.7`, `pymdown-extensions==12.3` (planned in 05-01)
+- [ ] Wave 0 production prerequisites: `scripts/metadata/paths.py` (stdlib-only path/identity helpers) and `scripts/metadata/yaml_loader.py` (the shared duplicate-key-rejecting loader), so the PyYAML-only generator gate never imports jsonschema (planned in 05-01)
 
 *If none: "Existing infrastructure covers all phase requirements."*
 

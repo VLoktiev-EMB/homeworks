@@ -253,13 +253,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 9 plans
 
 **Wave 1**
-- [ ] 05-01-PLAN.md — Shared renderer and `platformio.ini` readers, Wave 0 test fixture, docs pins (tracer: renderer extraction)
+- [ ] 05-01-PLAN.md — Shared renderer, stdlib-only path helpers and strict loader, `platformio.ini` readers, Wave 0 test fixture, docs pins (tracer: renderer extraction)
 - [ ] 05-02-PLAN.md — Board-profile schema, the first `boards/` profile, and the checker extension (tracer: one profile end to end)
 - [ ] 05-06-PLAN.md — Vendored KaTeX 0.19.0, checksum ledger, stdlib integrity tests (tracer: the vendored tree)
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 05-03-PLAN.md — Generator spine, `generated.manifest`, drift detection, the README index (tracer: `readme`)
-- [ ] 05-04-PLAN.md — `scripts/affected.py`: diff to build and simulation matrix with `lib/**` fanout (tracer: one project)
+- [ ] 05-04-PLAN.md — `scripts/affected.py`: diff to build and simulation matrix with `lib/**` fanout, including the top-level `tests/` consumer (tracer: one project)
 
 **Wave 3** *(blocked on Wave 2)*
 - [ ] 05-05-PLAN.md — Workspace and shared-ini whole-file views, pin disagreement refused (tracer: `workspace`)
