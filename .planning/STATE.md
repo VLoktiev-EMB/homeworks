@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Completed 04.2-02-PLAN.md
-last_updated: "2026-10-25T19:09:31.596Z"
+stopped_at: Completed 04.2-03-PLAN.md
+last_updated: "2026-10-25T19:13:05.317Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 execution started
-state_head: b36f0d3e6166cee6aefe3af1d7c6b7666a0c6612
+state_head: 9e1238d9e87ecb60ecb76aaf5611a3be3a91d1ec
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 45
-  completed_plans: 40
+  completed_plans: 41
   percent: 38
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-10-25 — Phase 04.2 execution started
 
@@ -62,6 +62,7 @@ Progress: [████░░░░░░] 38%
 |------|----------|-------|-------|
 | Phase 04.2 P01 | 2 min | 3 tasks | 9 files |
 | Phase 04.2 P02 | 2 min | 3 tasks | 9 files |
+| Phase 04.2 P03 | 1 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,9 @@ Recent decisions affecting current work:
 - [Phase 04.2]: PORT_GPIO_INPUT is a pin mode, not a write level: an all-off frame calls set_mode(INPUT) and leaving that state calls set_mode(OUTPUT) before the next write, so the controller tracks applied/as_input/level per pin.
 - [Phase 04.2]: The controller applies the current frame before reading the button, which makes a one-shot injected failure land on a pending write and lets a mode or speed change re-apply the new frame in the same tick.
 - [Phase 04.2]: The frame schedule advances at most one frame per tick and resyncs step_started_ms to now only when a stall leaves it more than one hold behind, so a late loop neither drifts nor bursts.
+- [Phase 04.2]: The Wokwi diagram is the canonical wiring source: GPIO4 through one 150 ohm resistor to node X, LED1 anode at X and cathode at GND, LED2 anode at 3V3 and cathode at X, the third LED on GPIO6, and the MODE button from GPIO7 to GND.
+- [Phase 04.2]: merge_firmware.py stays project-local: espressif32@8.0.0 renamed tool-esptoolpy to tool-esptool and ships esptool 5 merge-bin with --flash-mode and --flash-size, so the published Wokwi script cannot run; promotion to scripts/pio/ waits for Phase 7/8.
+- [Phase 04.2]: Simulation execution is deferred to Phase 7 with simulation.status pending: only wokwi-cli lint --offline is a verified result, and the repo-relative --diagram-file and --scenario command is recorded in the homework README.
 
 ### Pending Todos
 
@@ -143,6 +147,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:09:31.548Z
-Stopped at: Completed 04.2-02-PLAN.md
+Last session: 2026-10-25T19:13:05.271Z
+Stopped at: Completed 04.2-03-PLAN.md
 Resume file: None
