@@ -42,18 +42,18 @@ Task IDs are filled by the planner; the requirement-level mapping below is the c
 
 | Requirement | Plan | Wave | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |-------------|------|------|------------|-----------------|-----------|-------------------|-------------|--------|
-| META-05 | TBD | TBD | — | Generated writes are confined to manifest-owned paths; `--check` never writes | unit (subprocess) | `python3 -m unittest scripts.tests.test_gen_views.IdempotencyTests -v` | ❌ W0 | ⬜ pending |
-| META-05 | TBD | TBD | — | Drift detection fails closed on modified/deleted/orphan files | unit | `python3 -m unittest scripts.tests.test_gen_views.DriftTests -v` | ❌ W0 | ⬜ pending |
-| META-05 | TBD | TBD | — | The committed manifest is in sync with the tree | unit | `python3 -m unittest scripts.tests.test_gen_views.ManifestTests -v` | ❌ W0 | ⬜ pending |
-| META-05 | TBD | TBD | — | `--check` on the real tree exits 0 without mutating it | smoke | `python3 -m unittest scripts.tests.test_gen_views.RealTreeSmokeTest -v` | ❌ W0 | ⬜ pending |
-| META-05 | TBD | TBD | — | Conflicting toolchain pins are refused, never picked arbitrarily | unit | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests -v` | ❌ W0 | ⬜ pending |
-| META-06 | TBD | TBD | — | Fanout widens safely; `docs/` and `.planning/` are explicit no-build-impact paths | unit | `python3 -m unittest scripts.tests.test_affected.FanoutTests -v` | ❌ W0 | ⬜ pending |
-| META-06 | TBD | TBD | — | Framework resolves through `extra_configs` + `extends` | unit | `python3 -m unittest scripts.tests.test_affected.FrameworkTests -v` | ❌ W0 | ⬜ pending |
-| META-06 | TBD | TBD | — | A real git repo, commit, and diff produce the expected matrix | integration | `python3 -m unittest scripts.tests.test_affected.EndToEndTests -v` | ❌ W0 | ⬜ pending |
-| META-07 | TBD | TBD | — | Workspace roots are exactly `repo`, `docs`, `lib`, `scripts` + every homework; paths ASCII | unit | `python3 -m unittest scripts.tests.test_gen_views.WorkspaceTests -v` | ❌ W0 | ⬜ pending |
-| META-08 | TBD | TBD | — | Docs pins, generated `mkdocs.yml`, and vendored KaTeX agree | unit | `python3 -m unittest scripts.tests.test_docs_pins.PinConsistencyTests -v` | ❌ W0 | ⬜ pending |
-| META-08 | TBD | TBD | — | All 24 KaTeX files exist and match `FILES.sha256` | unit | `python3 -m unittest scripts.tests.test_docs_pins.KatexVendoringTests -v` | ❌ W0 | ⬜ pending |
-| META-08 | TBD | TBD | — | The site builds with warnings as errors | CI only | `uv run --with-requirements requirements-docs.txt mkdocs build --strict` | ❌ W0 | ⬜ pending |
+| META-05 | 05-03 | 2 | T-5-07, T-5-08 | Generated writes are confined to manifest-owned paths; `--check` never writes | unit (subprocess) | `python3 -m unittest scripts.tests.test_gen_views.IdempotencyTests -v` | ❌ W0 | ⬜ pending |
+| META-05 | 05-03 | 2 | T-5-09, T-5-10 | Drift detection fails closed on modified/deleted/orphan files and never deletes an unowned path | unit | `python3 -m unittest scripts.tests.test_gen_views.DriftTests -v` | ❌ W0 | ⬜ pending |
+| META-05 | 05-03 | 2 | T-5-09 | The committed manifest is in sync with the tree and never lists itself | unit | `python3 -m unittest scripts.tests.test_gen_views.ManifestTests -v` | ❌ W0 | ⬜ pending |
+| META-05 | 05-03 | 2 | T-5-10 | `--check` on the real tree exits 0 without mutating it | smoke | `python3 -m unittest scripts.tests.test_gen_views.RealTreeSmokeTest -v` | ❌ W0 | ⬜ pending |
+| META-05 | 05-05 | 3 | T-5-15, T-5-16 | Conflicting toolchain pins are refused, never picked arbitrarily | unit | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests -v` | ❌ W0 | ⬜ pending |
+| META-06 | 05-04 | 2 | T-5-12, T-5-13 | Fanout widens safely; `docs/` and `.planning/` are explicit no-build-impact paths | unit | `python3 -m unittest scripts.tests.test_affected.FanoutTests -v` | ❌ W0 | ⬜ pending |
+| META-06 | 05-04 | 2 | T-5-13 | Framework resolves through `extra_configs` + `extends` | unit | `python3 -m unittest scripts.tests.test_affected.FrameworkTests -v` | ❌ W0 | ⬜ pending |
+| META-06 | 05-04 | 2 | T-5-11 | A real git repo, commit, and diff produce the expected matrix | integration | `python3 -m unittest scripts.tests.test_affected.EndToEndTests -v` | ❌ W0 | ⬜ pending |
+| META-07 | 05-05 | 3 | T-5-14 | Workspace roots are exactly `repo`, `docs`, `lib`, `scripts` + every homework; paths ASCII | unit | `python3 -m unittest scripts.tests.test_gen_views.WorkspaceTests -v` | ❌ W0 | ⬜ pending |
+| META-08 | 05-08 | 5 | T-5-23, T-5-24 | Docs pins, generated `mkdocs.yml`, and vendored KaTeX agree; the nav omits nothing | unit | `python3 -m unittest scripts.tests.test_docs_pins.PinConsistencyTests -v` | ❌ W0 | ⬜ pending |
+| META-08 | 05-06 | 1 | T-5-17 | All 24 KaTeX files exist and match `FILES.sha256` | unit | `python3 -m unittest scripts.tests.test_docs_pins.KatexVendoringTests -v` | ❌ W0 | ⬜ pending |
+| META-08 | 05-08 | 5 | T-5-22, T-5-23 | The site builds with warnings as errors | CI only | `uv run --with-requirements requirements-docs.txt mkdocs build --strict` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -61,11 +61,11 @@ Task IDs are filled by the planner; the requirement-level mapping below is the c
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/tests/test_gen_views.py` — META-05, META-07
-- [ ] `scripts/tests/test_affected.py` — META-06
-- [ ] `scripts/tests/test_docs_pins.py` — META-08 pins and KaTeX checksums (the predecessor `test_metadata_deps.py` was deleted in `597bd7a`; this is a new file, not an extension)
-- [ ] `scripts/tests/temp_root.py` — add `boards/`, `docs/`, `templates/views/` to the copied fixture paths
-- [ ] `requirements-docs.txt` — `mkdocs==1.6.1`, `mkdocs-material==9.7.7`, `pymdown-extensions==12.3`
+- [ ] `scripts/tests/test_gen_views.py` — META-05, META-07 (planned in 05-03, grown in 05-05, 05-07, 05-08)
+- [ ] `scripts/tests/test_affected.py` — META-06 (planned in 05-04)
+- [ ] `scripts/tests/test_docs_pins.py` — META-08 pins and KaTeX checksums (planned in 05-06 and 05-08; the predecessor `test_metadata_deps.py` was deleted in `597bd7a`, so this is a new file, not an extension)
+- [ ] `scripts/tests/temp_root.py` — `write_synthetic_root`, a two-homework two-library builder that does not copy the authored `docs/` tree (planned in 05-01)
+- [ ] `requirements-docs.txt` — `mkdocs==1.6.1`, `mkdocs-material==9.7.7`, `pymdown-extensions==12.3` (planned in 05-01)
 
 *If none: "Existing infrastructure covers all phase requirements."*
 
