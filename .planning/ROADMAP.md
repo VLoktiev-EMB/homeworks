@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Toolchain Truth** - Pinned PlatformIO builds for native and ESP32-S3 N16R8 with `symlink://` shared libraries (completed 2026-10-23)
 - [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
 - [x] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework` (completed 2026-10-25)
-- [ ] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done
+- [x] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done (completed 2026-10-25)
 - [ ] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
@@ -171,7 +171,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
   6. `docs/decisions/README.md` is a one-page decision table linking to the 11 existing ADRs; a new decision defaults to a row, and an ADR file is created only when the decision needs real argumentation; superseded decisions are marked in the table.
 
-**Plans**: 7/7 plans executed
+**Plans**: 7/7 plans complete
 **Wave 1**
 - [x] 04.1-01-PLAN.md — Decouple the survivors (allowlist removal, canonical-ID move); Wave 0 repair.
 
@@ -319,7 +319,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
-| 4.1. Ceremony Trim | 7/7 | In Progress | - |
+| 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |

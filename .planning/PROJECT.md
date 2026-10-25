@@ -262,7 +262,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Tiered testing | Avoids overhead while keeping evidence proportional to the work | — Pending |
 | TDD for pure logic | Improves design and guarantees testability | — Pending |
 | Protected `main`, PR, squash merge, tags | Auditable history and a clear entry point per homework | — Pending |
-| Three PR templates | Type-specific evidence without a bloated universal template | — Pending |
+| Three PR templates | Type-specific evidence without a bloated universal template | ✗ Superseded by one default template — Phase 4.1 |
 | Git LFS with limits | Handles large binaries without bloating the repository | — Pending |
 | MIT license | Simple public portfolio license | — Pending |
 | README index + MkDocs Material | One source of metadata renders both catalog and site | — Pending |
@@ -276,6 +276,10 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Four deterministic scripts | Guarantees consistency for scaffolding, index, workspace, and validation | — Pending |
 | Full template set from the first phase | Makes the correct structure the easiest path | ✓ Phase 4 — six templates, golden-tree tests, both homework templates build |
 | `AGENTS.md` as canonical, imported by `CLAUDE.md` | Portable rules for Claude and Antigravity without duplication | — Pending |
+| Ceremony trim: rule by frequency of execution | Bureaucracy that costs time on every change does not pay for itself; the GSD tiers and atomic commits stay | ✓ Phase 4.1 — policy-as-code, REUSE/SPDX, PR-template drift, tag gates and 16 meta-tests removed; four invariants kept |
+| Decision records are table-first | A six-column index answers most questions without an ADR file | ✓ Phase 4.1 — `docs/decisions/README.md` is the index; 11 ADR bodies archived |
+| One default PR template | Three type-specific templates were ceremony; one Definition of Done covers every type | ✓ Phase 4.1 — `.github/pull_request_template.md` is the only template |
+| Minimal `tag_homework.sh` (D-3) | Git's own refusal semantics already prevent moving a published tag | ✓ Phase 4.1 — fetch and directory/merged-PR gates removed; consequences accepted as review rules (CR-01/CR-02 deferred in the review ledger) |
 
 ## Evolution
 
@@ -298,4 +302,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-25 after Phase 4*
+*Last updated: 2026-10-25 after Phase 4.1*

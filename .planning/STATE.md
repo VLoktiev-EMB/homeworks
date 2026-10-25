@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: "04.1"
-current_phase_name: Ceremony Trim
-status: executing
-stopped_at: Phase 4.1 ready to plan
-last_updated: "2026-10-25T00:35:50.315Z"
+current_phase: "04.2"
+current_phase_name: Tracer Homework 1.3
+status: planning
+stopped_at: Phase 04.1 complete, ready to plan Phase 04.2
+last_updated: "2026-10-25T01:18:42.918Z"
 last_activity: 2026-10-25
-last_activity_desc: Phase 04.1 execution started
-state_head: 2523b7354062137d0e15bfa8b038fab9aa4b1b45
+last_activity_desc: Phase 04.1 complete, transitioned to Phase 04.2
+state_head: 6794660a2ec0b44a480fe7e108c2ffd234b86d5b
 progress:
   total_phases: 13
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 38
-  completed_plans: 31
-  percent: 31
+  completed_plans: 38
+  percent: 38
 ---
 
 # Project State
@@ -23,21 +23,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-25)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 04.1 — Ceremony Trim
+**Current focus:** Phase 04.2 — Tracer Homework 1.3
 
 ## Current Position
 
-Phase: 04.1 (Ceremony Trim) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 04.1
-Last activity: 2026-10-25 — Phase 04.1 execution started
+Phase: 04.2 — Tracer Homework 1.3
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-25 — Phase 04.1 complete, transitioned to Phase 04.2
 
-Progress: [███░░░░░░░] 31%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31
+- Total plans completed: 38
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -49,6 +49,7 @@ Progress: [███░░░░░░░] 31%
 | 02 | 5 | - | - |
 | 03 | 9 | - | - |
 | 04 | 9 | - | - |
+| 04.1 | 7 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -87,7 +88,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — file-level checklist.
+- [Trim governance ceremony (Phase 4.1)](../todos/pending/trim-ceremony.md) — Phase 4.1 delivered every item except the global `/gsd-fast` staging correction, which lives in `~/.claude/gsd-core/workflows/fast.md` (upstream install, outside this repository).
 
 ### Blockers/Concerns
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
   templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
 - **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven.
+- **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
+- **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
+- **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
 
 ### Quick Tasks Completed
 
@@ -125,6 +129,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T00:00:00.000Z
-Stopped at: Phase 4.1 ready to plan
+Last session: 2026-10-25T01:45:00.000Z
+Stopped at: Phase 04.1 complete, ready to plan Phase 04.2
 Resume file: None
