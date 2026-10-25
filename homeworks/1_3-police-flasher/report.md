@@ -49,7 +49,7 @@ as pending in the later evidence sections rather than assumed to have passed.
 | A-02 | The board regulator supplies 3.3 V nominal at the `3V3.1` pin. | LED current and the calculated timing margins shift; a low rail dims both halves. | Measure `3V3.1` to `GND.1` with a multimeter. |
 | A-03 | The red LEDs have a forward voltage of about 1.9 V and a reverse rating of at least 5 V. | The operating current moves away from the design target, or the off LED sees an excessive reverse voltage. | Take the datasheet value, then measure the same part in diode mode and compare. |
 | A-04 | R1 and R2 are 150 ohm parts with 5 percent tolerance. | The operating current changes by up to 5 percent beyond the calculated value. | Measure each resistor with a multimeter before assembly. |
-| A-05 | BTN1 is a normally open momentary button wired to ground with the internal pull-up enabled. | A press reads inverted or never registers, so neither mode nor speed can be changed. | Continuity test with the board unpowered; observe the mode and speed changes over the serial log. |
+| A-05 | BTN1 is a normally open momentary button wired to ground with the internal pull-up enabled. | A press reads inverted or never registers, so neither mode nor speed can be changed. | Continuity test with the board unpowered; observe the button presses on GPIO7 with a logic analyzer and confirm the resulting mode and speed changes on the LEDs, because the current firmware has no serial transition log. |
 | A-06 | The loop period is much shorter than the shortest half-hold, which is 50 ms at speed index 2 in CHASE. | Frame timing quantizes, and the beacon shows visible jitter at the fastest speed. | Measure the loop period or the GPIO4 period on the bench. |
 | A-07 | GPIO4, GPIO6, and GPIO7 are safe, non-strapping pins for these signals. | A strapping pin can change the boot mode or the flash configuration at reset. | Check the datasheet strapping-pin table [1]; confirm that the build flashes and boots. |
 | A-08 | `GND.1`, `GND.2`, and `GND.3` are one common board ground. | Separate returns create a ground offset and make the shared-current path unpredictable. | Continuity check between the three ground pins. |
@@ -273,10 +273,7 @@ and `test_controller` (22 cases). The suite covers the four frame tables and the
 holds, the 399/400 ms debounce boundary, short and long presses, both GPIO profiles, the
 schedule stall and 32-bit wrap behaviour, and the read and write retry paths.
 
-**Serial observation.** No serial log was captured in this session, so the mode and speed
-transitions that the firmware reports through the serial port were not observed on the board.
-The `pattern ready` and `pattern init failed` messages described in the methodology are the
-only serial events the firmware is designed to emit; neither was recorded here either.
+**Serial observation.** No serial log was captured in this session, and the firmware has no transition logging: `pattern_controller_tick` receives no log port, so it cannot report a mode or a speed change over the serial port. The `pattern ready` and `pattern init failed` handshake messages described in the methodology are the only serial events the firmware is designed to emit, and neither was recorded here.
 
 **Bench results.** No bench reading was supplied in this session. The supply voltage, the LED
 current, the blink period, the forward voltage in diode mode, and the button debounce are
