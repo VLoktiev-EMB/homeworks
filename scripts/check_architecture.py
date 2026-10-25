@@ -59,13 +59,21 @@ produce byte-identical output.
 from __future__ import annotations
 
 import argparse
-import configparser
 import json
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Re-exported so `scripts.check_architecture.CheckError` is the same object the
+# shared metadata modules raise: an external `except CheckError` keeps working
+# (T-5-02). The `platformio.ini` readers have one implementation, shared with
+# `scripts/affected.py` (D-23).
+from scripts.metadata.errors import CheckError  # noqa: E402
+from scripts.metadata.platformio import dep_names, load_ini, option  # noqa: E402
 
 # One anchored pattern for both quoted and angle includes, tolerant of
 # whitespace between `#` and `include` (a leading-space directive is common in
@@ -135,10 +143,6 @@ WINDOWS_ABSOLUTE = re.compile(r"^[A-Za-z]:[\\/]")
 
 ADAPTERS = frozenset({"arduino", "espidf"})
 CLOSURE_REQUIRES_PORT = frozenset({"common", "host", "arduino", "espidf"})
-
-
-class CheckError(Exception):
-    """A usage or environment problem, reported with exit code 2."""
 
 
 def resolve_root(explicit):
@@ -416,79 +420,6 @@ def scan_blocking(sources):
     return violations
 
 
-def _option(parser, section, key, seen=frozenset()):
-    """Return *key* for *section*, inherited through `extends` when absent.
-
-    `extends` does not merge list values: a key present in the child wins
-    wholesale, so a child value is returned as-is and only an absent child key
-    is looked up along the chain.
-    """
-    if section in seen or not parser.has_section(section):
-        return ""
-    if parser.has_option(section, key):
-        value = parser.get(section, key).strip()
-        if value:
-            return value
-    seen = seen | {section}
-    for target in _extends_targets(parser, section):
-        for candidate in ("env:" + target, target):
-            value = _option(parser, candidate, key, seen)
-            if value:
-                return value
-        # `native` as a PREFIX, not a substring: the shared environment is
-        # conventionally `native_unity`, but a target section named
-        # `base_native_helpers` used to be classified native too, which let
-        # `lib/host` into a firmware environment (code review WR-03, 03-REVIEW.md).
-        if key == "platform" and re.match(r"native(?:$|_)", target.lower()):
-            return "native"
-    return ""
-
-
-def _extends_targets(parser, section):
-    # Read directly rather than through `_option`: `_option` walks this list,
-    # so inheriting `extends` itself would recurse forever.
-    if not parser.has_section(section) or not parser.has_option(section, "extends"):
-        return []
-    raw = parser.get(section, "extends")
-    targets = []
-    for token in raw.replace(",", " ").split():
-        token = token.strip()
-        if not token or token == "env:":
-            continue
-        if token.startswith("env:"):
-            token = token[len("env:") :]
-        targets.append(token)
-    return targets
-
-
-def _dep_names(value):
-    """Turn a `lib_deps` value into the set of library names it names.
-
-    Handles the multi-line shape configparser returns as one string, an
-    optional `name=` alias, an `@version` suffix, and a `symlink://` path whose
-    library name is its last directory segment.
-
-    The alias in `name=spec` is NOT the linked library: PlatformIO takes the
-    dependency from the spec on the right, and the alias only renames it in the
-    environment. Reading the alias therefore let `port=symlink://.../lib/arduino`
-    pass as "port" while actually linking the Arduino adapter (code review
-    CR-01, 03-REVIEW.md). The spec decides.
-    """
-    names = set()
-    for raw_line in value.replace("\r", "\n").splitlines():
-        entry = raw_line.split(";", 1)[0].strip()
-        if not entry:
-            continue
-        if "=" in entry:
-            entry = entry.split("=", 1)[1].strip()
-        if entry.startswith("symlink://"):
-            entry = entry.rstrip("/").rsplit("/", 1)[-1]
-        entry = entry.split("@", 1)[0].strip()
-        if entry:
-            names.add(entry)
-    return names
-
-
 def check_platformio(root):
     """Return `(violations, environment_count)` for every homework project."""
     violations = []
@@ -504,22 +435,15 @@ def check_platformio(root):
         if not ini.is_file():
             continue
         relative = ini.relative_to(root).as_posix()
-        parser = configparser.ConfigParser(interpolation=None)
-        try:
-            with ini.open(encoding="utf-8") as handle:
-                parser.read_file(handle)
-        except (OSError, UnicodeDecodeError) as exc:
-            raise CheckError(f"cannot read {relative}: {exc}") from exc
-        except configparser.Error as exc:
-            raise CheckError(f"{relative} is not valid INI: {exc}") from exc
+        parser = load_ini(ini, relative)
 
         for section in parser.sections():
             if not section.startswith("env:"):
                 continue
             name = section[len("env:") :]
 
-            deps = _dep_names(_option(parser, section, "lib_deps"))
-            platform = _option(parser, section, "platform")
+            deps = dep_names(option(parser, section, "lib_deps"))
+            platform = option(parser, section, "platform")
             native = platform.lower() == "native"
 
             # A test-like NAME exempts an environment only when it really is a

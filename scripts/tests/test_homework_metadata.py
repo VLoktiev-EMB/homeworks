@@ -36,7 +36,9 @@ EXPECTED_PATTERN = r"^[0-9]+_[0-9]+-[a-z0-9-]+$"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check_metadata.py"
-CONTRACT = REPO_ROOT / "scripts" / "metadata" / "contract.py"
+# The canonical id literal now lives in the stdlib-only `paths.py`; `contract.py`
+# re-exports it (D-19 extraction, 05-01) rather than keeping a second copy.
+CONTRACT = REPO_ROOT / "scripts" / "metadata" / "paths.py"
 SCHEMA = REPO_ROOT / "schema" / "homework.schema.json"
 AGENTS = REPO_ROOT / "AGENTS.md"
 
@@ -1013,7 +1015,7 @@ class CanonicalIdTest(unittest.TestCase):
         match = re.search(
             r'HOMEWORK_ID = re\.compile\(r"([^"]+)"\)', contract_source
         )
-        self.assertIsNotNone(match, "HOMEWORK_ID literal not found in contract.py")
+        self.assertIsNotNone(match, "HOMEWORK_ID literal not found in paths.py")
 
         agents_text = AGENTS.read_text(encoding="utf-8")
         spans = [

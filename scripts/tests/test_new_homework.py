@@ -14,19 +14,24 @@ contract, not just the status.
 
 from __future__ import annotations
 
+import ast
 import difflib
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.metadata.errors import CheckError
+from scripts.metadata.render import render
 from scripts.tests import temp_root
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = "scripts/new_homework"
 GOLDEN_ROOT = REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden"
+METADATA_DIR = REPO_ROOT / "scripts" / "metadata"
 
 HOMEWORK_ID = "1_3-fixture"
 TEMPLATES = ("arduino", "espidf")
@@ -520,6 +525,144 @@ class RepositoryStateTests(ScaffoldTestBase):
             (REPO_ROOT / "homeworks").exists(),
             "the suite must scaffold only into temporary roots",
         )
+
+
+class RendererContractTests(unittest.TestCase):
+    """D-19/T-5-01: one non-recursive substitution pass over a closed map.
+
+    These run in process because `scripts.metadata.render` is stdlib-only; that
+    property is itself pinned by `ModuleBoundaryTests`.
+    """
+
+    def test_substitution_is_one_non_recursive_pass(self) -> None:
+        mapping = {"homework_id": "1_3-alpha", "title": "{{homework_id}}"}
+
+        rendered = render("{{title}}", mapping, "README.md")
+
+        self.assertEqual("{{homework_id}}", rendered)
+
+    def test_unknown_token_raises_check_error_naming_it(self) -> None:
+        with self.assertRaises(CheckError) as raised:
+            render("{{not_a_placeholder}}", {}, "README.md")
+
+        self.assertIn("unknown placeholder", str(raised.exception))
+        self.assertIn("not_a_placeholder", str(raised.exception))
+
+    def test_dollar_brace_raises_check_error(self) -> None:
+        with self.assertRaises(CheckError) as raised:
+            render("${PROJECT_DIR}/main.cpp", {}, "README.md")
+
+        self.assertIn("dollar-brace", str(raised.exception))
+
+    def test_read_text_reports_a_missing_source_as_check_error(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="render-") as directory:
+            missing = Path(directory) / "absent.md"
+            with self.assertRaises(CheckError):
+                from scripts.metadata.render import read_text
+
+                read_text(missing, "README.md")
+
+
+class ModuleBoundaryTests(unittest.TestCase):
+    """T-5-28: the generator dependency graph never loads the validation stack.
+
+    The repository test suite is stdlib-only (04/D-14), so the modules that must
+    stay PyYAML-free are imported in process while the modules that legitimately
+    need PyYAML and jsonschema are inspected as source and exercised once in a
+    subprocess with the real dependencies.
+    """
+
+    # Module stems (under scripts/metadata/) that must import stdlib only.
+    STDLIB_ONLY_MODULES = ("render", "paths", "platformio")
+    # Modules that legitimately import PyYAML but never jsonschema.
+    PYYAML_ONLY_MODULES = ("yaml_loader",)
+
+    def test_in_process_import_adds_no_validation_stack(self) -> None:
+        from scripts.metadata import errors, paths, platformio, render  # noqa: F401
+
+        for forbidden in ("yaml", "jsonschema", "scripts.metadata.contract"):
+            with self.subTest(module=forbidden):
+                self.assertNotIn(
+                    forbidden,
+                    sys.modules,
+                    f"importing the stdlib-only metadata modules loaded {forbidden}",
+                )
+
+    def test_source_imports_are_stdlib_or_scripts(self) -> None:
+        for name in self.STDLIB_ONLY_MODULES:
+            with self.subTest(module=name):
+                roots = _import_roots(METADATA_DIR / f"{name}.py")
+                self.assertEqual(
+                    set(), roots - sys.stdlib_module_names - {"scripts"}
+                )
+
+    def test_yaml_loader_imports_only_pyyaml(self) -> None:
+        for name in self.PYYAML_ONLY_MODULES:
+            with self.subTest(module=name):
+                roots = _import_roots(METADATA_DIR / f"{name}.py")
+                self.assertEqual(
+                    set(),
+                    roots - sys.stdlib_module_names - {"scripts", "yaml"},
+                )
+
+    def test_contract_reexports_the_same_objects(self) -> None:
+        if shutil.which("uv") is None:
+            self.fail(
+                "uv is a required repository tool; install it before running "
+                "this suite"
+            )
+        result = subprocess.run(
+            [
+                "uv",
+                "run",
+                "--with",
+                "PyYAML==6.0.3",
+                "--with",
+                "jsonschema==4.26.0",
+                "python",
+                "-c",
+                REEXPORT_PROGRAM,
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+
+REEXPORT_PROGRAM = """
+import scripts.metadata.contract as contract
+import scripts.metadata.errors as errors
+import scripts.metadata.paths as paths
+import scripts.metadata.platformio as platformio
+import scripts.metadata.render as render
+import scripts.metadata.yaml_loader as yaml_loader
+
+assert contract.CheckError is errors.CheckError
+assert contract.resolve_root is paths.resolve_root
+assert contract.relative_path is paths.relative_path
+assert contract.derive_parts is paths.derive_parts
+assert contract.StrictSafeLoader is yaml_loader.StrictSafeLoader
+assert platformio.CheckError is errors.CheckError
+"""
+
+
+def _import_roots(path: Path) -> set:
+    """Return the top-level import roots of *path*, relative imports excluded."""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    roots = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                roots.add(alias.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            if node.level or not node.module:
+                continue
+            roots.add(node.module.split(".")[0])
+    return roots
 
 
 if __name__ == "__main__":
