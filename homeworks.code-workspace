@@ -6,5 +6,14 @@
 		{
 			"path": "homeworks/1_3-police-flasher"
 		}
-	]
+	],
+	"extensions": {
+		"recommendations": [
+			"platformio.platformio-ide"
+		],
+		"unwantedRecommendations": [
+			"ms-vscode.cpptools-extension-pack",
+			"pioarduino.pioarduino-ide"
+		]
+	}
 }

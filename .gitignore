@@ -99,6 +99,19 @@ graphify-out/
 !.vscode/*.code-snippets
 !*.code-workspace
 
+# PlatformIO writes this scaffolding into each homework project on
+# `pio project init` / an IDE project update. `c_cpp_properties.json` and
+# `launch.json` carry absolute machine paths, so they are never committed.
+# Extension recommendations live once, in `homeworks.code-workspace`.
+homeworks/*/.vscode/c_cpp_properties.json
+homeworks/*/.vscode/launch.json
+homeworks/*/.vscode/extensions.json
+homeworks/*/.vscode/ipch/
+homeworks/*/.vscode/.browse.c_cpp.db*
+# The generated per-project `.gitignore` repeats the rules above (plus `.pio`,
+# already ignored above); it stays on disk, untracked.
+homeworks/*/.gitignore
+
 # Built Visual Studio Code Extensions
 *.vsix
 

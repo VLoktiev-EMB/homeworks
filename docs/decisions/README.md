@@ -23,3 +23,4 @@ path that a superseded decision refers to — may no longer exist in the live tr
 | 2026-10-24 | Python dependency policy | exact pins without a global install | low — bump the pins in three places | amended 2026-10-25 — the mechanism stands but the pin-drift gate was retired | [0010](0010-python-dependency-policy.md) |
 | 2026-10-25 | Squash-merge commit title and message | a reviewed body instead of concatenated subjects | low — two repository settings | superseded in mechanism 2026-10-25 — the settings live in the GitHub UI and drop-detection is gone | [0011](0011-squash-merge-commit-message.md) |
 | 2026-10-25 | Ceremony trim: proportion process to frequency | recurring cost, not appearance, decides what stays | low — ceremony can be restored | accepted | — |
+| 2026-10-25 | PlatformIO editor scaffolding is ignored, not copied per homework | one place for IDE policy; these files are generated and carry machine paths | low — rules are removable | accepted | — |
