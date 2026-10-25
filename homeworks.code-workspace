@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "homeworks/1_3-police-flasher"
 		}
 	]
 }
