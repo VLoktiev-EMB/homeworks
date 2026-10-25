@@ -9,6 +9,13 @@
       "marker_end": "<!-- END GENERATED -->",
       "sha256": "0182decc2e13142bbdb9a6e1dde7ebfc4117c41405eb0512348ecefb913ff968",
       "bytes": 326
+    },
+    {
+      "path": "homeworks.code-workspace",
+      "owner": "workspace",
+      "mode": "whole",
+      "sha256": "32e0a757901a13cff7d490d8e84ea6e0930060396709df43548ba2314658462a",
+      "bytes": 475
     }
   ]
 }

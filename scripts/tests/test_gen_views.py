@@ -7,8 +7,8 @@ PyYAML (04/D-14, D-28). `write_synthetic_root` supplies the two-homework fixture
 
 The module is split by concern: the tracer path, the module dependency
 boundary, the strict duplicate-key loader, idempotency, the manifest, every
-drift class, the marker region, cell escaping, the target allowlist, and one
-real-tree `--check` smoke test.
+drift class, the marker region, cell escaping, the target allowlist, the
+multi-root workspace, and one real-tree `--check` smoke test.
 """
 
 from __future__ import annotations
@@ -509,6 +509,131 @@ class AllowlistTests(ViewsTestBase):
                 )
 
                 self.assert_usage_error(self.generate("readme", "--check"))
+
+
+class WorkspaceTests(ViewsTestBase):
+    """META-07/D-15: one whole generated JSON workspace, tab-indented."""
+
+    FIXED_PATHS = [".", "docs", "lib", "scripts"]
+    FIXED_NAMES = ["repo", "docs", "lib", "scripts"]
+    EXTENSIONS = {
+        "recommendations": ["platformio.platformio-ide"],
+        "unwantedRecommendations": [
+            "ms-vscode.cpptools-extension-pack",
+            "pioarduino.pioarduino-ide",
+        ],
+    }
+
+    def workspace_path(self) -> Path:
+        return self.root / "homeworks.code-workspace"
+
+    def workspace_document(self) -> dict:
+        return json.loads(self.workspace_path().read_text(encoding="utf-8"))
+
+    def test_folders_are_the_four_roots_then_every_homework(self) -> None:
+        result = self.generate("workspace")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("homeworks.code-workspace: CREATE", result.stdout)
+        document = self.workspace_document()
+        self.assertEqual(
+            [
+                ".",
+                "docs",
+                "lib",
+                "scripts",
+                "homeworks/1_3-alpha",
+                "homeworks/1_4-beta",
+            ],
+            [folder["path"] for folder in document["folders"]],
+        )
+        self.assertEqual(
+            ["repo", "docs", "lib", "scripts", "1.3 Alpha", "1.4 Beta"],
+            [folder["name"] for folder in document["folders"]],
+        )
+        for folder in document["folders"]:
+            self.assertEqual({"name", "path"}, set(folder))
+
+    def test_every_path_is_ascii_and_repository_relative(self) -> None:
+        self.assertEqual(0, self.generate("workspace").returncode)
+
+        for folder in self.workspace_document()["folders"]:
+            path = folder["path"]
+            self.assertTrue(path.isascii(), path)
+            self.assertFalse(Path(path).is_absolute(), path)
+            self.assertNotIn("..", Path(path).parts, path)
+
+    def test_extensions_block_is_the_templates_own_bytes(self) -> None:
+        self.assertEqual(0, self.generate("workspace").returncode)
+
+        text = self.workspace_path().read_text(encoding="utf-8")
+        template = (self.root / "templates" / "views" / "workspace.json.tmpl")
+        template_text = template.read_text(encoding="utf-8")
+        marker = '\t"extensions"'
+        self.assertEqual(self.EXTENSIONS, self.workspace_document()["extensions"])
+        self.assertEqual(
+            template_text[template_text.index(marker):],
+            text[text.index(marker):],
+            "the extensions block must be copied from the template verbatim",
+        )
+
+    def test_file_is_tab_indented_and_ends_with_one_newline(self) -> None:
+        self.assertEqual(0, self.generate("workspace").returncode)
+
+        text = self.workspace_path().read_text(encoding="utf-8")
+        lines = text.splitlines()
+        self.assertEqual('\t"folders": [', lines[1])
+        self.assertIn('\t\t\t"name": "repo",', lines)
+        for line in lines:
+            self.assertFalse(line.startswith(" "), f"space indent: {line!r}")
+        self.assertTrue(text.endswith("}\n"), repr(text[-3:]))
+        self.assertFalse(text.endswith("\n\n"), "exactly one trailing newline")
+
+    def test_a_second_run_is_unchanged(self) -> None:
+        self.assertEqual(0, self.generate("workspace").returncode)
+
+        result = self.generate("workspace")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("homeworks.code-workspace: UNCHANGED", result.stdout)
+        self.assertIn("generated.manifest: UNCHANGED", result.stdout)
+        for status in ("CREATE", "MODIFIED", "DELETED", "ORPHAN", "ERROR"):
+            self.assertNotIn(f": {status}", result.stdout, result.stdout)
+
+    def test_a_hand_edit_is_modified_drift_and_check_writes_nothing(self) -> None:
+        self.assertEqual(0, self.generate("workspace").returncode)
+        path = self.workspace_path()
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                '"name": "repo"', '"name": "root"'
+            ),
+            encoding="utf-8",
+        )
+        before = snapshot(self.root)
+
+        result = self.generate("workspace", "--check")
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("homeworks.code-workspace: MODIFIED", result.stdout)
+        self.assertEqual(before, snapshot(self.root), "--check must not write")
+
+    def test_zero_homeworks_keeps_the_four_fixed_roots(self) -> None:
+        empty = temp_root.write_synthetic_root(
+            self.workspace / "empty", homeworks=False
+        )
+
+        result = run_gen_views("workspace", "--dir", str(empty))
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        document = json.loads(
+            (empty / "homeworks.code-workspace").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            self.FIXED_PATHS, [folder["path"] for folder in document["folders"]]
+        )
+        self.assertEqual(
+            self.FIXED_NAMES, [folder["name"] for folder in document["folders"]]
+        )
 
 
 class RealTreeSmokeTest(unittest.TestCase):

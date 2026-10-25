@@ -12,9 +12,15 @@ the `readme` view first and keeps the whole spine — one metadata loader, one
 ownership manifest, one plan-then-apply classifier and one drift reporter — so
 every later subcommand reuses it instead of inventing its own.
 
+The `workspace` subcommand owns its whole file: the reviewed template under
+`templates/views/` is the only writer, and a folder display name or path reaches
+it as one pre-rendered fragment.
+
 The `nav` subcommand renders the whole `mkdocs.yml`, including its `nav:` block,
-because D-06 gives one reviewed template the whole file. `--all` currently runs
-the implemented views (today only `readme`).
+because D-06 gives one reviewed template the whole file. `--all` runs the
+implemented views in the fixed order `readme`, `workspace`, `shared-ini`,
+`docs`, `nav`; a view that raises `CheckError` aborts the run with exit 2 and a
+stderr line naming it, so a zero-homework tree is never a partial success.
 
 The committed `generated.manifest` is the only authority on which paths this
 generator owns (D-17). It is a JSON object `{"version": 1, "entries": [...]}`
@@ -31,7 +37,7 @@ followed by `os.replace`, so no file is ever observed half-written, but nothing
 coordinates two writers and the last one wins per file.
 
 Usage:
-  uv run scripts/gen_views.py <readme|workspace|nav|docs|shared-ini> [--check]
+  uv run scripts/gen_views.py <readme|workspace|shared-ini|docs|nav> [--check]
                               [--json] [--dir PATH]
   uv run scripts/gen_views.py --all [--check] [--json] [--dir PATH]
 
@@ -92,7 +98,11 @@ MANIFEST_PATH = "generated.manifest"
 MARKER_BEGIN = "<!-- BEGIN GENERATED: homeworks -->"
 MARKER_END = "<!-- END GENERATED -->"
 
-VIEWS = ("readme", "workspace", "nav", "docs", "shared-ini")
+# D-13: the canonical `--all` order. `docs` and `nav` stay registered here so a
+# later plan adds a handler without reordering anything; `_select_views` runs
+# only the subset that has one, which is what keeps the order stable across
+# plans.
+VIEWS = ("readme", "workspace", "shared-ini", "docs", "nav")
 
 # The static allowlist: a target the generator may write. Anything else is a
 # usage error (exit 2) before a single record is printed (T-5-08).
@@ -114,6 +124,14 @@ TABLE_SEPARATOR = "|----|---------|-------|-----------|--------|--------|"
 CONCURRENCY_NOTE = (
     "Two generator runs over the same tree are not serialized; "
     "do not run them concurrently."
+)
+
+# META-07/D-15: the four roots that always lead the workspace folder list.
+WORKSPACE_FIXED_ROOTS = (
+    ("repo", "."),
+    ("docs", "docs"),
+    ("lib", "lib"),
+    ("scripts", "scripts"),
 )
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
@@ -514,7 +532,72 @@ def _render_readme(root, homeworks):
     }
 
 
-RENDERERS = {"readme": _render_readme}
+def _workspace_folders(homeworks):
+    """Render the `{{workspace_folders}}` fragment (D-15, META-07).
+
+    The four fixed roots lead, then one entry per homework in the
+    `_load_homeworks` order. The fragment is assembled line by line with
+    `json.dumps` as the only serializer for the two string values, so a title
+    carrying a quote or a newline cannot break the file (T-5-14). Entries are
+    separated by `,\\n`, so every entry but the last carries a trailing comma.
+
+    A path is ASCII and repository-relative by construction; the check is still
+    explicit because META-07 permits a non-ASCII display *name*, never a
+    non-ASCII path.
+    """
+    entries = list(WORKSPACE_FIXED_ROOTS)
+    for homework in homeworks:
+        entries.append(
+            (
+                f"{homework['module']}.{homework['lesson']} {homework['title']}",
+                f"homeworks/{homework['id']}",
+            )
+        )
+    blocks = []
+    for name, path in entries:
+        if not path.isascii():
+            raise CheckError(f"workspace folder path {path!r} is not ASCII")
+        parts = Path(path).parts
+        if Path(path).is_absolute() or ".." in parts:
+            raise CheckError(
+                f"workspace folder path {path!r} is not repository-relative"
+            )
+        blocks.append(
+            "\t\t{\n"
+            "\t\t\t\"name\": " + json.dumps(name, ensure_ascii=False) + ",\n"
+            "\t\t\t\"path\": " + json.dumps(path, ensure_ascii=False) + "\n"
+            "\t\t}"
+        )
+    return ",\n".join(blocks)
+
+
+def _render_workspace(root, homeworks):
+    """Return the produced entry for the whole `homeworks.code-workspace`."""
+    display = "homeworks.code-workspace"
+    template_display = "templates/views/workspace.json.tmpl"
+    template = read_text(root / template_display, template_display)
+    rendered = render(
+        template,
+        {"workspace_folders": _workspace_folders(homeworks)},
+        template_display,
+    )
+    data = rendered.encode("utf-8")
+    _allowed_target(Path(display))
+    _component_conflict(root, Path(display))
+    return {
+        "path": display,
+        "owner": "workspace",
+        "mode": "whole",
+        "target": root / display,
+        "data": data,
+        "owned": data,
+    }
+
+
+RENDERERS = {
+    "readme": _render_readme,
+    "workspace": _render_workspace,
+}
 
 
 def _select_views(args):
@@ -595,8 +678,8 @@ def _classify_produced(root, entry, manifest_by_path):
             None,
         )
 
-    # A whole-file view. No view uses this mode in the current plan; the branch
-    # exists so a later subcommand inherits one classifier.
+    # A whole-file view: `workspace` and `shared-ini` produce one today; the
+    # `docs` view will add generated pages on the same branch.
     data = entry["data"]
     if not target.exists():
         if listed:
@@ -727,13 +810,18 @@ def _build_plan(root, selected, check):
     manifest_by_path = {entry["path"]: entry for entry in manifest_entries}
 
     produced = {}
+    records = []
     for view in selected:
-        entry = RENDERERS[view](root, homeworks)
+        try:
+            entry = RENDERERS[view](root, homeworks)
+        except CheckError as exc:
+            # The view name is part of the diagnostic: in `--all`, the operator
+            # must know which view made the run abort.
+            raise CheckError(f"{view}: {exc}") from exc
         if entry["path"] in produced:
             raise CheckError(f"two views produce {entry['path']}")
         produced[entry["path"]] = entry
 
-    records = []
     writes = {}
     deletes = []
     for path in sorted(produced):
@@ -844,7 +932,8 @@ def main(argv=None):
     parser.add_argument(
         "--all",
         action="store_true",
-        help="render every implemented view (currently readme)",
+        help="render every implemented view in the fixed order readme, "
+        "workspace, shared-ini, docs, nav",
     )
     parser.add_argument(
         "--check",
