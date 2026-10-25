@@ -40,13 +40,27 @@ Phase 4.2.
 - [ ] Keep `scripts/tests/{test_homework_metadata.py,test_new_homework.py,temp_root.py,__init__.py}`.
 - [ ] Rewrite `AGENTS.md`: a four-step quick-start (`pio run`, `pio test`,
       `pre-commit run --all-files`, metadata check); no policy, licence-split, or
-      PR-drift rules; GSD for phase-sized work only; a short Definition of Done.
+      PR-drift rules; a proportional GSD rule (`/gsd-fast` for trivial, `/gsd-quick` for
+      multi-step, the phase workflow for architectural work or homework delivery); a short
+      Definition of Done.
 - [ ] Keep gitleaks, the whitespace/EOF/merge/large-file hooks, `no-generated-files`,
       the metadata check, and the architecture check.
 - [ ] Keep `docs/decisions/` as history, but stop requiring an ADR and a status-index
       update for every decision. New ADRs only for irreversible choices.
 - [ ] Keep `scripts/architecture/allowlist.json` for now; the architecture checker is
       reduced in a later pass.
+
+## Tooling corrections
+
+- [ ] Keep the GSD culture: every change is an atomic Conventional Commit, verified, and
+      contains no unrelated work. Replace only the blanket "every change must be preceded
+      by a GSD command" wording with the proportional tier rule above.
+- [ ] Fix or work around the global `/gsd-fast` staging behavior: it runs `git add -A`,
+      which can stage unrelated files and `.planning/`. Stage only the touched files
+      (upstream patch to `~/.claude/gsd-core/workflows/fast.md`, or a repo-local commit
+      helper).
+- [ ] Stop appending a `STATE.md` quick-task row for every trivial change; log only
+      changes worth resuming from.
 
 ## Verify
 

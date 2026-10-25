@@ -28,6 +28,29 @@ the pieces depend on each other (format → IntelliSense → skills → reports)
 The trim therefore removes bureaucracy and keeps engineering. It does not defer the
 engineering stack; it schedules it.
 
+## Process proportionality
+
+GSD is not bureaucracy by itself. The culture it encodes — an atomic commit with a
+Conventional Commit message, a verification step, and no unrelated changes in the same
+commit — stays. What changes is the blanket wording "every change must be preceded by a
+GSD command".
+
+Use the lightest tier that fits:
+
+| Tier | When | What it costs |
+|---|---|---|
+| `/gsd-fast` | ≤3 file edits, ≤1 minute, reversible, no research | one commit and a state row |
+| `/gsd-quick` | multi-step but known | a quick plan and atomic commits |
+| Phase workflow | multi-file, architectural, or homework delivery | research, plan, verification |
+
+Judgment at the boundary is allowed: the rule is proportional, not exceptionless. Two
+tooling corrections ride with it:
+
+- `/gsd-fast` currently stages with `git add -A`, which can pull unrelated work and
+  `.planning/` into the commit. It should stage only the files the task touched.
+- Not every trivial change deserves a `STATE.md` quick-task row; log only changes worth
+  resuming from.
+
 ## Decision rule
 
 Cut, keep, or defer a check by **how often it runs**, not by how impressive it looks:
@@ -82,8 +105,8 @@ Recorded during Phase 4.2 in the phase directory. One entry per friction point:
 `reuse` CI job and SPDX headers (keep one MIT `LICENSE`); `check_pr_templates.py` and the
 three-template split (one default template); the Cyrillic allowlist (one grep); the
 four-gate `tag_homework.sh` (a three-line script); 18 meta-test modules (keep 2–3 smoke
-tests); the nine-step quick-start (four steps); GSD-on-every-edit; ADR-per-decision; the
-report merge gate.
+tests); the nine-step quick-start (four steps); the blanket GSD-on-every-edit mandate
+(the tiers stay); ADR-per-decision; the report merge gate.
 
 **Keep:** MIT `LICENSE`; gitleaks; `schema/` and `check_metadata.py`; `new_homework` and
 the two homework templates; the architecture check (later reduced to a small grep); the
@@ -102,3 +125,4 @@ workflow, the ADR status index.
 - Phase 4.2 runs the tracer and produces the friction log.
 - Phases 5–10 are justified line by line by that log.
 - Phase 11 is the second pass of the same homework: polish, tag, scale.
+- The GSD tiers stay; only the blanket wording and the fast-path staging change.

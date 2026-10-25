@@ -166,7 +166,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Success Criteria** (what must be TRUE):
   1. `policy/`, `check_policy.py`, `REUSE.toml`, `NOTICE`, `LICENSES/`, the `reuse` CI job, `check_pr_templates.py`, the three-template split, the Cyrillic allowlist, and the tag preconditions are gone; one MIT `LICENSE` and one default PR template remain.
   2. `scripts/tests/` keeps only the metadata and scaffold smoke modules; the other meta-test modules are deleted.
-  3. `AGENTS.md` has a four-step quick-start, no policy/licence-split/PR-drift rules, GSD for phase-sized work only, and a short Definition of Done.
+  3. `AGENTS.md` has a four-step quick-start, no policy/licence-split/PR-drift rules, a proportional GSD rule (`/gsd-fast` for trivial, `/gsd-quick` for multi-step, the phase workflow for architectural work or homework delivery), and a short Definition of Done.
   4. `pio test -d tests -e native`, the smoke build, `pre-commit run --all-files`, and `python3 scripts/check_metadata.py` pass after the trim.
   5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
 

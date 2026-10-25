@@ -80,7 +80,8 @@ Recent decisions affecting current work:
 - Phase 4: `scripts/new_homework` is the only scaffold path — idempotent, `--dry-run`, no overwrite, no symlink traversal; both templates build immediately.
 - Phase 4: Python deps are pinned once (PyYAML 6.0.3, jsonschema 4.26.0) in the PEP 723 headers and the pre-commit hook; drift fails `test_metadata_deps`.
 - Phase 4: paraphrase originality is not machine-verifiable; it is deferred to the first real `task.md` (UAT Test 1).
-- 2026-10-25: ceremony trim — bureaucracy (policy-as-code, REUSE/SPDX, PR-template drift, tag gates, meta-tests, GSD-on-every-edit, ADR-per-decision) is removed; engineering tooling stays in the roadmap. The rule is frequency of execution, not appearance. See `.planning/notes/ceremony-vs-engineering-principle.md`.
+- 2026-10-25: ceremony trim — bureaucracy (policy-as-code, REUSE/SPDX, PR-template drift, tag gates, meta-tests, the blanket GSD-on-every-edit mandate, ADR-per-decision) is removed; the GSD fast/quick/phase tiers and the atomic-commit culture stay, and the rule becomes proportional. Engineering tooling stays in the roadmap. The rule is frequency of execution, not appearance. See `.planning/notes/ceremony-vs-engineering-principle.md`.
+- 2026-10-25: two tooling corrections accompany the proportional rule — `/gsd-fast` must stage only touched files instead of `git add -A`, and trivial changes no longer need a `STATE.md` quick-task row.
 - 2026-10-25: Phase 4.2 runs homework 1.3 manually as a tracer and records a friction log; Phases 5–10 automate only what the log proves painful.
 
 ### Pending Todos
