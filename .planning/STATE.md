@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Phase 04.2 context gathered
-last_updated: "2026-10-25T19:00:38.649Z"
+stopped_at: Completed 04.2-01-PLAN.md
+last_updated: "2026-10-25T19:04:11.985Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 execution started
-state_head: 9701db500e7d3249956b9b5a5f6f9bdbee8f232f
+state_head: e867945101448e27183572456d66527ecfcd273a
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 45
-  completed_plans: 38
+  completed_plans: 39
   percent: 38
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 04.2
+Plan: 2 of 7
+Status: Ready to execute
 Last activity: 2026-10-25 — Phase 04.2 execution started
 
 Progress: [████░░░░░░] 38%
@@ -56,6 +56,11 @@ Progress: [████░░░░░░] 38%
 - Trend: —
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 04.2 P01 | 2 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -85,6 +90,10 @@ Recent decisions affecting current work:
 - 2026-10-25: decision records are table-first — `docs/decisions/README.md` becomes the index and default record; the 11 existing ADRs stay as the archive; a new ADR file is created only when a decision needs real argumentation and is linked from the table.
 - 2026-10-25: two tooling corrections accompany the proportional rule — `/gsd-fast` must stage only touched files instead of `git add -A`, and trivial changes no longer need a `STATE.md` quick-task row.
 - 2026-10-25: Phase 4.2 runs homework 1.3 manually as a tracer and records a friction log; Phases 5–10 automate only what the log proves painful.
+- [Phase 04.2]: 1_3 homework scaffolded only through scripts/new_homework; the dry run plans eight CREATE records and a re-run returns eight UNCHANGED records, so the verification accepts both states.
+- [Phase 04.2]: D-08 amended: retrieved is 2026-10-23T00:00:00Z, because valid_iso8601 requires a timezone and the bare date is rejected once status leaves planned.
+- [Phase 04.2]: The status flip, source.reference, four provenance values, and the simulation/report/assets blocks land in one commit; the TODO sentinels are legal only at status planned.
+- [Phase 04.2]: homework.yaml forward-declares assets/diagram.json and report.md; the schema checks the path pattern, not disk presence, so the metadata validates before Waves 3 and 4 create those files.
 
 ### Pending Todos
 
@@ -129,6 +138,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T01:44:42.264Z
-Stopped at: Phase 04.2 context gathered
-Resume file: .planning/phases/04.2-tracer-homework-1-3/04.2-CONTEXT.md
+Last session: 2026-10-25T19:04:11.936Z
+Stopped at: Completed 04.2-01-PLAN.md
+Resume file: None
