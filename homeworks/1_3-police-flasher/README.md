@@ -1,12 +1,13 @@
 # Police Flasher
 
-This project is the independent PlatformIO homework for `1_3-police-flasher`; it
-contains the code, the tests, and the evidence the report refers to.
+This project is the independent PlatformIO homework for `1_3-police-flasher`: an
+ESP32-S3 Arduino police flasher whose pattern logic runs on the host in native unit
+tests.
 
-**Status:** planned
+**Status:** in-progress
 
-- [Report template](../../templates/report/report.md)
+- [Report](report.md)
 - [Assignment paraphrase](task.md)
 
-The project must live at `homeworks/<id>`, two levels below the repository root,
-so every relative path — including the shared partition table — resolves.
+The project must live at `homeworks/<id>`, two levels below the repository root, so
+every relative path — including the shared partition table — resolves.
