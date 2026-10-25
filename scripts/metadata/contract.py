@@ -22,6 +22,13 @@ syntax error, a non-mapping payload and a duplicated mapping key are all
 violations of a file under `homeworks/`, not failures of the environment. Only
 a broken schema or a broken shared configuration exits 2.
 
+`read_shared_core_pin` parses the generated `; PlatformIO Core: <version>` header
+line, the only home the Core pin has. The checker does not call it yet: an
+earlier wave may run `check_metadata.py` on a fixture root before the shared ini
+has been generated, and a reader that requires the header would fail a valid
+pre-generation tree. `SharedIniTests` pins the generated Core pin against every
+homework's `toolchain.platformio` instead.
+
 `module`, `lesson`, `slug` and the display title are derived from `id` on
 demand and never stored (D-02); `id` is the single source of identity.
 
@@ -68,6 +75,10 @@ PROVENANCE_FIELDS = ("source_url", "retrieved", "attribution", "license")
 TODO_SENTINEL = "TODO"
 URL_PATTERN = re.compile(r"^https?://[^\s]+$")
 SPDX_LIKE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
+
+# The one machine-readable line the generated shared ini carries for the Core
+# pin. `\S+` makes a line with a trailing token (or an empty value) a no-match.
+CORE_PIN_LINE = re.compile(r"^; PlatformIO Core: (\S+)$", re.MULTILINE)
 
 PLATFORMIO_CORE = "6.2.0"
 
@@ -375,6 +386,34 @@ def read_shared_platform_pin(root):
         detail = ", ".join(f"[{name}] {value}" for name, value in pins.items())
         raise CheckError(f"{path} ESP sections disagree on platform: {detail}")
     return pins[ESP_SECTIONS[0]]
+
+
+def read_shared_core_pin(root):
+    """Return the PlatformIO Core pin from `platformio.shared.ini`.
+
+    The generated header carries exactly one machine-readable
+    `; PlatformIO Core: <version>` line. A missing, repeated or malformed line
+    is a repository-environment failure (exit 2), because this header is the
+    pin's only home; an absent value must never fall back to a hardcoded
+    default (T-5-36).
+
+    The checker does not call this reader yet — see the module docstring for
+    why a pre-generation fixture root cannot satisfy it.
+    """
+    path = Path(root) / SHARED_INI_PATH
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise CheckError(f"cannot decode {path}: {exc}") from exc
+    except OSError as exc:
+        raise CheckError(f"cannot read {path}: {exc}") from exc
+    pins = CORE_PIN_LINE.findall(text)
+    if len(pins) != 1:
+        raise CheckError(
+            f"{path} must carry exactly one '; PlatformIO Core: <version>' "
+            f"line; found {len(pins)}"
+        )
+    return pins[0]
 
 
 def load_schema(root):
