@@ -64,8 +64,7 @@ URL_PATTERN = re.compile(r"^https?://[^\s]+$")
 SPDX_LIKE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
 
 # The canonical homework-identifier literal. The schema's `id.pattern`, the
-# backticked span in `AGENTS.md` and `EXPECTED_PATTERN` in
-# `scripts/tests/test_homework_id.py` must stay byte-identical to this one.
+# backticked span in `AGENTS.md` and this constant must stay byte-identical.
 HOMEWORK_ID = re.compile(r"^[0-9]+_[0-9]+-[a-z0-9-]+$")
 
 PLATFORMIO_CORE = "6.2.0"

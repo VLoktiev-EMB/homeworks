@@ -13,8 +13,8 @@ the optional `simulation.diagram`, the research probe matrix, the identity
 invariant `id == homeworks/<dir>`, malformed YAML / non-mapping / duplicated
 keys / the 64 KiB cap, toolchain drift and a broken shared configuration, the
 `--json` record shape, determinism and read-only behaviour, and the one
-canonical homework-ID literal shared by the schema, `contract.py`, `AGENTS.md`
-and `test_homework_id.py`.
+canonical homework-ID literal shared by the schema, `contract.py`, and
+`AGENTS.md`.
 
 Provenance semantics for `task.md` are owned by plan 04-03: every fixture now
 writes both `homework.yaml` and `task.md`, and this module asserts the D-39
@@ -32,7 +32,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.tests.test_homework_id import EXPECTED_PATTERN
+EXPECTED_PATTERN = r"^[0-9]+_[0-9]+-[a-z0-9-]+$"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check_metadata.py"
@@ -820,9 +820,9 @@ class RealTreeTests(unittest.TestCase):
 
 
 class CanonicalIdTest(unittest.TestCase):
-    """One literal, checked in four places at once."""
+    """One literal, checked in three places at once."""
 
-    def test_canonical_id_literal_is_identical_in_four_places(self):
+    def test_canonical_id_literal_is_identical_in_three_places(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         schema_pattern = schema["properties"]["id"]["pattern"]
 
@@ -845,9 +845,9 @@ class CanonicalIdTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            {schema_pattern, match.group(1), EXPECTED_PATTERN, spans[0]},
+            {schema_pattern, match.group(1), spans[0]},
             {EXPECTED_PATTERN},
-            "the canonical homework-ID literal drifted between its four homes",
+            "the canonical homework-ID literal drifted between its three homes",
         )
 
 
