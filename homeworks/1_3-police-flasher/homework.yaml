@@ -5,13 +5,22 @@ title: "Police Flasher"
 board: esp32-s3-devkitc-1
 framework: arduino
 language: cpp
-status: planned
+status: in-progress
 source:
-  reference: TODO
+  reference: https://github.com/VLoktiev-EMB/homeworks
 toolchain:
   platformio: "6.2.0"
   platform: "espressif32@8.0.0"
+simulation:
+  tool: wokwi
+  diagram: assets/diagram.json
+  status: pending
 tests:
   framework: unity
   native: true
   coverage: false
+report:
+  path: report.md
+  status: draft
+assets:
+  - assets/diagram.json
