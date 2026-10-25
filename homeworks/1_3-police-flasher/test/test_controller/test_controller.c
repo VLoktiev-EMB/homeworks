@@ -359,6 +359,35 @@ static void test_null_and_unready_entry_points_are_no_ops(void) {
     TEST_ASSERT_EQUAL_UINT((unsigned)writes, (unsigned)fake_gpio.writes);
 }
 
+static void test_a_mode_change_restarts_at_frame_zero(void) {
+    init_single();
+    tick_after(400u);
+    tick_after(400u);
+    /* Alternating frame 2 carries the third LED. */
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake_gpio.level[4]);
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake_gpio.level[6]);
+
+    press_short();
+
+    /* DOUBLE_FLASH frame 0 is the first LED alone: the reset is observable. */
+    TEST_ASSERT_EQUAL_INT(PATTERN_MODE_DOUBLE_FLASH, pattern_controller_mode(&controller));
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake_gpio.level[4]);
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_LOW, fake_gpio.level[6]);
+}
+
+static void test_a_speed_change_restarts_at_frame_zero(void) {
+    init_single();
+    tick_after(400u);
+    tick_after(400u);
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake_gpio.level[6]);
+
+    press_long();
+
+    TEST_ASSERT_EQUAL_UINT(200u, (unsigned)pattern_controller_base_ms(&controller));
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake_gpio.level[4]);
+    TEST_ASSERT_EQUAL_INT(PORT_GPIO_LOW, fake_gpio.level[6]);
+}
+
 static void test_the_full_mode_cycle_returns_to_alternating(void) {
     init_single();
 
@@ -404,6 +433,8 @@ int main(void) {
     RUN_TEST(test_a_failed_read_keeps_the_stable_level);
     RUN_TEST(test_a_failed_write_is_retried_on_the_next_tick);
     RUN_TEST(test_null_and_unready_entry_points_are_no_ops);
+    RUN_TEST(test_a_mode_change_restarts_at_frame_zero);
+    RUN_TEST(test_a_speed_change_restarts_at_frame_zero);
     RUN_TEST(test_the_full_mode_cycle_returns_to_alternating);
     RUN_TEST(test_the_full_speed_cycle_returns_to_400_ms);
     return UNITY_END();
