@@ -158,6 +158,23 @@ physical part.
 | Ground | GND.2 | `led3:C` | Return for LED3. |
 | Ground | GND.3 | `btn1:2.l` | Return for the button; the three ground pins are one common board ground. |
 
+### Electrical Calculations
+
+The calculations use the nominal 3.3 V supply, a 1.9 V typical forward voltage for a red
+LED, and a 10 mA design target for the operating current. The supply and the forward voltage
+are datasheet values until the bench measures them; the current target is a design choice.
+Every row prints the formula and its inputs, so each result can be reproduced without any
+other section.
+
+| ID | Quantity | Formula | Units | Input provenance | Result | Uncertainty | Assumption effect |
+|----|----------|---------|-------|------------------|--------|-------------|-------------------|
+| C-01 | Series resistor R1 | `R = (Vs - Vf) / I` | ohm | `Vs = 3.3 V` datasheet nominal, pending measurement at `3V3.1`; `Vf = 1.9 V` datasheet typical, pending measurement in diode mode; `I = 10 mA` calculated design target | `R = (3.3 - 1.9) / 0.010 = 140 ohm`; the standard 150 ohm value is fitted | plus or minus 21 ohm from a plus or minus 0.05 V supply and a plus or minus 0.2 V forward voltage | Rounding up to 150 ohm lowers the current; a lower forward voltage raises it. |
+| C-02 | LED current, LED1 high side | `I = (Vs - Vf) / R` | mA | `Vs = 3.3 V` datasheet nominal, pending measurement; `Vf = 1.9 V` datasheet typical, pending measurement; `R = 150 ohm` datasheet nominal, 5 percent tolerance | `I = 1.4 / 150 = 9.33 mA` | plus or minus 1.4 mA from the two voltage tolerances and the resistor tolerance | A 5 percent resistor changes the current by about 0.47 mA; the same forward voltage on both halves keeps them equally bright. |
+| C-03 | Resistor power, R1 | `P = I^2 * R` | mW | `I = 9.33 mA` calculated, row C-02; `R = 150 ohm` datasheet nominal | `P = (9.33e-3)^2 * 150 = 13.1 mW` | plus or minus 3.9 mW, dominated by the current uncertainty | A 0.25 W part dissipates about 5 percent of its rating; a lower forward voltage raises the power slightly. |
+| C-04 | Off-state reverse voltage, LED2 | `Vr = Vs - Vf` | V | `Vs = 3.3 V` datasheet nominal, pending measurement; `Vf = 1.9 V` datasheet typical, pending measurement; reverse rating 5 V datasheet | `Vr = 1.4 V`, about 28 percent of the 5 V rating | plus or minus 0.25 V from the two voltage tolerances | Valid only while the opposite LED conducts and clamps node X. The all-off frame drives GPIO4 to a high-impedance input, so the node floats and this calculation is excluded; the off LED's reverse voltage is not well-defined in that state. |
+| C-05 | Pattern period | `T = base * sum(num / den)` | ms | Frame tables and rational holds calculated from the firmware; base 400, 200, or 100 ms calculated from the speed table | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms for speed index 0 / 1 / 2 | exact as designed at the table level; the realized period adds one loop tick of quantization, pending measurement | A loop period close to the shortest 50 ms half-hold would stretch the fastest CHASE period; assumption A-06 bounds this. |
+| C-06 | GPIO current margin | `margin = Imax - I` and `utilization = I / Imax * 100` | mA, percent | `Imax = 40 mA` datasheet absolute maximum per pin; `I = 9.33 mA` calculated, row C-02 | `margin = 30.67 mA`; `utilization = 23.3 percent` | plus or minus 1.4 mA on the current; the maximum is a datasheet limit, not a measured value | If the forward voltage falls to 1.8 V the current rises to 10.0 mA, still 25 percent of the limit; omitting the resistor would leave only the pin and the LED to limit current. |
+
 ### Safety Checklist
 
 - **3V3-to-ground short.** `led2:A` is tied directly to `3V3.1` with no series element on that
