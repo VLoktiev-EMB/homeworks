@@ -171,7 +171,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
   6. `docs/decisions/README.md` is a one-page decision table linking to the 11 existing ADRs; a new decision defaults to a row, and an ADR file is created only when the decision needs real argumentation; superseded decisions are marked in the table.
 
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans executed
 **Wave 1**
 - [x] 04.1-01-PLAN.md — Decouple the survivors (allowlist removal, canonical-ID move); Wave 0 repair.
 
@@ -185,7 +185,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04.1-04-PLAN.md — Rewrite AGENTS.md, README.md, the decision table, and add the default PR template.
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 04.1-07-PLAN.md — Phase gate: smoke builds, full suites, pre-commit, structural assertions.
+- [x] 04.1-07-PLAN.md — Phase gate: smoke builds, full suites, pre-commit, structural assertions.
 
 **Cross-cutting constraints:**
 - The surviving Python suite stays green after each deletion group.
@@ -319,7 +319,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 2. Toolchain Truth | 5/5 | Complete    | 2026-10-23 |
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
-| 4.1. Ceremony Trim | 6/7 | In Progress | - |
+| 4.1. Ceremony Trim | 7/7 | In Progress | - |
 | 4.2. Tracer Homework 1.3 | 0/TBD | Not started | - |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
