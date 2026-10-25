@@ -45,8 +45,13 @@ Phase 4.2.
       Definition of Done.
 - [ ] Keep gitleaks, the whitespace/EOF/merge/large-file hooks, `no-generated-files`,
       the metadata check, and the architecture check.
-- [ ] Keep `docs/decisions/` as history, but stop requiring an ADR and a status-index
-      update for every decision. New ADRs only for irreversible choices.
+- [ ] Keep the 11 existing ADRs in place as the deep archive. Rewrite
+      `docs/decisions/README.md` as a one-page decision table
+      (`Date | Decision | Why | Change cost | Status | Record`) whose `Record` column links
+      to the existing files. New decisions default to a row; an ADR file is created only
+      when the decision needs real argumentation and is then linked from the table. Mark
+      superseded decisions in the `Status` column without rewriting the ADR. Drop the
+      status-index upkeep and the numbering requirement for new rows.
 - [ ] Keep `scripts/architecture/allowlist.json` for now; the architecture checker is
       reduced in a later pass.
 

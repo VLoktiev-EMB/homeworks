@@ -169,6 +169,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `AGENTS.md` has a four-step quick-start, no policy/licence-split/PR-drift rules, a proportional GSD rule (`/gsd-fast` for trivial, `/gsd-quick` for multi-step, the phase workflow for architectural work or homework delivery), and a short Definition of Done.
   4. `pio test -d tests -e native`, the smoke build, `pre-commit run --all-files`, and `python3 scripts/check_metadata.py` pass after the trim.
   5. No dangling references to deleted files remain in `README.md`, `AGENTS.md`, `docs/`, or `.github/`.
+  6. `docs/decisions/README.md` is a one-page decision table linking to the 11 existing ADRs; a new decision defaults to a row, and an ADR file is created only when the decision needs real argumentation; superseded decisions are marked in the table.
 
 **Plans**: TBD
 

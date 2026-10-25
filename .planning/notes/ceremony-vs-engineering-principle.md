@@ -51,6 +51,20 @@ tooling corrections ride with it:
 - Not every trivial change deserves a `STATE.md` quick-task row; log only changes worth
   resuming from.
 
+## Decision records
+
+Keep the 11 existing ADRs in place as the deep archive. `docs/decisions/README.md` becomes
+the one-page decision table:
+
+| Date | Decision | Why | Change cost | Status | Record |
+|---|---|---|---|---|---|
+
+The table is the index and the default record. A new decision is a row. If a decision
+needs real argumentation — alternatives, consequences, a long comparison — create a new
+ADR file and link it from the `Record` column. Superseded decisions are marked in the
+`Status` column; the ADR file is not rewritten. There is no status-index upkeep and no
+numbering requirement for new rows.
+
 ## Decision rule
 
 Cut, keep, or defer a check by **how often it runs**, not by how impressive it looks:
@@ -106,7 +120,9 @@ Recorded during Phase 4.2 in the phase directory. One entry per friction point:
 three-template split (one default template); the Cyrillic allowlist (one grep); the
 four-gate `tag_homework.sh` (a three-line script); 18 meta-test modules (keep 2–3 smoke
 tests); the nine-step quick-start (four steps); the blanket GSD-on-every-edit mandate
-(the tiers stay); ADR-per-decision; the report merge gate.
+(the tiers stay); the mandatory ADR-per-decision and status-index upkeep (the table
+becomes the index; an ADR file stays optional for real argumentation); the report merge
+gate.
 
 **Keep:** MIT `LICENSE`; gitleaks; `schema/` and `check_metadata.py`; `new_homework` and
 the two homework templates; the architecture check (later reduced to a small grep); the
