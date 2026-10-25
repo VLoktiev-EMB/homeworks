@@ -250,7 +250,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The committed `homeworks.code-workspace` contains `repo`, `docs`, `lib`, `scripts`, and every homework as roots, with ASCII paths.
   4. `mkdocs build --strict` succeeds on the generated tree with MkDocs Material 9.7.7, a Zensical-compatible configuration, and vendored KaTeX; GitHub Pages deploys the artifact.
 
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans executed
 
 **Wave 1**
 - [x] 05-01-PLAN.md — Shared renderer, stdlib-only path helpers and strict loader, `platformio.ini` readers, Wave 0 test fixture, docs pins (tracer: renderer extraction)
@@ -271,7 +271,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 05-08-PLAN.md — Generated `mkdocs.yml`, strict build green, docs pin consistency (tracer: `nav`)
 
 **Wave 6** *(blocked on Wave 5)*
-- [ ] 05-09-PLAN.md — Drift hook and CI jobs, Pages deploy, `AGENTS.md` corrections (tracer: the drift gate)
+- [x] 05-09-PLAN.md — Drift hook and CI jobs, Pages deploy, `AGENTS.md` corrections (tracer: the drift gate)
 
 ### Phase 6: Developer Experience and Quality Layering
 
@@ -375,7 +375,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
-| 5. Generated Views and Documentation Site | 8/9 | In Progress | - |
+| 5. Generated Views and Documentation Site | 9/9 | In Progress | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
