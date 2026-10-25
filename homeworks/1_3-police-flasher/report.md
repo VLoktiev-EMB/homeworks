@@ -318,6 +318,33 @@ the datasheet value in C-01 and C-02. In this session neither reading exists: th
 row is `not measured`, and the calculations continue to use the 1.9 V datasheet typical value,
 which is why they carry the stated uncertainty rather than a measured value's tolerance.
 
+### Traceability Matrix
+
+The matrix maps every phase claim to the artifact that carries it, the method that checks it,
+the evidence item that supports it, and a status. `verified` means a command or test in this
+repository produced the evidence; `manual` means a human review owns it; `pending` means the
+evidence does not exist yet and the row names the phase that owns it.
+
+| ID | Claim or requirement | Design artifact | Verification method | Evidence | Status |
+|----|----------------------|-----------------|---------------------|----------|--------|
+| T-01 | Target build for `esp32s3_arduino` (INV-02) | `platformio.ini`, `src/main.cpp`, `lib/pattern` | `pio run -d homeworks/1_3-police-flasher` | `SUCCESS`; 22,752 of 327,680 bytes RAM and 313,604 of 6,553,600 bytes flash | verified |
+| T-02 | Native Unity suite (INV-02) | `test/test_homework`, `test/test_pattern`, `test/test_controller` | `pio test -d homeworks/1_3-police-flasher -e native` | 38 of 38 cases pass in 1.429 s | verified |
+| T-03 | Third-LED extension (D-02) | `led_c` column in the frame tables; GPIO6 in `src/main.cpp` | `test_pattern` third-LED cases; diagram net `esp:6` | 14 pattern cases pass; the net is present in `assets/diagram.json` | verified |
+| T-04 | Variable-speed extension (D-02) | speed table of 400, 200, and 100 ms; long-press cycle | `test_pattern` hold-scaling case; `test_controller` speed-cycle case | both cases pass | verified |
+| T-05 | Complex-pattern extension (D-02) | DOUBLE_FLASH and CHASE frame tables | `test_pattern` double-flash and chase cases | both cases pass | verified |
+| T-06 | Single-GPIO extension (D-02) | `PATTERN_GPIO_SINGLE`; half-bridge wiring; controller precedence | `test_controller` SOLID and all-off cases; diagram nets `esp:4`, `r1`, `led1`, `led2` | cases pass; the four nets are present in `assets/diagram.json` | verified |
+| T-07 | Bill of materials (REPORT-02) | BOM in section 5 | manual cross-check against the diagram part ids | 7 of 7 diagram ids have a BOM row | verified |
+| T-08 | Pin map and wiring source of truth (REPORT-03) | pin map in section 5; `assets/diagram.json` | manual cross-check against the diagram nets | 10 required nets present; GPIO5 recorded as reserved | verified |
+| T-09 | Diagram validity (REPORT-03) | `assets/diagram.json` | `wokwi-cli lint --offline` | exit 0 with the informational unsupported-part note | verified |
+| T-10 | Electrical calculations (REPORT-04) | C-01 to C-06 in section 5 | recomputation from each printed formula and input | six rows carry formula, units, provenance, result, uncertainty, and assumption effect | verified |
+| T-11 | Measurement ledger (REPORT-06) | ledger in section 7 | label and prefix check over L-01 to L-12 | 12 rows; labels within the five-label set plus `measured (observed)`; no `measured` row; the fixed `not measured` reason is present | verified |
+| T-12 | Traceability matrix (REPORT-07) | this table | manual review of claim coverage | this file | manual |
+| T-13 | English paraphrase and provenance (META-02) | `task.md` | D-09 checklist and `check_metadata.py` | no verbatim sentence, no distinctive phrasing, no original file; the checker exits 0 | manual |
+| T-14 | Architecture boundary (INV-04) | `lib/` and `scripts/check_architecture.py` | `python3 scripts/check_architecture.py` | exit 0; the private library lives outside `lib/` | verified |
+| T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `merge_firmware.py` | `wokwi-cli lint --offline`; execution requires `WOKWI_CLI_TOKEN` | lint exits 0; execution was not observed and `simulation.status` stays `pending` | pending |
+| T-16 | High-impedance off-state behaviour is implemented and tested | controller mode change in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` all-off frame case; report statement | the fake records `INPUT` on the all-off frame; the hardware off-state node voltage is `not measured` (L-12) | verified |
+| T-17 | SOLID single-pin precedence is implemented and tested | `led_a` precedence in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` SOLID case; report statement | the case passes; the LOW-side LED's hardware state was not observed | verified |
+
 ## 8. Analysis
 
 The firmware separates the pattern schedule from the platform in a way that changes what can be
@@ -413,4 +440,43 @@ report contract and its checker; Phase 11 owns the polished pilot, the tag, and 
 
 ## Decision Appendix
 
-_Pending: plan 04.2-05 adds the engineering decisions, dead ends, and friction._
+1. **D-03 half-bridge correction.** The first single-GPIO idea was a literal anti-parallel pair
+   returned to ground. It cannot light the second LED: on a low output the current would have
+   to flow from ground into the GPIO pin. The circuit was corrected to the half-bridge in
+   section 4, where LED1 returns to ground and LED2 returns to the 3.3 V rail through the same
+   150 ohm resistor; one pin then drives either LED, and the resistor sets the current in both
+   halves.
+2. **High-impedance off state.** The all-off frame is a pin-mode change to `INPUT`, not a driven
+   dark level. On hardware the shared node floats near the clamp voltage of the leaking LED, so
+   "both LEDs dark" is a simulation-only approximation; the off-state node voltage is
+   `not measured` (L-12), while the controller's mode-change behaviour is what the native suite
+   verifies.
+3. **SOLID on one pin.** `led_a` wins the precedence rule, so the pin is driven high and only
+   the HIGH-side LED of the anti-parallel pair lights; the LOW-side LED stays dark. The third
+   LED is independent and remains on. The frame tables keep `led_a` and `led_b` explicit so this
+   rule stays visible and testable.
+4. **D-08 timestamp amendment.** `retrieved` became `2026-10-23T00:00:00Z`. The checker's
+   `valid_iso8601` requires a timezone, and a bare date is rejected once the status leaves
+   `planned`; the date itself is unchanged.
+5. **D-17 reading of ROADMAP success criterion 3.** A well-formed homework needs no
+   per-homework entry in `platformio.shared.ini`: the file carries only the three shared
+   environment sections, and the project extends them. The manual integration edits are the root
+   README entry, the workspace folder, and the single-project CI workflow.
+6. **D-18 reading of ROADMAP success criterion 3.** The CI outcome is one single-project workflow
+   running `pio run` and `pio test -e native`, not a discovery matrix. Changed-only detection
+   needs a separate script, which Phase 8 owns.
+7. **Wokwi token deferral.** `WOKWI_CLI_TOKEN` is absent, so `wokwi-cli` exits before loading the
+   firmware. Only `lint --offline` is a verified result, `simulation.status` stays `pending`,
+   and Phase 7 owns execution and the simulator decision record.
+8. **Private library and controller seam (D-05, D-06, D-07).** The pattern logic stays
+   homework-local at `lib/pattern` with a manifest that declares no frameworks; the controller
+   takes `port_gpio_t` and `port_time_t` by value; the Arduino adapters live only in the
+   composition root. Promotion to `lib/common` waits for real duplication across homeworks.
+9. **D-09 paraphrase review record.** The checklist was applied to the final `task.md`: no
+   verbatim sentence from the access-restricted original, no distinctive phrasing, and no
+   original file committed; the document is English-only and carries the public repository URL
+   rather than the LMS URL. The user's confirmation is recorded in the pull request before merge
+   (plan 07).
+10. **No release tag.** No `hw/` tag exists. The tag is created only through
+    `scripts/tag_homework.sh <id>` after the pull request is merged, and Phase 11 owns that step;
+    this phase ends with the homework in progress.
