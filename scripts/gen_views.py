@@ -78,7 +78,7 @@ from scripts.metadata.paths import (  # noqa: E402
     relative_path,
     resolve_root,
 )
-from scripts.metadata.render import read_text, render  # noqa: E402
+from scripts.metadata.render import read_regular_text, render  # noqa: E402
 from scripts.metadata.yaml_loader import StrictSafeLoader  # noqa: E402
 
 # D-02/D-11: the site and repository URLs are module constants, following the
@@ -233,7 +233,7 @@ def _load_homeworks(root):
             continue
         parts = derive_parts(project.name)
         display = f"{relative_path(root, project)}/homework.yaml"
-        text = read_text(project / "homework.yaml", display)
+        text = read_regular_text(project / "homework.yaml", display)
         try:
             document = yaml.load(text, Loader=StrictSafeLoader)
         except yaml.YAMLError as exc:
@@ -561,7 +561,7 @@ def _render_readme(root, homeworks):
     """Return the produced entry for the README marker region."""
     display = "README.md"
     template_display = "templates/views/homeworks-table.md.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
         {"homework_rows": _homework_rows(homeworks, link_style="relative")},
@@ -640,7 +640,7 @@ def _render_workspace(root, homeworks):
     """Return the produced entry for the whole `homeworks.code-workspace`."""
     display = "homeworks.code-workspace"
     template_display = "templates/views/workspace.json.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
         {"workspace_folders": _workspace_folders(homeworks)},
@@ -721,7 +721,7 @@ def _render_shared_ini(root, homeworks):
     platformio, platform = _shared_pin_pair(homeworks)
     display = "platformio.shared.ini"
     template_display = "templates/views/shared-ini.ini.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
         {"platform_pin": platform, "platformio_pin": platformio},
@@ -815,7 +815,7 @@ def _render_homework_page(root, homework):
     """
     display = f"docs/homeworks/{homework['id']}.md"
     template_display = "templates/views/homework-page.md.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     document = homework["document"]
     title = _escape_cell(homework["title"])
     if not title:
@@ -893,7 +893,7 @@ def _load_boards(root):
             raise CheckError(
                 f"{display}: file stem {profile.stem!r} is not a valid board id"
             )
-        text = read_text(profile, display)
+        text = read_regular_text(profile, display)
         try:
             document = yaml.load(text, Loader=StrictSafeLoader)
         except yaml.YAMLError as exc:
@@ -958,7 +958,7 @@ def _render_board_page(root, board, homeworks):
     document = board["document"]
     display = f"docs/boards/{identifier}.md"
     template_display = "templates/views/board-page.md.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     flash_mb = document.get("flash_mb")
     if isinstance(flash_mb, bool) or not isinstance(flash_mb, int):
         raise CheckError(f"{board['display']} has no integer flash_mb")
@@ -1004,7 +1004,7 @@ def _render_docs_index(root, homeworks):
     """
     display = "docs/index.md"
     template_display = "templates/views/homeworks-table.md.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
         {"homework_rows": _homework_rows(homeworks, link_style="absolute")},
@@ -1156,7 +1156,7 @@ def _render_nav(root, homeworks):
     """
     display = "mkdocs.yml"
     template_display = "templates/views/mkdocs.yml.tmpl"
-    template = read_text(root / template_display, template_display)
+    template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
         {

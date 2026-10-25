@@ -10,14 +10,16 @@ itself contains an opening `{{...}}` sequence is emitted verbatim: it is never
 re-scanned, so a homework title can never inject a placeholder into a second
 pass. `re.sub` guarantees this; `RendererContractTests` pins it.
 
-This module imports `re`, `pathlib` and the shared exception only, so a
+This module imports `os`, `re`, `stat` and the shared exception only, so a
 stdlib-only test runner can import it without pulling PyYAML or jsonschema
 (04/D-14).
 """
 
 from __future__ import annotations
 
+import os
 import re
+import stat
 
 from scripts.metadata.errors import CheckError
 
@@ -58,3 +60,24 @@ def read_text(source, display):
         raise CheckError(f"{display}: template file is not valid UTF-8: {exc}") from exc
     except OSError as exc:
         raise CheckError(f"cannot read template file {display}: {exc}") from exc
+
+
+def read_regular_text(source, display):
+    """Read one regular UTF-8 file, refusing a symlink on the final component.
+
+    `os.lstat` never follows the final component, so a repository entry that a
+    pull request replaced with a symlink is refused before its target is read.
+    `scripts/new_homework` refuses symlinked template entries the same way, so
+    the generator and the scaffold share one posture (CR-02).
+    """
+    try:
+        mode = os.lstat(source).st_mode
+    except FileNotFoundError as exc:
+        raise CheckError(f"cannot read {display}: file is absent") from exc
+    except OSError as exc:
+        raise CheckError(f"cannot inspect {display}: {exc}") from exc
+    if stat.S_ISLNK(mode):
+        raise CheckError(f"{display} is a symlink; refusing to follow it")
+    if not stat.S_ISREG(mode):
+        raise CheckError(f"{display} is not a regular file")
+    return read_text(source, display)

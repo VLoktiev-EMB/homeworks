@@ -607,6 +607,51 @@ class ReportPathTests(ViewsTestBase):
                     self.assertIn("report.path", result.stderr)
 
 
+class SymlinkInputTests(ViewsTestBase):
+    """CR-02: a symlinked generator input is refused, never followed."""
+
+    TEMPLATES = (
+        ("readme", "homeworks-table.md.tmpl"),
+        ("workspace", "workspace.json.tmpl"),
+        ("shared-ini", "shared-ini.ini.tmpl"),
+        ("docs", "homework-page.md.tmpl"),
+        ("docs", "board-page.md.tmpl"),
+        ("docs", "homeworks-table.md.tmpl"),
+        ("nav", "mkdocs.yml.tmpl"),
+    )
+
+    def test_a_symlinked_homework_yaml_is_refused(self) -> None:
+        path = self.root / "homeworks" / "1_3-alpha" / "homework.yaml"
+        external = self.workspace / "external-homework.yaml"
+        external.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        path.unlink()
+        path.symlink_to(external)
+
+        result = self.generate("readme")
+
+        self.assert_usage_error(result)
+        self.assertIn("symlink", result.stderr)
+        self.assertNotIn("Alpha", result.stdout)
+
+    def test_a_symlinked_view_template_is_refused(self) -> None:
+        external = self.workspace / "external-template.txt"
+        external.write_text("# Injected\n", encoding="utf-8")
+        for view, name in self.TEMPLATES:
+            with self.subTest(view=view, template=name):
+                path = self.root / "templates" / "views" / name
+                original = path.read_bytes()
+                path.unlink()
+                path.symlink_to(external)
+                try:
+                    result = self.generate(view)
+                finally:
+                    path.unlink()
+                    path.write_bytes(original)
+
+                self.assert_usage_error(result)
+                self.assertIn("symlink", result.stderr)
+
+
 class AllowlistTests(ViewsTestBase):
     """T-5-09: the manifest is an authority, never a way to widen the writes."""
 
