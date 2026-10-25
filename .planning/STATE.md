@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "04.2"
 current_phase_name: Tracer Homework 1.3 (INSERTED)
 status: executing
-stopped_at: Completed 04.2-03-PLAN.md
-last_updated: "2026-10-25T19:13:05.317Z"
+stopped_at: Completed 04.2-04-PLAN.md
+last_updated: "2026-10-25T19:16:40.784Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 execution started
-state_head: 9e1238d9e87ecb60ecb76aaf5611a3be3a91d1ec
+state_head: 7e499f4fac846098fe992b2c041883943e940280
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 45
-  completed_plans: 41
+  completed_plans: 42
   percent: 38
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-10-25)
 ## Current Position
 
 Phase: 04.2 (Tracer Homework 1.3 (INSERTED)) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-10-25 — Phase 04.2 execution started
 
@@ -63,6 +63,7 @@ Progress: [████░░░░░░] 38%
 | Phase 04.2 P01 | 2 min | 3 tasks | 9 files |
 | Phase 04.2 P02 | 2 min | 3 tasks | 9 files |
 | Phase 04.2 P03 | 1 min | 2 tasks | 7 files |
+| Phase 04.2 P04 | 2 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,11 @@ Recent decisions affecting current work:
 - [Phase 04.2]: The Wokwi diagram is the canonical wiring source: GPIO4 through one 150 ohm resistor to node X, LED1 anode at X and cathode at GND, LED2 anode at 3V3 and cathode at X, the third LED on GPIO6, and the MODE button from GPIO7 to GND.
 - [Phase 04.2]: merge_firmware.py stays project-local: espressif32@8.0.0 renamed tool-esptoolpy to tool-esptool and ships esptool 5 merge-bin with --flash-mode and --flash-size, so the published Wokwi script cannot run; promotion to scripts/pio/ waits for Phase 7/8.
 - [Phase 04.2]: Simulation execution is deferred to Phase 7 with simulation.status pending: only wokwi-cli lint --offline is a verified result, and the repo-relative --diagram-file and --scenario command is recorded in the homework README.
+- [Phase 04.2]: Report headings are numbered from title and metadata as 1: objective 2, theory 4, hardware 5, methodology 6, results 7, analysis 8, conclusions 9, references 10; plan 05 asserts the same literal text.
+- [Phase 04.2]: Report metadata records implementation commit 6a60426; plan 05 must reuse that hash in every ledger row or refresh both records in one commit.
+- [Phase 04.2]: BOM refs are the diagram part ids (esp, r1, led1, led2, r2, led3, btn1) so every physical part maps to a row without a second naming scheme.
+- [Phase 04.2]: The reverse-voltage calculation excludes the all-off INPUT frame because node X floats; the off LED reverse voltage is not well-defined in that state.
+- [Phase 04.2]: No value in report sections 1-6 is labelled measured; inputs are datasheet or calculated, and bench inputs are pending measurement until plan 05.
 
 ### Pending Todos
 
@@ -147,6 +153,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T19:13:05.271Z
-Stopped at: Completed 04.2-03-PLAN.md
+Last session: 2026-10-25T19:16:37.388Z
+Stopped at: Completed 04.2-04-PLAN.md
 Resume file: None
