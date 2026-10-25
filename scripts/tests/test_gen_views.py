@@ -1568,6 +1568,47 @@ class NavTests(ViewsTestBase):
         )
         self.assertNotIn('"A "quoted" decision"', self.nav_text())
 
+    def test_a_backslash_and_newline_title_yields_valid_yaml(self) -> None:
+        path = self.root / "homeworks" / "1_3-alpha" / "homework.yaml"
+        text = path.read_text(encoding="utf-8")
+        title = 'title: |-\n  Alpha \\q "quoted"\n  second line'
+        self.assertIn('title: "Alpha"', text)
+        path.write_text(text.replace('title: "Alpha"', title), encoding="utf-8")
+        expected = "1.3 Alpha \\q 'quoted'\nsecond line"
+
+        result = self.generate("nav")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        program = f'''
+import json
+import pathlib
+import yaml
+
+data = yaml.safe_load(
+    pathlib.Path({str(self.nav_path())!r}).read_text(encoding="utf-8")
+)
+found = []
+
+
+def walk(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if value == "homeworks/1_3-alpha.md":
+                found.append(key)
+            walk(value)
+    elif isinstance(node, list):
+        for item in node:
+            walk(item)
+
+
+walk(data["nav"])
+print(json.dumps(found, ensure_ascii=False))
+'''
+        loaded = run_pyyaml_program(program)
+
+        self.assertEqual(0, loaded.returncode, loaded.stdout + loaded.stderr)
+        self.assertEqual([expected], json.loads(loaded.stdout), loaded.stdout)
+
     def test_a_heading_with_a_colon_stays_one_valid_entry(self) -> None:
         self.write_decision(
             "0004-colon.md",

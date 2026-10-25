@@ -1038,14 +1038,18 @@ def _render_docs(root, homeworks):
 
 
 def _nav_label(value):
-    """Make *value* safe inside a double-quoted YAML scalar (Pitfall 1).
+    """Return *value* as a YAML double-quoted scalar, surrounding quotes included.
 
-    The label is the only free text in a nav entry: a double quote would close
-    the scalar early, so it becomes a single quote. The separator colon between
-    label and path is never part of this string, which is why every entry stays
-    a YAML mapping rather than one quoted scalar (T-5-22).
+    `json.dumps` is a real double-quoted-scalar encoder: it escapes the
+    backslash, the double quote, newlines and control characters, so a title
+    (including one written as a YAML block scalar) or a heading can never emit
+    an `mkdocs.yml` that PyYAML rejects (WR-02). A double quote is first
+    rendered as a single quote because the label is display text, not data;
+    that keeps the nav readable and every existing label stable. The separator
+    colon between label and path is never part of this string, which is why
+    every entry stays a YAML mapping rather than one quoted scalar (T-5-22).
     """
-    return value.replace('"', "'")
+    return json.dumps(str(value).replace('"', "'"), ensure_ascii=False)
 
 
 def _decision_label(name, text):
@@ -1081,7 +1085,7 @@ def _homework_nav_entries(homeworks):
     for homework in homeworks:
         number = f"{homework['module']}.{homework['lesson']}"
         label = _nav_label(f"{number} {homework['title']}")
-        lines.append(f'    - "{label}": homeworks/{homework["id"]}.md')
+        lines.append(f'    - {label}: homeworks/{homework["id"]}.md')
     return "\n".join(lines)
 
 
@@ -1090,7 +1094,7 @@ def _board_nav_entries(boards):
     lines = []
     for board in sorted(boards, key=lambda item: item["id"]):
         label = _nav_label(board["id"])
-        lines.append(f'    - "{label}": boards/{board["id"]}.md')
+        lines.append(f'    - {label}: boards/{board["id"]}.md')
     return "\n".join(lines)
 
 
@@ -1141,7 +1145,7 @@ def _decision_nav_entries(root):
         except OSError as exc:
             raise CheckError(f"cannot read {display}: {exc}") from exc
         label = _nav_label(_decision_label(child.name, text))
-        lines.append(f'      - "{label}": decisions/{child.name}')
+        lines.append(f'      - {label}: decisions/{child.name}')
     return "\n".join(lines)
 
 
