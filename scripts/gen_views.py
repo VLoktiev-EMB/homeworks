@@ -144,20 +144,53 @@ _BOARD_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # The schema's `pinout_url` pattern; `|`, `<` and `>` are refused on top of it
 # because they would break the table cell or pass raw HTML through (T-5-19).
 _HTTPS_URL = re.compile(r"^https://[^\s]+$")
+# `schema/homework.schema.json` fixes this shape for `report.path`; the
+# generator re-checks the same rule so a link destination can never carry
+# `)`, `]`, a backslash or a `..` segment when the checker has not run first
+# (T-5-33, CR-01).
+_REPORT_PATH = re.compile(
+    r"^(?!/)(?!.*(?:^|/)\.\.(?:/|$))(?!.*\\)"
+    r"[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+)
 
 
 def _escape_cell(value):
     """Make a metadata value safe inside one Markdown table cell (ASVS V5).
 
     Control characters, tabs and newlines collapse to a single space, so a
-    multi-line title cannot break the table row. `|` is escaped because it
-    would open another column, and `[`/`]` because `_homework_rows` puts the
-    title inside a Markdown link label: an unescaped `]` would close the label
-    early and an unescaped `[` would open a nested link.
+    multi-line title cannot break the table row. `&` is escaped first, then
+    `<`/`>`: Python-Markdown passes raw HTML straight through, so a metadata
+    value must never reach the published site as a live tag (CR-01). Escaping
+    `&` after the angle brackets would corrupt the entities just emitted.
+    `|` is escaped because it would open another column, and `[`/`]` because
+    `_homework_rows` puts the title inside a Markdown link label: an
+    unescaped `]` would close the label early and an unescaped `[` would open
+    a nested link.
     """
     text = "" if value is None else str(value)
     text = _CONTROL.sub(" ", text).strip()
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return text.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
+
+
+def _report_path(document, display):
+    """Return the validated `report.path`, or `None` when the block is absent.
+
+    The value becomes a Markdown link destination, so an unvalidated one
+    containing `)` could close the destination early and leak the rest of the
+    URL into the cell. Refuse rather than sanitise: a metadata path the schema
+    cannot represent is an environment error (exit 2), matching `_pinout_link`.
+    """
+    report = document.get("report")
+    report_path = report.get("path") if isinstance(report, dict) else None
+    if not isinstance(report_path, str) or not report_path:
+        return None
+    if not _REPORT_PATH.match(report_path):
+        raise CheckError(
+            f"{display}: report.path {report_path!r} is not a safe "
+            "repository-relative path"
+        )
+    return report_path
 
 
 def _load_homeworks(root):
@@ -244,8 +277,7 @@ def _homework_rows(homeworks, *, link_style):
         document = homework["document"]
         number = f"{homework['module']}.{homework['lesson']}"
         title = _escape_cell(homework["title"])
-        report = document.get("report")
-        report_path = report.get("path") if isinstance(report, dict) else None
+        report_path = _report_path(document, homework["display"])
         if link_style == "relative":
             project_link = f"homeworks/{identifier}/"
         else:
@@ -254,7 +286,7 @@ def _homework_rows(homeworks, *, link_style):
         # defined rendering — the literal token `none` in the cell. No guessed
         # `report.md` URL is ever emitted, and the six-column width never
         # changes (T-5-33).
-        if isinstance(report_path, str) and report_path:
+        if report_path is not None:
             if link_style == "relative":
                 report_link = f"homeworks/{identifier}/{report_path}"
             else:
@@ -762,9 +794,8 @@ def _homework_links(homework):
     identifier = homework["id"]
     readme_url = f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/README.md"
     lines = []
-    report = homework["document"].get("report")
-    report_path = report.get("path") if isinstance(report, dict) else None
-    if isinstance(report_path, str) and report_path:
+    report_path = _report_path(homework["document"], homework["display"])
+    if report_path is not None:
         report_url = (
             f"{REPOSITORY_URL}/blob/main/homeworks/{identifier}/{report_path}"
         )

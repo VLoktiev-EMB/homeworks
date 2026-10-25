@@ -538,6 +538,74 @@ class EscapeTests(ViewsTestBase):
         self.assertEqual(1, project_cell.count("]("), project_cell)
         self.assertNotIn("\n", row)
 
+    def test_html_metacharacters_are_escaped_and_never_live(self) -> None:
+        path = self.root / "homeworks" / "1_3-alpha" / "homework.yaml"
+        text = path.read_text(encoding="utf-8")
+        title = "Alpha & <img src=x onerror=alert(1)>"
+        path.write_text(
+            text.replace('title: "Alpha"', f'title: "{title}"'),
+            encoding="utf-8",
+        )
+        escaped = "Alpha &amp; &lt;img src=x onerror=alert(1)&gt;"
+
+        readme_result = self.generate("readme")
+        docs_result = self.generate("docs")
+
+        self.assertEqual(
+            0, readme_result.returncode, readme_result.stdout + readme_result.stderr
+        )
+        self.assertEqual(
+            0, docs_result.returncode, docs_result.stdout + docs_result.stderr
+        )
+        readme = (self.root / "README.md").read_text(encoding="utf-8")
+        page = (
+            self.root / "docs" / "homeworks" / "1_3-alpha.md"
+        ).read_text(encoding="utf-8")
+        for name, surface in (("README", readme), ("page", page)):
+            with self.subTest(surface=name):
+                self.assertNotIn(
+                    "<img", surface, "raw HTML must never reach the site"
+                )
+                self.assertIn(escaped, surface)
+
+
+class ReportPathTests(ViewsTestBase):
+    """CR-01: `report.path` is a link destination, never unvalidated text."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.homework_yaml = (
+            self.root / "homeworks" / "1_3-alpha" / "homework.yaml"
+        )
+        self.original = self.homework_yaml.read_text(encoding="utf-8")
+        self.assertIn("  path: report.md\n", self.original)
+
+    def set_report_path(self, value: str) -> None:
+        # `json.dumps` is a valid YAML double-quoted scalar, so a literal
+        # backslash in *value* reaches the loader as one backslash.
+        self.homework_yaml.write_text(
+            self.original.replace(
+                "  path: report.md\n", f"  path: {json.dumps(value)}\n"
+            ),
+            encoding="utf-8",
+        )
+
+    def test_a_hostile_report_path_is_refused(self) -> None:
+        for value in (
+            "report).md",
+            "../escape.md",
+            "/etc/passwd.md",
+            "report\\x.md",
+        ):
+            for view in ("readme", "docs"):
+                with self.subTest(value=value, view=view):
+                    self.set_report_path(value)
+
+                    result = self.generate(view)
+
+                    self.assert_usage_error(result)
+                    self.assertIn("report.path", result.stderr)
+
 
 class AllowlistTests(ViewsTestBase):
     """T-5-09: the manifest is an authority, never a way to widen the writes."""
@@ -1173,6 +1241,16 @@ class BoardPageTests(ViewsTestBase):
             "| Frameworks | arduino, espidf |",
         ):
             self.assertIn(row, text)
+
+    def test_html_in_a_profile_field_is_escaped(self) -> None:
+        self.rewrite_profile("soc: esp32-s3", "soc: <b>esp32-s3</b> & co")
+
+        result = self.generate("docs")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        text = self.board_page()
+        self.assertNotIn("<b>", text, "raw HTML must never reach the site")
+        self.assertIn("| SoC | &lt;b&gt;esp32-s3&lt;/b&gt; &amp; co |", text)
 
     def test_pinout_url_is_a_markdown_link(self) -> None:
         self.assertEqual(0, self.generate("docs").returncode)
