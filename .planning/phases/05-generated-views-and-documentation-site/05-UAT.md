@@ -1,9 +1,9 @@
 ---
-status: partial
+status: complete
 phase: 05-generated-views-and-documentation-site
 source: [05-VERIFICATION.md]
 started: 2026-10-26T00:00:00Z
-updated: 2026-10-25T23:18:35.324Z
+updated: 2026-10-25T23:25:51.625Z
 ---
 
 ## Current Test
@@ -20,9 +20,17 @@ expected: |
   The `build and deploy` job is green; the home page shows the six-column generated
   table; the Homeworks/Boards/Decisions navigation resolves; a math-bearing page
   renders through the vendored KaTeX fonts.
-result: blocked
-blocked_by: release-build
-reason: "Deferred by owner decision (Variant A). The phase branch has 66 commits not yet on origin/main and no upstream; docs.yml fires on push to main or workflow_dispatch, and workflow_dispatch is only offered in the Actions UI once docs.yml exists on the default branch. Settings -> Pages -> Source = GitHub Actions is additionally a repository setting. None of this is reachable before merge, so the deploy path stays wired-but-unexercised until then. Verify after merge."
+result: pass
+notes: |
+  Verified after merge of PR #12. `docs` workflow run 40244560849: job `build and deploy`
+  completed success. Live checks against https://vloktiev-emb.github.io/homeworks/:
+  home page 200 with the six-column header `ID | Project | Board | Framework | Status | Report`;
+  `/homeworks/1_3-police-flasher/` 200 with the eight-field metadata card and absolute
+  `github.com/.../blob/main/...` links to `report.md` and `README.md`;
+  `/boards/esp32-s3-devkitc-1/` 200 linking back to the homework page; nav Homeworks/Boards/
+  Decisions resolves; `assets/vendor/katex/0.19.0/katex.min.css` served 200 (24793 b) and the
+  page references `katex.min.css`, `katex.min.js` and the vendor tree, so math renders from the
+  vendored assets rather than a CDN.
 
 ### 2. Review the 23 judgment-tier `must_haves.prohibitions` across the nine plans
 expected: |
@@ -41,11 +49,11 @@ notes: |
 ## Summary
 
 total: 2
-passed: 1
+passed: 2
 issues: 0
 pending: 0
 skipped: 0
-blocked: 1
+blocked: 0
 
 ## Gaps
 
