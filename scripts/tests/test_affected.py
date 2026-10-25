@@ -307,3 +307,197 @@ class PathsFromTests(PathsTestBase):
         payload = json.loads(result.stdout)
         self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
         self.assertNotIn("..", result.stdout)
+
+
+class FrameworkTests(PathsTestBase):
+    """`framework` resolves through `extra_configs` plus `extends`."""
+
+    @staticmethod
+    def entry(entries, project: str, env: str) -> dict:
+        for item in entries:
+            if item["project"] == project and item["env"] == env:
+                return item
+        raise AssertionError(f"no build entry for {project} {env}")
+
+    def test_arduino_framework_is_inherited_through_extra_configs(self) -> None:
+        payload = self.payload(["homeworks/1_3-alpha/src/main.cpp"])
+
+        entry = self.entry(
+            payload["build"], "homeworks/1_3-alpha", "esp32s3_arduino"
+        )
+        self.assertEqual("arduino", entry["framework"])
+
+    def test_espidf_framework_is_reported(self) -> None:
+        payload = self.payload(["homeworks/1_4-beta/src/main.cpp"])
+
+        entry = self.entry(
+            payload["build"], "homeworks/1_4-beta", "esp32s3_espidf"
+        )
+        self.assertEqual("espidf", entry["framework"])
+
+    def test_native_environment_is_in_build_only(self) -> None:
+        payload = self.payload(["homeworks/1_3-alpha/src/main.cpp"])
+
+        entry = self.entry(payload["build"], "homeworks/1_3-alpha", "native")
+        self.assertEqual("native", entry["framework"])
+        self.assertEqual(
+            [],
+            [item for item in payload["simulate"] if item["env"] == "native"],
+        )
+
+    def test_tests_project_native_environment_is_in_build_only(self) -> None:
+        payload = self.payload(["lib/host/src/host.c"])
+
+        entry = self.entry(payload["build"], "tests", "native")
+        self.assertEqual("native", entry["framework"])
+        self.assertNotIn("tests", projects_of(payload["simulate"]))
+
+    def test_simulation_none_project_is_excluded_from_simulate(self) -> None:
+        payload = self.payload(["homeworks/1_4-beta/src/main.cpp"])
+
+        self.assertEqual(
+            ["homeworks/1_4-beta"], projects_of(payload["build"])
+        )
+        self.assertEqual([], payload["simulate"])
+
+
+class FixtureGuardTests(PathsTestBase):
+    """The metadata loader, the missing-INI rule and the cycle guard."""
+
+    def test_duplicated_simulation_key_is_an_environment_error(self) -> None:
+        homework = self.root / "homeworks" / "1_3-alpha" / "homework.yaml"
+        homework.write_text(
+            homework.read_text(encoding="utf-8")
+            + "simulation:\n  tool: none\n",
+            encoding="utf-8",
+        )
+
+        result = self.affected(["homeworks/1_3-alpha/src/main.cpp"])
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertIn("ERROR:", result.stderr)
+
+    def test_homework_without_platformio_ini_fails_with_the_directory_named(
+        self,
+    ) -> None:
+        project = self.root / "homeworks" / "1_5-gamma"
+        project.mkdir(parents=True)
+        (project / "homework.yaml").write_text(
+            'id: "1_5-gamma"\n', encoding="utf-8"
+        )
+
+        result = self.affected(["homeworks/1_5-gamma/homework.yaml"])
+
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("", result.stdout)
+        self.assertIn("1_5-gamma", result.stderr)
+        self.assertIn("platformio.ini", result.stderr)
+
+    def test_empty_homework_directory_is_skipped(self) -> None:
+        (self.root / "homeworks" / "1_6-empty").mkdir(parents=True)
+
+        payload = self.payload(["homeworks/1_6-empty/src/main.c"])
+
+        self.assertEqual({"build": [], "simulate": []}, payload)
+
+    def test_circular_library_dependencies_terminate(self) -> None:
+        common = self.root / "lib" / "common" / "library.json"
+        document = json.loads(common.read_text(encoding="utf-8"))
+        document["dependencies"] = {"port": "*"}
+        common.write_text(
+            json.dumps(document, indent=2) + "\n", encoding="utf-8"
+        )
+        port = self.root / "lib" / "port" / "library.json"
+        document = json.loads(port.read_text(encoding="utf-8"))
+        document["dependencies"] = ["common"]
+        port.write_text(
+            json.dumps(document, indent=2) + "\n", encoding="utf-8"
+        )
+
+        payload = self.payload(["lib/common/src/common.c"])
+
+        self.assertEqual(ALL_PROJECTS, projects_of(payload["build"]))
+
+
+class EndToEndTests(unittest.TestCase):
+    """A real `git init`, a real commit and a real diff."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="affected-e2e-")
+        self.addCleanup(self._tmp.cleanup)
+        self.workspace = Path(self._tmp.name)
+        source = temp_root.write_synthetic_root(
+            self.workspace / "synthetic", source_root=REPO_ROOT
+        )
+        self.repo = self.workspace / "repo"
+        shutil.copytree(source, self.repo)
+        self.alpha = self.repo / "homeworks" / "1_3-alpha" / "src" / "main.cpp"
+        self.alpha.parent.mkdir(parents=True, exist_ok=True)
+        self.alpha.write_text("int main(void) { return 0; }\n", encoding="utf-8")
+
+    def git(self, *arguments: str) -> subprocess.CompletedProcess:
+        if shutil.which("git") is None:
+            raise AssertionError("git is a required repository tool")
+        return subprocess.run(
+            ["git", *arguments],
+            cwd=str(self.repo),
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+
+    def commit(self, message: str) -> None:
+        staged = self.git("add", "-A")
+        self.assertEqual(0, staged.returncode, staged.stdout + staged.stderr)
+        committed = self.git("commit", "-m", message)
+        self.assertEqual(
+            0, committed.returncode, committed.stdout + committed.stderr
+        )
+
+    def test_working_tree_and_base_modes_report_the_expected_projects(
+        self,
+    ) -> None:
+        initialized = self.git("init", "-q")
+        self.assertEqual(
+            0, initialized.returncode, initialized.stdout + initialized.stderr
+        )
+        self.git("config", "user.email", "fixture@example.com")
+        self.git("config", "user.name", "Fixture")
+        self.git("config", "commit.gpgsign", "false")
+        self.commit("baseline")
+
+        self.alpha.write_text(
+            "int main(void) { return 1; }\n", encoding="utf-8"
+        )
+        working = run_affected("--dir", str(self.repo))
+        self.assertEqual(0, working.returncode, working.stdout + working.stderr)
+        self.assertEqual(
+            ["homeworks/1_3-alpha"],
+            projects_of(json.loads(working.stdout)["build"]),
+        )
+
+        restored = self.git(
+            "checkout", "--", "homeworks/1_3-alpha/src/main.cpp"
+        )
+        self.assertEqual(
+            0, restored.returncode, restored.stdout + restored.stderr
+        )
+
+        common = self.repo / "lib" / "common" / "src" / "common.c"
+        common.write_text(
+            "int common_fixture_symbol(void) { return 1; }\n",
+            encoding="utf-8",
+        )
+        self.commit("change common")
+        common.write_text(
+            "int common_fixture_symbol(void) { return 2; }\n",
+            encoding="utf-8",
+        )
+
+        based = run_affected("--dir", str(self.repo), "--base", "HEAD~1")
+        self.assertEqual(0, based.returncode, based.stdout + based.stderr)
+        projects = projects_of(json.loads(based.stdout)["build"])
+        self.assertEqual(["homeworks/1_3-alpha", "tests"], projects)
+        self.assertNotIn("homeworks/1_4-beta", projects)
