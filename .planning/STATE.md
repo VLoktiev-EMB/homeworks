@@ -125,6 +125,8 @@ Recent decisions affecting current work:
 - [Phase 04.2]: D-09 is recorded as a human checklist with its mechanical checks passing and the originality review pending; no completed user sign-off is claimed.
 - [Phase 04.2]: Wokwi execution stays deferred to Phase 7 with `simulation.status: pending`; only `wokwi-cli lint --offline` is a verified simulation result.
 - [Phase 04.2]: No `hw/1_3-police-flasher` tag exists; the tag belongs to Phase 11 and `scripts/tag_homework.sh` was not run.
+- [Phase 04.2]: D-09 is closed — the repository owner performed the paraphrase comparison on 2026-10-25 and confirmed no verbatim sentence, no distinctive phrasing, and no original file committed. The result is recorded in 04-UAT.md, 04.2-SECURITY.md T-4.2-02, 04.2-VALIDATION.md (META-02), the PR body, and report appendix item 9 / T-13; this entry supersedes the earlier originality-review-pending note, which stays as the historical record.
+- [Phase 04.2]: The "18"-entry count in 04.2-PR-BODY.md stays as submitted. 04.2-FRICTION-LOG.md is the canonical count and holds 19 entries since plan 08 added F-19. The tracked body is not edited after PR #10 opened (plan 11), and no live-description edit is made here because changing PR #10 is an outward-facing owner action confirmed separately; a correction would update the tracked file and PR #10 together in one owner-approved action.
 
 ### Pending Todos
 
