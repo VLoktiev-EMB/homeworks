@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Shared Core and Dependency Rule** - Framework-free `common`/`port`, thin adapters, and an enforced native test gate (completed 2026-10-24)
 - [x] **Phase 4: Metadata Contract and Scaffolding** - Schema-validated `homework.yaml`, templates, and a deterministic `new_homework` (completed 2026-10-25)
 - [x] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done (completed 2026-10-25)
-- [x] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log (completed 2026-10-25)
+- [ ] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log (verification gaps open — see `.planning/phases/04.2-tracer-homework-1-3/04.2-VERIFICATION.md`)
 - [ ] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata
 - [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
 - [ ] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004
@@ -341,7 +341,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 3. Shared Core and Dependency Rule | 9/9 | Complete    | 2026-10-24 |
 | 4. Metadata Contract and Scaffolding | 9/9 | Complete    | 2026-10-25 |
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
-| 4.2. Tracer Homework 1.3 | 7/7 | Complete | 2026-10-25 |
+| 4.2. Tracer Homework 1.3 | 7/7 | Gaps found | — |
 | 5. Generated Views and Documentation Site | 0/TBD | Not started | - |
 | 6. Developer Experience and Quality Layering | 0/TBD | Not started | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
