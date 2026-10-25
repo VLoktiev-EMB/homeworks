@@ -4,10 +4,10 @@ current_phase: 5
 current_phase_name: Generated Views and Documentation Site
 status: planning
 stopped_at: Phase 04.2 complete, ready to plan Phase 5
-last_updated: "2026-10-25T20:50:21.041Z"
+last_updated: "2026-10-25T21:11:23.950Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 04.2 complete, transitioned to Phase 5
-state_head: 241d3929e93200abed354a124722259d4578a046
+state_head: 9b96a8f0b6b3e7f59f9eb6196838028458e17dea
 progress:
   total_phases: 13
   completed_phases: 6
@@ -152,7 +152,7 @@ Recent decisions affecting current work:
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
 - **[Phase 4.2, open]** PR #10 is open and its `pull_request` run is green, but the post-run commits (friction-log CI record, phase verification, quick fix, phase completion) are not yet pushed and the PR is not merged. Pushing them triggers a second CI run.
 - **[Phase 4.2, traceability warning]** `phase.complete` reports that ROADMAP Phase 04.2 cites INV-01..INV-04, which are defined in `REQUIREMENTS.md` under "Invariants" but absent from its Traceability table. The IDs are legitimate; the table is the missing half.
-- **[Phase 4.2, info]** `REQUIREMENTS.md` still says META-02 `In review (D-09 paraphrase check)` although the owner confirmed it; the requirement table is orchestrator-level and was not part of the phase's artifact scope. Untracked IDE files `homeworks/1_3-police-flasher/.gitignore` and `.vscode/` remain by design (recorded for the Phase 5 workspace generator).
+- **[Phase 4.2, info]** `REQUIREMENTS.md` still says META-02 `In review (D-09 paraphrase check)` although the owner confirmed it; the requirement table is orchestrator-level and was not part of the phase's artifact scope. Untracked IDE scaffolding (`homeworks/*/.gitignore`, `homeworks/*/.vscode/*`) is now ignored by the root `.gitignore` and the extension recommendations live in `homeworks.code-workspace`, so the Phase 5 workspace generator no longer owns them.
 
 ### Quick Tasks Completed
 
@@ -160,6 +160,7 @@ Recent decisions affecting current work:
 |---|-------------|------|--------|-----------|
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
 | 261025-vih | Fix the six residual findings from the Phase 04.2 verification | 2026-10-25 | 50d82ff | [261025-vih-fix-the-six-residual-findings-from-the-p](./quick/261025-vih-fix-the-six-residual-findings-from-the-p/) |
+| 3 | Ignore PlatformIO editor scaffolding and centralize IDE extensions | 2026-10-25 | 9b96a8f | — |
 
 ### Roadmap Evolution
 
