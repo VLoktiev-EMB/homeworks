@@ -173,7 +173,6 @@ On commit:
   rewrite the file, so fix the finding and commit again.
 - `yamllint` — an authored YAML file violates `.yamllint.yaml`.
 - `markdownlint-cli2` — an authored Markdown file violates `.markdownlint-cli2.jsonc`.
-  Generated pages are excluded from this hook.
 - `no-generated-files` — a generated path (`compile_commands.json`, `site/`, `.pio/`, or an
   ESP-IDF build output inside a homework) is tracked. Remove it from the index.
 - `check-architecture` — `lib/common` or `lib/port` gained a framework header, or `common`

@@ -1,12 +1,12 @@
 """Prove the LFS-pointer guard's behaviour and the workflow contracts.
 
-Besides the docs and generated-views commands, the workflow trigger keys are
-asserted: yamllint's `truthy` policy relaxes KEY checking, so every workflow
+The generated-views workflow command is asserted, and so are the workflow
+trigger keys: yamllint's `truthy` policy relaxes KEY checking, so every workflow
 must keep spelling its trigger as the text `on:`.
 
 The guard is behaviour, not text: `check_lfs_pointers.sh` is executed against a
 temporary directory so a clean tree, an empty file, a real pointer, a missing
-directory and a symlink each have an observed exit status. Grepping `docs.yml`
+directory and a symlink each have an observed exit status. Grepping a workflow
 for the command would only prove that the string exists, so the workflow
 assertions here are deliberately limited to the names and commands the YAML must
 carry; whether the guard works is proven above by running it.
@@ -26,7 +26,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "ci" / "check_lfs_pointers.sh"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 GENERATED_VIEWS = WORKFLOWS / "generated-views.yml"
-DOCS = WORKFLOWS / "docs.yml"
 YAMLLINT_POLICY = REPO_ROOT / ".yamllint.yaml"
 
 POINTER = "version https://git-lfs.github.com/spec/v1\noid sha256:" + "0" * 64 + "\nsize 42\n"
@@ -89,21 +88,12 @@ class WorkflowTextTests(unittest.TestCase):
         text = GENERATED_VIEWS.read_text(encoding="utf-8")
         self.assertIn("python scripts/gen_views.py --all --check", text)
 
-    def test_docs_builds_strictly_in_a_named_step(self) -> None:
-        text = DOCS.read_text(encoding="utf-8")
-        self.assertIn("Build the site with warnings as errors", text)
-        self.assertIn("mkdocs build --strict", text)
-
-    def test_docs_runs_the_lfs_guard_on_the_site_directory(self) -> None:
-        text = DOCS.read_text(encoding="utf-8")
-        self.assertIn("bash scripts/ci/check_lfs_pointers.sh site", text)
-
 
 class WorkflowTriggerKeyTests(unittest.TestCase):
     """The YAML policy must never rewrite a workflow's trigger key (D-14).
 
-    yamllint parses the bare `on:` key as a boolean under YAML 1.1, so the four
-    workflows produced four `truthy` findings. They are keys, not values, so
+    yamllint parses the bare `on:` key as a boolean under YAML 1.1, so the three
+    workflows produced three `truthy` findings. They are keys, not values, so
     `.yamllint.yaml` disables key checking instead of normalising a scalar.
     These assertions are the durable guard against a later edit that
     "simplifies" a trigger key and breaks the workflow schema; whether a
@@ -114,9 +104,9 @@ class WorkflowTriggerKeyTests(unittest.TestCase):
     def workflows(self) -> list[Path]:
         return sorted(WORKFLOWS.glob("*.yml"))
 
-    def test_all_four_workflows_declare_a_textual_trigger_key(self) -> None:
+    def test_all_three_workflows_declare_a_textual_trigger_key(self) -> None:
         files = self.workflows()
-        self.assertEqual(4, len(files), [path.name for path in files])
+        self.assertEqual(3, len(files), [path.name for path in files])
         for path in files:
             lines = path.read_text(encoding="utf-8").splitlines()
             with self.subTest(workflow=path.name):

@@ -2,8 +2,8 @@
 #
 # yamllint resolves this file from the working directory and its ancestors, and
 # pre-commit runs every hook from the repository root, so the hook needs no `-c`.
-# The generated `mkdocs.yml` is deliberately outside the hook's scope: like the
-# generated pages, its shape is owned by `scripts/gen_views.py --check`.
+# The three generated views are deliberately outside the hook's scope: their
+# shape is owned by `scripts/gen_views.py --check`.
 #
 # Every rule below is a policy decision, not a silenced finding:
 #
