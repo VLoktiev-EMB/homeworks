@@ -281,9 +281,12 @@ therefore `not measured` in the ledger, with the fixed reason `bench equipment o
 automated tracer run`, rather than estimated from the calculations.
 No measured values were captured in this session.
 
-**Simulation.** The canonical diagram passed `wokwi-cli lint --offline`; the scenario has not
-been executed because `WOKWI_CLI_TOKEN` is absent. The expected alternating timing is therefore
-`simulated`, not observed, and Phase 7 owns the execution and the simulator decision.
+**Simulation.** The canonical diagram passed `wokwi-cli lint --offline`, and the scenario was
+then executed in Wokwi: all three counted runs exited 0 and each captured stream carried exactly
+one `pattern ready` line, so `simulation.status` is `verified`. The run output stays `simulated`
+evidence, never bench evidence. The raw commands and per-run values are in
+`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool selection is recorded
+in `docs/decisions/0014-simulator-selection.md`.
 
 ### Measurement Ledger
 
@@ -304,7 +307,7 @@ the code the report describes, and every row names the same commit as the metada
 | L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `9e1238d` |
 | L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `9e1238d` |
 | L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `9e1238d` |
-| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | none (Wokwi was not executed) | `scenario.yaml` read against the frame table; only the offline lint was run | expected timing only; no observed period exists because the token is absent | `9e1238d` |
+| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | Wokwi, three runs bounded by `--timeout 15000` | `scenario.yaml` read against the frame table; the scenario then executed with its `expect-pin esp:4 == 1` step passing in every run | expected timing only; the run confirms the assertion path, not a bench period, because simulation output is not hardware evidence | `9e1238d` |
 | L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `9e1238d` |
 | L-10 | Button debounce | not measured: bench equipment offline during automated tracer run; the firmware emits only the `pattern ready` handshake, so no serial transition log exists | not measured | logic analyzer on GPIO7 | logic-analyzer capture of the mode and speed transitions on GPIO7; the D-14 serial-timestamp method is unavailable until the firmware gains transition logging (Phase 11) | not applicable: no observation was captured | `9e1238d` |
 | L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `9e1238d` |
@@ -344,7 +347,7 @@ evidence does not exist yet and the row names the phase that owns it.
 | T-12 | Traceability matrix (REPORT-07) | this table | manual review of claim coverage | this file | manual |
 | T-13 | English paraphrase and provenance (META-02) | `task.md` | D-09 checklist confirmed by the repository owner on 2026-10-25 and `check_metadata.py` | repository owner confirmed on 2026-10-25: no verbatim sentence, no distinctive phrasing, no original file committed; the checker exits 0 | manual |
 | T-14 | Architecture boundary (INV-04) | `lib/` and `scripts/check_architecture.py` | `python3 scripts/check_architecture.py` | exit 0; the private library lives outside `lib/` | verified |
-| T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `merge_firmware.py` | `wokwi-cli lint --offline`; execution requires `WOKWI_CLI_TOKEN` | lint exits 0; execution was not observed and `simulation.status` stays `pending` | pending |
+| T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `../../scripts/pio/merge_firmware.py` | `wokwi-cli lint --offline`; the three-run execution recorded in `07-SPIKE-EVIDENCE.md` | lint exits 0; all three counted runs exited 0 with one `pattern ready` serial line each, so `simulation.status` is `verified` | verified |
 | T-16 | High-impedance off-state behaviour is implemented and tested | controller mode change in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` all-off frame case; report statement | the fake records `INPUT` on the all-off frame; the hardware off-state node voltage is `not measured` (L-12) | verified |
 | T-17 | SOLID single-pin precedence is implemented and tested | `led_a` precedence in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` SOLID case; report statement | the case passes; the LOW-side LED's hardware state was not observed | verified |
 
@@ -400,8 +403,9 @@ Industry note: provenance in a measurement report is what lets a reviewer separa
 from expectation. A row that says `not measured` with a reason, an instrument, and a method is
 more useful a year later than a plausible number with no trail, because the reviewer can see
 which claims are still open and which phase owns them. The same discipline applies to the
-simulation: an unexecuted scenario is a `simulated` expectation, and a lint result is not an
-observation.
+simulation: in general, a scenario that has not been run is a `simulated` expectation, and a
+lint result is not an observation. The executed run and the lint are therefore recorded as
+separate evidence, so a reader can tell which claim rests on which.
 
 ## 9. Conclusions
 
@@ -414,15 +418,19 @@ map, BOM, and calculations trace to its part ids and nets. The half-bridge is a 
 realization of the single-GPIO requirement, with its two fidelity limits stated rather than
 hidden.
 
-The evidence does not support any claim about the bench, the serial port, or the simulator.
-No measured values were captured in this session: the supply voltage, LED current, blink
-period, forward voltage in diode mode, and button debounce are all `not measured` with the
-fixed reason recorded in the ledger, and no measurement has been inferred from a calculation.
-The Wokwi scenario has not been executed, so the expected timing is `simulated`, not observed.
+The evidence does not support any claim about the bench or the serial port, and the simulation
+evidence is simulation-only. No measured values were captured in this session: the supply
+voltage, LED current, blink period, forward voltage in diode mode, and button debounce are all
+`not measured` with the fixed reason recorded in the ledger, and no measurement has been
+inferred from a calculation. The Wokwi scenario was executed after that session: all three
+counted runs exited 0 with one `pattern ready` line each, as recorded in
+`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the expected pattern timing
+remains `simulated` evidence rather than a bench observation.
 
 Status: the homework is in progress. No `hw/` tag exists; a tag is created only through
 `scripts/tag_homework.sh <id>` after merge, and Phase 11 owns it. Simulation execution is
-pending Phase 7, which also owns the simulator decision record. Phase 5 owns the generators for
+recorded in `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the simulator
+decision in `docs/decisions/0014-simulator-selection.md`. Phase 5 owns the generators for
 the index, workspace, shared configuration, and documentation site; Phase 6 owns formatting,
 clang-tidy, and the developer environment; Phase 8 owns the real CI matrix; Phase 10 owns the
 report contract and its checker; Phase 11 owns the polished pilot, the tag, and scale-out.
@@ -468,9 +476,11 @@ report contract and its checker; Phase 11 owns the polished pilot, the tag, and 
 6. **D-18 reading of ROADMAP success criterion 3.** The CI outcome is one single-project workflow
    running `pio run` and `pio test -e native`, not a discovery matrix. Changed-only detection
    needs a separate script, which Phase 8 owns.
-7. **Wokwi token deferral.** `WOKWI_CLI_TOKEN` is absent, so `wokwi-cli` exits before loading the
-   firmware. Only `lint --offline` is a verified result, `simulation.status` stays `pending`,
-   and Phase 7 owns execution and the simulator decision record.
+7. **Wokwi execution.** `WOKWI_CLI_TOKEN` was supplied outside the repository and its value is
+   never recorded. All three counted runs exited 0 with one `pattern ready` serial line each, so
+   `simulation.status` is `verified`; the commands and per-run values are in
+   `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the simulator decision is
+   `docs/decisions/0014-simulator-selection.md`.
 8. **Private library and controller seam (D-05, D-06, D-07).** The pattern logic stays
    homework-local at `lib/pattern` with a manifest that declares no frameworks; the controller
    takes `port_gpio_t` and `port_time_t` by value; the Arduino adapters live only in the

@@ -11,7 +11,7 @@
 | Language | cpp |
 | Status | in-progress |
 | Toolchain | PlatformIO 6.2.0 · espressif32@8.0.0 |
-| Simulation | wokwi (pending) |
+| Simulation | wokwi (verified) |
 
 ## Links
 
