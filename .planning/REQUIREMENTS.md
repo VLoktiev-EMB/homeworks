@@ -119,7 +119,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **SIM-03**: Fritzing SVGs may be used in reports with attribution; part graphics
       are not copied into shared assets or the docs site, and `diagram.json` remains the
       source of truth.
-- [ ] **SIM-04**: Simulation in CI is introduced only after the spike, only for changed
+- [x] **SIM-04**: Simulation in CI is introduced only after the spike, only for changed
       projects, with explicit timeouts and artifact upload, and is never a required
       check for fork pull requests.
 
@@ -136,9 +136,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
       architecture, and simulation checks in CI.
 - [x] **TOOL-04**: `docs/standards/vscode.md` onboards a VS Code beginner: extensions,
       tasks, format-on-save, Problems panel, clangd, and a no-hardware simulation path.
-- [ ] **TOOL-05**: CI has a fast `meta` job (schema, `--check` drift, lint, gitleaks,
+- [x] **TOOL-05**: CI has a fast `meta` job (schema, `--check` drift, lint, gitleaks,
       architecture check) and a `changes` job that computes the affected matrix.
-- [ ] **TOOL-06**: CI builds and tests changed projects on every pull request and exposes
+- [x] **TOOL-06**: CI builds and tests changed projects on every pull request and exposes
       a single required `gate` check; nightly runs the full build and unit-test matrix.
 - [x] **TOOL-07**: Infrastructure decisions are recorded as MADR ADRs in
       `docs/decisions/`; homework assumptions live in the report with impact-if-wrong and
@@ -321,13 +321,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIM-01 | Phase 11 | Pending |
 | SIM-02 | Phase 7 | Complete |
 | SIM-03 | Phase 7 | Complete |
-| SIM-04 | Phase 8 | Pending |
+| SIM-04 | Phase 8 | Complete |
 | TOOL-01 | Phase 6 | Complete |
 | TOOL-02 | Phase 6 | Complete |
 | TOOL-03 | Phase 6 | Complete |
 | TOOL-04 | Phase 6 | Complete |
-| TOOL-05 | Phase 8 | Pending |
-| TOOL-06 | Phase 8 | Pending |
+| TOOL-05 | Phase 8 | Complete |
+| TOOL-06 | Phase 8 | Complete |
 | TOOL-07 | Phase 1 | Complete |
 | TOOL-08 | Phase 10 | Pending |
 | FLOW-01 | Phase 9 | Pending |

@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 08
-current_phase_name: Fast CI
-status: executing
-stopped_at: Phase 8 context gathered
-last_updated: "2026-10-26T18:49:35.162Z"
+current_phase: 9
+current_phase_name: Agent Workflow and Skills
+status: planning
+stopped_at: Phase 08 complete, ready to plan Phase 9
+last_updated: "2026-10-26T20:04:31.148Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 08 execution started
-state_head: b606c963b4de57fd609cc9de3909ab5ea8d44aea
+last_activity_desc: Phase 08 complete, transitioned to Phase 9
+state_head: ad57b93f19fe18605474cfe6f6e37c8f2f65865a
 progress:
   total_phases: 14
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 73
-  completed_plans: 69
-  percent: 64
+  completed_plans: 73
+  percent: 77
 ---
 
 # Project State
@@ -23,21 +23,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 08 — Fast CI
+**Current focus:** Phase 9 — Agent Workflow and Skills
 
 ## Current Position
 
-Phase: 08 (Fast CI) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 08
-Last activity: 2026-10-26 — Phase 08 execution started
+Phase: 9 — Agent Workflow and Skills
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-26 — Phase 08 complete, transitioned to Phase 9
 
-Progress: [████████████████████] 69/69 plans ([██████░░░░] 64%)
+Progress: [████████████████████] 73/73 plans ([████████░░] 77%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 69
+- Total plans completed: 73
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -55,6 +55,7 @@ Progress: [████████████████████] 69/69 p
 | 06 | 6 | - | - |
 | 06.1 | 1 | - | - |
 | 07 | 4 | - | - |
+| 08 | 4 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -103,6 +104,10 @@ Recent decisions affecting current work:
 - Phase 7: `simulation.status: verified` follows only `**Outcome:** scenario passed`; execution alone is not success, and a failed or blocked outcome leaves `pending` with a blocker.
 - Phase 7: the shared `scripts/pio/merge_firmware.py` replaces the project-local copy; esptool 5 `merge-bin` runs in a clean build, and the failure path raises `RuntimeError`.
 - Phase 7: no Velxio source, image layer or Fritzing part graphic is vendored; the AGPLv3 image is referenced by immutable digest only, and `diagram.json` stays the wiring source of truth.
+- Phase 8: `gate` is the single required check on `main` (0 approvals, squash only); a cancelled dependency fails it closed, which is why a superseded run briefly reports red.
+- Phase 8: `changes` fails safe — `AGENTS.md`, `.yamllint.yaml` and any other unrecognised path widen the matrix to every project, so this PR built `1_3` and `tests` despite touching neither.
+- Phase 8: the PR title is enforced as `type(scope): summary` in `meta`, because squash-merge makes the title the commit subject; the first live run failed on a non-conforming title.
+- Phase 8: simulation stays opt-in per pull request (`simulate` label, same-repository head, token at step level) and never enters the nightly matrix; one run measured 5 s wall clock against a 15 s upper bound.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -174,7 +179,8 @@ Recent decisions affecting current work:
   version single-sourced in `library.json`, `.gitignore` narrowed).
 - Resolved in Phase 4: the Phase 3 target-compile carry-forward is discharged — both scaffolded
   templates build (Arduino 7.86 s, ESP-IDF 25.15 s) and the Arduino native suite is 2/2.
-- **[Phase 8 follow-up]** CI must build changed projects; the local scaffold/build path is proven, and `scripts/affected.py` already produces the matrix Phase 8 will consume. The PR-time site-build half of WR-13 is moot since the site was removed on 2026-10-26; the stdlib suite in CI remains Phase 8 scope (code-review finding WR-13).
+- **[Phase 8, resolved]** CI now builds changed projects, runs the stdlib suite, the pre-commit surface and the pre-push stage, and exposes one required `gate`; WR-13 is closed. PR #19 merged as `6285f5b`; the `main` ruleset requires `gate` with 0 approvals.
+- **[Phase 8, observation]** `edited` in the `pull_request` types fires for a description edit as well as a retitle, so editing a PR body re-runs the whole pipeline (~2–3 min). Minor, unmeasured cost; a candidate for the backlog if it bites.
 - **[Phase 4.1, deferred]** `scripts/tag_homework.sh` no longer fetches and no longer checks that `homeworks/<id>` exists at the tag target (CR-01/CR-02 in `04.1-REVIEW-DISPOSITION.md`). Operational precondition: run `git fetch origin` immediately before tagging, and confirm the merged PR and the directory by review. The tag is permanent.
 - **[Phase 4.1, accepted]** The public-identity prohibition lost its only machine check (`test_license_hygiene.py`); it is now `[ENFORCED: review]` in `AGENTS.md`. The live GitHub ruleset is no longer machine-checked (AR-4.1-01).
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
@@ -184,7 +190,8 @@ Recent decisions affecting current work:
 - **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
 - **[Phase 06.1, deferred]** `templates/**/src/*` have no compile database of their own, so both template entry points still show clangd errors. Recorded as a deferred follow-up in `06.1-UAT.md`; out of scope for the phase goal.
 - **[Phase 7, open findings]** Five ADR wording warnings (WR-02..WR-06) and the info notes remain `open` in `07-REVIEW-DISPOSITION.md`; none breaks a phase must-have, and the CR-01 merge-failure defect was fixed in `4f053b2`.
-- **[Phase 7, for Phase 8]** The CI simulation run is now unblocked by evidence: ADR-0014 carries a `calculated (upper bound)` cost basis (`15 s` per run, `45 s` for the spike). A real CI run remains Phase 8 scope and must not be claimed before it executes.
+- **[Phase 7, resolved in Phase 8]** The CI simulation run executed: run `40389939893` reported `outcome: passed` with a 5 s wall clock and a 15 s upper bound, and uploaded `serial.log`, `stdout.log` and `quota.json`.
+- **[Phase 8, unobserved]** Two nightly clauses were not seen directly — the cron trigger (next at 03:17 UTC) and the cache restore inside a later pull-request build. The dispatch path, the queueing and the `refs/heads/main` cache entry were verified; record the first cron firing when it happens.
 
 ### Quick Tasks Completed
 
@@ -213,6 +220,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T17:12:24.462Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-fast-ci/08-CONTEXT.md
+Last session: 2026-10-26T20:04:31.148Z
+Stopped at: Phase 08 complete, ready to plan Phase 9
+Resume file: None
