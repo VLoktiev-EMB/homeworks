@@ -98,5 +98,65 @@ class ClangFormatConfigTests(unittest.TestCase):
         self.assertIn("rev: v23.1.3", text)
 
 
+CLANGD_PATHS = (
+    REPO_ROOT / "templates" / "homework-arduino" / ".clangd",
+    REPO_ROOT / "templates" / "homework-espidf" / ".clangd",
+    REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden" / "homework-arduino" / ".clangd",
+    REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden" / "homework-espidf" / ".clangd",
+    REPO_ROOT / "homeworks" / "1_3-police-flasher" / ".clangd",
+)
+
+# The complete `CompileFlags.Remove` allowlist measured in 06-RESEARCH.
+CLANGD_REMOVE = (
+    "-mlongcalls",
+    "-mtext-section-literals",
+    "-mdisable-hardware-atomics",
+    "-fno-tree-switch-conversion",
+    "-fno-shrink-wrap",
+    "-fstrict-volatile-bitfields",
+    "-fmacro-prefix-map=*",
+)
+
+CLANGD_SUPPRESS = ("unknown-argument", "drv_unknown_argument")
+
+
+class ClangdConfigTests(unittest.TestCase):
+    """D-16: the per-project fragment carries the verified language-server keys.
+
+    The five committed copies must stay byte-identical so the scaffold, its
+    golden tree, and the real homework cannot drift apart.
+    """
+
+    def test_every_clangd_copy_is_byte_identical(self) -> None:
+        first = CLANGD_PATHS[0].read_bytes()
+        for path in CLANGD_PATHS:
+            with self.subTest(path=path.relative_to(REPO_ROOT).as_posix()):
+                self.assertEqual(
+                    first,
+                    path.read_bytes(),
+                    "every .clangd copy must be byte-identical",
+                )
+
+    def test_the_fragment_names_the_compilation_database(self) -> None:
+        text = CLANGD_PATHS[0].read_text(encoding="utf-8")
+        self.assertEqual(1, text.count("CompilationDatabase: ."))
+
+    def test_the_fragment_queries_the_driver_for_builtin_headers(self) -> None:
+        text = CLANGD_PATHS[0].read_text(encoding="utf-8")
+        self.assertEqual(1, text.count("BuiltinHeaders: QueryDriver"))
+
+    def test_every_gcc_only_flag_is_removed(self) -> None:
+        text = CLANGD_PATHS[0].read_text(encoding="utf-8")
+        for flag in CLANGD_REMOVE:
+            with self.subTest(flag=flag):
+                self.assertIn(f"- {flag}", text)
+
+    def test_both_diagnostics_are_suppressed(self) -> None:
+        text = CLANGD_PATHS[0].read_text(encoding="utf-8")
+        for diagnostic in CLANGD_SUPPRESS:
+            with self.subTest(diagnostic=diagnostic):
+                self.assertIn(f"- {diagnostic}", text)
+
+
 if __name__ == "__main__":
     unittest.main()
