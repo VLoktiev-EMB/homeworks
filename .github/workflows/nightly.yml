@@ -1,0 +1,105 @@
+name: nightly
+
+# D-1/D-19: the scheduled half of the CI topology. A pull request proves only the affected
+# projects; this run proves the whole tree once a day, so a break that no pull request touched
+# is visible within a day. It never runs a metered simulation: the free plan cannot sustain a
+# nightly matrix, and the opt-in pull-request job is the only place a token-bearing run belongs.
+on:
+  schedule:
+    # ~03:00 UTC leaves the day's pull-request runners free.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+# The nightly run executes whatever the default branch contains. It needs to read the tree
+# and nothing else: no secret, no write token.
+permissions:
+  contents: read
+
+concurrency:
+  # D-19: a manual dispatch must not overlap a scheduled run and contend for the runner and
+  # the default-branch cache. A scheduled run is never cancelled by a newer one.
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.affected.outputs.build }}
+    steps:
+      # Pinned to the v7.0.1 commit, not the mutable `v7` major tag: a tag can be repointed
+      # at other code between runs, a commit SHA cannot.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        run: python -m pip install uv==0.13.5
+      - name: Compute the full matrix
+        id: affected
+        run: |
+          set -euo pipefail
+          # D-5: `platformio.shared.ini` is a WIDEN_ALL entry in `scripts/affected.py`, so the
+          # mapper's own fail-safe rule yields the full project set. No curated list and no new
+          # flag: a project the mapper misses is a mapper defect, not a nightly exception.
+          printf 'platformio.shared.ini\n' > "$RUNNER_TEMP/all-paths.txt"
+          payload="$(uv run scripts/affected.py --paths-from "$RUNNER_TEMP/all-paths.txt")"
+          # The mapper prints indented JSON; `jq -c` makes the value one line that
+          # `$GITHUB_OUTPUT` and `fromJson` can consume (Pitfall 5).
+          printf 'build=%s\n' "$(printf '%s' "$payload" | jq -c .build)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: nightly build / ${{ matrix.project }} / ${{ matrix.env }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    # D-19: the budget applies to each matrix entry, not to the workflow as a whole.
+    timeout-minutes: 90
+    # D-4: an empty matrix must skip at job level — matrix expansion precedes step
+    # execution, so a step-level guard is too late. The empty-string term comes first so a
+    # `changes` job that dies before writing its output skips rather than fails on
+    # `fromJson('')` (Pitfall 4).
+    if: ${{ needs.changes.outputs.build != '' && needs.changes.outputs.build != '[]' }}
+    strategy:
+      # D-7: one failing entry must not cancel its siblings.
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include: ${{ fromJson(needs.changes.outputs.build) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # D-18/Pitfall 7: the same pin-derived key as the pull-request build, with no
+      # `restore-keys`, so this default-branch run seeds the cache every pull request
+      # restores. The root `platformio.ini` is absent by design; `hashFiles` tolerates the
+      # miss and `platformio.shared.ini` carries the platform pin, so it is the effective
+      # input (Pitfall 6).
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/.cache
+            ~/.cache/pip
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install PlatformIO Core
+        run: python -m pip install platformio==6.2.0
+      # D-6/Pitfall 10: the matrix values are contributor-controlled, so they enter through
+      # `env:` and are quoted in the shell; no expression is interpolated into `run:`.
+      - name: Build or test the environment
+        env:
+          PROJECT: ${{ matrix.project }}
+          ENV_NAME: ${{ matrix.env }}
+        run: |
+          set -euo pipefail
+          if [ "$ENV_NAME" = "native" ]; then
+            pio test -d "$PROJECT" -e "$ENV_NAME"
+          else
+            pio run -d "$PROJECT" -e "$ENV_NAME"
+          fi

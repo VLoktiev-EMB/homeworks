@@ -30,6 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "ci" / "check_lfs_pointers.sh"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
+NIGHTLY = WORKFLOWS / "nightly.yml"
 PRECOMMIT = REPO_ROOT / ".pre-commit-config.yaml"
 YAMLLINT_POLICY = REPO_ROOT / ".yamllint.yaml"
 
@@ -139,6 +140,20 @@ class WorkflowTextTests(unittest.TestCase):
         text = CI.read_text(encoding="utf-8")
         self.assertIn("contents: read", text)
         self.assertNotIn(": write", text)
+
+    def test_nightly_computes_the_full_matrix(self) -> None:
+        # `platformio.shared.ini` is the mapper's own WIDEN_ALL entry, so the nightly matrix
+        # is the full project set without a curated list or a second flag.
+        text = NIGHTLY.read_text(encoding="utf-8")
+        self.assertIn("uv run scripts/affected.py --paths-from", text)
+        self.assertIn("platformio.shared.ini", text)
+
+    def test_nightly_serialises_its_runs(self) -> None:
+        # A manual dispatch must not overlap a scheduled run, and a scheduled run is never
+        # cancelled by a newer one.
+        text = NIGHTLY.read_text(encoding="utf-8")
+        self.assertIn("group: ${{ github.workflow }}", text)
+        self.assertIn("cancel-in-progress: false", text)
 
 
 class MetaJobSurfaceTests(unittest.TestCase):
