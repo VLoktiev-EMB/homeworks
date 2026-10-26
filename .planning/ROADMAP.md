@@ -329,10 +329,10 @@ Plans:
   4. Fritzing output is used only as an attributed illustration; no part graphics are copied into shared assets or the docs site.
   5. The ADR states which simulator serves each platform and the measured CI cost basis for the cadence decision.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 **Wave 1**
-- [ ] 07-01-PLAN.md — Shared merge post action and the network-free Wokwi path proof (tracer: the merged image through the shared path)
+- [x] 07-01-PLAN.md — Shared merge post action and the network-free Wokwi path proof (tracer: the merged image through the shared path)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 07-02-PLAN.md — Evidence record, free measurement ladder, and the executed Wokwi protocol A (tracer: one measurement landed in the record)
@@ -417,7 +417,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
-| 7. Simulation Spike | 0/4 | Planned | - |
+| 7. Simulation Spike | 1/4 | In Progress | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
