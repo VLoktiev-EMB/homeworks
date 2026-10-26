@@ -13,7 +13,15 @@ are preserved verbatim; do not edit inside them.
 
 ## Project Skills
 
-No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
+| Skill | Description | Path |
+|-------|-------------|------|
+| course-index | Placeholder stub for answering which homeworks exist and how to find one from the generated course index. Use only to look up the manual index-reading fallback until this skill is promoted. | `.claude/skills/course-index/SKILL.md` |
+| hw-build | Builds a homework's PlatformIO target and runs its native suite, repairing a failure at most twice before escalating with the evidence. Use after a code block, before writing the report, or when a build is red. | `.claude/skills/hw-build/SKILL.md` |
+| hw-flash | Uploads a built homework to its board after an explicit confirmation and captures a bounded serial log to an ignored path. Use after a green build, when the board is connected and the user wants the firmware on it. | `.claude/skills/hw-flash/SKILL.md` |
+| hw-report | Placeholder for assembling a homework report from the measured evidence. Use only to look up the manual report fallback until this skill is promoted. | `.claude/skills/hw-report/SKILL.md` |
+| new-homework | Scaffolds a new PlatformIO homework through the repository's only supported path, then guides the user block by block from intake to report. Use when starting a new assignment, creating a homeworks directory, or asking for the guided homework workflow. | `.claude/skills/new-homework/SKILL.md` |
+| schematic | Placeholder for editing the Wokwi project diagram until this skill is promoted. Use only to look up the manual diagram-editor and lint fallback. | `.claude/skills/schematic/SKILL.md` |
+| simulate | Placeholder for running the Wokwi scenario and recording its evidence. Use only to look up the manual simulation command until this skill is promoted. | `.claude/skills/simulate/SKILL.md` |
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->
