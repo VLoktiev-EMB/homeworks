@@ -263,7 +263,7 @@ plus a full-history gitleaks scan.
 | pre-commit | `4.7.0` | The whole lint gate | Exactly `minimum_pre_commit_version`. `[VERIFIED: .pre-commit-config.yaml:1]` |
 | gitleaks | `8.30.1` | Full-history secret scan | Existing pin and checksum from `security.yml`. `[VERIFIED: .github/workflows/security.yml:24-27]` |
 | wokwi-cli | `0.28.1` | Diagram lint and scenario execution | The version installed locally and named by the path test. `[VERIFIED: wokwi-cli --version → 0.28.1 (7cf4ffaebfd8)]` |
-| `uv` | `0.13.5` | Run PEP 723 scripts | Required by `scripts/tests` and by `affected.py`; absent from the runner image, so install it. `[VERIFIED: PyPI uv 0.13.5 exists; Ubuntu 24.04 runner README lists no uv]` |
+| `uv` | `0.13.5` | Run PEP 723 scripts | Required by `scripts/tests` and by `affected.py`; install it explicitly in every job. `[VERIFIED: PyPI uv 0.13.5 release exists]` `[ASSUMED: the Ubuntu 24.04 runner image ships no `uv` — its software list names none]` |
 | `jq` | `1.7` | Compact JSON outputs | Preinstalled on `ubuntu-24.04`; converts the pretty-printed mapper payload to one-line step outputs. `[VERIFIED: Ubuntu2404-Readme.md line 84 "- jq 1.7"]` |
 
 ### Supporting
@@ -338,7 +338,7 @@ inside ephemeral CI jobs. The gate was still run for the three PyPI packages CI 
 | `pre-commit` | PyPI | 2026-10-12 | unknown | github.com/pre-commit/pre-commit | SUS | Approved with an exact pin (`==4.7.0`); already the repository's gate runner. |
 | `uv` | PyPI | 2026-10-22 | unknown | pypi.org/project/uv | SUS | Approved with an exact pin (`==0.13.5`); already required by `scripts/tests`. |
 | `gitleaks` (binary) | GitHub release | pinned 8.30.1 | n/a | github.com/gitleaks/gitleaks | OK | Approved; checksum already committed. |
-| `wokwi-cli` (binary) | GitHub release | pinned 0.28.1 | n/a | github.com/wokwi/wokwi-cli | — | No published checksum asset (the `wokwi-cli_0.28.1_checksums.txt` URL returns 404). Record the observed SHA-256 in the repository, the KaTeX-ledger precedent. |
+| `wokwi-cli` (binary) | GitHub release | pinned 0.28.1 | n/a | github.com/wokwi/wokwi-cli | — | The complete v0.28.1 asset list (six platform binaries plus `version.json`) names no checksum file, so record the observed SHA-256 in the repository (the KaTeX-ledger precedent). `[VERIFIED: GitHub API release v0.28.1]` |
 | `actions/*` | GitHub Marketplace | pinned by SHA | n/a | github.com/actions/* | OK | Approved; SHAs verified with `git ls-remote`. |
 
 **Packages removed due to [SLOP] verdict:** none.
@@ -742,8 +742,9 @@ runs `pre-commit run --all-files --hook-stage pre-push` (verified locally: it ru
 
 ### Pitfall 9: `pre-commit install-hooks` installs every stage
 **What goes wrong:** The fast `meta` job downloads the clang-tidy environment it never uses.
-**Why it happens:** `install-hooks` takes only `-c`/`--color`; it has no stage filter.
-`[VERIFIED: pre-commit install-hooks --help output]`
+**Why it happens:** `install-hooks` takes only `-c`/`--color`, and its `--help` output lists
+no stage filter `[VERIFIED: pre-commit install-hooks --help output]`; that it therefore
+installs every hook environment is `[ASSUMED]` (A9).
 **How to avoid:** Accept the one-time download and share one cache key between `meta` and
 `static-analysis`, or skip `install-hooks` and let `run` install only what it executes (a
 deviation from D-13).
@@ -827,8 +828,9 @@ drift assertion to the hook surface (`gen-views-check` in `.pre-commit-config.ya
 **What goes wrong:** Tests raise `uv is a required repository tool; install it before running
 this suite`.
 **Why it happens:** The suite shells out to `uv run` in several files, and the Ubuntu 24.04
-runner image lists no `uv`. `[VERIFIED: scripts/tests/test_affected.py:33-36]` and
-`[VERIFIED: Ubuntu2404-Readme.md software list]`
+runner image's software list names no `uv`. `[VERIFIED: scripts/tests/test_affected.py:33-36]`
+`[ASSUMED: the runner image omits `uv` — an absence in its software list, not a declared
+exclusion]`
 **How to avoid:** `python -m pip install uv==0.13.5` before the suite; optionally cache
 `~/.cache/uv`.
 **Warning signs:** Many test errors, all naming `uv`.
@@ -990,6 +992,8 @@ Verified locally: all 13 hooks pass, including `homework metadata contract`,
 | A5 | The toolchain cache stays under the 10 GB repository cap with one key per shared-ini hash. | Caching | Eviction of the cache; runs get slower, nothing breaks. |
 | A6 | A title edit after the last push is acceptable to validate on the next push (unless `edited` is added). | Pitfall 15 | A non-conventional squash subject can be published. |
 | A7 | The repository is small enough that a full-history gitleaks scan fits comfortably in `meta`. | Meta surface | `meta` slows down; the 15-minute timeout is generous. |
+| A8 | The `ubuntu-24.04` runner image provides neither `uv`, `pre-commit`, nor `wokwi-cli`; the plan must install all three explicitly. | Standard Stack, Pitfall 18, Environment Availability | Installing an already-present tool is harmless; the reverse (assuming presence) would fail the job. |
+| A9 | `pre-commit install-hooks` installs every hook environment in the config, including the pre-push ones, because it exposes no stage filter. | Pitfall 9 | `meta`'s cold time may be higher than expected; the shared cache still makes it a one-time cost. |
 
 ## Open Questions
 
@@ -1034,12 +1038,12 @@ Verified locally: all 13 hooks pass, including `homework metadata contract`,
 
 | Dependency | Required By | Available | Version | Fallback |
 |------------|-------------|-----------|---------|----------|
-| `uv` | `changes`, `python-tests`, `nightly` | ✗ on the runner | — | `python -m pip install uv==0.13.5`; locally ✓ 0.13.5 |
+| `uv` | `changes`, `python-tests`, `nightly` | ✗ on the runner (assumed) | — | `python -m pip install uv==0.13.5`; locally ✓ 0.13.5 |
 | Python 3.13 | every Python job | ✓ via `setup-python` | 3.13 | runner default is 3.12.3, so always use `setup-python` |
 | PlatformIO Core | `build`, `simulate`, `static-analysis` | ✓ via pip | 6.2.0 | — |
-| `pre-commit` | `meta`, `static-analysis` | ✗ on the runner | — | `python -m pip install pre-commit==4.7.0` |
+| `pre-commit` | `meta`, `static-analysis` | ✗ on the runner (assumed) | — | `python -m pip install pre-commit==4.7.0` |
 | `jq` | `changes`, `gate`, `simulate` | ✓ preinstalled | 1.7 | Python one-liner, but jq is present |
-| `wokwi-cli` | `meta` (lint), `simulate` | ✗ on the runner | — | pinned 0.28.1 binary + recorded digest; locally ✓ 0.28.1 |
+| `wokwi-cli` | `meta` (lint), `simulate` | ✗ on the runner (assumed) | — | pinned 0.28.1 binary + recorded digest; locally ✓ 0.28.1 |
 | `mkdocs` | `docs-build` | ✗ locally | — | `python -m pip install -r requirements-docs.txt` in the job |
 | `git` | checkout, diff, gitleaks | ✓ | 2.54.0 local / runner-provided | — |
 | `gh` | manual verification only | ✓ locally | 2.103.0 | — |
