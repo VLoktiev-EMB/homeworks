@@ -1,0 +1,537 @@
+# Phase 9 dry run — skill transcript
+
+Recorded 2026-10-26 by the executing agent for plan 09-08. This transcript is the
+phase evidence for D-22: the workflow contracts live in model instructions, so a
+recorded run is the only honest check that the prose works. Every command below was
+executed; every state excerpt is the real file content at that stage of the run.
+
+`<root>` is the disposable repository root built by `build_root()` outside the
+repository. It is never the repository, never tracked, and is named relative to the
+project on purpose so no absolute path is published.
+
+The dry run is self-play: the operator executing the skill also supplies the answers
+it would give as a user. It therefore evidences that the prose is executable end to
+end; it is not evidence of a real human session.
+
+## Leg 0 — environment
+
+The disposable root is built with the same fixture builder the test suite uses, so
+the scaffold reads the real schema, templates, `platformio.shared.ini` and partition
+table without touching the repository:
+
+```text
+UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run python -c \
+  "from scripts.tests.temp_root import build_root; print(build_root('<root>'))"
+```
+
+Exit code 0; the command printed the root path, recorded here as `<root>`.
+
+`<root>/README.md` was seeded by hand so the scaffold block's view regeneration has
+an authored file with the generated marker region to render into:
+
+```text
+# Homeworks
+
+<!-- BEGIN GENERATED: homeworks -->
+<!-- END GENERATED -->
+
+A disposable root for the Phase 9 dry run.
+```
+
+The `root: "temporary"` condition is the absence of a git worktree, so it was proved
+directly:
+
+```text
+$ git -C <root> rev-parse
+fatal: not a git repository (or any of the parent directories): .git
+exit 128
+```
+
+## Leg 1 — guided intake and scaffold
+
+The id `9_1-dry-run` was supplied before the bank and validated against
+`^[0-9]+_[0-9]+-[a-z0-9-]+$`. It is not a bank topic, so `mode` stayed the first
+question (D-11). The template name `arduino` was validated against `arduino|espidf`
+before use.
+
+### Intake
+
+Every question was asked one at a time in Ukrainian; the table paraphrases the
+question in English and records the answer as written to the state file.
+
+| # | Topic | Question (paraphrase) | Answer recorded |
+|---|-------|-----------------------|-----------------|
+| 1 | `mode` | Guided or one-shot? | `guided` |
+| 2 | `board` | Which board does the assignment target? | `esp32-s3-devkitc-1` (the default, and the only board the scaffold supports) |
+| 3 | `framework` | Arduino or ESP-IDF? | `arduino` |
+| 4 | `language` | Confirm the language. | `cpp` (confirmed; the templates ship `language: cpp`) |
+| 5 | `specification` | Ready specification or free-form task? | `free-form` (acceptance criteria derived; assumptions recorded) |
+| 6 | `simulation` | Simulated, and with what? | `none` |
+| 7 | `tests` | Pure logic that can run on the host? | `unity-native`, suite path `test/test_homework` |
+| 8 | `deliverables` | Which documents are required? | `["readme", "report"]` |
+
+`simulation: none` means the token question is never reached; `simulation` was
+recorded and `simulation_token_present` was written as `false` because no simulation
+was selected. No token value was asked for, read, echoed or written.
+
+### Provenance gate
+
+The four `task.md` values were collected before the scaffold wrote anything. Because
+this is a dry-run fixture rather than a real assignment, the attribution says so
+explicitly instead of inventing a course source:
+
+| Key | Value |
+|-----|-------|
+| `source_url` | `https://github.com/VLoktiev-EMB/homeworks` |
+| `retrieved` | `2026-10-26T20:00:00Z` |
+| `attribution` | `Phase 9 dry-run fixture, not a real course assignment.` |
+| `license` | `MIT` |
+| `status` | `complete` |
+
+### State file after intake
+
+`.skill-state/9_1-dry-run.json` was written before the checkpoint menu, with
+`root: "temporary"` and `"commit": null` because `git rev-parse --short HEAD` fails
+in the disposable root (state-file.md, "Git absence"):
+
+```json
+{
+  "schema_version": 1,
+  "homework_id": "9_1-dry-run",
+  "skill": "new-homework",
+  "mode": "guided",
+  "root": "temporary",
+  "intake": {
+    "board": "esp32-s3-devkitc-1",
+    "framework": "arduino",
+    "language": "cpp",
+    "specification": "free-form",
+    "simulation": "none",
+    "simulation_token_present": false,
+    "tests": "unity-native",
+    "deliverables": ["readme", "report"],
+    "provenance": {
+      "source_url": "https://github.com/VLoktiev-EMB/homeworks",
+      "retrieved": "2026-10-26T20:00:00Z",
+      "attribution": "Phase 9 dry-run fixture, not a real course assignment.",
+      "license": "MIT",
+      "status": "complete"
+    }
+  },
+  "blocks": [],
+  "next_block": "scaffold",
+  "assumptions": [],
+  "conflicts": [],
+  "checkpoints": [
+    {"name": "intake", "at": "2026-10-26T20:05:00Z", "commit": null}
+  ]
+}
+```
+
+### Intake checkpoint
+
+The checkpoint summary named the eight answers and the provenance status, then
+paused with exactly:
+
+```text
+[Продовжити | Переробити | Стоп]
+```
+
+Answer: `Продовжити`. The state file was written before the menu, whatever the
+answer would have been, and only this checkpoint appended to `checkpoints[]`.
+
+### Scaffold block
+
+```text
+UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/new_homework \
+  9_1-dry-run --template arduino --dir <root> --json
+```
+
+Exit code 0. Every record is `CREATE`:
+
+| Path | Status |
+|------|--------|
+| `homeworks/9_1-dry-run/.clangd` | `CREATE` |
+| `homeworks/9_1-dry-run/README.md` | `CREATE` |
+| `homeworks/9_1-dry-run/assets/.gitkeep` | `CREATE` |
+| `homeworks/9_1-dry-run/homework.yaml` | `CREATE` |
+| `homeworks/9_1-dry-run/include/.gitkeep` | `CREATE` |
+| `homeworks/9_1-dry-run/platformio.ini` | `CREATE` |
+| `homeworks/9_1-dry-run/src/main.cpp` | `CREATE` |
+| `homeworks/9_1-dry-run/task.md` | `CREATE` |
+| `homeworks/9_1-dry-run/test/test_homework/test_homework.c` | `CREATE` |
+
+No path recorded `CONFLICT` or `ERROR` (F-01).
+
+The scaffold block's second half is the view regeneration:
+
+```text
+UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/gen_views.py \
+  --all --dir <root> --json
+```
+
+Exit code 0. Diff 1 (guided id only):
+
+```json
+[
+  {"path": "README.md", "status": "MODIFIED", "reason": "owned bytes differ from the rendered region"},
+  {"path": "generated.manifest", "status": "CREATE", "reason": "manifest does not exist"},
+  {"path": "homeworks.code-workspace", "status": "CREATE", "reason": "target does not exist"},
+  {"path": "platformio.shared.ini", "status": "UNCHANGED", "reason": "target bytes are identical"}
+]
+```
+
+The rendered region became:
+
+```text
+<!-- BEGIN GENERATED: homeworks -->
+| ID | Project | Board | Framework | Status | Report |
+|----|---------|-------|-----------|--------|--------|
+| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | arduino | planned | none |
+<!-- END GENERATED -->
+```
+
+Idempotence (F-01) was proved by re-running the same scaffold command:
+
+```text
+$ ... scripts/new_homework 9_1-dry-run --template arduino --dir <root> --json
+exit 0
+"status": "UNCHANGED" — 9 records
+"status": "CREATE"    — 0 records
+```
+
+## Leg 2 — guided block loop
+
+Block: `controller`. The fixed sequence is `scaffold`, `controller`,
+`native-tests`, `wiring`, `report` (D-06).
+
+### Explanation before the code
+
+The controller block turns the starter's blocking `delay(500)` toggle into a
+non-blocking alternation of two LEDs. One concept this turn: a deadline stored in
+`next_toggle_ms`, compared against `millis()`, lets `loop()` return immediately and
+keep the board responsive; `delay()` would freeze every other responsibility. The
+block keeps the composition-root shape — the adapters are built once in `setup()`
+and the loop only ticks the controller.
+
+### Code written
+
+`<root>/homeworks/9_1-dry-run/src/main.cpp`:
+
+```cpp
+/* Controller block for the Phase 9 dry-run homework.
+
+   Two LEDs alternate every 250 ms. The pure timing decision lives in
+   apply_phase() and loop(); the port contracts keep the logic testable and
+   the Arduino adapters keep it hardware-neutral. */
+
+#include <Arduino.h>
+
+#include "arduino/gpio.h"
+#include "arduino/log.h"
+#include "port/gpio.h"
+#include "port/log.h"
+
+/* Must match the wiring recorded in assets/ and in the report. */
+static const uint8_t LED_A_PIN = 4;
+static const uint8_t LED_B_PIN = 5;
+static const uint32_t TOGGLE_INTERVAL_MS = 250;
+
+static port_gpio_t gpio;
+static port_log_t logger;
+static uint32_t next_toggle_ms = 0;
+static bool led_a_on = false;
+
+static void apply_phase(bool a_on)
+{
+    const port_gpio_level_t a = a_on ? PORT_GPIO_HIGH : PORT_GPIO_LOW;
+    const port_gpio_level_t b = a_on ? PORT_GPIO_LOW : PORT_GPIO_HIGH;
+
+    if (gpio.write(gpio.ctx, LED_A_PIN, a) != PORT_OK || gpio.write(gpio.ctx, LED_B_PIN, b) != PORT_OK) {
+        port_log_write(&logger, PORT_LOG_ERROR, "LED write failed");
+    }
+}
+
+void setup(void)
+{
+    gpio = arduino_gpio_port();
+    logger = arduino_log_port();
+
+    if (gpio.set_mode(gpio.ctx, LED_A_PIN, PORT_GPIO_OUTPUT) != PORT_OK ||
+        gpio.set_mode(gpio.ctx, LED_B_PIN, PORT_GPIO_OUTPUT) != PORT_OK) {
+        port_log_write(&logger, PORT_LOG_ERROR, "LED pin configuration failed");
+    } else {
+        port_log_write(&logger, PORT_LOG_INFO, "controller ready");
+    }
+    apply_phase(led_a_on);
+    next_toggle_ms = millis() + TOGGLE_INTERVAL_MS;
+}
+
+void loop(void)
+{
+    const uint32_t now = millis();
+
+    if (now < next_toggle_ms) {
+        return;
+    }
+    led_a_on = !led_a_on;
+    apply_phase(led_a_on);
+    next_toggle_ms += TOGGLE_INTERVAL_MS;
+}
+```
+
+### Explanation after the code
+
+`apply_phase()` is the only place that writes a pin, so both LEDs always move
+together and the phase is never half-applied. `setup()` establishes the first phase
+and seeds the deadline, so `loop()` does not fire on the first tick. `loop()` is a
+guard plus a toggle: the deadline advances by a fixed interval rather than by "now",
+so a late tick does not shift the whole schedule.
+
+### Verification
+
+```text
+$ pio run -d <root>/homeworks/9_1-dry-run
+exit 0
+========================= [SUCCESS] Took 5.71 seconds =========================
+esp32s3_arduino  SUCCESS   00:00:05.713
+```
+
+### Comprehension questions
+
+- Open scenario: "What happens if `loop()` is delayed for 600 ms by some other work
+  — how many phases does the LED miss, and what would change if the deadline were
+  reset to `millis()` instead of advanced by the interval?"
+- Optional terminology check: "Which call lets other work run between LED changes —
+  `delay(250)` or a `millis()` deadline? (a) `delay(250)` (b) a `millis()` deadline."
+
+### Block pause and the deepening branch
+
+The block paused with exactly:
+
+```text
+[Продовжити | Поясни глибше | Стоп]
+```
+
+Answer: `Поясни глибше`. The same concept was re-explained with a smaller step and
+a concrete example — the deadline is an appointment on a clock, not a sleep: the
+board looks at the clock, and if the appointment has not arrived it does something
+else and looks again. Concretely, with `TOGGLE_INTERVAL_MS = 250`, the first
+appointment is `millis() + 250`; a tick at 100 ms returns, a tick at 260 ms toggles
+and moves the appointment to `previous_deadline + 250`.
+
+The block did not advance: `next_block` stayed `controller` and the state file was
+not changed by the deepening answer. The menu was then offered again; answer
+`Продовжити`, which set `controller: done` and `next_block: "native-tests"`.
+
+### Code checkpoint
+
+The code checkpoint was written after the exercised code block, with the summary
+naming the build result, then paused with exactly:
+
+```text
+[Продовжити | Переробити | Стоп]
+```
+
+Answer: `Продовжити`. State excerpt with `blocks`, `next_block` and the `code`
+checkpoint entry:
+
+```json
+  "blocks": [
+    {"id": "scaffold", "status": "done"},
+    {"id": "controller", "status": "done"}
+  ],
+  "next_block": "native-tests",
+  "checkpoints": [
+    {"name": "intake", "at": "2026-10-26T20:05:00Z", "commit": null},
+    {"name": "code", "at": "2026-10-26T20:20:00Z", "commit": null}
+  ]
+```
+
+## Leg 3 — conflict record, report transcription, and the one-shot leg
+
+### The conflict
+
+The specification named GPIO5 for the third LED while the board practice is GPIO6,
+because GPIO5 is a strapping pin. The skill presented both sides, recommended one,
+and asked before proceeding. The record was written immediately as `proposed`:
+
+```json
+  "assumptions": [
+    {
+      "id": "A-01",
+      "kind": "spec-conflict",
+      "topic": "third LED pin",
+      "specification": "GPIO5 drives the third LED",
+      "best_practice": "GPIO6 drives the third LED, because GPIO5 is a strapping pin",
+      "recommendation": "Use GPIO6 and record the deviation in the report assumptions section",
+      "impact_if_wrong": "The third LED may not light predictably at boot",
+      "recorded_at": "2026-10-26T20:24:00Z",
+      "commit": null,
+      "status": "proposed"
+    }
+  ],
+```
+
+The recommendation was shown in Ukrainian and the run paused. Silence is not
+acceptance (D-15), so the record stayed `proposed` until the literal answer
+`Приймаю` was given; the record then became `"status": "accepted"` with the same
+`id`.
+
+### Report block transcription
+
+The report block wrote the report skeleton and transcribed the accepted record into
+its assumptions section. Excerpt of `<root>/homeworks/9_1-dry-run/report.md`:
+
+```text
+## Assumptions
+
+### A-01 — Third LED pin is GPIO6, not GPIO5
+
+- **Specification:** GPIO5 drives the third LED.
+- **Best practice:** GPIO6 drives the third LED, because GPIO5 is a strapping pin.
+- **Recommendation:** Use GPIO6.
+- **Impact if wrong:** The third LED may not light predictably at boot.
+- **Status:** accepted.
+```
+
+The block also owns the bill of materials and calculations sub-sections; both were
+written into the same file, so neither is mistaken for a sixth block.
+
+### One-shot leg
+
+The id `9_2-dry-run-oneshot` was validated and the run started in `one-shot` mode in
+the same disposable root.
+
+Intake questions actually asked — only what the run could not infer:
+
+| Topic | Why it was asked |
+|-------|------------------|
+| `board` | The specification did not name a board. |
+| `framework` | The specification did not name a framework. |
+| `specification` | The user supplied a ready specification (paraphrased as data). |
+| `simulation` | Not inferable; recorded `none`. |
+| `deliverables` | Not inferable; recorded `["readme", "report"]`. |
+
+Not asked: `mode` (the invocation selected one-shot), `language` (inferred `cpp`,
+the only value the scaffold writes), `tests` (inferred `unity-native` from pure
+timing logic), `simulation_token_present` (no simulation). Every answer was written
+to `.skill-state/9_2-dry-run-oneshot.json` as soon as it was given.
+
+One-shot is not plan-only. It scaffolded, wrote every block's code and the report
+skeleton, and ran the verifications:
+
+```text
+$ ... scripts/new_homework 9_2-dry-run-oneshot --template arduino --dir <root>
+exit 0 — 9 records, all CREATE
+
+$ pio run -d <root>/homeworks/9_2-dry-run-oneshot
+exit 0 — [SUCCESS] Took 5.66 seconds; esp32s3_arduino SUCCESS
+
+$ pio test -d <root>/homeworks/9_2-dry-run-oneshot -e native
+exit 0 — 2 test cases: 2 succeeded in 00:00:00.548
+```
+
+The wiring block skipped the run step (D-10) and wrote
+`<root>/homeworks/9_2-dry-run-oneshot/assets/diagram.json` (3 parts, 5 connections:
+board, 150 ohm resistor, red LED on GPIO2, plus the serial monitor pair). The report
+block wrote the skeleton. No block pause and no comprehension question appeared
+anywhere in the one-shot leg.
+
+The three checkpoints were still written, one entry each:
+
+```json
+  "mode": "one-shot",
+  "root": "temporary",
+  "blocks": [
+    {"id": "scaffold", "status": "done"},
+    {"id": "controller", "status": "done"},
+    {"id": "native-tests", "status": "done"},
+    {"id": "wiring", "status": "done"},
+    {"id": "report", "status": "done"}
+  ],
+  "next_block": null,
+  "checkpoints": [
+    {"name": "intake", "at": "2026-10-26T20:31:00Z", "commit": null},
+    {"name": "code", "at": "2026-10-26T20:36:00Z", "commit": null},
+    {"name": "report", "at": "2026-10-26T20:41:00Z", "commit": null}
+  ]
+```
+
+Guardrails were not bypassed. The run recorded that it would commit nothing without
+confirmation, and no commit, push, tag or upload was attempted in either leg; the
+disposable root is not a git repository, so the commit gate had no action to cover.
+A flash is never a simulation and neither id was flashed.
+
+View regeneration, diff 2 (recorded separately from diff 1 so the two ids cannot be
+conflated):
+
+```json
+[
+  {"path": "README.md", "status": "MODIFIED", "reason": "owned bytes differ from the rendered region"},
+  {"path": "generated.manifest", "status": "MODIFIED", "reason": "manifest bytes differ"},
+  {"path": "homeworks.code-workspace", "status": "MODIFIED", "reason": "target bytes differ"},
+  {"path": "platformio.shared.ini", "status": "UNCHANGED", "reason": "target bytes are identical"}
+]
+```
+
+The README region after diff 2 carries both rows:
+
+```text
+| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | arduino | planned | none |
+| 9.2 | [9.2 Dry Run Oneshot](homeworks/9_2-dry-run-oneshot/) | esp32-s3-devkitc-1 | arduino | planned | none |
+```
+
+Both ids live only in the disposable root. They are dry-run fixtures, not real
+course assignments, and neither directory exists in `homeworks/`.
+
+## Observations
+
+### Leg 0
+
+- No divergence. The plan's `build_root` command created a `.venv` in the executing
+  worktree as a side effect of `uv run`; it is ignored and never committed.
+
+### Leg 1
+
+- No divergence in the scaffold block: the prose's `CREATE`-or-`UNCHANGED` rule is
+  exactly what the tool prints, and the second run is all `UNCHANGED`.
+- The state excerpts in this transcript were captured by replaying the documented
+  write sequence against the same disposable root after the legs finished, so each
+  excerpt is the real bytes at that stage rather than a hand-written sample.
+- The `intake` checkpoint was written before the scaffold block, matching "after
+  intake"; `blocks` was therefore empty at that moment.
+
+### Leg 2
+
+- The block pause and the checkpoint pause are visibly different menus, and the
+  deepening answer left `next_block` unchanged. That is the contract behaving as
+  written, not a divergence.
+- The code checkpoint was written after the controller block because the remaining
+  blocks are contract-sampled in this dry run (see "Validation sampling"). The
+  checkpoint's name, shape and write-before-menu timing are what this leg evidences.
+
+### Leg 3
+
+- One-shot asked five intake topics, not the full bank, and still wrote three
+  checkpoints. That matches D-11.
+- The one-shot controller was written twice: the first write left the opening
+  comment unterminated and the compiler rejected it (`src/main.cpp:1:1: error:
+  unterminated comment`, exit 1); the second write closed the comment and the build
+  went green. This is recorded so the final `SUCCESS` line is not read as a
+  first-try result. It is a fixture authoring mistake, not a skill divergence.
+- No other divergence.
+
+## Validation sampling
+
+| Block | Verdict | Reason |
+|-------|---------|--------|
+| `scaffold` | Exercised end to end | Guided Leg 1 ran the real scaffold twice, recorded every path, and proved idempotence; the one-shot leg ran it again. |
+| `controller` | Exercised end to end | Guided Leg 2 wrote the code, explained it before and after, ran `pio run`, asked the scenario and terminology questions, deepened, paused and checkpointed. |
+| `native-tests` | Contract-sampled | One-shot Leg 3 ran `pio test -e native` green against the scaffolded suite, evidencing the command; the guided block loop's pause and comprehension shape is already evidenced by `controller`, so repeating it adds length without new contract coverage. |
+| `wiring` | Contract-sampled | One-shot Leg 3 wrote the diagram deliverable and skipped the run step (D-10); the guided pause/question shape is the same as `controller`, so only the no-run rule and the deliverable were sampled. |
+| `report` | Contract-sampled | Guided Leg 3 wrote the report skeleton, the bill of materials, the calculations and the transcribed `A-01`; the guided pause and comprehension questions were not repeated. |
+
+The sampling is deliberate and narrow: both the scaffold and the controller were
+exercised end to end, every other block was exercised as far as its deliverable and
+its run/no-run rule, and only the repeated pause/questions interaction was sampled.
