@@ -23,7 +23,8 @@ static port_gpio_t gpio;
 static port_log_t logger;
 static port_gpio_level_t level = PORT_GPIO_LOW;
 
-void setup(void) {
+void setup(void)
+{
     gpio = arduino_gpio_port();
     logger = arduino_log_port();
 
@@ -34,7 +35,8 @@ void setup(void) {
     }
 }
 
-void loop(void) {
+void loop(void)
+{
     level = (level == PORT_GPIO_LOW) ? PORT_GPIO_HIGH : PORT_GPIO_LOW;
     if (gpio.write(gpio.ctx, LED_PIN, level) != PORT_OK) {
         port_log_write(&logger, PORT_LOG_ERROR, "LED write failed");

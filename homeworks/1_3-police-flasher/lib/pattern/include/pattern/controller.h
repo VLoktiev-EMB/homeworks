@@ -58,8 +58,7 @@ typedef struct pattern_controller {
 /* Copies the ports and config, configures the pins the profile needs, applies
    frame 0, and returns the first failing status. A NULL argument or a missing
    callback is PORT_ERR_INVALID_ARG. */
-port_status_t pattern_controller_init(pattern_controller_t *controller,
-                                      const pattern_controller_config_t *config,
+port_status_t pattern_controller_init(pattern_controller_t *controller, const pattern_controller_config_t *config,
                                       port_gpio_t gpio, port_time_t time);
 
 /* One non-blocking step: debounce the button, act on a short or long press,

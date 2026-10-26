@@ -7,12 +7,7 @@ extern "C" {
 #endif
 
 /* Four logging levels, ordered from most to least severe. */
-typedef enum port_log_level {
-    PORT_LOG_ERROR = 0,
-    PORT_LOG_WARN,
-    PORT_LOG_INFO,
-    PORT_LOG_DEBUG
-} port_log_level_t;
+typedef enum port_log_level { PORT_LOG_ERROR = 0, PORT_LOG_WARN, PORT_LOG_INFO, PORT_LOG_DEBUG } port_log_level_t;
 
 /* Consumer-owned logging contract.
 
@@ -32,8 +27,8 @@ typedef struct port_log {
     void *ctx;
 } port_log_t;
 
-static inline void port_log_write(const port_log_t *log, port_log_level_t level,
-                                  const char *message) {
+static inline void port_log_write(const port_log_t *log, port_log_level_t level, const char *message)
+{
     if (log != NULL && log->write != NULL) {
         log->write(log->ctx, level, message);
     }

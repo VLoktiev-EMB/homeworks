@@ -21,8 +21,8 @@ extern "C" {
 typedef struct port_i2c {
     port_status_t (*write)(void *ctx, uint8_t address, const uint8_t *data, size_t length);
     port_status_t (*read)(void *ctx, uint8_t address, uint8_t *data, size_t length);
-    port_status_t (*write_read)(void *ctx, uint8_t address, const uint8_t *tx, size_t tx_length,
-                                uint8_t *rx, size_t rx_length);
+    port_status_t (*write_read)(void *ctx, uint8_t address, const uint8_t *tx, size_t tx_length, uint8_t *rx,
+                                size_t rx_length);
     void *ctx;
 } port_i2c_t;
 

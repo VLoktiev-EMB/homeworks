@@ -2,7 +2,8 @@
 
 #include "host/fake_i2c.h"
 
-static port_status_t consume_forced_status(host_fake_i2c_t *fake) {
+static port_status_t consume_forced_status(host_fake_i2c_t *fake)
+{
     port_status_t status = fake->forced_status;
 
     if (status != PORT_OK) {
@@ -11,8 +12,8 @@ static port_status_t consume_forced_status(host_fake_i2c_t *fake) {
     return status;
 }
 
-static port_status_t host_fake_i2c_write(void *ctx, uint8_t address, const uint8_t *data,
-                                         size_t length) {
+static port_status_t host_fake_i2c_write(void *ctx, uint8_t address, const uint8_t *data, size_t length)
+{
     host_fake_i2c_t *fake = (host_fake_i2c_t *)ctx;
     port_status_t forced;
     size_t index;
@@ -33,14 +34,13 @@ static port_status_t host_fake_i2c_write(void *ctx, uint8_t address, const uint8
     return PORT_OK;
 }
 
-static port_status_t host_fake_i2c_read(void *ctx, uint8_t address, uint8_t *data,
-                                        size_t length) {
+static port_status_t host_fake_i2c_read(void *ctx, uint8_t address, uint8_t *data, size_t length)
+{
     host_fake_i2c_t *fake = (host_fake_i2c_t *)ctx;
     port_status_t forced;
     size_t index;
 
-    if (fake == NULL || length > HOST_FAKE_I2C_CAPACITY || (data == NULL && length > 0u) ||
-        length > fake->length) {
+    if (fake == NULL || length > HOST_FAKE_I2C_CAPACITY || (data == NULL && length > 0u) || length > fake->length) {
         return PORT_ERR_INVALID_ARG;
     }
     forced = consume_forced_status(fake);
@@ -55,16 +55,15 @@ static port_status_t host_fake_i2c_read(void *ctx, uint8_t address, uint8_t *dat
     return PORT_OK;
 }
 
-static port_status_t host_fake_i2c_write_read(void *ctx, uint8_t address, const uint8_t *tx,
-                                              size_t tx_length, uint8_t *rx,
-                                              size_t rx_length) {
+static port_status_t host_fake_i2c_write_read(void *ctx, uint8_t address, const uint8_t *tx, size_t tx_length,
+                                              uint8_t *rx, size_t rx_length)
+{
     host_fake_i2c_t *fake = (host_fake_i2c_t *)ctx;
     port_status_t forced;
     size_t index;
 
-    if (fake == NULL || tx_length > HOST_FAKE_I2C_CAPACITY ||
-        rx_length > HOST_FAKE_I2C_CAPACITY || rx_length > tx_length ||
-        (tx == NULL && tx_length > 0u) || (rx == NULL && rx_length > 0u)) {
+    if (fake == NULL || tx_length > HOST_FAKE_I2C_CAPACITY || rx_length > HOST_FAKE_I2C_CAPACITY ||
+        rx_length > tx_length || (tx == NULL && tx_length > 0u) || (rx == NULL && rx_length > 0u)) {
         return PORT_ERR_INVALID_ARG;
     }
     forced = consume_forced_status(fake);
@@ -83,7 +82,8 @@ static port_status_t host_fake_i2c_write_read(void *ctx, uint8_t address, const 
     return PORT_OK;
 }
 
-void host_fake_i2c_reset(host_fake_i2c_t *fake) {
+void host_fake_i2c_reset(host_fake_i2c_t *fake)
+{
     size_t index;
 
     if (fake == NULL) {
@@ -98,14 +98,16 @@ void host_fake_i2c_reset(host_fake_i2c_t *fake) {
     fake->forced_status = PORT_OK;
 }
 
-void host_fake_i2c_fail_next(host_fake_i2c_t *fake, port_status_t status) {
+void host_fake_i2c_fail_next(host_fake_i2c_t *fake, port_status_t status)
+{
     if (fake == NULL) {
         return;
     }
     fake->forced_status = status;
 }
 
-void host_fake_i2c_preset(host_fake_i2c_t *fake, const uint8_t *data, size_t length) {
+void host_fake_i2c_preset(host_fake_i2c_t *fake, const uint8_t *data, size_t length)
+{
     size_t index;
 
     if (fake == NULL || data == NULL || length > HOST_FAKE_I2C_CAPACITY) {
@@ -117,7 +119,8 @@ void host_fake_i2c_preset(host_fake_i2c_t *fake, const uint8_t *data, size_t len
     fake->length = length;
 }
 
-port_i2c_t host_fake_i2c_port(host_fake_i2c_t *fake) {
+port_i2c_t host_fake_i2c_port(host_fake_i2c_t *fake)
+{
     port_i2c_t port = {host_fake_i2c_write, host_fake_i2c_read, host_fake_i2c_write_read, fake};
 
     return port;

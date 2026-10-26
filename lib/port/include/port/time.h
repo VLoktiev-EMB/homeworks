@@ -22,7 +22,8 @@ typedef struct port_time {
     void *ctx;
 } port_time_t;
 
-static inline uint32_t port_time_now_ms(const port_time_t *time) {
+static inline uint32_t port_time_now_ms(const port_time_t *time)
+{
     return time->now_ms(time->ctx);
 }
 

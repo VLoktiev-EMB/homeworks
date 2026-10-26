@@ -1,0 +1,28 @@
+# C/C++ style source for the whole tree (D-02, D-03).
+#
+# This is a documented APPROXIMATION of ESP-IDF style, never an equivalence:
+# ESP-IDF is formatted by AStyle, which clang-format cannot reproduce. The
+# approximation and its limits are recorded in docs/decisions.
+#
+# There is no .editorconfig (D-03): this file is the only C/C++ style input.
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: Never
+PointerAlignment: Right
+DerivePointerAlignment: false
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+IndentCaseLabels: false
+SpaceBeforeParens: ControlStatements
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+SortIncludes: true
+ReflowComments: false

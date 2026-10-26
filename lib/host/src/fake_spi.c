@@ -2,7 +2,8 @@
 
 #include "host/fake_spi.h"
 
-static port_status_t consume_forced_status(host_fake_spi_t *fake) {
+static port_status_t consume_forced_status(host_fake_spi_t *fake)
+{
     port_status_t status = fake->forced_status;
 
     if (status != PORT_OK) {
@@ -11,8 +12,8 @@ static port_status_t consume_forced_status(host_fake_spi_t *fake) {
     return status;
 }
 
-static port_status_t host_fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
-                                            size_t length) {
+static port_status_t host_fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_t *rx, size_t length)
+{
     host_fake_spi_t *fake = (host_fake_spi_t *)ctx;
     port_status_t forced;
     size_t index;
@@ -37,7 +38,8 @@ static port_status_t host_fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_
     return PORT_OK;
 }
 
-static port_status_t host_fake_spi_write(void *ctx, const uint8_t *data, size_t length) {
+static port_status_t host_fake_spi_write(void *ctx, const uint8_t *data, size_t length)
+{
     host_fake_spi_t *fake = (host_fake_spi_t *)ctx;
     port_status_t forced;
     size_t index;
@@ -57,7 +59,8 @@ static port_status_t host_fake_spi_write(void *ctx, const uint8_t *data, size_t 
     return PORT_OK;
 }
 
-void host_fake_spi_reset(host_fake_spi_t *fake) {
+void host_fake_spi_reset(host_fake_spi_t *fake)
+{
     size_t index;
 
     if (fake == NULL) {
@@ -71,14 +74,16 @@ void host_fake_spi_reset(host_fake_spi_t *fake) {
     fake->forced_status = PORT_OK;
 }
 
-void host_fake_spi_fail_next(host_fake_spi_t *fake, port_status_t status) {
+void host_fake_spi_fail_next(host_fake_spi_t *fake, port_status_t status)
+{
     if (fake == NULL) {
         return;
     }
     fake->forced_status = status;
 }
 
-port_spi_t host_fake_spi_port(host_fake_spi_t *fake) {
+port_spi_t host_fake_spi_port(host_fake_spi_t *fake)
+{
     port_spi_t port = {host_fake_spi_transfer, host_fake_spi_write, fake};
 
     return port;
