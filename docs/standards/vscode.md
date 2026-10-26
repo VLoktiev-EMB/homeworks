@@ -1,0 +1,159 @@
+# VS Code setup
+
+This page takes you from a clean macOS or Linux machine to a working ESP32-S3 editor:
+correct includes, format-on-save, an empty Problems panel, and a check you can run with no
+board attached. Windows is supported only through WSL; see the note at the end.
+
+Every formatter and linter is pinned in pre-commit. You never install one by hand and you do
+not need a system package manager for one: the pinned hooks supply them at exact revisions
+in pre-commit-owned environments.
+
+## Before you start
+
+You need:
+
+- VS Code.
+- `git`, the PlatformIO Core CLI (`pio`), the `uv` runner, and the `pre-commit` runner on
+  `PATH`. Install each from its own upstream documentation; this repository does not pin the
+  runners themselves.
+- esp-clangd from the Espressif IDF tools installer. It lands under
+  `~/.espressif/tools/esp-clangd/esp-*/esp-clangd/bin/clangd`; the wrapper finds the newest
+  build, so never hardcode that path.
+
+Open the repository root once (`code .`) and work from a terminal there.
+
+## Install the extensions
+
+Install two extensions:
+
+- `llvm-vs-code-extensions.vscode-clangd` — the language server that supplies IntelliSense,
+  diagnostics, and formatting.
+- `platformio.platformio-ide` — builds, uploads, and the serial monitor.
+
+The workspace lists `ms-vscode.cpptools-extension-pack` and `pioarduino.pioarduino-ide` as
+unwanted recommendations. The committed settings disable cpptools IntelliSense, so installing
+it would only add a second, conflicting set of squiggles.
+
+## Make the wrapper reachable: the one repository-specific machine step
+
+The committed editor contract points `clangd.path` at
+`${env:HOME}/.local/bin/clangd-wrapper`. A multi-root workspace has no folder scope for that
+setting and `${workspaceFolder}` is undefined there, so the wrapper must exist at a
+home-relative path. One command creates both the directory and the symlink:
+
+```bash
+mkdir -p "$HOME/.local/bin" && ln -sf "$PWD/scripts/clangd-wrapper.sh" "$HOME/.local/bin/clangd-wrapper"
+```
+
+Run it once from the repository root. The `mkdir -p` half matters: `~/.local/bin` does not
+exist on a clean macOS or Linux home. This is the one repository-specific machine step in
+this guide; installing VS Code, the extensions, and esp-clangd are machine-level steps too,
+and they are covered above.
+
+`scripts/clangd-wrapper.sh` resolves esp-clangd in a fixed order: `$ESP_CLANGD`, then
+`esp-clangd` on `PATH`, then the newest build under `~/.espressif/tools/esp-clangd/`. It also
+passes two bounded `--query-driver` globs for the PlatformIO toolchains, so clangd may
+execute only those compilers.
+
+## Install the git hooks
+
+One command wires both hook stages:
+
+```bash
+pre-commit install
+```
+
+`default_install_hook_types` is `[pre-commit, pre-push]`, so this single command installs the
+fast checks that run on every commit and the static analysis that runs on every push. Running
+it twice is harmless.
+
+## Generate a compilation database
+
+clangd reads a compilation database, not a guess about include paths. Generate the
+per-project database whenever the build flags change:
+
+```bash
+pio run -d homeworks/1_3-police-flasher -t compiledb
+```
+
+The database is written to the project root and is never committed. Each homework carries
+its own `.clangd`, so one clangd server serves the whole multi-root workspace and finds each
+project's database by nearest ancestor. No global compile-commands directory is set.
+
+## Format on save
+
+The committed settings enable `editor.formatOnSave` for C and C++ and name clangd as the
+formatter. Save a file and the committed `.clang-format` applies: four-space indent, a
+120-column limit, and function braces on their own line. Format-on-save is therefore the
+normal path; you do not format by hand.
+
+`.clang-format` is an approximation of ESP-IDF style, which is AStyle, not clang-format.
+Treat it as the repository's single standard, not as byte equivalence with the framework.
+
+## Read the Problems panel
+
+Open `homeworks/1_3-police-flasher/src/main.cpp` and open the Problems panel (`View ->
+Problems`, or `Ctrl+Shift+M` on Linux and `Cmd+Shift+M` on macOS). Expect no errors.
+
+When clangd reports a problem, read the diagnostic's warning name:
+
+- A `clang` or `clang-tidy` diagnostic comes from the language server and is actionable.
+- `drv_unknown_argument` and `unknown-argument` are suppressed in the per-project `.clangd`,
+  because GCC-only Xtensa flags are expected for a clang-based server. If one appears anyway,
+  the project's `.clangd` is missing or is not the file in use.
+- `pp_file_not_found` for `stdbool.h`, `stdint.h`, or `stddef.h` means
+  `BuiltinHeaders: QueryDriver` is missing from `.clangd`, or the selected compiler cannot
+  be queried.
+
+To see the same analysis without the editor, run the wrapper directly:
+
+```bash
+"$HOME/.local/bin/clangd-wrapper" --check homeworks/1_3-police-flasher/src/main.cpp
+```
+
+Expect `All checks completed, 0 errors` and exit code 0.
+
+## Check without hardware
+
+Two commands work with no board attached:
+
+```bash
+pio test -d tests -e native
+pio run -d homeworks/1_3-police-flasher
+```
+
+The first runs the shared-library Unity suite on the host. The second compiles the homework
+for its target environment without uploading. A no-hardware simulation path is not part of
+this setup; it belongs to Phase 7.
+
+## Hooks you will meet
+
+Five hooks run on commit and two on push. Every tool they use comes from the pinned
+pre-commit environment; no separate install is needed.
+
+- `gitleaks` — a staged credential was detected. Rotate the credential first, then remove it
+  with a forward fix; never rewrite history.
+- `clang-format` — a staged C or C++ file does not match `.clang-format`. The hook only
+  reports and never rewrites; reformat the file, then run
+  `pre-commit run clang-format --files <path>` to confirm.
+- `ruff-check` — a Python file violates the policy in `pyproject.toml`. The hook does not
+  rewrite the file, so fix the finding and commit again.
+- `markdownlint-cli2` — an authored Markdown file violates `.markdownlint-cli2.jsonc`.
+  Generated pages are excluded from this hook.
+- `yamllint` — an authored YAML file violates `.yamllint.yaml`.
+- `clang-tidy-db` — `tests/compile_commands.json` is absent or older than a described
+  source. Regenerate it with `pio run -d tests -e native -t compiledb`; the hook never
+  generates the database for you.
+- `clang-tidy` — static analysis found a finding in host-compiled code at the pinned
+  clang-tidy revision.
+
+clang-tidy analyses `lib/common`, `lib/host`, and the `lib/port` headers. Native test
+translation units are out of scope: `pio test` exposes no compilation-database target, so a
+test source is not analysed. That gap is recorded in the clang-tidy decision record and
+belongs to Phase 8 CI.
+
+## Windows
+
+Native Windows is not supported by this setup. Install WSL 2, run the guide above inside the
+Linux distribution, and open the workspace from that filesystem. Opening a WSL path from the
+Windows-side VS Code is a different setup and is not covered here.
