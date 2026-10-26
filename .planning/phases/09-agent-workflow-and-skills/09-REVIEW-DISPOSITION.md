@@ -3,6 +3,42 @@ phase: 09
 review: 09-REVIEW.md
 titles: json
 findings:
+  - id: CR-03
+    severity: critical
+    disposition: open
+    title: "`hw-flash` never passes the user-resolved baud to the capture helper"
+  - id: WR-10
+    severity: warning
+    disposition: open
+    title: "`--seconds` accepts NaN and infinity, which crash the CLI with a traceback"
+  - id: WR-11
+    severity: warning
+    disposition: open
+    title: "An exception in the read loop leaves `pio device monitor` running"
+  - id: WR-12
+    severity: warning
+    disposition: open
+    title: "The credential scan still misses ordinary password assignments"
+  - id: IN-06
+    severity: info
+    disposition: open
+    title: "The suite does not exercise the helper's argv or the CLI result contract"
+  - id: IN-07
+    severity: info
+    disposition: open
+    title: "`write_log_atomically` does not enforce the scan that gates it"
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "The zero-byte refusal lives one layer above the function the plan names"
+  - id: IN-09
+    severity: info
+    disposition: open
+    title: "The new validators admit a trailing newline and a leading-hyphen environment"
+  - id: IN-10
+    severity: info
+    disposition: open
+    title: "Two `NO_BUILD_IMPACT` rules have no test entry"
   - id: CR-01
     severity: critical
     disposition: fixed
@@ -67,28 +103,37 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 5
-total: 16
-recorded: 2026-10-26T23:14:20.579Z
+open: 14
+total: 25
+recorded: 2026-10-26T23:39:09.858Z
 ---
 
 # Phase 09: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `capture_pty` (pseudo-terminal, no pipe). |
-| CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. |
-| WR-01 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` root anchoring. |
-| WR-02 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` directory descriptors and the corrected `SKILL.md`. |
-| WR-03 | warning | fixed | 09-10-PLAN.md — closed by the corrected `hw-flash` outcome table. |
-| WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. |
-| WR-05 | warning | fixed | 09-10-PLAN.md — closed by the `_shared/guardrails.md` "or any log" prohibition. |
-| WR-06 | warning | fixed | 09-10-PLAN.md — closed by the `--raw --quiet` monitor argv. |
-| IN-01 | info | fixed | 09-10-PLAN.md — closed by removing the snippet in favour of the helper. |
-| IN-02 | info | fixed | 09-10-PLAN.md — closed by the `int(str(value))` normalization. |
+| CR-03 | critical | open | - |
+| WR-10 | warning | open | - |
+| WR-11 | warning | open | - |
+| WR-12 | warning | open | - |
+| IN-06 | info | open | - |
+| IN-07 | info | open | - |
+| IN-08 | info | open | - |
+| IN-09 | info | open | - |
+| IN-10 | info | open | - |
+| CR-01 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `capture_pty` (pseudo-terminal, no pipe). (not in the current review) |
+| CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. (not in the current review) |
+| WR-01 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` root anchoring. (not in the current review) |
+| WR-02 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` directory descriptors and the corrected `SKILL.md`. (not in the current review) |
+| WR-03 | warning | fixed | 09-10-PLAN.md — closed by the corrected `hw-flash` outcome table. (not in the current review) |
+| WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. (not in the current review) |
+| WR-05 | warning | fixed | 09-10-PLAN.md — closed by the `_shared/guardrails.md` "or any log" prohibition. (not in the current review) |
+| WR-06 | warning | fixed | 09-10-PLAN.md — closed by the `--raw --quiet` monitor argv. (not in the current review) |
+| IN-01 | info | fixed | 09-10-PLAN.md — closed by removing the snippet in favour of the helper. (not in the current review) |
+| IN-02 | info | fixed | 09-10-PLAN.md — closed by the `int(str(value))` normalization. (not in the current review) |
 | WR-07 | warning | open | - (not in the current review) |
 | WR-08 | warning | open | - (not in the current review) |
-| WR-09 | warning | fixed | 09-10-PLAN.md — closed by the rewritten `AGENTS.md` no-build-impact paragraph. |
+| WR-09 | warning | fixed | 09-10-PLAN.md — closed by the rewritten `AGENTS.md` no-build-impact paragraph. (not in the current review) |
 | IN-03 | info | open | - (not in the current review) |
 | IN-04 | info | open | - (not in the current review) |
 | IN-05 | info | open | - (not in the current review) |
