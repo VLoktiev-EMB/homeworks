@@ -1,0 +1,23 @@
+# D-14: the one yamllint policy for authored YAML.
+#
+# yamllint resolves this file from the working directory and its ancestors, and
+# pre-commit runs every hook from the repository root, so the hook needs no `-c`.
+# The generated `mkdocs.yml` is deliberately outside the hook's scope: like the
+# generated pages, its shape is owned by `scripts/gen_views.py --check`.
+#
+# Every rule below is a policy decision, not a silenced finding:
+#
+# - `line-length: {max: 120}` matches the C policy (`.clang-format`), so one
+#   number describes the widest line this repository writes on purpose.
+# - `document-start: disable` keeps a file from needing a leading `---`; the
+#   repository's YAML is configuration, not multi-document streams.
+# - `truthy.check-keys` stays off because GitHub Actions declares its trigger as
+#   the bare key `on:`, which YAML 1.1 resolves to a boolean. That is a KEY, so
+#   normalising a scalar cannot repair it, and rewriting it would break the
+#   workflow schema. The key check is the only safe fix; the four workflows are
+#   asserted to keep the textual `on:` in `test_ci_workflows`.
+extends: default
+rules:
+  line-length: {max: 120}
+  document-start: disable
+  truthy: {allowed-values: ['true', 'false'], check-keys: false}

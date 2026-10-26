@@ -64,6 +64,19 @@ from scripts.metadata.paths import (
 )
 from scripts.metadata.yaml_loader import StrictSafeLoader
 
+# The names above are re-exports, not second definitions (D-19, T-5-28): callers
+# import them from here, so they must survive a linter that cannot see those
+# callers. Naming them explicitly is the declaration that they are the module's
+# public surface; deleting one would break a documented import path.
+__all__ = [
+    "CheckError",
+    "HOMEWORK_ID",
+    "StrictSafeLoader",
+    "derive_parts",
+    "relative_path",
+    "resolve_root",
+]
+
 MAX_INPUT_BYTES = 64 * 1024
 
 SCHEMA_PATH = Path("schema") / "homework.schema.json"

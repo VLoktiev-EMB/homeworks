@@ -323,7 +323,13 @@ ipython_config.py
 #   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
-# uv.lock
+#
+#   This repository is not a uv project. The root `pyproject.toml` carries
+#   `[tool.ruff]` only (D-13), and every entry script declares its dependencies
+#   in a PEP 723 header, so there is no dependency set to lock. uv still writes
+#   a degenerate `uv.lock` next to the tool config when a test shells out to
+#   `uv run`, and that file is generated output, never a contract to review.
+uv.lock
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.

@@ -41,6 +41,52 @@ repos:
         args: [-style=file]
         types_or: [c, c++]
 
+  # D-13: ruff's policy lives once, in the root `pyproject.toml`, which the hook
+  # resolves from the repository root without a `-c` argument. D-06: the pinned
+  # `rev` is the delivery path, never a system install.
+  #
+  # The hook id is `ruff-check`: `ruff` is a legacy alias, and `ruff-format`
+  # would introduce a second mechanical rewrite that TOOL-03 does not require.
+  # No `--fix` argument: 05/D-21 makes every lint hook check-only.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-check
+
+  # D-14: the policy file is resolved from the working directory, and the hook
+  # runs from the repository root, so no `-c` argument is needed. D-06: the
+  # pinned `rev` is the delivery path.
+  #
+  # `files` is the authored-YAML surface (D-14): the workflows, each homework's
+  # metadata, the board profiles, the template sources, the hook file itself,
+  # and `.yamllint.yaml` so the linter validates its own configuration. The
+  # generated `mkdocs.yml` is deliberately absent — `gen_views.py --check` owns
+  # its shape, exactly as it owns the generated pages.
+  #
+  # `.github/workflows/` enters here only as a lint path. D-24 keeps CI wiring
+  # in Phase 8; no workflow is edited for a lint finding.
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        files: >-
+          ^(\.github/workflows/|homeworks/[^/]+/homework\.yaml$|boards/[^/]+\.yaml$|templates/.*\.ya?ml$|\.pre-commit-config\.yaml$|\.yamllint\.ya?ml$)
+
+  # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
+  # `.claude/` is the generated adapter, and the generated pages plus the vendor
+  # tree are owned by `gen_views.py --check` and their upstream pins. Every
+  # exclusion names a family explicitly, so a new authored file is linted by
+  # default rather than silently skipped.
+  #
+  # D-06: the pinned `rev` is the delivery path; the hook pulls its own npm
+  # dependencies into a pre-commit-managed node environment.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+        exclude: >-
+          ^(\.planning/|\.claude/|docs/index\.md$|docs/homeworks/|docs/boards/|docs/assets/vendor/)
+
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
   # so the ignore rules alone do not enforce "generated files are never
   # committed" (AGENTS.md). This hook asks git which TRACKED paths its own
@@ -103,7 +149,7 @@ repos:
         language: python
         additional_dependencies: ["PyYAML==6.0.3", "jsonschema==4.26.0"]
         entry: python scripts/check_metadata.py
-        files: ^(homeworks/|boards/|schema/|scripts/check_metadata\.py|scripts/new_homework$|scripts/gen_views\.py$|scripts/metadata/)
+        files: ^(homeworks/|boards/|schema/|scripts/(check_metadata\.py|new_homework$|gen_views\.py$|metadata/))
         pass_filenames: false
 
       # D-21: the drift contract needs a local enforcement point, not only the
@@ -130,5 +176,10 @@ repos:
         language: python
         additional_dependencies: ["PyYAML==6.0.3"]
         entry: python scripts/gen_views.py --all --check
-        files: ^(README\.md$|docs/|templates/views/|boards/|schema/|homeworks/|scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$|mkdocs\.yml$|platformio\.shared\.ini$|homeworks\.code-workspace$)
+        # Folded, with `(?x)` so the line breaks stay outside the pattern: YAML
+        # folding would otherwise join the alternatives with a space.
+        files: >-
+          (?x)^(README\.md$|docs/|templates/views/|boards/|schema/|homeworks/
+          |scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$
+          |mkdocs\.yml$|platformio\.shared\.ini$|homeworks\.code-workspace$)
         pass_filenames: false

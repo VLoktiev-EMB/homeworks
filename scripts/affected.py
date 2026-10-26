@@ -13,15 +13,18 @@ the dependency graph from `platformio.ini` `lib_deps` plus each
 never disagree about what depends on what (D-23).
 
 Fanout table (D-24, with the explicit no-build-impact reading of RESEARCH Open
-Question 1):
+Question 1). Each entry reads `<changed path> -> <effect>`:
 
-| Changed path | Effect |
-|---|---|
-| `.planning/`, `docs/`, `.github/`, `templates/views/`, `boards/`, or exactly `README.md`, `AGENTS.md`, `LICENSE`, `generated.manifest`, `mkdocs.yml`, `requirements-docs.txt`, `homeworks.code-workspace` | no build, no simulation |
-| `homeworks/<id>/...` | that project's environments |
-| `lib/<name>/...` | every project whose `lib_deps` names `<name>`, transitively through `library.json` `dependencies` |
-| exactly `platformio.shared.ini`, or `partitions/...`, `scripts/pio/...`, `schema/...`, `scripts/affected.py` | every project |
-| anything else | every project (fail-safe) |
+- `.planning/`, `docs/`, `.github/`, `templates/views/`, `boards/`, or exactly
+  `README.md`, `AGENTS.md`, `LICENSE`, `generated.manifest`, `mkdocs.yml`,
+  `requirements-docs.txt`, `homeworks.code-workspace`
+  -> no build, no simulation
+- `homeworks/<id>/...` -> that project's environments
+- `lib/<name>/...` -> every project whose `lib_deps` names `<name>`, transitively
+  through `library.json` `dependencies`
+- exactly `platformio.shared.ini`, or `partitions/...`, `scripts/pio/...`,
+  `schema/...`, `scripts/affected.py` -> every project
+- anything else -> every project (fail-safe)
 
 `NO_BUILD_IMPACT` is explicit and tested entry by entry. It exists because
 every generated-view pull request rewrites `generated.manifest`; without the

@@ -561,7 +561,7 @@ def apply_allowlist(violations, entries):
                 break
         else:
             remaining.append(violation)
-    stale = [entry for entry, used in zip(entries, matched) if not used]
+    stale = [entry for entry, used in zip(entries, matched, strict=True) if not used]
     return remaining, stale
 
 
