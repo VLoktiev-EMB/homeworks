@@ -7,7 +7,7 @@ are the subtraction record, each with a reason.
 
 | capability | decision | reason |
 |---|---|---|
-| `pull_request` trigger with explicit `types` (`opened`, `synchronize`, `reopened`, `edited`) | INTEGRATE | The title check must re-run on a retitle; `edited` is not a default type (RESEARCH Open Question 2). |
+| `pull_request` trigger with explicit `types` (incl. `edited`) | INTEGRATE | The title check must re-run on a retitle; `edited` is not a default type (RESEARCH Open Question 2). |
 | `workflow_dispatch` trigger | INTEGRATE | Manual re-run with the `origin/main` fallback and a skipped title check (Pitfall 14). |
 | `schedule` trigger (cron) | INTEGRATE | Nightly full matrix (TOOL-06); the only trigger that proves the whole tree daily. |
 | Job fan-in through `needs` plus `toJSON(needs)` | INTEGRATE | The single required check `gate` depends on the allowlisted result set (D-2). |
