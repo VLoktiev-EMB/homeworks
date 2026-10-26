@@ -4,9 +4,10 @@ This page takes you from a clean macOS or Linux machine to a working ESP32-S3 ed
 correct includes, format-on-save, an empty Problems panel, and a check you can run with no
 board attached. Windows is supported only through WSL; see the note at the end.
 
-Every formatter and linter is pinned in pre-commit. You never install one by hand and you do
-not need a system package manager for one: the pinned hooks supply them at exact revisions
-in pre-commit-owned environments.
+The gate's formatters and linters are pinned in pre-commit: you never install one of them by
+hand and you do not need a system package manager for one, because the pinned hooks supply them
+at exact revisions in pre-commit-owned environments. The one editor component you do install by
+hand is esp-clangd, the language server and on-save formatter covered below.
 
 ## Before you start
 
@@ -128,29 +129,54 @@ this setup; it belongs to Phase 7.
 
 ## Hooks you will meet
 
-Five hooks run on commit and two on push. Every tool they use comes from the pinned
-pre-commit environment; no separate install is needed.
+13 hooks run on commit and 2 on push. The formatters and linters among them come from the
+pinned pre-commit environments; esp-clangd, covered above, is the one hand-installed component,
+and it runs in the editor rather than in the gate.
+
+On commit:
 
 - `gitleaks` — a staged credential was detected. Rotate the credential first, then remove it
   with a forward fix; never rewrite history.
+- `trailing-whitespace` — a staged file carries trailing whitespace. The hook rewrites it and
+  fails; re-stage the file and commit again.
+- `end-of-file-fixer` — a staged text file does not end with one newline. The hook rewrites it
+  and fails; re-stage the file and commit again.
+- `check-merge-conflict` — a merge-conflict marker is still in a staged file.
+- `check-added-large-files` — a staged file exceeds 1024 kB and is not one of the declared Git
+  LFS types.
 - `clang-format` — a staged C or C++ file does not match `.clang-format`. The hook only
   reports and never rewrites; reformat the file, then run
   `pre-commit run clang-format --files <path>` to confirm.
 - `ruff-check` — a Python file violates the policy in `pyproject.toml`. The hook does not
   rewrite the file, so fix the finding and commit again.
+- `yamllint` — an authored YAML file violates `.yamllint.yaml`.
 - `markdownlint-cli2` — an authored Markdown file violates `.markdownlint-cli2.jsonc`.
   Generated pages are excluded from this hook.
-- `yamllint` — an authored YAML file violates `.yamllint.yaml`.
-- `clang-tidy-db` — `tests/compile_commands.json` is absent or older than a described
-  source. Regenerate it with `pio run -d tests -e native -t compiledb`; the hook never
-  generates the database for you.
-- `clang-tidy` — static analysis found a finding in host-compiled code at the pinned
-  clang-tidy revision.
+- `no-generated-files` — a generated path (`compile_commands.json`, `site/`, `.pio/`, or an
+  ESP-IDF build output inside a homework) is tracked. Remove it from the index.
+- `check-architecture` — `lib/common` or `lib/port` gained a framework header, or `common`
+  depends on an adapter. Fix the dependency rather than relaxing the checker.
+- `check-metadata` — a `homework.yaml`, `task.md`, board profile, or schema is invalid. Read
+  the message and correct the document.
+- `gen-views-check` — a committed generated view is out of sync. Run
+  `uv run scripts/gen_views.py --all`, review the diff, and commit the regenerated output.
 
-clang-tidy analyses `lib/common`, `lib/host`, and the `lib/port` headers. Native test
-translation units are out of scope: `pio test` exposes no compilation-database target, so a
-test source is not analysed. That gap is recorded in the clang-tidy decision record and
-belongs to Phase 8 CI.
+On push:
+
+- `clang-tidy-db` — `tests/compile_commands.json` is absent, older than a configuration input
+  or a described source, or missing a `.c` file under `lib/common/src` or `lib/host/src`.
+  Regenerate it with `pio run -d tests -e native -t compiledb`; the hook never generates the
+  database for you.
+- `clang-tidy` — static analysis found a finding in a host translation unit at the pinned
+  clang-tidy revision. It also fails when clang-tidy skips a file because the database has no
+  compile command for it, so a green hook always means the file was analysed.
+
+clang-tidy analyses the host translation units under `lib/common/src` and `lib/host/src`. A
+header is analysed through a unit that includes it, never as a file of its own, so a
+header-only change is not analysed locally; `lib/port` has no source of its own and is covered
+only where a unit includes it. Native test translation units are out of scope: `pio test`
+exposes no compilation-database target, so a test source is not analysed. That gap is recorded
+in the clang-tidy decision record and belongs to Phase 8 CI.
 
 ## Windows
 

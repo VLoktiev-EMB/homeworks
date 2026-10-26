@@ -988,16 +988,10 @@ class HookLayeringTests(unittest.TestCase):
 RULEBOOK = REPO_ROOT / "AGENTS.md"
 GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
 
-# TOOL-04: the seven hook ids a contributor meets, in stage order.
-GUIDE_HOOKS = (
-    "gitleaks",
-    "clang-format",
-    "ruff-check",
-    "markdownlint-cli2",
-    "yamllint",
-    "clang-tidy-db",
-    "clang-tidy",
-)
+# WR-03: the guide must name every hook the gate declares, not a hand-picked
+# subset. The ids are derived from the config so a new hook cannot arrive
+# undocumented, and the bullet form is asserted so `clang-tidy` is not
+# satisfied by the longer `clang-tidy-db` id.
 
 # D-06: every linter arrives through pre-commit, so a system install would be
 # a contradiction, not a convenience. These are the forms the guide must not
@@ -1066,9 +1060,32 @@ class RulebookAndGuideTests(unittest.TestCase):
 
     def test_the_guide_lists_every_hook(self) -> None:
         text = self.guide()
-        for hook in GUIDE_HOOKS:
+        config = PRECOMMIT_CONFIG.read_text(encoding="utf-8")
+        declared = re.findall(r"^\s*- id: ([\w-]+)", config, re.MULTILINE)
+        self.assertTrue(declared, "no hook ids found in .pre-commit-config.yaml")
+        for hook in declared:
             with self.subTest(hook=hook):
-                self.assertIn(hook, text)
+                self.assertIn(f"- `{hook}`", text)
+
+    def test_the_guide_states_the_real_hook_counts(self) -> None:
+        text = self.guide()
+        config = PRECOMMIT_CONFIG.read_text(encoding="utf-8")
+        hooks = re.findall(r"^\s*- id: ([\w-]+)", config, re.MULTILINE)
+        commit_hooks = [
+            hook
+            for hook in hooks
+            if "stages: [pre-commit]" in _hook_block(config, hook)
+        ]
+        push_hooks = [
+            hook for hook in hooks if "stages: [pre-push]" in _hook_block(config, hook)
+        ]
+        self.assertTrue(commit_hooks)
+        self.assertTrue(push_hooks)
+        self.assertIn(
+            f"{len(commit_hooks)} hooks run on commit and "
+            f"{len(push_hooks)} on push.",
+            text,
+        )
 
     def test_the_guide_names_no_system_package_manager_install(self) -> None:
         text = self.guide()
