@@ -31,8 +31,10 @@ the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
 - `.github/workflows/security.yml` — the full-history secret scan.
-- `docs/` — the documentation site source: the authored `decisions/` tree plus the generated
-  `index.md`, `homeworks/`, `boards/` and `assets/vendor/`.
+- `docs/` — the documentation site source: the authored `decisions/` and `standards/` trees
+  plus the generated `index.md`, `homeworks/`, `boards/` and `assets/vendor/`.
+- `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
+  no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
 - `scripts/` — deterministic checks, the view generator and the tag script; `scripts/tests/`
   — the test suite.
@@ -59,7 +61,7 @@ The first Pages deployment requires `Settings -> Pages -> Build and deployment -
 be `GitHub Actions`; that is a maintainer action completed before the first push to `main`,
 not something the `docs` workflow can set for itself.
 
-Planned: `docs/standards/` (report structure, Phase 10) and project skills under
+Planned: report structure under `docs/standards/` (Phase 10) and project skills under
 `.claude/skills/` or `.agents/skills/` (Phase 9).
 
 ## Definition of Done
@@ -75,7 +77,8 @@ A homework is done when:
 ## Rules
 
 Every rule carries two dimensions: severity (`[MUST]` or `[SHOULD]`) and where a violation is
-caught (`[ENFORCED: pre-commit]`, `[ENFORCED: CI]`, or `[ENFORCED: review]`). No `[MAY]`, no `[INFO]`.
+caught (`[ENFORCED: pre-commit]`, `[ENFORCED: pre-push]`, `[ENFORCED: CI]`, or
+`[ENFORCED: review]`). No `[MAY]`, no `[INFO]`.
 
 ### Change workflow
 
@@ -159,6 +162,30 @@ Good:  feat(1_3): add police flasher state machine
   Widening the ruleset is a Phase 6 decision made in the open through `.gitleaks.toml`,
   never an allowlist relaxation added quietly.
 
+### Quality tooling
+
+- **[MUST]** **[ENFORCED: pre-commit]** C/C++ is formatted by the committed `.clang-format`,
+  and the pinned hook runs it in check-only form (`--dry-run --Werror`): it reports and never
+  rewrites. The tracked tree is expected to conform, so a failure is a local fix rather than a
+  bulk reformat.
+- **[MUST]** **[ENFORCED: pre-commit]** Python, authored YAML, and authored Markdown are
+  linted by ruff, yamllint, and markdownlint-cli2 from their committed policies
+  (`pyproject.toml`, `.yamllint.yaml`, `.markdownlint-cli2.jsonc`). Generated pages and the
+  vendored tree are excluded because `gen_views.py --check` and their pins own them.
+- **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
+  Every formatter and linter named in this section arrives through a pinned `pre-commit`
+  revision, never a system package manager, so the gate is byte-identical on every machine.
+- **[MUST]** **[ENFORCED: pre-push]** clang-tidy 23.1.3 analyses host-compiled code —
+  `lib/common`, `lib/host`, and the `lib/port` headers — and never runs at pre-commit. Native
+  test translation units are out of scope until Phase 8 CI owns a database for them.
+- **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent or older
+  than a described source, `scripts/clang-tidy-db` fails and prints
+  `pio run -d tests -e native -t compiledb`. Regenerating the database is a developer action;
+  no hook generates it.
+- **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
+  not from ad-hoc settings. The committed editor contract is emitted by the generator and
+  mirrored into `.vscode/settings.json`, and a drift test keeps the two equal.
+
 ### Assets and generated files
 
 - **[MUST]** **[ENFORCED: pre-commit]** Git LFS is used only for the eight declared non-diffable
@@ -213,6 +240,7 @@ Good:  feat(1_3): add police flasher state machine
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
 | Inspect or extend the secret gate | `.pre-commit-config.yaml` and `.github/workflows/security.yml` |
 | Choose a branch name | this file, "Git, branches, and history" |
+| Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
 | Report structure and formatting rationale | `docs/standards/` (planned, Phase 10) |
 | Reuse a versioned workflow skill | project skills under `.claude/skills/` (planned, Phase 9) |
 
