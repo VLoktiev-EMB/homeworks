@@ -1,0 +1,20 @@
+// D-11/D-12: the one markdownlint policy for authored Markdown.
+//
+// markdownlint-cli2 discovers this file from the working directory, and
+// pre-commit runs every hook from the repository root, so no `--config` is
+// needed. Generated pages are excluded through the hook's `exclude:` regex, not
+// here: `gen_views.py --check` owns their shape.
+{
+  "config": {
+    // MD013 is the 80-column prose rule. This repository writes ~100-column
+    // tables and prose on purpose, so the rule would restyle every table.
+    "MD013": false,
+    // MD060 is the table-style rule; it would restyle every table as well.
+    "MD060": false,
+    // MD024: a document title repeated by a heading at a different nesting level
+    // is this repository's deliberate structure (the root README and ADR 0001).
+    // `siblings_only` permits exactly that while still failing a real duplicate
+    // at the same level, so no ADR body is rewritten and no heading is renamed.
+    "MD024": { "siblings_only": true }
+  }
+}

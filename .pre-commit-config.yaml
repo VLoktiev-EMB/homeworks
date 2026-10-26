@@ -72,6 +72,21 @@ repos:
         files: >-
           ^(\.github/workflows/|homeworks/[^/]+/homework\.yaml$|boards/[^/]+\.yaml$|templates/.*\.ya?ml$|\.pre-commit-config\.yaml$|\.yamllint\.ya?ml$)
 
+  # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
+  # `.claude/` is the generated adapter, and the generated pages plus the vendor
+  # tree are owned by `gen_views.py --check` and their upstream pins. Every
+  # exclusion names a family explicitly, so a new authored file is linted by
+  # default rather than silently skipped.
+  #
+  # D-06: the pinned `rev` is the delivery path; the hook pulls its own npm
+  # dependencies into a pre-commit-managed node environment.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+        exclude: >-
+          ^(\.planning/|\.claude/|docs/index\.md$|docs/homeworks/|docs/boards/|docs/assets/vendor/)
+
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
   # so the ignore rules alone do not enforce "generated files are never
   # committed" (AGENTS.md). This hook asks git which TRACKED paths its own

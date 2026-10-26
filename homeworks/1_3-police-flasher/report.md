@@ -429,17 +429,17 @@ report contract and its checker; Phase 11 owns the polished pilot, the tag, and 
 
 ## 10. References
 
-[1] Espressif Systems, "ESP32-S3 Series Datasheet," Espressif Systems, 2025. [Online]. Available: https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
+[1] Espressif Systems, "ESP32-S3 Series Datasheet," Espressif Systems, 2025. [Online]. Available: <https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf>
 
-[2] Espressif Systems, "ESP32-S3-DevKitC-1 User Guide," Espressif Systems. [Online]. Available: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html
+[2] Espressif Systems, "ESP32-S3-DevKitC-1 User Guide," Espressif Systems. [Online]. Available: <https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html>
 
-[3] PlatformIO, "Unit Testing: Shared Code," PlatformIO documentation. [Online]. Available: https://docs.platformio.org/en/latest/advanced/unit-testing/structure/shared-code.html
+[3] PlatformIO, "Unit Testing: Shared Code," PlatformIO documentation. [Online]. Available: <https://docs.platformio.org/en/latest/advanced/unit-testing/structure/shared-code.html>
 
-[4] Wokwi, "Diagram Format," Wokwi documentation. [Online]. Available: https://docs.wokwi.com/diagram-format
+[4] Wokwi, "Diagram Format," Wokwi documentation. [Online]. Available: <https://docs.wokwi.com/diagram-format>
 
-[5] VLoktiev-EMB, "ADR-0007: Symlinked shared libraries via lib_deps and library.json," Homeworks repository, Oct. 2026. [Online]. Available: https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0007-symlink-shared-libraries.md
+[5] VLoktiev-EMB, "ADR-0007: Symlinked shared libraries via lib_deps and library.json," Homeworks repository, Oct. 2026. [Online]. Available: <https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0007-symlink-shared-libraries.md>
 
-[6] VLoktiev-EMB, "ADR-0008: Common depends on port; ports are consumer-owned," Homeworks repository, Oct. 2026. [Online]. Available: https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0008-common-depends-on-port.md
+[6] VLoktiev-EMB, "ADR-0008: Common depends on port; ports are consumer-owned," Homeworks repository, Oct. 2026. [Online]. Available: <https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0008-common-depends-on-port.md>
 
 ## Decision Appendix
 
