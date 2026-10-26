@@ -1,0 +1,323 @@
+"""Tests for scripts/serial_capture.py.
+
+The suite never requires hardware and never skips: every fake serial source is
+a `sys.executable -c` child. The PTY test proves the child sees stdin and
+stdout as terminals and that raw capture preserves `bytes(range(256))`; the
+pipe test runs the same child without a terminal and proves it fails, so a
+pipe-based regression cannot pass. The credential cases pin the six shapes the
+09-REVIEW.md CR-02 finding executed, and the write cases cover the root anchor,
+symlink refusals, replace-not-append and concurrent writers.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import unittest
+from pathlib import Path
+
+from scripts import serial_capture
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = REPO_ROOT / "scripts" / "serial_capture.py"
+
+HOMEWORK = "1_3-police-flasher"
+
+# The six exact samples from 09-REVIEW.md CR-02.
+REVIEW_SHAPES = (
+    b"secret = hunter2",
+    b"PASSWORD = hunter2",
+    b'{"token": "abc123"}',
+    b'{"apiKey": "abc123"}',
+    b"password abc123",
+    b"Authorization: Bearer eyJhbGciOiJIUzI1NiJ9",
+)
+
+
+def child_that_writes(payload: bytes) -> str:
+    """Return a child program that writes *payload* and then sleeps past the bound.
+
+    The child exits 9 unless both stdin and stdout are terminals, so the PTY
+    test has teeth: a pipe-based capture cannot satisfy it.
+    """
+    return (
+        "import sys, time\n"
+        "if not (sys.stdin.isatty() and sys.stdout.isatty()):\n"
+        "    sys.exit(9)\n"
+        f"sys.stdout.buffer.write({payload!r})\n"
+        "sys.stdout.buffer.flush()\n"
+        "time.sleep(10)\n"
+    )
+
+
+class CapturePtyTests(unittest.TestCase):
+    """PTY capture preserves raw bytes and refuses every early exit."""
+
+    def test_capture_preserves_every_byte_and_sees_a_tty(self) -> None:
+        payload = bytes(range(256)) + b"\x03\x00"
+
+        captured = serial_capture.capture_pty(
+            [sys.executable, "-c", child_that_writes(payload)], 0.5
+        )
+
+        self.assertEqual(payload, captured)
+
+    def test_a_pipe_capture_would_fail_the_same_child(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, "-c", child_that_writes(b"pipe capture\n")],
+            stdin=subprocess.PIPE,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+
+        self.assertNotEqual(0, completed.returncode)
+
+    def test_capture_fails_when_the_command_cannot_start(self) -> None:
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_pty(["/nonexistent/serial-capture-child"], 0.5)
+
+        self.assertIn("cannot start", str(caught.exception))
+
+    def test_capture_fails_on_an_early_nonzero_exit(self) -> None:
+        program = (
+            "import sys\n"
+            "sys.stdout.buffer.write(b'x')\n"
+            "sys.stdout.buffer.flush()\n"
+            "sys.exit(3)\n"
+        )
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_pty([sys.executable, "-c", program], 5)
+
+        message = str(caught.exception)
+        self.assertIn("before the bound", message)
+        self.assertIn("3", message)
+
+    def test_capture_fails_on_an_early_zero_exit(self) -> None:
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_pty(
+                [sys.executable, "-c", "import sys; sys.exit(0)"], 5
+            )
+
+        message = str(caught.exception)
+        self.assertIn("before the bound", message)
+        self.assertIn("0", message)
+
+    def test_capture_stops_at_the_deadline(self) -> None:
+        started = time.monotonic()
+
+        captured = serial_capture.capture_pty(
+            [sys.executable, "-c", "import time; time.sleep(10)"], 0.3
+        )
+
+        elapsed = time.monotonic() - started
+        self.assertEqual(b"", captured)
+        self.assertLess(elapsed, 5.0)
+
+
+class CredentialScanTests(unittest.TestCase):
+    """The widened scan matches every review shape and stays boolean."""
+
+    def test_the_review_shapes_match(self) -> None:
+        for sample in REVIEW_SHAPES:
+            with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_passwd_matches(self) -> None:
+        self.assertTrue(serial_capture.find_credential(b"passwd = hunter2"))
+
+    def test_uppercase_password_matches(self) -> None:
+        self.assertTrue(serial_capture.find_credential(b"PASSWORD: hunter2"))
+
+    def test_a_space_separated_value_of_six_characters_matches(self) -> None:
+        self.assertTrue(serial_capture.find_credential(b"password abc123"))
+
+    def test_a_short_space_separated_word_does_not_match(self) -> None:
+        self.assertFalse(serial_capture.find_credential(b"secret is"))
+
+    def test_a_benign_boot_log_does_not_match(self) -> None:
+        boot_log = (
+            b"ESP-ROM:esp32s3-20210327\r\n"
+            b"Build:Mar 27 2021\r\n"
+            b"rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)\r\n"
+            b"entry 0x403c88dc\r\n"
+        )
+
+        self.assertFalse(serial_capture.find_credential(boot_log))
+
+    def test_the_scan_returns_a_boolean(self) -> None:
+        self.assertIs(bool, type(serial_capture.find_credential(b"boot ok")))
+
+
+class AtomicLogWriteTests(unittest.TestCase):
+    """The write is root-anchored, symlink-refusing, replace-only and whole."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="serial-capture-write-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = (Path(self._tmp.name) / "root").resolve()
+        self.root.mkdir()
+
+    def log_path(self) -> Path:
+        return self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
+
+    def temporary_files(self, directory: Path) -> list[str]:
+        return sorted(
+            item.name for item in directory.iterdir() if item.name.startswith(".capture-")
+        )
+
+    def test_writes_the_log_under_the_root_with_no_temporary_file(self) -> None:
+        payload = bytes(range(256))
+
+        path = serial_capture.write_log_atomically(self.root, HOMEWORK, payload)
+
+        self.assertEqual(self.log_path(), path)
+        self.assertTrue(path.resolve().is_relative_to(self.root.resolve()))
+        self.assertEqual(payload, path.read_bytes())
+        self.assertEqual([], self.temporary_files(path.parent))
+
+    def test_a_second_write_replaces_rather_than_appends(self) -> None:
+        serial_capture.write_log_atomically(self.root, HOMEWORK, b"first payload")
+
+        serial_capture.write_log_atomically(self.root, HOMEWORK, b"second")
+
+        self.assertEqual(b"second", self.log_path().read_bytes())
+
+    def test_creates_the_state_directory_when_absent(self) -> None:
+        serial_capture.write_log_atomically(self.root, HOMEWORK, b"data")
+
+        self.assertTrue((self.root / ".skill-state" / "logs").is_dir())
+
+    def test_refuses_a_symlinked_state_directory(self) -> None:
+        outside = Path(self._tmp.name) / "outside"
+        outside.mkdir()
+        (self.root / ".skill-state").symlink_to(outside, target_is_directory=True)
+
+        with self.assertRaises(serial_capture.CaptureFailed):
+            serial_capture.write_log_atomically(self.root, HOMEWORK, b"data")
+
+        self.assertFalse((outside / "logs").exists())
+
+    def test_refuses_a_symlinked_logs_directory(self) -> None:
+        state = self.root / ".skill-state"
+        state.mkdir()
+        outside = Path(self._tmp.name) / "outside"
+        outside.mkdir()
+        (state / "logs").symlink_to(outside, target_is_directory=True)
+
+        with self.assertRaises(serial_capture.CaptureFailed):
+            serial_capture.write_log_atomically(self.root, HOMEWORK, b"data")
+
+        self.assertFalse((outside / f"{HOMEWORK}.log").exists())
+
+    def test_refuses_a_symlinked_log_file(self) -> None:
+        logs = self.root / ".skill-state" / "logs"
+        logs.mkdir(parents=True)
+        outside = Path(self._tmp.name) / "outside.log"
+        outside.write_bytes(b"untouched")
+        (logs / f"{HOMEWORK}.log").symlink_to(outside)
+
+        with self.assertRaises(serial_capture.CaptureFailed):
+            serial_capture.write_log_atomically(self.root, HOMEWORK, b"data")
+
+        self.assertEqual(b"untouched", outside.read_bytes())
+        self.assertEqual([], self.temporary_files(logs))
+
+    def test_concurrent_writes_leave_one_whole_payload(self) -> None:
+        payloads = (b"a" * 4096, b"b" * 4096)
+        errors: list[BaseException] = []
+
+        def writer(payload: bytes) -> None:
+            try:
+                serial_capture.write_log_atomically(self.root, HOMEWORK, payload)
+            except BaseException as exc:  # reported below, never swallowed
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=writer, args=(payload,)) for payload in payloads
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertEqual([], errors)
+        final = self.log_path().read_bytes()
+        self.assertIn(final, payloads)
+        self.assertEqual([], self.temporary_files(self.log_path().parent))
+
+
+class CaptureAndStoreTests(unittest.TestCase):
+    """The shipped path scans before the filesystem is touched."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="serial-capture-store-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        self.log_path = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
+
+    def test_a_benign_child_writes_the_log(self) -> None:
+        payload = b"\x00boot ok\r\n"
+        argv = [sys.executable, "-c", child_that_writes(payload)]
+
+        path, count = serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertEqual(self.log_path, path)
+        self.assertEqual(len(payload), count)
+        self.assertEqual(payload, path.read_bytes())
+
+    def test_a_credential_child_writes_nothing(self) -> None:
+        argv = [sys.executable, "-c", child_that_writes(b"password hunter2\r\n")]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertIn("credential", str(caught.exception))
+        self.assertFalse(self.log_path.exists())
+
+    def test_an_empty_child_writes_nothing(self) -> None:
+        argv = [sys.executable, "-c", "import time; time.sleep(10)"]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertIn("no bytes captured", str(caught.exception))
+        self.assertFalse(self.log_path.exists())
+
+
+class CliUsageTests(unittest.TestCase):
+    """Invalid input is rejected before any monitor argv is assembled."""
+
+    def run_cli(self, *arguments: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), *arguments],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+
+    def assert_usage_error(self, result: subprocess.CompletedProcess) -> None:
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("ERROR:", result.stderr)
+        self.assertEqual("", result.stdout)
+
+    def test_an_invalid_id_is_rejected_before_any_capture(self) -> None:
+        self.assert_usage_error(self.run_cli("--id", "not-an-id", "--seconds", "1"))
+
+    def test_a_zero_baud_is_a_usage_error(self) -> None:
+        self.assert_usage_error(
+            self.run_cli("--id", HOMEWORK, "--baud", "0", "--seconds", "1")
+        )
+
+    def test_a_zero_duration_is_a_usage_error(self) -> None:
+        self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--seconds", "0"))
+
+
+if __name__ == "__main__":
+    unittest.main()
