@@ -47,17 +47,18 @@ plans must bind to.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD (plan time) | — | 0 | TOOL-01 | — | N/A | unit (subprocess) | `python3 -m unittest scripts.tests.test_tooling_config.ClangFormatConfigTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-01 | — | N/A | gate | `pre-commit run clang-format --all-files` | ❌ hook | ⬜ pending |
-| TBD (plan time) | — | 0 | TOOL-01 | — | N/A | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.ClangTidyConfigTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-02 | — | `.clangd` files are regular files in both templates; `new_homework` refuses symlinked template entries | unit | `python3 -m unittest scripts.tests.test_new_homework -v` | ✅ | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-02 | — | N/A | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.ClangdConfigTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-02 | T-6-?? (wrapper) | Wrapper rejects an unresolvable binary with a named remedy instead of exec'ing a guess; `--query-driver` is a bounded glob list, never `**` | unit (subprocess, temp HOME) | `python3 -m unittest scripts.tests.test_tooling_config.ClangdWrapperTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-02 | — | N/A | unit (json) | `python3 -m unittest scripts.tests.test_tooling_config.EditorContractTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-03 | — | Hook stages are explicit; no hook rewrites or stages files | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.HookLayeringTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-03 | — | N/A | unit | `python3 -m unittest scripts.tests.test_tooling_config.HookLayeringTests -v` | ❌ W0 | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-04 | — | N/A | unit + gate | `python3 -m unittest scripts.tests.test_gen_views -v && uv run scripts/gen_views.py --all --check` | ❌ page | ⬜ pending |
-| TBD (plan time) | — | — | TOOL-04 | — | N/A | gate | `uv run --python 3.13 --with-requirements requirements-docs.txt mkdocs build --strict` | ✅ workflow | ⬜ pending |
+| 06-01 T1 | 06-01 | 0 | TOOL-01 | — | — | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.ClangFormatConfigTests -v` | ❌ W0 | ⬜ pending |
+| 06-01 T2 | 06-01 | — | TOOL-01 | T-6-01 | — | gate | `pre-commit run clang-format --all-files` | ❌ hook | ⬜ pending |
+| 06-04 T1 | 06-04 | 0 | TOOL-01 | T-6-07 | The guard exits non-zero and names the exact regeneration command; it never writes the database or skips silently | unit (subprocess) | `python3 -m unittest scripts.tests.test_tooling_config.ClangTidyDbGuardTests -v` | ❌ W0 | ⬜ pending |
+| 06-02 T1 | 06-02 | — | TOOL-02 | — | `.clangd` files are regular files in both templates; `new_homework` refuses symlinked template entries | unit | `python3 -m unittest scripts.tests.test_new_homework -v` | ✅ | ⬜ pending |
+| 06-02 T1 | 06-02 | — | TOOL-02 | — | — | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.ClangdConfigTests -v` | ❌ W0 | ⬜ pending |
+| 06-02 T2 | 06-02 | — | TOOL-02 | T-6-02 | Wrapper rejects an unresolvable binary or a relative toolchain base with a named remedy instead of exec'ing a guess; `--query-driver` is a bounded glob list, never `**` | unit (subprocess, temp HOME) | `python3 -m unittest scripts.tests.test_tooling_config.ClangdWrapperTests -v` | ❌ W0 | ⬜ pending |
+| 06-02 T3 | 06-02 | — | TOOL-02 | T-6-03 | The editor contract carries no credential and the settings object is single-sourced in the generator | unit (json) | `python3 -m unittest scripts.tests.test_tooling_config.EditorContractTests -v` | ❌ W0 | ⬜ pending |
+| 06-04 T2 | 06-04 | — | TOOL-03 | T-6-05 | Hook stages are explicit; no hook rewrites or stages files; both push hooks share one widened `files` pattern | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.HookLayeringTests -v` | ❌ W0 | ⬜ pending |
+| 06-03 T2 | 06-03 | — | TOOL-03 | T-6-06 | No workflow file is edited; all four keep a top-level trigger key | unit (text) | `python3 -m unittest scripts.tests.test_ci_workflows -v` | ✅ | ⬜ pending |
+| 06-05 T1 | 06-05 | — | TOOL-04 | T-6-09 | The nav entry lives in the generator template; the page is reachable on a strict build | unit + gate | `python3 -m unittest scripts.tests.test_docs_pins.PinConsistencyTests -v` | ❌ page | ⬜ pending |
+| 06-05 T1 | 06-05 | — | TOOL-04 | — | — | gate | `uv run --python 3.13 --with-requirements requirements-docs.txt mkdocs build --strict` | ✅ workflow | ⬜ pending |
+| 06-05 T3 | 06-05 | — | TOOL-04 | T-6-10 | The guide documents only pre-commit-delivered tools, the two-step symlink, and the hook installation | unit (text) | `python3 -m unittest scripts.tests.test_tooling_config.RulebookAndGuideTests -v` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -72,6 +73,8 @@ plans must bind to.
 - [ ] `scripts/clang-tidy-db` (the missing/stale-database guard) plus its unit test with a
       temporary root
 - [ ] `scripts/clangd-wrapper.sh` (mode 100755) plus a test that fakes `$ESP_CLANGD`
+- [ ] trigger-key assertions for all four `.github/workflows/*.yml` files in
+      `scripts/tests/test_ci_workflows.py` (the yamllint policy must not rewrite them)
 
 ---
 
@@ -79,7 +82,7 @@ plans must bind to.
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| clangd resolves ESP32-S3 includes inside a live VS Code instance | TOOL-02 | Needs a running editor with the clangd extension and a real `compile_commands.json`; not reproducible headlessly in this repository's suite | Open the workspace, `pio run -d homeworks/1_3-police-flasher`, open `src/main.cpp`, confirm no `esp_system.h`/`stdbool.h` squiggles and that "clangd: All checks completed" appears |
+| clangd resolves ESP32-S3 includes inside a live VS Code instance | TOOL-02 | Needs a running editor with the clangd extension and a real `compile_commands.json`; not reproducible headlessly in this repository's suite | Generate the database with `pio run -d homeworks/1_3-police-flasher -t compiledb`, then run `"$HOME/.local/bin/clangd-wrapper" --check homeworks/1_3-police-flasher/src/main.cpp`. Expected: `All checks completed, 0 errors`, exit 0. A failure exits 3 and names either the unresolved include (`stdbool.h`, `stdint.h`) or the rejected Xtensa flag. Then open the workspace, open `src/main.cpp`, and confirm no squiggles and that "clangd: All checks completed" appears. |
 | Format-on-save and the Problems panel behave for a beginner | TOOL-04 | The onboarding guide's acceptance is a human walkthrough | Follow `docs/standards/vscode.md` from a clean machine profile; confirm save reformats and the Problems panel is empty |
 | No-hardware check path | TOOL-04 | Requires the native simulation path from Phase 7 | Follow the guide's no-hardware section; confirm it names a command that works on a machine with no board attached |
 
