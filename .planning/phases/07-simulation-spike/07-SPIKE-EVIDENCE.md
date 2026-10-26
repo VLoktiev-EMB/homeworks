@@ -226,12 +226,12 @@ Protocol A is three short runs (cold, warm, repeat), each bounded by `--timeout 
 hard quota budget tracked after every run (D-01). Serial reliability is an observation, not a
 statistic (D-04): the exact count is recorded, never a percentage.
 
-No session has run yet. The table is present with its final columns and is filled as each run
-returns.
+Run 1 (cold) has run; runs 2 and 3 are pending. The table keeps its final columns and is
+filled as each run returns.
 
 | Run | Command | Wall clock | Simulator cold | Simulator warm | Exit code | Serial line present | Simulated minutes | Label | VCD |
 |-----|---------|------------|----------------|----------------|-----------|---------------------|-------------------|-------|-----|
-| — | — | — | — | — | — | — | — | — | — |
+| 1 (cold) | stamped run-1 invocation (§Run 1 capture) | 5.815 s | 3.759 s | not measured — first invocation in the session | 0 — scenario completed; every step passed | yes — exactly one `I pattern ready` | calculated (upper bound) 15 s — dashboard before/after not supplied | measured | absent — Error exporting VCD: Error 6: No logic analyzer in diagram |
 
 Column rules: `Wall clock` is the wrapper's total (process spawn to exit); `Simulator cold` is
 the first serial byte on the first invocation; `Simulator warm` is the same interval on a
@@ -243,6 +243,81 @@ path when run 1 produced one, otherwise `absent — <first error line>`.
 If a run cannot produce a serial log, a VCD file, or a readable dashboard delta, the affected
 cell records `absent — <first error line>`. No number is inferred.
 
+### Run 1 capture — 2026-10-26
+
+Exact command (run 1, cold; the token was supplied at a silent prompt in the owner's terminal,
+outside the command sandbox — token supplied by the repository owner; value not recorded):
+
+```sh
+python3 -u "$HOME/wokwi-stamp.py" wokwi-cli homeworks/1_3-police-flasher \
+  --scenario scenario.yaml --diagram-file assets/diagram.json \
+  --timeout 15000 --serial-log-file "$HOME/wokwi-run1.serial.log" \
+  --vcd-file "$HOME/wokwi-run1.vcd" \
+  > "$HOME/wokwi-run1.log" 2>&1
+echo "exit=$?"
+```
+
+Stamped output (`$HOME/wokwi-run1.log`, ANSI-stripped; `measured`):
+
+```text
++   0.099s | Wokwi CLI v0.28.1 (7cf4ffaebfd8)
++   0.445s | Connected to Wokwi Simulation API 1.0.0-20261026-g45f2303e
++   2.542s | Starting simulation...
++   3.759s | ESP-ROM:esp32s3-20210327
++   3.759s | Build:Mar 27 2021
++   3.759s | rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
++   3.759s | SPIWP:0xee
++   3.759s | mode:QIO, clock div:1
++   3.759s | load:0x3fce2820,len:0x10cc
++   3.759s | load:0x403c8700,len:0xc2c
++   3.759s | load:0x403cb700,len:0x30b0
++   3.759s | entry 0x403c88b8
++   4.973s | I pattern ready
++   4.973s | [Police flasher smoke] Expected text matched: "pattern ready"
++   4.975s | [Police flasher smoke] delay 100ms
++   5.370s | [Police flasher smoke] expect-pin esp:4 == 1
++   5.514s | [Police flasher smoke] Scenario completed successfully
++   5.658s | Error exporting VCD: Error 6: No logic analyzer in diagram
++   5.815s | EXIT 0
+```
+
+Wrapper invocation status (`measured`): `exit=0`.
+
+Serial log contents (`$HOME/wokwi-run1.serial.log`, `measured`):
+
+```text
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+load:0x403c8700,len:0xc2c
+load:0x403cb700,len:0x30b0
+entry 0x403c88b8
+I pattern ready
+```
+
+Run-1 notes:
+
+- Wall clock `5.815 s` (`measured`) is the wrapper's `EXIT` line: process spawn to exit.
+- Simulator cold `3.759 s` (`measured`) is process start (`+ 0.000 s`) to the first serial
+  byte (`+ 3.759 s | ESP-ROM:esp32s3-20210327`). This is the first invocation in the
+  measurement session, so the warm interval is `not measured` for this row.
+- Exit code `0` (`measured`): scenario completed and every step passed, per the mapping above.
+- The serial log contains exactly one `I pattern ready` line (`measured`); the scenario's
+  `wait-serial` step matched it and the `expect-pin esp:4 == 1` step passed.
+- Simulated minutes is `calculated (upper bound) 15 s` from `--timeout 15000`: the dashboard
+  usage figure before and after the run was not supplied by the owner, so no observed
+  consumption is recorded and no other number is inferred.
+- VCD is `absent — Error exporting VCD: Error 6: No logic analyzer in diagram` (`measured`):
+  no logic analyzer is present in `assets/diagram.json`, so the file was not produced. Its
+  last timestamp cannot be read.
+- The wrapper `shasum -a 256` was not included in the fixed capture: `not measured — not
+  supplied by the owner`.
+- Owner-reported token-risk scan of both captures: 0 matches for
+  `token|bearer|secret|authorization` (owner-run; scan command not supplied).
+
 ## Quota ledger
 
 The vendor dashboard is the only direct observation of consumption. The `Dashboard before` row
@@ -250,7 +325,8 @@ is read before the first session (A8: the free-plan quota is checked, not assume
 
 | Run | Dashboard before | Dashboard after | Delta | Cumulative | Label |
 |-----|------------------|-----------------|-------|------------|-------|
-| Dashboard before | — | — | — | — | not measured — dashboard not read until the owner runs the session |
+| Dashboard before | not supplied by the owner | — | — | — | not measured — dashboard before figure not supplied by the owner |
+| 1 | not supplied by the owner | not supplied by the owner | not measured — dashboard before/after figures not supplied by the owner | 1 run / 15 s upper bound | calculated (upper bound) |
 
 Rows are added cumulatively after every run. If the figure is too coarse for a per-run delta,
 the row records the timeout bound instead and carries the `calculated (upper bound)` label.
