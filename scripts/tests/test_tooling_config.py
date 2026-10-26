@@ -13,6 +13,7 @@ test would make the fast suite depend on a downloaded wheel.
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -338,6 +339,86 @@ class ClangdWrapperTests(unittest.TestCase):
             ],
             arguments,
         )
+
+
+EDITOR_SETTINGS = REPO_ROOT / ".vscode" / "settings.json"
+WORKSPACE_FILE = REPO_ROOT / "homeworks.code-workspace"
+WORKSPACE_TEMPLATE = REPO_ROOT / "templates" / "views" / "workspace.json.tmpl"
+
+# D-19a: the literal home-relative wrapper path the generator emits.
+WRAPPER_PATH_VALUE = "${env:HOME}/.local/bin/clangd-wrapper"
+
+# D-19: exactly the eight keys the editor contract carries.
+EXPECTED_EDITOR_KEYS = {
+    "clangd.path",
+    "clangd.arguments",
+    "C_Cpp.intelliSenseEngine",
+    "C_Cpp.autocomplete",
+    "C_Cpp.errorSquiggles",
+    "editor.formatOnSave",
+    "[c]",
+    "[cpp]",
+}
+
+CPPTOOLS_KEYS = (
+    "C_Cpp.intelliSenseEngine",
+    "C_Cpp.autocomplete",
+    "C_Cpp.errorSquiggles",
+)
+
+
+class EditorContractTests(unittest.TestCase):
+    """D-19/D-19a: one contract, emitted twice and kept equal by drift.
+
+    Comparing parsed values means formatting cannot create a false failure,
+    while the explicit key-set equality closes the hole a plain deep equality
+    would leave: deleting a cpptools key from both sides would still compare
+    equal, so the expected key set is asserted separately.
+    """
+
+    def workspace_settings(self) -> dict:
+        document = json.loads(WORKSPACE_FILE.read_text(encoding="utf-8"))
+        return document["settings"]
+
+    def single_folder_settings(self) -> dict:
+        return json.loads(EDITOR_SETTINGS.read_text(encoding="utf-8"))
+
+    def test_both_files_carry_the_same_settings_object(self) -> None:
+        self.assertEqual(self.workspace_settings(), self.single_folder_settings())
+
+    def test_the_settings_key_set_is_exactly_the_eight_expected_keys(self) -> None:
+        for label, settings in (
+            ("workspace", self.workspace_settings()),
+            ("single-folder", self.single_folder_settings()),
+        ):
+            with self.subTest(target=label):
+                self.assertEqual(EXPECTED_EDITOR_KEYS, set(settings))
+
+    def test_cpptools_intellisense_autocomplete_and_squiggles_are_disabled(self) -> None:
+        settings = self.workspace_settings()
+        for key in CPPTOOLS_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual("disabled", settings[key])
+
+    def test_format_on_save_is_enabled(self) -> None:
+        self.assertIs(True, self.workspace_settings()["editor.formatOnSave"])
+
+    def test_background_index_is_passed(self) -> None:
+        self.assertIn(
+            "--background-index", self.workspace_settings()["clangd.arguments"]
+        )
+
+    def test_clangd_path_is_the_home_relative_wrapper(self) -> None:
+        self.assertEqual(WRAPPER_PATH_VALUE, self.workspace_settings()["clangd.path"])
+
+    def test_the_template_carries_no_workspace_scope_variable(self) -> None:
+        text = WORKSPACE_TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn("workspaceFolder", text)
+        self.assertNotIn("${", text, "the renderer rejects dollar-brace template text")
+
+    def test_the_template_uses_the_closed_placeholder(self) -> None:
+        text = WORKSPACE_TEMPLATE.read_text(encoding="utf-8")
+        self.assertEqual(1, text.count("{{clangd_wrapper_path}}"))
 
 
 if __name__ == "__main__":

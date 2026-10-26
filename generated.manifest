@@ -37,8 +37,8 @@
       "path": "homeworks.code-workspace",
       "owner": "workspace",
       "mode": "whole",
-      "sha256": "32e0a757901a13cff7d490d8e84ea6e0930060396709df43548ba2314658462a",
-      "bytes": 475
+      "sha256": "c3c08c025e2593e814da90e1c4e51b247932a72c5207a028f7b78e732a0d061c",
+      "bytes": 925
     },
     {
       "path": "mkdocs.yml",
