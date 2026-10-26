@@ -286,14 +286,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
 
-**Plans:** 1/5 plans executed
+**Plans:** 3/5 plans executed
 
 **Wave 1**
 - [x] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 06-02-PLAN.md — esp-clangd wrapper, per-project `.clangd`, generator-owned editor contract, `EditorContractTests` (tracer: a scaffolded `.clangd`)
-- [ ] 06-03-PLAN.md — ruff, yamllint, and markdownlint policies, scoped check-only hooks, backlog cleanup (tracer: ruff end to end)
+- [x] 06-02-PLAN.md — esp-clangd wrapper, per-project `.clangd`, generator-owned editor contract, `EditorContractTests` (tracer: a scaffolded `.clangd`)
+- [x] 06-03-PLAN.md — ruff, yamllint, and markdownlint policies, scoped check-only hooks, backlog cleanup (tracer: ruff end to end)
 
 **Wave 3** *(blocked on Wave 2)*
 - [ ] 06-04-PLAN.md — `.clang-tidy`, `scripts/clang-tidy-db` guard, pre-push layering, `hex.c` fixes, `HookLayeringTests` (tracer: missing-database failure)
@@ -389,7 +389,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
-| 6. Developer Experience and Quality Layering | 1/5 | In Progress | - |
+| 6. Developer Experience and Quality Layering | 3/5 | In Progress | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
