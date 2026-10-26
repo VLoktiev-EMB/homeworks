@@ -348,6 +348,7 @@ Plans:
 **Goal**: Pull requests are gated by a fast, changed-only CI pipeline with one required check; simulation is optional and never blocks forks.
 **Friction-log justification**: The Phase 4.2 log must contain at least one entry for CI feedback time or changed-only builds; otherwise the pipeline is not built.
 **Depends on**: Phase 3, Phase 4.2, Phase 5, Phase 6, Phase 7
+**Amendment 2026-10-26**: the documentation site was removed before this phase, so no docs build or Pages deploy is in scope; the `generated-views` drift job remains.
 **Requirements**: TOOL-05, TOOL-06, SIM-04
 **Success Criteria** (what must be TRUE):
   1. A pull request runs a fast `meta` job (schema, `--check` drift, lint, gitleaks, architecture, `wokwi-cli lint`) and a `changes` job that computes the affected matrix.
@@ -395,7 +396,7 @@ Plans:
   1. `homeworks/1_3-police-flasher/` contains the scaffolded artifacts, native tests, and all four extensions: third LED, variable speed, complex pattern, and single-GPIO operation.
   2. Native tests pass and the Wokwi simulation reproduces the four patterns with provenance-labeled evidence.
   3. The report satisfies Phase 10 and includes measured versus simulated values, commit hashes, known limitations, and next steps.
-  4. The README index, workspace, and docs site include homework 1.3 through the generated path, and the documented local simulation path is recorded.
+  4. The README index and workspace include homework 1.3 through the generated path, and the documented local simulation path is recorded.
   5. The pull request passes CI and the merged commit is tagged `hw/1_3-police-flasher`.
   6. The Phase 4.2 friction log is closed: every automation candidate has a phase or a recorded decision not to build it.
 

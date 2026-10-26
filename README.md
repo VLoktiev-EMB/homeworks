@@ -8,8 +8,8 @@ all understandable and verifiable a year later.
 
 **Status:** the first homework, [1.3 Police Flasher](homeworks/1_3-police-flasher/), is in
 progress. The repository holds the shared libraries, the metadata contract, the scaffold, the
-generated views, and that first homework project; the documentation site is generated from the
-same metadata.
+generated views, and that first homework project; the authored decision and standards
+documents render directly in the repository view.
 
 ## Homeworks
 

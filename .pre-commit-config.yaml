@@ -18,11 +18,9 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # Vendored third-party bytes are pinned by
-      # `docs/assets/vendor/katex/0.19.0/FILES.sha256` (D-07). The upstream
-      # minified JavaScript carries no final newline, so a normalizing hook
-      # would rewrite it and break the integrity gate. The vendor tree is
-      # therefore excluded from both text-normalizing hooks.
+      # The text-normalizing hooks below carry no exclusions: every tracked text
+      # file here is authored, and `gen_views.py` owns its own output byte for
+      # byte.
       #
       # Every hook here names `stages: [pre-commit]` explicitly. This pinned
       # manifest declares `stages: [pre-commit, pre-push, manual]` for three of
@@ -30,10 +28,8 @@ repos:
       # `default_stages` — without the per-hook declaration those three would
       # run at pre-push and break D-08's "pre-push runs clang-tidy only".
       - id: trailing-whitespace
-        exclude: ^docs/assets/vendor/
         stages: [pre-commit]
       - id: end-of-file-fixer
-        exclude: ^docs/assets/vendor/
         stages: [pre-commit]
       - id: check-merge-conflict
         stages: [pre-commit]
@@ -75,8 +71,8 @@ repos:
   # `files` is the authored-YAML surface (D-14): the workflows, each homework's
   # metadata, the board profiles, the template sources, the hook file itself,
   # and `.yamllint.yaml` so the linter validates its own configuration. The
-  # generated `mkdocs.yml` is deliberately absent — `gen_views.py --check` owns
-  # its shape, exactly as it owns the generated pages.
+  # three generated views are deliberately absent — `gen_views.py --check` owns
+  # their shape.
   #
   # `.github/workflows/` enters here only as a lint path. D-24 keeps CI wiring
   # in Phase 8; no workflow is edited for a lint finding.
@@ -89,10 +85,9 @@ repos:
         stages: [pre-commit]
 
   # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
-  # `.claude/` is the generated adapter, and the generated pages plus the vendor
-  # tree are owned by `gen_views.py --check` and their upstream pins. Every
-  # exclusion names a family explicitly, so a new authored file is linted by
-  # default rather than silently skipped.
+  # and `.claude/` is the generated adapter. Every exclusion names a family
+  # explicitly, so a new authored file is linted by default rather than
+  # silently skipped.
   #
   # D-06: the pinned `rev` is the delivery path; the hook pulls its own npm
   # dependencies into a pre-commit-managed node environment.
@@ -100,8 +95,7 @@ repos:
     rev: v0.24.0
     hooks:
       - id: markdownlint-cli2
-        exclude: >-
-          ^(\.planning/|\.claude/|docs/index\.md$|docs/homeworks/|docs/boards/|docs/assets/vendor/)
+        exclude: ^(\.planning/|\.claude/)
         stages: [pre-commit]
 
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
@@ -199,9 +193,9 @@ repos:
         # Folded, with `(?x)` so the line breaks stay outside the pattern: YAML
         # folding would otherwise join the alternatives with a space.
         files: >-
-          (?x)^(README\.md$|docs/|templates/views/|boards/|schema/|homeworks/
+          (?x)^(README\.md$|templates/views/|boards/|schema/|homeworks/
           |scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$
-          |mkdocs\.yml$|platformio\.shared\.ini$|homeworks\.code-workspace$)
+          |platformio\.shared\.ini$|homeworks\.code-workspace$)
         pass_filenames: false
         stages: [pre-commit]
 

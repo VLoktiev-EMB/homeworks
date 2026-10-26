@@ -142,3 +142,41 @@ workflow, the ADR status index.
 - Phases 5–10 are justified line by line by that log.
 - Phase 11 is the second pass of the same homework: polish, tag, scale.
 - The GSD tiers stay; only the blanket wording and the fast-path staging change.
+
+## Revisit — 2026-10-26: the docs site is cut
+
+The inventory above kept the MkDocs site in the roadmap, "built against the tracer".
+That line is superseded: the site is removed before Phase 8 planning, not deferred.
+
+Evidence gathered in the exploration:
+
+- Authored docs contain no MkDocs-only syntax (`!!!`, `===`, `{% %}`, `{{ }}`,
+  pymdownx): zero occurrences across `docs/decisions/`, `docs/standards/` and
+  `README.md`. GitHub renders those 16 `.md` files natively.
+- 25 relative `.md` links already resolve in the repository view.
+- No LaTeX content: the two `$…$` hits are shell `$` fragments, so KaTeX earns nothing.
+- Four of the seven `generated.manifest` entries exist only for the site:
+  `docs/index.md`, `docs/boards/…`, `docs/homeworks/…` and `mkdocs.yml`.
+
+Decision:
+
+- Cut `.github/workflows/docs.yml`, `mkdocs.yml`, `requirements-docs.txt`,
+  `docs/assets/vendor/`, `docs/index.md`, `docs/boards/`, `docs/homeworks/`, and the
+  three site-only templates (`board-page.md.tmpl`, `homework-page.md.tmpl`,
+  `mkdocs.yml.tmpl`).
+- Keep every authored `.md` under `docs/decisions/` and `docs/standards/`.
+- Keep the generator for the three core views — the README table,
+  `homeworks.code-workspace` and `platformio.shared.ini` — with the manifest,
+  `--check`, the pre-commit hook and `generated-views.yml` intact.
+- The maintainer sets `Settings -> Pages -> Build and deployment -> Source` to `None`.
+  The published URL stops being a deliverable.
+
+Re-entry trigger — reintroduce the site only when one of these becomes true:
+
+1. five or more homeworks and a browsable catalogue is wanted;
+2. a public portfolio landing page separate from the code is wanted;
+3. docs or reports carry diagrams or maths that read poorly in the repository view.
+
+The decision rule in this note still applies: cut by recurring cost. This removal cuts a
+per-change deploy plus a per-change drift obligation for content that already renders
+where it lives. It does not remove the engineering value of the generator itself.

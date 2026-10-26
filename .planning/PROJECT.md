@@ -6,8 +6,8 @@ A public GitHub monorepo for 30+ homework assignments from an embedded engineeri
 course. Each homework is an independent PlatformIO project containing code, tests, an
 academic report in Markdown, wiring diagrams, a bill of materials, engineering
 calculations, and measured evidence. The repository also provides shared portable
-libraries, central documentation, templates, deterministic scripts, CI, and a MkDocs
-site generated from the same metadata.
+libraries, central documentation, templates, deterministic scripts, and CI; the authored
+decision and standards documents render directly in the repository view.
 
 ## Core Value
 
@@ -49,17 +49,17 @@ artifact — code, evidence, and report — that can be understood and verified 
   pattern library, Wokwi wiring, report, single-project CI, and a recorded friction log —
   Phase 4.2 (PILOT-01 first pass)
 - ✓ One generator owns every repeated view: `scripts/gen_views.py` writes the root README
-  index, `homeworks.code-workspace`, `platformio.shared.ini`, `docs/index.md`, one page per
-  homework and per board profile, and `mkdocs.yml` from `homework.yaml`, recorded in a
-  committed `generated.manifest` with a SHA-256 and byte count per entry; `--check` reports
-  drift and never writes — Phase 5 (META-05, META-07)
+  index, `homeworks.code-workspace` and `platformio.shared.ini` from `homework.yaml`,
+  recorded in a committed `generated.manifest` with a SHA-256 and byte count per entry;
+  `--check` reports drift and never writes — Phase 5 (META-05, META-07)
 - ✓ `scripts/affected.py` maps a git diff to a build/simulation matrix with `lib/**` fanout
   to every consumer, an explicit no-build-impact set, and fail-safe widening for any
   unrecognised path — Phase 5 (META-06)
 - ✓ A MkDocs Material 9.7.7 site is generated from the same tree and published to GitHub
   Pages by an OIDC workflow after a warnings-as-errors build; the generated navigation and
   the vendored KaTeX 0.19.0 (checksum-pinned, no CDN) were verified on the live site —
-  Phase 5 (META-08)
+  Phase 5 (META-08). **Superseded 2026-10-26:** the site is cut and the authored documents
+  render in the repository view; see the 2026-10-26 row in `docs/decisions/README.md`.
 - ✓ clang-format 23.1.3 as a documented ESP-IDF approximation (4 spaces, 120 columns,
   function brace on a new line), plus clang-tidy (bugprone, cert, performance, portability),
   markdownlint-cli2, yamllint, ruff and gitleaks, are pinned through pre-commit; the
@@ -294,12 +294,12 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Three PR templates | Type-specific evidence without a bloated universal template | ✗ Superseded by one default template — Phase 4.1 |
 | Git LFS with limits | Handles large binaries without bloating the repository | — Pending |
 | MIT license | Simple public portfolio license | — Pending |
-| README index + MkDocs Material | One source of metadata renders both catalog and site | — Pending |
+| README index + MkDocs Material | One source of metadata renders both catalog and site | ✗ Superseded 2026-10-26 — the README index stays generated from the metadata; the site is cut and the authored docs render in the repository view |
 | ADRs for infrastructure, assumptions in reports | Traceable decisions at the right scope | — Pending |
 | Wokwi primary, Velxio fallback, Renode for STM32, Fritzing with attribution | Research shows Wokwi has the strongest ESP32 fidelity and CI; Velxio self-host excludes STM32 | ✓ Phase 7 — ADR-0014; Wokwi executed 3/3, Velxio digest-pinned, Renode and Fritzing `not measured` with reasons |
 | Evidence labels are semantic: `measured`, `calculated`, `simulated`, `datasheet`, `not measured` | A simulated value presented as a bench reading is a defect, and quota cannot be inferred from wall clock | ✓ Phase 7 — the five-label ledger plus `calculated (upper bound)`; simulation is never bench evidence |
 | The simulation status flip is gated by the evidence outcome token | Execution alone is not success; a failed or blocked scenario must not produce `verified` | ✓ Phase 7 — `simulation.status: verified` only on `**Outcome:** scenario passed` |
-| MkDocs Material 9.7.7 with Zensical-compatible config | Stable today; re-evaluate in Q1 2027 before the 2027-05-05 EOL | — Pending |
+| MkDocs Material 9.7.7 with Zensical-compatible config | Stable today; re-evaluate in Q1 2027 before the 2027-05-05 EOL | ✗ Superseded 2026-10-26 — no site is built or deployed, so the theme pin and its EOL no longer apply |
 | Git LFS only for large non-diffable binaries | Pages cannot serve LFS objects; LFS bandwidth is consumed by checkouts | — Pending |
 | Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | ✓ Phase 2 — smoke-tested; 16 MB and octal PSRAM proven from `sdkconfig.json` and image headers |
 | Pilot 1.3 with all extensions in guided mode | Validates the full workflow before scaling to 30+ homeworks | — Pending |
@@ -316,8 +316,8 @@ artifact — code, evidence, and report — that can be understood and verified 
 | `merge_firmware.py` stays project-local | espressif32@8.0.0 ships esptool 5 (`merge-bin`), so the published Wokwi script cannot run; promotion to `scripts/pio/` waits for Phase 7/8 | — Pending (tracked as a todo) |
 | Wokwi execution deferred to Phase 7 | Only `wokwi-cli lint --offline` is a verified result; a simulation claim needs an executed run | ✓ Phase 4.2 — `simulation.status: pending`; the runnable command is documented |
 | One generator + one committed manifest own every repeated view | A single owner removes the per-homework manual edits F-01/F-14/F-18 recorded, and a manifest with a digest per entry makes drift detectable without re-rendering | ✓ Phase 5 — `scripts/gen_views.py` over 8 paths; `--check` fails on `MODIFIED`/`DELETED`/`ORPHAN` and never writes |
-| `--check` is a pure check, enforced at two points | A hook that repairs drift makes the gate meaningless; local feedback and a PR gate catch different trust boundaries | ✓ Phase 5 — check-only pre-commit hook plus a read-only PR job; `docs.yml` deploys only from `main` |
-| Vendor third-party site assets, never a CDN | `--strict` builds must not depend on the network, and a missing `extra_css` target produces no MkDocs warning at all | ✓ Phase 5 — KaTeX 0.19.0 pinned with a 24-entry SHA-256 ledger and a discrimination test |
+| `--check` is a pure check, enforced at two points | A hook that repairs drift makes the gate meaningless; local feedback and a PR gate catch different trust boundaries | ✓ Phase 5, narrowed 2026-10-26 — the check-only pre-commit hook and the read-only PR job still guard the three core views; the Pages deploy is gone |
+| Vendor third-party site assets, never a CDN | `--strict` builds must not depend on the network, and a missing `extra_css` target produces no MkDocs warning at all | ✗ Superseded 2026-10-26 — no vendored site asset remains; the three core views still render from their reviewed templates |
 | Two critical code-review findings fixed before merge | A title could reach the published site as live HTML, and the generator followed symlinked inputs it otherwise refused | ✓ Phase 5 — `_escape_cell` escapes `&`/`<`/`>`; `read_regular_text` refuses symlinks; 20 lower findings recorded in the disposition ledger |
 
 ## Evolution

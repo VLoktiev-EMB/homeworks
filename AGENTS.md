@@ -26,13 +26,12 @@ Run from the repository root, in this order, before opening a pull request.
 ## Repository layout
 
 Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gitattributes`,
-`.pre-commit-config.yaml`, `mkdocs.yml`, `requirements-docs.txt`, `generated.manifest`, and
-the paths below.
+`.pre-commit-config.yaml`, `generated.manifest`, and the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
 - `.github/workflows/security.yml` — the full-history secret scan.
-- `docs/` — the documentation site source: the authored `decisions/` and `standards/` trees
-  plus the generated `index.md`, `homeworks/`, `boards/` and `assets/vendor/`.
+- `docs/` — the authored documentation tree: the `decisions/` and `standards/` documents,
+  which GitHub renders directly in the repository view.
 - `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
   no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
@@ -44,12 +43,12 @@ the paths below.
 - `lib/` — `port`, `common`, `host`, and the thin Arduino and ESP-IDF adapters.
 - `homeworks/<id>/` — one project per assignment, created only by `scripts/new_homework`.
 
-The generated paths — the table region in `README.md`, `homeworks.code-workspace`,
-`platformio.shared.ini`, `mkdocs.yml` and the generated pages under `docs/` — are committed
-and registered in `generated.manifest`. The `gen-views-check` pre-commit hook and the
-`generated-views` pull-request workflow both run `scripts/gen_views.py --all --check` and
-fail on drift; the fix is `uv run scripts/gen_views.py --all`, never a hand edit. `site/` is
-the only build output and stays ignored.
+The generated paths — the table region in `README.md`, `homeworks.code-workspace` and
+`platformio.shared.ini` — are committed and registered in `generated.manifest`. The
+`gen-views-check` pre-commit hook and the `generated-views` pull-request workflow both run
+`scripts/gen_views.py --all --check` and fail on drift; the fix is
+`uv run scripts/gen_views.py --all`, never a hand edit. `site/` and `.pio/` are build output
+and stay ignored.
 
 `scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
 `platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
@@ -57,9 +56,8 @@ explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `templates/view
 `boards/` and the generated view files) selects nothing, and any unrecognised path widens to
 every project.
 
-The first Pages deployment requires `Settings -> Pages -> Build and deployment -> Source` to
-be `GitHub Actions`; that is a maintainer action completed before the first push to `main`,
-not something the `docs` workflow can set for itself.
+The GitHub Pages source is set to `None` by the maintainer; the repository publishes no
+site, and the authored documents render in the repository view.
 
 Planned: report structure under `docs/standards/` (Phase 10) and project skills under
 `.claude/skills/` or `.agents/skills/` (Phase 9).
@@ -170,8 +168,7 @@ Good:  feat(1_3): add police flasher state machine
   bulk reformat.
 - **[MUST]** **[ENFORCED: pre-commit]** Python, authored YAML, and authored Markdown are
   linted by ruff, yamllint, and markdownlint-cli2 from their committed policies
-  (`pyproject.toml`, `.yamllint.yaml`, `.markdownlint-cli2.jsonc`). Generated pages and the
-  vendored tree are excluded because `gen_views.py --check` and their pins own them.
+  (`pyproject.toml`, `.yamllint.yaml`, `.markdownlint-cli2.jsonc`).
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
   Every formatter and linter named in this section arrives through a pinned `pre-commit`
   revision, never a system package manager, so the gate is byte-identical on every machine.
@@ -195,9 +192,9 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: pre-commit]** Git LFS is used only for the eight declared non-diffable
   extensions in `.gitattributes` (`.pdf`, `.step`, `.stl`, `.fzz`, `.zip`, `.bin`, `.elf`, `.vcd`);
   the size guard passes LFS blobs and blocks anything else over 1024 kB.
-- **[MUST]** **[ENFORCED: review]** Link videos; never commit them. Page-served site
-  assets (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) stay normal git objects, because GitHub
-  Pages cannot serve LFS content.
+- **[MUST]** **[ENFORCED: review]** Link videos; never commit them. Images referenced by
+  a repository Markdown document (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) stay normal git
+  objects, so the repository view and a checkout render the same bytes.
 - **[MUST]** **[ENFORCED: pre-commit]** Generated files are never committed:
   `compile_commands.json`, the `site/` build, and build output such as `.pio/` are listed
   in `.gitignore`, and the `no-generated-files` hook fails when any is tracked anyway —
