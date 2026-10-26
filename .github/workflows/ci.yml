@@ -207,9 +207,76 @@ jobs:
             pio run -d "$PROJECT" -e "$ENV_NAME"
           fi
 
+  python-tests:
+    # D-15: the surviving half of the pull-request suite gate. The site-build half was
+    # removed with the documentation site before this phase, so only the stdlib suite is
+    # planned here. It closes the Phase 5 WR-13 gap: a broken checker or test now blocks the
+    # merge instead of waiting for a local run.
+    name: python-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      # Pitfall 18: several suites shell out to `uv run`, and the runner image ships no
+      # `uv`, so the suite fails with "uv is a required repository tool" unless the exact
+      # local pin is installed first.
+      - name: Install uv
+        run: python -m pip install uv==0.13.5
+      - name: Run the Python suite
+        run: python -m unittest discover scripts/tests
+
+  static-analysis:
+    # D-17/Pitfall 8: the two clang-tidy hooks declare `stages: [pre-push]`, so the `meta`
+    # hook run never executes them. This job generates the native compilation database and
+    # runs the pre-push stage explicitly, which is what proves the host translation units
+    # under `lib/common/src` and `lib/host/src`. Native test translation units stay the
+    # recorded ADR-0013 gap; closing it is not part of this phase.
+    name: static-analysis
+    runs-on: ubuntu-24.04
+    # D-19 does not enumerate a static-analysis budget; 20 minutes is derived from the
+    # 30-minute `build` budget and recorded in the plan's flagged assumptions.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # D-18: the same pin-derived key as `build`, with no `restore-keys`. The compiledb
+      # target needs the PlatformIO toolchain, so the cache is the same artefact.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
+      # D-13: the same pre-commit environment cache `meta` restores, under the same key,
+      # so the pre-push hook environments are restored rather than rebuilt; no
+      # `restore-keys`, so a pin bump rebuilds instead of running an unreviewed revision.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install the pinned analysis tools
+        run: python -m pip install platformio==6.2.0 pre-commit==4.7.0
+      - name: Install pre-commit environments
+        run: pre-commit install-hooks
+      # The database is generated here, never by the hook: `scripts/clang-tidy-db` is a
+      # validator, and regenerating a database is an explicit developer/CI action.
+      - name: Generate the native compilation database
+        run: pio run -d tests -e native -t compiledb
+      - name: Run the pre-push hook stage
+        run: pre-commit run --all-files --hook-stage pre-push
+
   gate:
     name: gate
-    needs: [changes, meta, build]
+    needs: [changes, meta, build, python-tests, static-analysis]
     # D-2: `!cancelled()` rather than `always()`, which also runs after cancellation.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04

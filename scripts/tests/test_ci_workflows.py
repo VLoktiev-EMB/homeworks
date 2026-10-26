@@ -167,6 +167,33 @@ class WorkflowTextTests(unittest.TestCase):
         self.assertIn("contents: read", text)
         self.assertNotIn(": write", text)
 
+    def test_python_suite_runs_in_ci(self) -> None:
+        # D-15/WR-13: the stdlib suite is a pull-request job, not a local-only ritual.
+        self.assertIn(
+            "python -m unittest discover scripts/tests",
+            CI.read_text(encoding="utf-8"),
+        )
+
+    def test_static_analysis_runs_the_pre_push_stage(self) -> None:
+        # Pitfall 8: `pre-commit run --all-files` is the commit stage; the clang-tidy hooks
+        # live at pre-push, so a job that never names the stage proves nothing about the
+        # host translation units.
+        self.assertIn(
+            "pre-commit run --all-files --hook-stage pre-push",
+            CI.read_text(encoding="utf-8"),
+        )
+
+    def test_static_analysis_restores_the_pre_commit_cache(self) -> None:
+        # D-13: the pre-push environments are restored rather than rebuilt, under the same
+        # key `meta` uses and with no `restore-keys`, so a pin bump never runs an
+        # unreviewed revision.
+        text = CI.read_text(encoding="utf-8")
+        self.assertIn("path: ~/.cache/pre-commit", text)
+        self.assertIn(
+            "key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}",
+            text,
+        )
+
     def test_nightly_computes_the_full_matrix(self) -> None:
         # `platformio.shared.ini` is the mapper's own WIDEN_ALL entry, so the nightly matrix
         # is the full project set without a curated list or a second flag.
