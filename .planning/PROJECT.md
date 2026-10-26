@@ -74,6 +74,17 @@ artifact — code, evidence, and report — that can be understood and verified 
 - ✓ `docs/standards/vscode.md` onboards a VS Code beginner from install to the
   no-hardware check, and the committed editor contract matches `.vscode/settings.json` —
   Phase 6 (TOOL-04)
+- ✓ The simulator decision is evidence-based: ADR-0014 records measured Wokwi costs (3/3
+  runs, cold 3.759 s, warm 6.753/11.238 s), a digest-pinned Velxio self-host attempt, and
+  explicit `not measured` rows for Renode and Fritzing, plus a calculated CI cost basis —
+  Phase 7 (SIM-02)
+- ✓ Homework 1.3 executes its Wokwi scenario end to end (3/3 exit 0, exactly one
+  `pattern ready` line each); `simulation.status: verified` follows only a
+  `scenario passed` outcome, and the shared `scripts/pio/merge_firmware.py` produces the
+  merged image in a clean build — Phase 7 (SIM-02)
+- ✓ The AGPL boundary holds: no Velxio source, image layer or Fritzing part graphic is
+  vendored into the MIT tree; `diagram.json` remains the wiring source of truth — Phase 7
+  (SIM-03)
 
 ### Active
 
@@ -285,7 +296,9 @@ artifact — code, evidence, and report — that can be understood and verified 
 | MIT license | Simple public portfolio license | — Pending |
 | README index + MkDocs Material | One source of metadata renders both catalog and site | — Pending |
 | ADRs for infrastructure, assumptions in reports | Traceable decisions at the right scope | — Pending |
-| Wokwi primary, Velxio fallback, Renode for STM32, Fritzing with attribution | Research shows Wokwi has the strongest ESP32 fidelity and CI; Velxio self-host excludes STM32 | — Pending |
+| Wokwi primary, Velxio fallback, Renode for STM32, Fritzing with attribution | Research shows Wokwi has the strongest ESP32 fidelity and CI; Velxio self-host excludes STM32 | ✓ Phase 7 — ADR-0014; Wokwi executed 3/3, Velxio digest-pinned, Renode and Fritzing `not measured` with reasons |
+| Evidence labels are semantic: `measured`, `calculated`, `simulated`, `datasheet`, `not measured` | A simulated value presented as a bench reading is a defect, and quota cannot be inferred from wall clock | ✓ Phase 7 — the five-label ledger plus `calculated (upper bound)`; simulation is never bench evidence |
+| The simulation status flip is gated by the evidence outcome token | Execution alone is not success; a failed or blocked scenario must not produce `verified` | ✓ Phase 7 — `simulation.status: verified` only on `**Outcome:** scenario passed` |
 | MkDocs Material 9.7.7 with Zensical-compatible config | Stable today; re-evaluate in Q1 2027 before the 2027-05-05 EOL | — Pending |
 | Git LFS only for large non-diffable binaries | Pages cannot serve LFS objects; LFS bandwidth is consumed by checkouts | — Pending |
 | Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | ✓ Phase 2 — smoke-tested; 16 MB and octal PSRAM proven from `sdkconfig.json` and image headers |
@@ -328,4 +341,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-26 after Phase 06.1*
+*Last updated: 2026-10-26 after Phase 07*

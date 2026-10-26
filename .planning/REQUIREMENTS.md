@@ -112,11 +112,11 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 - [ ] **SIM-01**: Every homework with supported hardware has a documented local
       simulation path; `diagram.json` is canonical and `wokwi-cli lint` validates it.
-- [ ] **SIM-02**: A full spike measures Wokwi (primary), Velxio (self-hosted fallback),
+- [x] **SIM-02**: A full spike measures Wokwi (primary), Velxio (self-hosted fallback),
       Renode (STM32), and Fritzing (illustration) on the pilot, including cold start,
       compile, serial reliability, measured minutes, and fidelity limits; the result is
       recorded in ADR-0004.
-- [ ] **SIM-03**: Fritzing SVGs may be used in reports with attribution; part graphics
+- [x] **SIM-03**: Fritzing SVGs may be used in reports with attribution; part graphics
       are not copied into shared assets or the docs site, and `diagram.json` remains the
       source of truth.
 - [ ] **SIM-04**: Simulation in CI is introduced only after the spike, only for changed
@@ -319,8 +319,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPORT-07 | Phase 10 | Pending |
 | REPORT-08 | Phase 10 | Pending |
 | SIM-01 | Phase 11 | Pending |
-| SIM-02 | Phase 7 | Pending |
-| SIM-03 | Phase 7 | Pending |
+| SIM-02 | Phase 7 | Complete |
+| SIM-03 | Phase 7 | Complete |
 | SIM-04 | Phase 8 | Pending |
 | TOOL-01 | Phase 6 | Complete |
 | TOOL-02 | Phase 6 | Complete |
