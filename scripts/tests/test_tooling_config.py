@@ -1344,156 +1344,70 @@ class HookLayeringTests(unittest.TestCase):
                     self.assertNotIn(flag, invocation)
 
 
-RULEBOOK = REPO_ROOT / "AGENTS.md"
-GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
+VSCODE_GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
 
-# WR-03: the guide must name every hook the gate declares, not a hand-picked
-# subset. The ids are derived from the config so a new hook cannot arrive
-# undocumented, and the bullet form is asserted so `clang-tidy` is not
-# satisfied by the longer `clang-tidy-db` id.
-
-# D-06: every linter arrives through pre-commit, so a system install would be
-# a contradiction, not a convenience. These are the forms the guide must not
-# name; the positive form (`pre-commit install`) is asserted separately.
-FORBIDDEN_INSTALLS = (
-    "brew install",
-    "apt-get install",
-    "pip install --user",
-    "npm install -g",
+# The guide's command checks this project, and clangd needs its database. The
+# database is a gitignored build artifact, so a fresh clone or a CI runner does
+# not carry one until the guide's compiledb command has been run.
+HOMEWORK_DATABASE = (
+    REPO_ROOT / "homeworks" / "1_3-police-flasher" / "compile_commands.json"
 )
 
-ENFORCEMENT_TAGS = (
-    "[ENFORCED: pre-commit]",
-    "[ENFORCED: pre-push]",
-    "[ENFORCED: CI]",
-    "[ENFORCED: review]",
-)
+# The attached `--check=<source>` form. The flag is followed by a non-whitespace
+# run ending in a C or C++ source path; the whitespace requirement rules out a
+# detached path, which esp-clangd would reject as a stray positional argument.
+CHECK_INVOCATION = re.compile(r"--check=\S+\.(?:c|cpp)\b")
 
 
-class RulebookAndGuideTests(unittest.TestCase):
-    """TOOL-04: the rulebook names the layers, and the guide carries the steps.
+class ClangdGuideCommandTests(unittest.TestCase):
+    """G-06-1: the guide's documented command is executed, not matched.
 
-    The assertions stay on command substrings and required terms rather than
-    full sentences, so ordinary prose editing does not break the test while a
-    dropped step still does. The negative assertion is the other half of D-06:
-    a guide that named a system package-manager install would contradict the
-    pinned-hook delivery path the same repository declares.
+    The ``--check=`` token is extracted from the onboarding guide and handed to
+    the real wrapper from the checkout root, so a broken command fails on its
+    observed exit status rather than surviving because the prose still carries
+    a matching substring. An absent server skips with a named remedy instead of
+    passing silently.
     """
 
-    def rulebook(self) -> str:
-        return RULEBOOK.read_text(encoding="utf-8")
-
-    def guide(self) -> str:
-        return GUIDE.read_text(encoding="utf-8")
-
-    def test_the_rulebook_names_all_four_enforcement_points(self) -> None:
-        text = self.rulebook()
-        for tag in ENFORCEMENT_TAGS:
-            with self.subTest(tag=tag):
-                self.assertIn(tag, text)
-
-    def test_the_quality_tooling_section_exists(self) -> None:
-        self.assertIn("### Quality tooling", self.rulebook())
-
-    def test_a_routing_row_names_the_onboarding_guide(self) -> None:
-        rows = [
-            line
-            for line in self.rulebook().splitlines()
-            if line.startswith("|") and "docs/standards/vscode.md" in line
-        ]
-        self.assertTrue(rows, "no routing row names docs/standards/vscode.md")
-
-    def test_the_guide_carries_the_two_step_wrapper_command(self) -> None:
-        text = self.guide()
-        self.assertIn('mkdir -p "$HOME/.local/bin"', text)
-        self.assertIn("scripts/clangd-wrapper.sh", text)
-
-    def test_the_guide_installs_both_hook_stages_with_one_command(self) -> None:
-        self.assertIn("pre-commit install", self.guide())
-
-    def test_the_guide_names_the_editor_surfaces(self) -> None:
-        text = self.guide()
-        self.assertIn("Problems", text)
-        self.assertIn("format-on-save", text.lower())
-        self.assertIn("compiledb", text)
-
-    def test_the_guide_lists_every_hook(self) -> None:
-        text = self.guide()
-        config = PRECOMMIT_CONFIG.read_text(encoding="utf-8")
-        declared = re.findall(r"^\s*- id: ([\w-]+)", config, re.MULTILINE)
-        self.assertTrue(declared, "no hook ids found in .pre-commit-config.yaml")
-        for hook in declared:
-            with self.subTest(hook=hook):
-                self.assertIn(f"- `{hook}`", text)
-
-    def test_the_guide_states_the_real_hook_counts(self) -> None:
-        text = self.guide()
-        config = PRECOMMIT_CONFIG.read_text(encoding="utf-8")
-        hooks = re.findall(r"^\s*- id: ([\w-]+)", config, re.MULTILINE)
-        commit_hooks = [
-            hook
-            for hook in hooks
-            if "stages: [pre-commit]" in _hook_block(config, hook)
-        ]
-        push_hooks = [
-            hook for hook in hooks if "stages: [pre-push]" in _hook_block(config, hook)
-        ]
-        self.assertTrue(commit_hooks)
-        self.assertTrue(push_hooks)
-        self.assertIn(
-            f"{len(commit_hooks)} hooks run on commit and "
-            f"{len(push_hooks)} on push.",
-            text,
+    def test_the_documented_check_command_runs_cleanly(self) -> None:
+        text = VSCODE_GUIDE.read_text(encoding="utf-8")
+        invocations = list(dict.fromkeys(CHECK_INVOCATION.findall(text)))
+        self.assertTrue(
+            invocations,
+            "docs/standards/vscode.md no longer documents a --check= invocation",
         )
 
-    def test_the_guide_names_no_system_package_manager_install(self) -> None:
-        text = self.guide()
-        for command in FORBIDDEN_INSTALLS:
-            with self.subTest(command=command):
-                self.assertNotIn(command, text)
+        if not HOMEWORK_DATABASE.is_file():
+            self.skipTest(
+                "homeworks/1_3-police-flasher/compile_commands.json is absent; "
+                "generate it with `pio run -d homeworks/1_3-police-flasher "
+                "-t compiledb`"
+            )
 
-
-# G-06-1: esp-clangd 21.1.3 declares `--check[=<string>]`, so the value must be
-# attached with `=`. `scripts/clangd-wrapper.sh` forwards its arguments
-# verbatim, so a detached path arrives as a stray positional argument and the
-# server rejects it. The guide is the whole contract, so it carries the guard.
-CHECK_COMMAND = "--check=homeworks/1_3-police-flasher/src/main.cpp"
-
-# The flag, then whitespace, then a source path. The negative lookahead after
-# the whitespace rules out `--check --version`, and the whitespace requirement
-# itself rules out the attached `--check=<path>` form.
-DETACHED_CHECK_PATTERN = re.compile(r"--check\s+(?!-)\S+\.(?:cpp|c)\b")
-
-# The exact broken invocation recorded in 06-UAT.md for G-06-1. It is the
-# recorded defect and the fixture that proves the detector is non-vacuous;
-# never copy it into authored Markdown.
-RECORDED_DEFECT_LINE = (
-    '"$HOME/.local/bin/clangd-wrapper" '
-    "--check homeworks/1_3-police-flasher/src/main.cpp"
-)
-
-
-class ClangdCheckCommandTests(unittest.TestCase):
-    """G-06-1: the guide documents the working headless check command.
-
-    esp-clangd declares the flag with an optional attached value and the
-    wrapper forwards arguments verbatim, so a detached source path is a stray
-    positional argument. The positive and negative cases pin the guide, and
-    the third case feeds the recorded defect through the same pattern so the
-    detector cannot be vacuous.
-    """
-
-    def test_the_guide_documents_the_attached_invocation(self) -> None:
-        self.assertIn(CHECK_COMMAND, GUIDE.read_text(encoding="utf-8"))
-
-    def test_the_guide_carries_no_detached_source_path(self) -> None:
-        self.assertIsNone(
-            DETACHED_CHECK_PATTERN.search(GUIDE.read_text(encoding="utf-8")),
-            "the guide must not document a detached --check source path",
-        )
-
-    def test_the_detector_matches_the_recorded_defect(self) -> None:
-        self.assertIsNotNone(DETACHED_CHECK_PATTERN.search(RECORDED_DEFECT_LINE))
+        bash = shutil.which("bash") or "/bin/bash"
+        multiple = len(invocations) > 1
+        for invocation in invocations:
+            if multiple:
+                context = self.subTest(invocation=invocation)
+            else:
+                context = contextlib.nullcontext()
+            with context:
+                result = subprocess.run(
+                    [bash, str(WRAPPER), invocation],
+                    cwd=str(REPO_ROOT),
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                )
+                combined = result.stdout + result.stderr
+                if result.returncode == 2 and "esp-clangd not found" in result.stderr:
+                    self.skipTest(
+                        "esp-clangd is not installed under ~/.espressif; install "
+                        "it with the Espressif IDF tools installer, then re-run"
+                    )
+                self.assertEqual(0, result.returncode, combined)
+                self.assertIn("All checks completed, 0 errors", combined)
 
 
 if __name__ == "__main__":

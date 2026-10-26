@@ -176,7 +176,6 @@ Recent decisions affecting current work:
 - **[Phase 6, open findings]** IN-01..IN-05 are info-level review observations recorded in `06-REVIEW-DISPOSITION.md`; none has a failing test or a reproducible defect against the phase goal. The CI layer of TOOL-03 is Phase 8 scope (TOOL-05, TOOL-06).
 - **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
 - **[Phase 06.1, deferred]** `templates/**/src/*` have no compile database of their own, so both template entry points still show clangd errors. Recorded as a deferred follow-up in `06.1-UAT.md`; out of scope for the phase goal.
-- **[Phase 06.1, queued]** A pass over `scripts/tests/test_tooling_config.py` removes 12 prose/doc-sync tests and replaces the G-06-1 text guard with one behavioral test that runs the guide's documented command. Queued after the phase merge.
 
 ### Quick Tasks Completed
 
