@@ -644,7 +644,14 @@ def _render_workspace(root, homeworks):
     template = read_regular_text(root / template_display, template_display)
     rendered = render(
         template,
-        {"workspace_folders": _workspace_folders(homeworks)},
+        {
+            "workspace_folders": _workspace_folders(homeworks),
+            # D-19a: the wrapper is installed at a home-relative path so a
+            # multi-root window can resolve it. The value carries `${env:HOME}`
+            # literally; the renderer writes mapping values verbatim and never
+            # rescans them, so this cannot trip its dollar-brace rejection.
+            "clangd_wrapper_path": "${env:HOME}/.local/bin/clangd-wrapper",
+        },
         template_display,
     )
     data = rendered.encode("utf-8")
