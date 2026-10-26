@@ -5,43 +5,43 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The capture snippet pipes stdout, so `pio device monitor` always exits before the bound"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The credential-shape scan misses ordinary assignment forms, so the gated write can persist a credential"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The log path is cwd-relative, contradicting the guardrails' scoped path"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The symlink discipline claims a race-free guarantee the helper does not implement"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The outcome table contradicts the rule that reaching the 20-second bound is a success"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The consent-gate example omits `-e <env>`, so it is not the exact command the rule requires"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The general credential prohibition no longer covers logs outside the exception"
   - id: WR-06
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The capture command omits `--quiet`, so PlatformIO's banner is captured into the log"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The snippet is not runnable as written"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`pio project config` emits `monitor_speed` with two different types, and the skill does not normalize"
   - id: WR-07
     severity: warning
@@ -51,6 +51,10 @@ findings:
     severity: warning
     disposition: open
     title: "The uv cache override falls back to a fixed shared `/tmp` path"
+  - id: WR-09
+    severity: warning
+    disposition: fixed
+    title: "The no-build-impact paragraph in AGENTS.md omits the Phase 9 paths"
   - id: IN-03
     severity: info
     disposition: open
@@ -63,8 +67,8 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 15
-total: 15
+open: 5
+total: 16
 recorded: 2026-10-26T23:14:20.579Z
 ---
 
@@ -72,18 +76,19 @@ recorded: 2026-10-26T23:14:20.579Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
-| WR-06 | warning | open | - |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
+| CR-01 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `capture_pty` (pseudo-terminal, no pipe). |
+| CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. |
+| WR-01 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` root anchoring. |
+| WR-02 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` directory descriptors and the corrected `SKILL.md`. |
+| WR-03 | warning | fixed | 09-10-PLAN.md — closed by the corrected `hw-flash` outcome table. |
+| WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. |
+| WR-05 | warning | fixed | 09-10-PLAN.md — closed by the `_shared/guardrails.md` "or any log" prohibition. |
+| WR-06 | warning | fixed | 09-10-PLAN.md — closed by the `--raw --quiet` monitor argv. |
+| IN-01 | info | fixed | 09-10-PLAN.md — closed by removing the snippet in favour of the helper. |
+| IN-02 | info | fixed | 09-10-PLAN.md — closed by the `int(str(value))` normalization. |
 | WR-07 | warning | open | - (not in the current review) |
 | WR-08 | warning | open | - (not in the current review) |
+| WR-09 | warning | fixed | 09-10-PLAN.md — closed by the rewritten `AGENTS.md` no-build-impact paragraph. |
 | IN-03 | info | open | - (not in the current review) |
 | IN-04 | info | open | - (not in the current review) |
 | IN-05 | info | open | - (not in the current review) |
