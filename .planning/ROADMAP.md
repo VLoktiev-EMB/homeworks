@@ -286,7 +286,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
 
-**Plans:** 5/5 plans executed; 1 gap-closure plan pending
+**Plans:** 6/6 plans executed; 1 gap-closure plan pending
 
 **Wave 1**
 - [x] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
@@ -304,7 +304,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Gap closure** *(from the 2026-10-26 UAT: G-06-1)*
 
 **Wave 1**
-- [ ] 06-06-PLAN.md — G-06-1: the attached esp-clangd check form in the guide and both live manual-test contracts, plus a non-vacuous regression guard
+- [x] 06-06-PLAN.md — G-06-1: the attached esp-clangd check form in the guide and both live manual-test contracts, plus a non-vacuous regression guard
 
 ### Phase 7: Simulation Spike
 
@@ -394,7 +394,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
-| 6. Developer Experience and Quality Layering | 5/5 | In Progress | - |
+| 6. Developer Experience and Quality Layering | 6/6 | In Progress | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
