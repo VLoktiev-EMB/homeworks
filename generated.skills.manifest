@@ -58,6 +58,30 @@
       "bytes": 1179
     },
     {
+      "path": ".agents/skills/new-homework/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/new-homework/SKILL.md",
+      "mode": "whole",
+      "sha256": "ad788b097f86cde9c9104bff39d30434f323b1d3c1b1a8c0d1e80485872567a1",
+      "bytes": 7922
+    },
+    {
+      "path": ".agents/skills/new-homework/references/question-bank.md",
+      "owner": "skills",
+      "source": ".claude/skills/new-homework/references/question-bank.md",
+      "mode": "whole",
+      "sha256": "bb9633d4a48c9bd6b46268f3536a98097173480a107b7234a1707a4dc74ceb5f",
+      "bytes": 6809
+    },
+    {
+      "path": ".agents/skills/new-homework/references/state-file.md",
+      "owner": "skills",
+      "source": ".claude/skills/new-homework/references/state-file.md",
+      "mode": "whole",
+      "sha256": "a242a8316c828faa1698d1e86ee3a47223d7f5278011b1302a9c162525db02f4",
+      "bytes": 5332
+    },
+    {
       "path": ".agents/skills/schematic/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/schematic/CHANGELOG.md",
