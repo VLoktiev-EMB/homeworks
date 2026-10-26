@@ -2,6 +2,86 @@
   "version": 1,
   "entries": [
     {
+      "path": ".agents/skills/_shared/guardrails.md",
+      "owner": "skills",
+      "source": ".claude/skills/_shared/guardrails.md",
+      "mode": "whole",
+      "sha256": "497d7cf7764a164461a53d482a2878e91c436d12abf0b1307ca364a47b12dea6",
+      "bytes": 3009
+    },
+    {
+      "path": ".agents/skills/course-index/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "d52fcce4a315c786fcf86cca3b40175b77caeee877d1b84f6c1e72879d9f46fa",
+      "bytes": 369
+    },
+    {
+      "path": ".agents/skills/course-index/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/LESSONS.md",
+      "mode": "whole",
+      "sha256": "99ed4f34d58de2ad7b7e7223da8fe48f92f1754baf4cfa21da0e8fd62b4190d1",
+      "bytes": 428
+    },
+    {
+      "path": ".agents/skills/course-index/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/SKILL.md",
+      "mode": "whole",
+      "sha256": "2fe4002db20fbbdec2d8e3be88feecf07232f308060578034e204bae88934030",
+      "bytes": 922
+    },
+    {
+      "path": ".agents/skills/hw-report/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "2794ef99c60612d5eff5a488c48aeb0a8f59448848f0e093c090d04b8cc880be",
+      "bytes": 383
+    },
+    {
+      "path": ".agents/skills/hw-report/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/LESSONS.md",
+      "mode": "whole",
+      "sha256": "ff661244d961cdc061f0e65f40a716f7f27e3f25c33957135c058c71af94b068",
+      "bytes": 348
+    },
+    {
+      "path": ".agents/skills/hw-report/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/SKILL.md",
+      "mode": "whole",
+      "sha256": "e4fbd31d07ac58d3ae6ae55e6ba4530785eea0ca37a73ec848bbc7edffa34678",
+      "bytes": 1179
+    },
+    {
+      "path": ".agents/skills/schematic/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "dbb262023dd8cc95e4717af7315fc544b21a808269bf7fe5febdad74311746bf",
+      "bytes": 342
+    },
+    {
+      "path": ".agents/skills/schematic/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/LESSONS.md",
+      "mode": "whole",
+      "sha256": "408f0e642f82ea8ebaa5004aa870ff9b933d70840cca1b7c1f8c91168341bfe7",
+      "bytes": 392
+    },
+    {
+      "path": ".agents/skills/schematic/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/SKILL.md",
+      "mode": "whole",
+      "sha256": "53517135d7bb950c9bb5f0ae9812932e790fb0a19d1c6d9af485a196e1d8f570",
+      "bytes": 1130
+    },
+    {
       "path": ".agents/skills/simulate/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/simulate/CHANGELOG.md",
