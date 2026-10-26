@@ -173,6 +173,10 @@ class ClangdConfigTests(unittest.TestCase):
 
 WRAPPER = REPO_ROOT / "scripts" / "clangd-wrapper.sh"
 
+# T-6.1-01: the only non-glob components the wrapper may authorise. Each is a
+# fixed absolute path; a PATH lookup would let the environment choose them.
+HOST_COMPILER_CANDIDATES = ("/usr/bin/gcc", "/usr/bin/cc", "/usr/bin/clang")
+
 
 class ClangdWrapperTests(unittest.TestCase):
     """D-17: discover-never-hardcode resolution and a bounded driver allowlist.
@@ -354,7 +358,15 @@ class ClangdWrapperTests(unittest.TestCase):
         )
         self.assertIn("docs/standards/vscode.md", result.stderr)
 
-    def test_forwarded_arguments_are_the_two_bounded_globs(self) -> None:
+    def test_the_forwarded_allowlist_is_bounded(self) -> None:
+        """T-6.1-01: two globs, then only the fixed host candidates that exist.
+
+        The case proves the contract rather than restating the wrapper's string
+        building: the two PlatformIO globs keep their order and are the only
+        components that may carry a wildcard, every further component is one of
+        the three fixed candidates and exists here, and the component count is
+        two plus the number of those candidates that exist.
+        """
         chosen = self.fake_clangd(self.root / "chosen-clangd", "variable")
         packages = self.home / ".platformio" / "packages"
 
@@ -366,14 +378,26 @@ class ClangdWrapperTests(unittest.TestCase):
             )
         )
 
-        self.assertEqual(
-            [
-                f"--query-driver={packages}/toolchain-*/bin/*,{packages}/tool-*/bin/*",
-                "--version",
-                "--check",
-            ],
-            arguments,
-        )
+        self.assertEqual(["--version", "--check"], arguments[1:], arguments)
+        value = arguments[0]
+        prefix = "--query-driver="
+        self.assertTrue(value.startswith(prefix), value)
+        components = value.removeprefix(prefix).split(",")
+        self.assertGreaterEqual(len(components), 2, components)
+        self.assertEqual(f"{packages}/toolchain-*/bin/*", components[0])
+        self.assertEqual(f"{packages}/tool-*/bin/*", components[1])
+        existing = [
+            candidate
+            for candidate in HOST_COMPILER_CANDIDATES
+            if Path(candidate).is_file() and os.access(candidate, os.X_OK)
+        ]
+        self.assertEqual(2 + len(existing), len(components), components)
+        for component in components[2:]:
+            with self.subTest(component=component):
+                self.assertTrue(Path(component).is_absolute(), component)
+                self.assertNotIn("*", component)
+                self.assertIn(component, HOST_COMPILER_CANDIDATES)
+                self.assertTrue(Path(component).is_file())
 
 
 EDITOR_SETTINGS = REPO_ROOT / ".vscode" / "settings.json"

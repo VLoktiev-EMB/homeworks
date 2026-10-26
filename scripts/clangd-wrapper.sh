@@ -6,9 +6,16 @@
 # (D-17). Resolution order: $ESP_CLANGD, then `esp-clangd` on PATH, then the
 # newest ~/.espressif/tools/esp-clangd/esp-*/esp-clangd/bin/clangd.
 #
-# --query-driver is a comma-separated allowlist of absolute globs. Exactly two
-# toolchain globs are passed; a recursive `**` wildcard would authorise
-# executing any binary a compile command names (T-6-02).
+# --query-driver is a comma-separated allowlist. It is bounded: exactly two
+# PlatformIO toolchain globs plus at most three exact host compiler paths that
+# exist. A recursive `**` wildcard, or any other wildcard outside those two
+# globs, would authorise executing any binary a compile command names (T-6-02).
+#
+# The native environment compiles with the host compiler, which ships no
+# PlatformIO package. The server carries no resource headers, so its builtin
+# headers are available only by querying that driver. The three candidates are
+# fixed absolute paths and are never resolved from PATH: a PATH lookup would
+# let the environment choose which binary clangd is authorised to execute.
 #
 # The wrapper must be reachable from a multi-root VS Code window, where a
 # folder-scoped path does not resolve; the onboarding guide installs it as
@@ -76,14 +83,32 @@ if [ -z "${CLANGD:-}" ]; then
   fail "esp-clangd not found. Install it with the Espressif IDF tools installer, then run: mkdir -p \"\$HOME/.local/bin\" && ln -sf \"\$PWD/scripts/clangd-wrapper.sh\" \"\$HOME/.local/bin/clangd-wrapper\". See docs/standards/vscode.md."
 fi
 
-# D-17: the driver globs must be absolute. A relative base would resolve
-# against the editor's working directory and silently weaken the allowlist.
+# D-17: every allowlisted driver must be absolute. A relative base would
+# resolve against the editor's working directory and silently weaken the
+# allowlist.
 PIO_BASE="${PLATFORMIO_CORE_DIR:-$HOME/.platformio}"
 if [ -n "${PLATFORMIO_CORE_DIR:-}" ] && [ "${PLATFORMIO_CORE_DIR#/}" = "$PLATFORMIO_CORE_DIR" ]; then
   fail "PLATFORMIO_CORE_DIR=$PLATFORMIO_CORE_DIR must be an absolute path"
 fi
 PIO_PACKAGES="$PIO_BASE/packages"
 
-exec "$CLANGD" \
-  --query-driver="$PIO_PACKAGES/toolchain-*/bin/*,$PIO_PACKAGES/tool-*/bin/*" \
-  "$@"
+# The host compiler candidates are fixed absolute paths. Only the ones that
+# exist and are executable on this host are appended, so the allowlist never
+# names a binary that cannot be queried.
+HOST_COMPILERS=()
+for candidate in /usr/bin/gcc /usr/bin/cc /usr/bin/clang; do
+  if [ -f "$candidate" ] && [ -x "$candidate" ]; then
+    HOST_COMPILERS+=("$candidate")
+  fi
+done
+
+QUERY_DRIVER="$PIO_PACKAGES/toolchain-*/bin/*,$PIO_PACKAGES/tool-*/bin/*"
+# bash 3.2 treats an empty `"${array[@]}"` as unbound under `set -u`, so the
+# loop is guarded by the count rather than iterating an empty array.
+if [ "${#HOST_COMPILERS[@]}" -gt 0 ]; then
+  for compiler in "${HOST_COMPILERS[@]}"; do
+    QUERY_DRIVER="$QUERY_DRIVER,$compiler"
+  done
+fi
+
+exec "$CLANGD" --query-driver="$QUERY_DRIVER" "$@"
