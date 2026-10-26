@@ -356,7 +356,19 @@ Plans:
   3. Simulation runs only for changed projects after the spike, with explicit timeouts and artifact upload, and is never a required check for fork pull requests.
   4. Nightly runs the full build and unit-test matrix without simulation.
 
-**Plans**: TBD
+**Plans:** 4 plans
+
+**Wave 1**
+- [ ] 08-01-PLAN.md — `ci.yml` tracer: `meta`, `changes`, `build` and the literal `gate`; retire the drift workflow (tracer)
+
+**Wave 2**
+- [ ] 08-02-PLAN.md — `nightly.yml` full matrix plus full-history scan; retire `homework.yml` and `security.yml`
+
+**Wave 3**
+- [ ] 08-03-PLAN.md — `python-tests`, `static-analysis`, opt-in `simulate` with evidence upload; gate contract tests
+
+**Wave 4**
+- [ ] 08-04-PLAN.md — `AGENTS.md`, pull-request template, decision row, yamllint comment
 
 ### Phase 9: Agent Workflow and Skills
 
