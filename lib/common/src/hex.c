@@ -46,8 +46,8 @@ bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out
     }
 
     for (index = 0u; index < length; index++) {
-        out[index * 2u] = HEX_DIGITS[(data[index] >> 4) & 0x0Fu];
-        out[index * 2u + 1u] = HEX_DIGITS[data[index] & 0x0Fu];
+        out[index * 2u] = HEX_DIGITS[((unsigned int)data[index] >> 4u) & 0x0Fu];
+        out[index * 2u + 1u] = HEX_DIGITS[(unsigned int)data[index] & 0x0Fu];
     }
     out[length * 2u] = '\0';
     *out_length = length * 2u;
@@ -87,7 +87,8 @@ bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out
     }
 
     for (index = 0u; index < needed; index++) {
-        out[index] = (uint8_t)((hex_digit_value(text[index * 2u]) << 4) | hex_digit_value(text[index * 2u + 1u]));
+        out[index] = (uint8_t)(((unsigned int)hex_digit_value(text[index * 2u]) << 4u) |
+                               (unsigned int)hex_digit_value(text[index * 2u + 1u]));
     }
     *out_length = needed;
     return true;
