@@ -858,6 +858,14 @@ class SharedIniTests(ViewsTestBase):
         for section in ("esp32s3_arduino", "esp32s3_espidf"):
             self.assertEqual(self.PLATFORM_PIN, parser.get(section, "platform"))
 
+    def test_both_esp_sections_declare_the_monitor_baud(self) -> None:
+        self.assertEqual(0, self.generate("shared-ini").returncode)
+
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read_string(self.ini_text())
+        for section in ("esp32s3_arduino", "esp32s3_espidf"):
+            self.assertEqual("115200", parser.get(section, "monitor_speed"))
+
     def test_contract_readers_return_the_generated_pins(self) -> None:
         self.assertEqual(0, self.generate("shared-ini").returncode)
         program = (

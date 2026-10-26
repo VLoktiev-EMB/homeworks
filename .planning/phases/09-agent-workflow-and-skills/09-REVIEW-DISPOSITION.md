@@ -5,15 +5,15 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "`hw-flash` writes raw device output to a log, which the guardrails forbid"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The capture baud assumption is false for the only real homework"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The capture snippet does not implement the rules stated around it"
   - id: WR-02
     severity: warning
@@ -63,7 +63,7 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 15
+open: 12
 total: 15
 recorded: 2026-10-26T22:39:53Z
 ---
@@ -72,9 +72,9 @@ recorded: 2026-10-26T22:39:53Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
-| WR-01 | warning | open | - |
+| CR-01 | critical | fixed | 09-09-PLAN.md — one scoped, fail-closed capture exception in `_shared/guardrails.md`; `hw-flash` scans the exact bytes and refuses on a match |
+| CR-02 | critical | fixed | 09-09-PLAN.md — `monitor_speed = 115200` declared in the shared template; `hw-flash` resolves and gates the baud |
+| WR-01 | warning | fixed | 09-09-PLAN.md — the snippet now implements the `-e` rule, `OSError`, the `returncode` check, the scan and the atomic write |
 | WR-02 | warning | open | - |
 | WR-03 | warning | open | - |
 | WR-04 | warning | open | - |

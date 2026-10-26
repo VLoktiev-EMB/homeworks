@@ -21,8 +21,8 @@
       "path": "platformio.shared.ini",
       "owner": "shared-ini",
       "mode": "whole",
-      "sha256": "542ad3b2f2fc2cedb300af8dc2daa756e341028aa25e923eceb9a7799b1198ad",
-      "bytes": 1241
+      "sha256": "b076e50f6d52eafef60b63979b4ce522a4148b3f4d38b522a32b91c748bff207",
+      "bytes": 1379
     }
   ]
 }

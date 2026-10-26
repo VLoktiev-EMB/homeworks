@@ -50,7 +50,15 @@ the same register as `AGENTS.md`.
 ## Secrets
 
 - **[MUST]** **[ENFORCED: review]** Never echo a token, and never write a
-  credential to the state file or a log.
+  credential to the state file.
+- **[MUST]** **[ENFORCED: review]** The only capture exception: `hw-flash` may
+  write its single bounded serial capture to the ignored
+  `.skill-state/logs/<id>.log`, and only when a credential-shape scan of the
+  exact bytes about to be written finds no match for a token, secret, password,
+  or API-key assignment. On a match it writes nothing and reports
+  `capture unavailable`. No other skill, path, or file inherits the exception.
+  The log is never quoted, committed, interpreted, or used as evidence of
+  behaviour.
 - **[MUST]** **[ENFORCED: review]** Record presence only as
   `simulation_token_present: true|false`.
 
