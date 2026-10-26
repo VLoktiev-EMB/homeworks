@@ -91,6 +91,25 @@ BOARD = "esp32-s3-devkitc-1"
 
 CONFLICT_STATUSES = ("CONFLICT", "ERROR")
 
+# Build output a template tree may hold after a compilation-database
+# generation. It is never authored template content, so the scaffold must not
+# copy it: `.pio/`, a generated `CMakeLists.txt`, a generated `sdkconfig.<env>`
+# and a project database. The authored `sdkconfig.defaults` is deliberately
+# kept, mirroring the order-sensitive re-include in `.gitignore`.
+IGNORED_TEMPLATE_DIRECTORIES = frozenset({".pio"})
+IGNORED_TEMPLATE_NAMES = frozenset({"CMakeLists.txt", "compile_commands.json"})
+AUTHORED_SDKCONFIG = "sdkconfig.defaults"
+
+
+def _is_generated_template_entry(relative):
+    """Return whether a template entry is build output rather than authored."""
+    if relative.name in IGNORED_TEMPLATE_NAMES:
+        return True
+    return (
+        relative.name.startswith("sdkconfig.")
+        and relative.name != AUTHORED_SDKCONFIG
+    )
+
 
 def _template_directory(root, name):
     """Resolve `templates/homework-<name>/` dynamically; never a fixed registry.
@@ -148,13 +167,18 @@ def _template_files(template_dir):
     """Yield `(relative path, source path)` for every regular template file.
 
     The root `template.yaml` is the manifest, not a rendered file, so it is
-    skipped. `os.walk(..., followlinks=False)` plus an explicit `is_symlink`
+    skipped. Build output a database generation leaves behind is skipped too:
+    rendering it would scaffold a binary or a generated build file into a new
+    homework. `os.walk(..., followlinks=False)` plus an explicit `is_symlink`
     check means a symlinked entry is reported and stops the run instead of
     being silently followed (T-04-03).
     """
     entries = []
     for current, dirnames, filenames in os.walk(template_dir, followlinks=False):
         current_path = Path(current)
+        dirnames[:] = [
+            name for name in dirnames if name not in IGNORED_TEMPLATE_DIRECTORIES
+        ]
         for name in sorted(dirnames):
             candidate = current_path / name
             if candidate.is_symlink():
@@ -171,6 +195,8 @@ def _template_files(template_dir):
                 )
             relative = candidate.relative_to(template_dir)
             if relative == Path(MANIFEST_NAME):
+                continue
+            if _is_generated_template_entry(relative):
                 continue
             entries.append((relative, candidate))
     return sorted(entries, key=lambda item: item[0].as_posix())

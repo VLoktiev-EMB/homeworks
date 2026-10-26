@@ -173,6 +173,10 @@ class ClangdConfigTests(unittest.TestCase):
 
 WRAPPER = REPO_ROOT / "scripts" / "clangd-wrapper.sh"
 
+# T-6.1-01: the only non-glob components the wrapper may authorise. Each is a
+# fixed absolute path; a PATH lookup would let the environment choose them.
+HOST_COMPILER_CANDIDATES = ("/usr/bin/gcc", "/usr/bin/cc", "/usr/bin/clang")
+
 
 class ClangdWrapperTests(unittest.TestCase):
     """D-17: discover-never-hardcode resolution and a bounded driver allowlist.
@@ -354,7 +358,15 @@ class ClangdWrapperTests(unittest.TestCase):
         )
         self.assertIn("docs/standards/vscode.md", result.stderr)
 
-    def test_forwarded_arguments_are_the_two_bounded_globs(self) -> None:
+    def test_the_forwarded_allowlist_is_bounded(self) -> None:
+        """T-6.1-01: two globs, then only the fixed host candidates that exist.
+
+        The case proves the contract rather than restating the wrapper's string
+        building: the two PlatformIO globs keep their order and are the only
+        components that may carry a wildcard, every further component is one of
+        the three fixed candidates and exists here, and the component count is
+        two plus the number of those candidates that exist.
+        """
         chosen = self.fake_clangd(self.root / "chosen-clangd", "variable")
         packages = self.home / ".platformio" / "packages"
 
@@ -366,14 +378,361 @@ class ClangdWrapperTests(unittest.TestCase):
             )
         )
 
-        self.assertEqual(
-            [
-                f"--query-driver={packages}/toolchain-*/bin/*,{packages}/tool-*/bin/*",
-                "--version",
-                "--check",
-            ],
-            arguments,
+        self.assertEqual(["--version", "--check"], arguments[1:], arguments)
+        value = arguments[0]
+        prefix = "--query-driver="
+        self.assertTrue(value.startswith(prefix), value)
+        components = value.removeprefix(prefix).split(",")
+        self.assertGreaterEqual(len(components), 2, components)
+        self.assertEqual(f"{packages}/toolchain-*/bin/*", components[0])
+        self.assertEqual(f"{packages}/tool-*/bin/*", components[1])
+        existing = [
+            candidate
+            for candidate in HOST_COMPILER_CANDIDATES
+            if Path(candidate).is_file() and os.access(candidate, os.X_OK)
+        ]
+        self.assertEqual(2 + len(existing), len(components), components)
+        for component in components[2:]:
+            with self.subTest(component=component):
+                self.assertTrue(Path(component).is_absolute(), component)
+                self.assertNotIn("*", component)
+                self.assertIn(component, HOST_COMPILER_CANDIDATES)
+                self.assertTrue(Path(component).is_file())
+
+
+GENERATOR = REPO_ROOT / "scripts" / "gen_clangd_db.py"
+ROOT_FRAGMENT = REPO_ROOT / ".clangd"
+GITIGNORE = REPO_ROOT / ".gitignore"
+GENERATOR_TIMEOUT = 60
+
+# One context per `lib/` subtree: the native suite for the portable libraries,
+# the Arduino environment for the Arduino adapter and ESP-IDF for its own.
+LIB_GROUPS = {
+    "common": "native",
+    "port": "native",
+    "host": "native",
+    "arduino": "arduino",
+    "espidf": "espidf",
+}
+
+DATABASE_PATHS = {
+    "native": Path("tests") / "compile_commands.json",
+    "arduino": Path("homeworks") / "1_3-police-flasher" / "compile_commands.json",
+    "espidf": Path("templates") / "homework-espidf" / "compile_commands.json",
+}
+
+REMEDIES = {
+    "native": "pio run -d tests -e native -t compiledb",
+    "arduino": "pio run -d homeworks/1_3-police-flasher -t compiledb",
+    "espidf": "pio run -d templates/homework-espidf -e esp32s3_espidf -t compiledb",
+}
+
+# A distinctive command marker per context, so the winning database is visible
+# in the generated entry rather than inferred from the file list.
+MARKERS = {
+    "native": "native-context",
+    "arduino": "arduino-context",
+    "espidf": "espidf-context",
+}
+
+
+def _lib_inventory() -> tuple[str, ...]:
+    """Return every `.c` under the real `lib/` tree, repository-relative."""
+    return tuple(
+        sorted(
+            path.relative_to(REPO_ROOT).as_posix()
+            for path in (REPO_ROOT / "lib").rglob("*.c")
+            if path.is_file()
         )
+    )
+
+
+LIB_INVENTORY = _lib_inventory()
+
+
+class ClangdDatabaseTests(unittest.TestCase):
+    """TOOL-02: one complete root database, proven without a language server.
+
+    Every case builds a temporary root whose `lib/` tree mirrors the real
+    inventory, writes synthetic source databases with a marker per context, and
+    drives the real generator as a subprocess. Nothing here imports PyYAML or
+    starts clangd, so the coverage and failure contracts stay machine-checked on
+    a machine with no toolchain.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="clangd-db-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        for relative in LIB_INVENTORY:
+            source = self.root / relative
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text("/* fixture */\n", encoding="utf-8")
+        # `lib/port` is header-only: it is mapped, contributes no entries, and
+        # must not be reported as an unmapped subtree.
+        (self.root / "lib" / "port").mkdir(parents=True, exist_ok=True)
+        self.databases = {
+            group: self.root / relative
+            for group, relative in DATABASE_PATHS.items()
+        }
+        for database in self.databases.values():
+            database.parent.mkdir(parents=True, exist_ok=True)
+        self.write_databases()
+
+    def directory(self, group: str) -> Path:
+        return self.databases[group].parent
+
+    def entry(self, relative: str, group: str) -> dict:
+        """Return one synthetic entry with an absolute file and directory."""
+        absolute = self.root / relative
+        return {
+            "directory": str(self.directory(group)),
+            "file": absolute.as_posix(),
+            "command": f"cc -DMARKER={MARKERS[group]} -c {relative}",
+            "output": relative.replace("/", "_") + ".o",
+        }
+
+    def write_databases(self) -> None:
+        grouped: dict[str, list] = {group: [] for group in DATABASE_PATHS}
+        for relative in LIB_INVENTORY:
+            subtree = relative.split("/")[1]
+            group = LIB_GROUPS[subtree]
+            grouped[group].append(self.entry(relative, group))
+        # The Arduino database also describes a `lib/common` source: the native
+        # context must win because that subtree belongs to the first group.
+        common = next(item for item in LIB_INVENTORY if item.startswith("lib/common/"))
+        grouped["arduino"].append(self.entry(common, "arduino"))
+        # The native database also describes a `tests/` source: every entry
+        # outside `lib/` must be dropped.
+        main = self.root / "tests" / "src" / "main.c"
+        main.parent.mkdir(parents=True, exist_ok=True)
+        main.write_text("/* fixture */\n", encoding="utf-8")
+        grouped["native"].append(
+            {
+                "directory": str(self.root / "tests"),
+                "file": main.as_posix(),
+                "command": f"cc -DMARKER={MARKERS['native']} -c src/main.c",
+            }
+        )
+        for group, entries in grouped.items():
+            self.databases[group].write_text(
+                json.dumps(entries), encoding="utf-8"
+            )
+
+    def run_generator(self) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(GENERATOR), "--root", str(self.root)],
+            capture_output=True,
+            text=True,
+            timeout=GENERATOR_TIMEOUT,
+        )
+
+    def generated(self) -> list:
+        return json.loads(
+            (self.root / "compile_commands.json").read_text(encoding="utf-8")
+        )
+
+    def by_file(self) -> dict[str, dict]:
+        return {entry["file"]: entry for entry in self.generated()}
+
+    def test_every_lib_source_appears_exactly_once(self) -> None:
+        result = self.run_generator()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("PASS gen-clangd-db:", result.stdout)
+        entries = self.generated()
+        expected = [
+            (self.root / relative).resolve().as_posix()
+            for relative in LIB_INVENTORY
+        ]
+        self.assertEqual(
+            sorted(expected), sorted(entry["file"] for entry in entries)
+        )
+        self.assertEqual(len(expected), len({entry["file"] for entry in entries}))
+
+    def test_each_subtree_carries_its_own_context_marker(self) -> None:
+        self.assertEqual(0, self.run_generator().returncode)
+
+        for path, entry in self.by_file().items():
+            relative = Path(path).relative_to(self.root).as_posix()
+            group = LIB_GROUPS[relative.split("/")[1]]
+            with self.subTest(path=relative):
+                self.assertIn(f"-DMARKER={MARKERS[group]}", entry["command"])
+
+    def test_the_native_context_wins_for_lib_common(self) -> None:
+        self.assertEqual(0, self.run_generator().returncode)
+        common = next(item for item in LIB_INVENTORY if item.startswith("lib/common/"))
+        entry = self.by_file()[(self.root / common).resolve().as_posix()]
+
+        self.assertIn(f"-DMARKER={MARKERS['native']}", entry["command"])
+
+    def test_entries_outside_lib_are_dropped(self) -> None:
+        self.assertEqual(0, self.run_generator().returncode)
+
+        self.assertNotIn(
+            (self.root / "tests" / "src" / "main.c").as_posix(), self.by_file()
+        )
+
+    def test_each_entry_keeps_the_directory_its_database_declared(self) -> None:
+        self.assertEqual(0, self.run_generator().returncode)
+
+        for path, entry in self.by_file().items():
+            relative = Path(path).relative_to(self.root).as_posix()
+            group = LIB_GROUPS[relative.split("/")[1]]
+            with self.subTest(path=relative):
+                self.assertEqual(str(self.directory(group)), entry["directory"])
+
+    def test_two_runs_are_byte_identical(self) -> None:
+        self.assertEqual(0, self.run_generator().returncode)
+        first = (self.root / "compile_commands.json").read_bytes()
+
+        self.assertEqual(0, self.run_generator().returncode)
+
+        self.assertEqual(first, (self.root / "compile_commands.json").read_bytes())
+
+    def test_the_generated_database_is_the_only_added_file(self) -> None:
+        before = {path.relative_to(self.root) for path in self.root.rglob("*")}
+
+        self.assertEqual(0, self.run_generator().returncode)
+
+        after = {path.relative_to(self.root) for path in self.root.rglob("*")}
+        self.assertEqual({Path("compile_commands.json")}, after - before)
+
+    def test_a_missing_source_database_exits_one_with_its_remedy(self) -> None:
+        self.databases["espidf"].unlink()
+
+        result = self.run_generator()
+
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertIn("FAIL gen-clangd-db:", result.stdout)
+        self.assertIn(str(self.databases["espidf"]), result.stdout)
+        self.assertIn(REMEDIES["espidf"], result.stdout)
+
+    def test_an_undescribed_lib_source_exits_one(self) -> None:
+        """WR-02: a stale database must never degrade into a partial root one.
+
+        Every pre-existing source is still covered, so only the completeness
+        rule can fail this case.
+        """
+        new_source = self.root / "lib" / "arduino" / "src" / "new_feature.c"
+        new_source.write_text("/* fixture */\n", encoding="utf-8")
+
+        result = self.run_generator()
+
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertIn("FAIL gen-clangd-db:", result.stdout)
+        self.assertIn(str(new_source), result.stdout)
+        self.assertIn(REMEDIES["arduino"], result.stdout)
+
+    def test_a_malformed_database_exits_two(self) -> None:
+        self.databases["native"].write_text("{not json", encoding="utf-8")
+
+        result = self.run_generator()
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("ERROR:", result.stderr)
+
+    def test_an_unmapped_lib_subtree_exits_two(self) -> None:
+        adapter = self.root / "lib" / "newadapter" / "src" / "gpio.c"
+        adapter.parent.mkdir(parents=True)
+        adapter.write_text("/* fixture */\n", encoding="utf-8")
+
+        result = self.run_generator()
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("ERROR:", result.stderr)
+        self.assertIn("newadapter", result.stderr)
+
+    def test_the_generator_names_no_package_or_server_path(self) -> None:
+        """The generator resolves everything from the databases at run time."""
+        text = GENERATOR.read_text(encoding="utf-8")
+
+        for fragment in ("/.platformio", ".espressif", "tools/esp-clangd"):
+            with self.subTest(fragment=fragment):
+                self.assertNotIn(fragment, text)
+
+
+class RootClangdTests(unittest.TestCase):
+    """TOOL-02: the shared fragment carries the proven keys and no path.
+
+    It deliberately declares no `CompilationDatabase` directory: a pinned
+    directory would shadow each homework's own database and the `tests/` one,
+    defeating the nearest-ancestor discovery clangd already performs.
+    """
+
+    def text(self) -> str:
+        return ROOT_FRAGMENT.read_text(encoding="utf-8")
+
+    def test_the_driver_is_queried_for_builtin_headers(self) -> None:
+        self.assertEqual(1, self.text().count("BuiltinHeaders: QueryDriver"))
+
+    def test_every_gcc_only_flag_is_removed(self) -> None:
+        for flag in CLANGD_REMOVE:
+            with self.subTest(flag=flag):
+                self.assertIn(f"- {flag}", self.text())
+
+    def test_both_diagnostics_are_suppressed(self) -> None:
+        for diagnostic in CLANGD_SUPPRESS:
+            with self.subTest(diagnostic=diagnostic):
+                self.assertIn(f"- {diagnostic}", self.text())
+
+    def test_no_database_directory_override_is_declared(self) -> None:
+        """A pinned directory would shadow each homework's database and tests/."""
+        for line in self.text().splitlines():
+            if line.lstrip().startswith("#"):
+                continue
+            with self.subTest(line=line):
+                self.assertNotIn("CompilationDatabase", line)
+
+    def test_the_fragment_contains_no_filesystem_path(self) -> None:
+        """No slash anywhere is the machine form of the no-hardcoded-path rule."""
+        self.assertNotIn("/", self.text())
+
+
+TEMPLATE_IGNORE_PATTERNS = (
+    "templates/homework-*/CMakeLists.txt",
+    "templates/homework-*/src/CMakeLists.txt",
+    "templates/homework-*/sdkconfig.*",
+    "!templates/homework-*/sdkconfig.defaults",
+)
+
+
+class TemplateIgnoreTests(unittest.TestCase):
+    """The template-scoped rules the ESP-IDF database generation requires.
+
+    The patterns mirror the `homeworks/*/` block: the broad `sdkconfig.*` rule
+    comes before the re-include, so the authored fragment stays visible.
+    """
+
+    def rules(self) -> list[str]:
+        return [
+            line.strip()
+            for line in GITIGNORE.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+
+    def test_every_template_pattern_is_declared_once(self) -> None:
+        rules = self.rules()
+        for pattern in TEMPLATE_IGNORE_PATTERNS:
+            with self.subTest(pattern=pattern):
+                self.assertEqual(1, rules.count(pattern))
+
+    def test_the_broad_pattern_precedes_the_reinclude(self) -> None:
+        rules = self.rules()
+        self.assertLess(
+            rules.index("templates/homework-*/sdkconfig.*"),
+            rules.index("!templates/homework-*/sdkconfig.defaults"),
+        )
+
+    def test_no_template_rule_targets_a_path_outside_the_template_tree(self) -> None:
+        for rule in self.rules():
+            if "templates/" not in rule:
+                continue
+            with self.subTest(rule=rule):
+                self.assertTrue(
+                    rule.removeprefix("!").startswith("templates/homework-*/"),
+                    rule,
+                )
 
 
 EDITOR_SETTINGS = REPO_ROOT / ".vscode" / "settings.json"

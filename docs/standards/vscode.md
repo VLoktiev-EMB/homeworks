@@ -53,8 +53,9 @@ and they are covered above.
 
 `scripts/clangd-wrapper.sh` resolves esp-clangd in a fixed order: `$ESP_CLANGD`, then
 `esp-clangd` on `PATH`, then the newest build under `~/.espressif/tools/esp-clangd/`. It also
-passes two bounded `--query-driver` globs for the PlatformIO toolchains, so clangd may
-execute only those compilers.
+passes a bounded `--query-driver` allowlist: two PlatformIO toolchain globs plus the host
+compiler candidates `/usr/bin/gcc`, `/usr/bin/cc` and `/usr/bin/clang` that exist, so clangd
+may execute only those compilers.
 
 ## Install the git hooks
 
@@ -80,6 +81,24 @@ pio run -d homeworks/1_3-police-flasher -t compiledb
 The database is written to the project root and is never committed. Each homework carries
 its own `.clangd`, so one clangd server serves the whole multi-root workspace and finds each
 project's database by nearest ancestor. No global compile-commands directory is set.
+
+The shared libraries under `lib/` sit outside every project, so clangd finds no database
+above them. Build the three source databases the root database is assembled from:
+
+- `pio run -d tests -e native -t compiledb`
+- `pio run -d homeworks/1_3-police-flasher -t compiledb`
+- `pio run -d templates/homework-espidf -e esp32s3_espidf -t compiledb`
+
+Then regenerate the root database with one command:
+
+```bash
+uv run scripts/gen_clangd_db.py
+```
+
+The root database is written at the repository root, is a build artifact, and stays
+untracked. Project files and `tests/` files keep their nearest database; the root database
+is the fallback for `lib/`. `lib/port` is header-only, so its headers are served by
+inference from the nearest native entry rather than by an entry of their own.
 
 ## Format on save
 
