@@ -383,7 +383,29 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans**: TBD
+**Plans:** 8 plans
+
+**Wave 1**
+- [ ] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
+
+**Wave 2**
+- [ ] 09-02-PLAN.md — shared guardrails and the remaining three stubs (`hw-report`, `schematic`, `course-index`)
+- [ ] 09-06-PLAN.md — `AGENTS.md` live skills layout and the editor guide's 14-hook count
+
+**Wave 3**
+- [ ] 09-03-PLAN.md — `new-homework`: eight-topic question bank, state file, guided and one-shot block loop
+
+**Wave 4**
+- [ ] 09-04-PLAN.md — `hw-build`: real commands, the two-attempt repair loop, escalation
+
+**Wave 5**
+- [ ] 09-05-PLAN.md — `hw-flash`: consent gate, upload, bounded serial capture
+
+**Wave 6**
+- [ ] 09-07-PLAN.md — regenerate the `GSD:skills` block, record the decision row, run the full gate
+
+**Wave 7**
+- [ ] 09-08-PLAN.md — the D-22 dry run and the phase evidence transcript
 
 ### Phase 10: Report and Evidence System
 
