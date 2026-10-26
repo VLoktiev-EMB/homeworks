@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "\u041d\u0435\u0432\u0434\u0430\u043b\u0438\u0439 `esptool merge-bin` \u043d\u0435 \u043f\u0440\u043e\u0432\u0430\u043b\u044e\u0454 \u0437\u0431\u0456\u0440\u043a\u0443 \u2014 `pio run` \u043b\u0438\u0448\u0430\u0454\u0442\u044c\u0441\u044f \u0437\u0435\u043b\u0435\u043d\u0438\u043c"
   - id: WR-01
     severity: warning
@@ -55,16 +55,16 @@ findings:
     severity: info
     disposition: open
     title: "ADR \u043a\u0430\u0436\u0435 \u00abreferenced by its immutable digest\u00bb, \u0430\u043b\u0435 digest \u0443 ADR \u0432\u0456\u0434\u0441\u0443\u0442\u043d\u0456\u0439"
-open: 13
+open: 12
 total: 13
-recorded: 2026-10-26T16:02:24.722443Z
+recorded: 2026-10-26T16:06:52.855260Z
 ---
 
 # Phase 07: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
+| CR-01 | critical | fixed | 4f053b2 (fix commit) |
 | WR-01 | warning | open | - |
 | WR-02 | warning | open | - |
 | WR-03 | warning | open | - |
