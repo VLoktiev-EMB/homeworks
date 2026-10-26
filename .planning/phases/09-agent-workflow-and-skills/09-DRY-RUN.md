@@ -485,6 +485,170 @@ The README region after diff 2 carries both rows:
 Both ids live only in the disposable root. They are dry-run fixtures, not real
 course assignments, and neither directory exists in `homeworks/`.
 
+## Leg 4 — `hw-build` green
+
+The id `1_3-police-flasher` was validated, `homework.yaml` was read for the board
+(`esp32-s3-devkitc-1`), and `platformio.ini` was read for `default_envs`
+(`esp32s3_arduino`, exactly one environment), so the bare command is correct.
+
+```text
+$ pio run -d homeworks/1_3-police-flasher
+exit 0
+========================= [SUCCESS] Took 0.49 seconds =========================
+esp32s3_arduino  SUCCESS   00:00:00.494
+```
+
+```text
+$ pio test -d homeworks/1_3-police-flasher -e native
+exit 0
+native         test_homework    PASSED    00:00:00.618
+native         test_controller  PASSED    00:00:00.515
+native         test_pattern     PASSED    00:00:00.481
+================= 38 test cases: 38 succeeded in 00:00:01.613 =================
+```
+
+No repair was attempted on either leg. The shared suite was not run: the user did
+not ask for it, and `git diff --quiet -- lib/` exited 0 (no change under the shared
+libraries), so neither trigger fired. A green `hw-build` run does not claim that the
+full pre-PR chain ran.
+
+## Leg 5 — `hw-build` failing twice, then escalating
+
+A second disposable root was built with `build_root`, and
+`homeworks/1_3-police-flasher` was copied into it. Three independent errors were
+injected into the copy only:
+
+| Name | File | Edit |
+|------|------|------|
+| `E1` | `src/main.cpp` | Removed the statement terminator: `logger = arduino_log_port()` |
+| `E2` | `src/main.cpp` | Added an undeclared call after the tick: `missing_helper_symbol();` |
+| `E3` | `lib/pattern/src/controller.c` | Changed the first `uint16_t base_ms` to `const char *base_ms` |
+
+`E3` is deliberately in a homework-local `lib/**` source, which the repair loop
+names as a normal repair target.
+
+Before the skill ran, the copy was confirmed red:
+
+```text
+$ pio run -d <root-b>/homeworks/1_3-police-flasher
+exit 1
+========================== [FAILED] Took 2.86 seconds ==========================
+```
+
+The first diagnostic reported all three errors in one invocation, with `E3` first
+in output order:
+
+```text
+lib/pattern/src/controller.c: In function 'apply_frame':
+lib/pattern/src/controller.c:66:27: error: initialization of 'const char *' from 'uint16_t' {aka 'short unsigned int'} makes pointer from integer without a cast [-Wint-conversion]
+src/main.cpp: In function 'void setup()':
+src/main.cpp:45:32: error: expected ';' before 'status'
+src/main.cpp: In function 'void loop()':
+src/main.cpp:58:5: error: 'missing_helper_symbol' was not declared in this scope
+```
+
+The compiler also emitted one warning, quoted separately and never counted as an
+error or as an attempt:
+
+```text
+src/main.cpp:40:39: warning: unused variable 'config' [-Wunused-variable]
+```
+
+### Attempt 1 — `E1`
+
+- Diagnostic: `src/main.cpp:45:32: error: expected ';' before 'status'`.
+- Smallest fix: restore the terminator, changing
+  `logger = arduino_log_port()` to `logger = arduino_log_port();` in
+  `<root-b>/homeworks/1_3-police-flasher/src/main.cpp`.
+- Rerun:
+
+```text
+$ pio run -d <root-b>/homeworks/1_3-police-flasher
+exit 1
+src/main.cpp:58:5: error: 'missing_helper_symbol' was not declared in this scope
+lib/pattern/src/controller.c:66:27: error: initialization of 'const char *' from 'uint16_t' ... [-Wint-conversion]
+========================== [FAILED] Took 0.81 seconds ==========================
+```
+
+`E2` and `E3` survive the first fix, so the build is still red.
+
+### Attempt 2 — `E2`
+
+- Diagnostic: `src/main.cpp:58:5: error: 'missing_helper_symbol' was not declared
+  in this scope`.
+- Smallest fix: remove the undeclared call, restoring
+  `pattern_controller_tick(&controller);` as the only statement in `loop()`.
+- Rerun:
+
+```text
+$ pio run -d <root-b>/homeworks/1_3-police-flasher
+exit 1
+lib/pattern/src/controller.c:66:27: error: initialization of 'const char *' from 'uint16_t' {aka 'short unsigned int'} makes pointer from integer without a cast [-Wint-conversion]
+lib/pattern/src/controller.c:67:88: error: passing argument 3 of 'pattern_frame_at' makes integer from pointer without a cast [-Wint-conversion]
+========================== [FAILED] Took 0.70 seconds ==========================
+```
+
+Only `E3` remains, and the cap is now spent.
+
+### Escalation
+
+**Cause.** `apply_frame()` in the homework-local `pattern` library declares
+`base_ms` as `const char *` while `pattern_speed_base_ms()` returns a `uint16_t`.
+The pointer is then passed to `pattern_frame_at()`, whose third parameter is a
+`uint16_t`, so the second diagnostic at `controller.c:67` is the same defect
+propagating, not an independent error. The two `src/main.cpp` defects were real but
+unrelated: a missing terminator and a call to a symbol that does not exist.
+
+**The two fixes.**
+
+1. `src/main.cpp` — restored the `;` after `arduino_log_port()`. Reasoning: the
+   diagnostic names a missing terminator, and the smallest change that satisfies it
+   is the terminator itself.
+2. `src/main.cpp` — removed `missing_helper_symbol();`. Reasoning: the symbol has no
+   declaration anywhere in the project or its dependencies, so the call cannot be
+   satisfied by a declaration; removing it restores the code the block wrote.
+
+**The evidence.** Three commands, all exit 1, with the first error lines quoted
+above: the initial run (`E3`, `E1`, `E2`), the run after attempt 1 (`E2`, `E3`), and
+the run after attempt 2 (`E3` only). The tracked homework is untouched:
+`git status --porcelain homeworks/` printed nothing.
+
+**Warnings.** `src/main.cpp:40:39: warning: unused variable 'config'` — a warning,
+quoted separately, never counted as an error and never consuming an attempt.
+
+**What was ruled out.** That the `controller.c:67` line was a third independent
+defect (it is the same type mismatch propagating); that the missing terminator was
+the only `src/main.cpp` error (the undeclared call survived it); that the warning
+was blocking the build (the failure was always an error, never `-Werror`).
+
+**One question.** Whether to continue with a third repair for `E3`, revert the two
+attempted fixes, or change the approach. The run stopped here with no third edit
+and waits for direction.
+
+## Leg 6 — `hw-flash` stopped at the gate
+
+The id `1_3-police-flasher` was validated, the directory and its `homework.yaml`
+exist, the board was read as `esp32-s3-devkitc-1`, and `default_envs` names exactly
+one environment, `esp32s3_arduino`. The gate printed all four facts before asking:
+
+```text
+Board: esp32-s3-devkitc-1
+Environment: esp32s3_arduino
+Upload: pio run -d homeworks/1_3-police-flasher -t upload
+Then: a ~20-second serial capture goes to .skill-state/logs/1_3-police-flasher.log
+```
+
+The literal-affirmative prompt was: "Answer exactly `так` or `yes` to upload.
+Anything else is a stop."
+
+Answer: `ні` — a non-affirmative answer, so the outcome is **consent refused**.
+
+- no upload was executed; `pio run ... -t upload` was never invoked.
+- No serial capture started.
+- No board was required or touched.
+- The confirmation was not remembered and cannot be reused for a later action; a new
+  `/hw-flash` invocation is required.
+
 ## Observations
 
 ### Leg 0
@@ -521,6 +685,34 @@ course assignments, and neither directory exists in `homeworks/`.
   went green. This is recorded so the final `SUCCESS` line is not read as a
   first-try result. It is a fixture authoring mistake, not a skill divergence.
 - No other divergence.
+
+### Leg 4
+
+- No divergence. The build was invoked twice (a cold first run and a warm second
+  run); both exited 0, and the warm run's summary line is the one recorded.
+- The shared-suite trigger behaves as the prose says: `git diff --quiet -- lib/`
+  exited 0, so neither trigger fired and the suite was skipped.
+
+### Leg 5
+
+- **Finding, recorded rather than smoothed over.** The plan assumed serial
+  diagnostics — attempt 1 fixes `E1`, the rerun reveals `E2` and `E3`, attempt 2
+  fixes `E2`, the rerun reveals `E3`. The real SCons build compiles `src/` and the
+  homework-local library concurrently and reported all three errors in the first
+  invocation. The loop's "first actionable error" rule therefore needed a tie-break
+  for this run: an error in the project's own `src/` was repaired before an error in
+  a homework-local `lib/**` source, because `src/main.cpp` is the translation unit
+  the invocation is about and the library is its dependency. Under that order
+  exactly two repairs were spent and `E3` remained. The cap and the escalation still
+  behaved as written; what diverged is the plan's assumption about diagnostic order,
+  not the skill.
+- The warning at `src/main.cpp:40` appeared in the first run and never consumed an
+  attempt, which is the warning rule working on real output.
+
+### Leg 6
+
+- No divergence. The gate is prose plus a stop, and a non-affirmative answer ran no
+  command. This leg needed no hardware, which is exactly what D-22 asks of it.
 
 ## Validation sampling
 
