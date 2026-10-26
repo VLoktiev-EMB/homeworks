@@ -1,6 +1,15 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-11
+
+- A wrapper's flag is not the wrapped tool's flag: `hw-flash` told the agent to pass `-b`,
+  which is the monitor flag the helper rejects. The skill must name the helper option, and
+  a test must assert the forwarded argv so the two cannot drift.
+- An announced command is only the executed command when every conditional segment is named
+  in the same sentence. Naming `--env` alone left the baud conditional unannounced, so the
+  gate could announce a baud the run never passed.
+
 ## 2026-10-27 — gap-closure run, 09-10
 
 - A TTY-gated tool needs a pseudo-terminal, and the test must assert the child sees a TTY:

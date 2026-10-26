@@ -40,8 +40,10 @@ simulation is a separate quota-metered action that never proves hardware behavio
   an absent key, stops the skill before the gate and asks the user for the baud; no
   answer, or a non-positive answer, stops the skill. Never run the monitor on
   PlatformIO's built-in 9600. When the project declares the value, the monitor inherits
-  it and no `-b` is passed. Pass `-b <n>` only for the user-named value accepted after an
-  absent setting, validate it as a positive integer, and record the effective baud.
+  it and no baud option is passed. Pass `--baud <n>` only for the user-named value
+  accepted after an absent setting; validate `<n>` as a positive integer and record it as
+  the effective baud; the helper appends `-b <n>` to the monitor, so `--baud` is the
+  helper option and `-b` is never passed to the helper.
 - Capture is hardware work: it requires a connected board and a serial port. Never claim
   the firmware is on the board without a real upload exit code.
 
@@ -64,12 +66,13 @@ Board: <board id>
 Environment: <env>
 Baud: <n>
 Upload: pio run -d homeworks/<id> [-e <env>] -t upload
-Capture: uv run scripts/serial_capture.py --id <id> [--env <env>] --seconds 20
+Capture: uv run scripts/serial_capture.py --id <id> [--env <env>] [--baud <n>] --seconds 20
 Then: a ~20-second serial capture goes to .skill-state/logs/<id>.log
 ```
 
-The bracketed `-e <env>` segment is included only when `needs_e_flag` is true, so the
-announced command is the executed command. Nothing else in the commands is conditional.
+The bracketed `-e <env>` segment is included only when `needs_e_flag` is true, and
+`[--baud <n>]` only when a user-named baud was accepted after an absent `monitor_speed`,
+so the announced capture is the executed capture.
 
 Then ask for a literal affirmative. Accept exactly `так` or `yes`, case-insensitive, with
 no other text on the line. The answer is a gate, not a preference:
@@ -105,11 +108,12 @@ as upload failed. `hw-flash` performs no repair and no second upload; the user m
 Only after a zero upload exit, run exactly:
 
 ```bash
-uv run scripts/serial_capture.py --id <id> [--env <env>] [--seconds 20]
+uv run scripts/serial_capture.py --id <id> [--env <env>] [--baud <n>] [--seconds 20]
 ```
 
-Include `--env <env>` only when `needs_e_flag` is true, and `--seconds` only when the
-default 20 seconds is not intended. The helper runs
+Include `--env <env>` only when `needs_e_flag` is true, `--baud <n>` only on the
+user-named path, and `--seconds` only when the default 20 seconds is not intended. The
+helper forwards `--baud` to the monitor as `-b <n>`. The helper runs
 
 ```text
 pio device monitor -d homeworks/<id> --raw --quiet
@@ -140,8 +144,9 @@ Baud and port come from the project, not from this skill:
 - Never hardcode `-b 115200`. The monitor inherits the declared `monitor_speed` resolved
   before the gate, and an absent setting stops the skill instead of falling through to
   PlatformIO's 9600 default; the port selection comes from PlatformIO.
-- Pass `-b <n>` only for the user-named value accepted after an absent setting. Validate
-  `<n>` as a positive integer before use and record the value in the outcome.
+- Pass `--baud <n>` only for the user-named value accepted after an absent setting.
+  Validate `<n>` as a positive integer before use and record the value in the outcome; the
+  helper forwards it to the monitor as `-b <n>`.
 
 ### The log path
 
