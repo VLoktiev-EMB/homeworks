@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 current_phase: 09
-current_phase_name: agent-workflow-and-skills
+current_phase_name: Agent Workflow and Skills
 status: executing
 stopped_at: Phase 9 context gathered
-last_updated: "2026-10-26T23:23:33.406Z"
+last_updated: "2026-10-26T23:25:08.797Z"
 last_activity: 2026-10-27
-last_activity_desc: Phase 09 execution resumed (wave continue)
-state_head: cdb731842fd9704781e16c1521600a8b097553c7
+last_activity_desc: Phase 09 execution started
+state_head: bc804ab84e917b32bf2866ec659fc621075ce712
 progress:
   total_phases: 14
   completed_phases: 10
   total_plans: 83
-  completed_plans: 81
+  completed_plans: 82
   percent: 71
 ---
 
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-10-26)
 
 ## Current Position
 
-Phase: 09 (agent-workflow-and-skills) — READY TO EXECUTE
-Plan: 1 of 8
-Status: Ready to execute
-Last activity: 2026-10-27 — Phase 09 execution resumed (wave continue)
+Phase: 09 (Agent Workflow and Skills) — EXECUTING
+Plan: 1 of 10
+Status: Executing Phase 09
+Last activity: 2026-10-27 — Phase 09 execution started
 
 Progress: [████████████████████] 73/73 plans ([███████░░░] 71%)
 
@@ -166,6 +166,10 @@ Recent decisions affecting current work:
 - [2026-10-25] [docs] Expand homework README and add a proper SVG schematic — [todo file](.planning/todos/pending/2026-10-25-expand-homework-readme-and-add-a-proper-svg-schematic.md) — Needs TBD — candidate shape:.
 - [2026-10-25] [tooling] Promote merge_firmware.py into a shared tool — [todo file](.planning/todos/pending/2026-10-25-promote-merge-firmware-py-into-a-shared-tool.md) — Needs TBD — candidate shape:.
 - [2026-10-25] [tooling] Standardize pull request titles across homeworks — [todo file](.planning/todos/pending/2026-10-25-standardize-pull-request-titles-across-homeworks.md) — Needs TBD — candidate shape:.
+- [2026-10-26] [tooling] Generate a root compile database so lib/ has working IntelliSense — [todo file](.planning/todos/pending/2026-10-26-add-lib-intellisense-compile-database.md)
+- [2026-10-26] [tooling] Remove the generated documentation site — [todo file](.planning/todos/pending/2026-10-26-remove-docs-site.md)
+- [2026-10-26] [process] Revisit Phase 8 scope before planning — [todo file](.planning/todos/pending/2026-10-26-revisit-phase-8-scope.md)
+- [2026-10-26] [tooling] Place diagram.json beside wokwi.toml for simulator runs — [todo file](.planning/todos/pending/2026-10-27-place-diagram-json-beside-wokwi-toml-for-simulator-runs.md) — Needs TBD — candidate shape:.
 - [unknown] [general] Trim governance ceremony (Phase 4.1) — [todo file](.planning/todos/pending/trim-ceremony.md)
 
 ### Blockers/Concerns
