@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 10/10 plans executed, 2 gap-closure plans
+**Plans:** 10/10 plans executed, 5 gap-closure plans
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -410,6 +410,9 @@ Plans:
 **Gap closure**
 - [x] 09-09-PLAN.md — close CR-02 (declared baud), CR-01 (scoped capture exception) and WR-01 (capture snippet) in `hw-flash`
 - [x] 09-10-PLAN.md — close CR-01 (headless PTY capture helper) and CR-02 (widened credential scan), restore the shared secrets rule, and regenerate the mirror
+- [ ] 09-11-PLAN.md — close CR-03 (wire `--baud` through the skill into the helper) and fold the in-scope `IN-06` argv, CLI-payload and concurrent-reader tests
+- [ ] 09-12-PLAN.md — close WR-12 (widen the credential scan to the four ordinary password assignments) and the shared guardrails sentence
+- [ ] 09-13-PLAN.md — close WR-10 (reject non-finite and oversized `--seconds`) and WR-11 (reap the monitor on every exception path)
 
 ### Phase 10: Report and Evidence System
 
