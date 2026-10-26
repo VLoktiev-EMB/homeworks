@@ -489,6 +489,16 @@ def _hook_field(block: str, field: str) -> str:
 class ClangTidyConfigTests(unittest.TestCase):
     """TOOL-01: the committed policy is the six families, warnings-first."""
 
+    # CR-01: clang-tidy matches `HeaderFilterRegex` against the header's
+    # `FileEntry` name. The compile database passes absolute include
+    # directories, so the real name is absolute; both forms must match.
+    HEADER_FILTER_SAMPLES = (
+        "lib/common/include/common/hex.h",
+        "lib/host/include/host/fake_gpio.h",
+        "lib/port/include/port/gpio.h",
+        "homeworks/1_3-police-flasher/lib/pattern/include/pattern/controller.h",
+    )
+
     def test_every_check_family_is_selected(self) -> None:
         text = TIDY_CONFIG.read_text(encoding="utf-8")
         for family in (
@@ -509,6 +519,34 @@ class ClangTidyConfigTests(unittest.TestCase):
     def test_warnings_are_not_promoted_to_errors(self) -> None:
         text = TIDY_CONFIG.read_text(encoding="utf-8")
         self.assertEqual(1, text.count('WarningsAsErrors: ""'))
+
+    def header_filter(self) -> str:
+        text = TIDY_CONFIG.read_text(encoding="utf-8")
+        match = re.search(r'^HeaderFilterRegex:\s*"([^"]+)"', text, re.MULTILINE)
+        self.assertIsNotNone(match, "HeaderFilterRegex is missing from .clang-tidy")
+        return match.group(1)
+
+    def test_the_header_filter_matches_absolute_header_paths(self) -> None:
+        """CR-01: the anchored form discarded every diagnostic from a header.
+
+        clang-tidy matches `HeaderFilterRegex` against the header's `FileEntry`
+        name, and `tests/compile_commands.json` passes absolute include
+        directories, so the real name is absolute. `re.search` mirrors
+        clang-tidy's unanchored `Regex::match`; a pattern that only matches the
+        repository-relative form fails here for the absolute sample.
+        """
+        pattern = re.compile(self.header_filter())
+        for relative in self.HEADER_FILTER_SAMPLES:
+            for candidate in (relative, (REPO_ROOT / relative).as_posix()):
+                with self.subTest(path=candidate):
+                    self.assertIsNotNone(
+                        pattern.search(candidate),
+                        f"HeaderFilterRegex {pattern.pattern!r} discards {candidate!r}",
+                    )
+
+    def test_the_header_filter_ignores_a_system_header(self) -> None:
+        pattern = re.compile(self.header_filter())
+        self.assertIsNone(pattern.search("/usr/local/include/stdio.h"))
 
 
 class ClangTidyDbGuardTests(unittest.TestCase):

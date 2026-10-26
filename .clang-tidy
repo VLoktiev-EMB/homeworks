@@ -46,5 +46,11 @@ Checks: >
   -readability-trailing-comma,
   -portability-avoid-pragma-once
 WarningsAsErrors: ""
-HeaderFilterRegex: "^(lib|homeworks)/.*"
+# Unanchored on purpose. clang-tidy matches this against the header's
+# `FileEntry` name, which is absolute when the header is reached through an
+# absolute include directory — and `tests/compile_commands.json` passes
+# `-I<repo>/lib/common/include`. An anchored `^(lib|homeworks)/` would discard
+# every diagnostic that originates in a header; `(^|/)` matches both the
+# repository-relative form and the absolute form clang actually emits.
+HeaderFilterRegex: "(^|/)(lib|homeworks)/.*"
 FormatStyle: file
