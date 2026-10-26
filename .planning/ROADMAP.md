@@ -306,6 +306,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 1**
 - [x] 06-06-PLAN.md — G-06-1: the attached esp-clangd check form in the guide and both live manual-test contracts, plus a non-vacuous regression guard
 
+### Phase 06.1: Shared-library IntelliSense compile database (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 06.1 to break down)
+
 ### Phase 7: Simulation Spike
 
 **Goal**: An evidence-based simulator decision recorded in ADR-0004, with measured costs and fidelity limits.
