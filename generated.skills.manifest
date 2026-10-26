@@ -10,6 +10,30 @@
       "bytes": 3009
     },
     {
+      "path": ".agents/skills/course-index/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "d52fcce4a315c786fcf86cca3b40175b77caeee877d1b84f6c1e72879d9f46fa",
+      "bytes": 369
+    },
+    {
+      "path": ".agents/skills/course-index/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/LESSONS.md",
+      "mode": "whole",
+      "sha256": "99ed4f34d58de2ad7b7e7223da8fe48f92f1754baf4cfa21da0e8fd62b4190d1",
+      "bytes": 428
+    },
+    {
+      "path": ".agents/skills/course-index/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/course-index/SKILL.md",
+      "mode": "whole",
+      "sha256": "2fe4002db20fbbdec2d8e3be88feecf07232f308060578034e204bae88934030",
+      "bytes": 922
+    },
+    {
       "path": ".agents/skills/hw-report/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/hw-report/CHANGELOG.md",
