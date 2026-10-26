@@ -441,7 +441,9 @@ result vocabulary `[CITED: https://docs.github.com/en/actions/reference/workflow
 ### Pattern 2: Matrix from the mapper's JSON
 
 **What:** The mapper prints a pretty-printed object; `jq -c` turns each array into a
-single-line step output that `fromJson` can consume.
+single-line step output that `fromJson` can consume. `fetch-depth: 0` is what makes
+`origin/<base_ref>` resolvable: "Set `fetch-depth: 0` to fetch all history for all branches
+and tags." `[CITED: actions/checkout v7.0.1 README]`
 
 **When to use:** Both `build` and `simulate`, in `ci.yml` and `nightly.yml`.
 
@@ -1181,6 +1183,8 @@ Verified locally: all 13 hooks pass, including `homework metadata contract`,
 - `https://github.com/dorny/paths-filter/issues/66` — the empty-matrix job-level `if`.
 - `https://github.com/wokwi/wokwi-ci-action` `action.yml` at `v1.3.0` — inputs and the
   unpinned `latest` download.
+- `actions/checkout` `v7.0.1` README — `fetch-depth: 0` fetches all history for all branches
+  and tags.
 - `https://docs.platformio.org/en/latest/integration/ci/github-actions.html` — cache paths and
   the `pio run` / `pio test` split.
 - `https://docs.wokwi.com/wokwi-ci/getting-started` — free-plan 50 minutes, 5-minute session
