@@ -235,13 +235,11 @@ class NoBuildImpactTests(PathsTestBase):
 
     NO_BUILD_IMPACT_PATHS = (
         ".planning/notes/x.md",
-        "docs/index.md",
-        ".github/workflows/docs.yml",
-        "templates/views/mkdocs.yml.tmpl",
+        "docs/standards/vscode.md",
+        ".github/workflows/generated-views.yml",
+        "templates/views/workspace.json.tmpl",
         "boards/esp32-s3-devkitc-1.yaml",
         "generated.manifest",
-        "mkdocs.yml",
-        "requirements-docs.txt",
         "homeworks.code-workspace",
         "README.md",
         "AGENTS.md",
@@ -257,7 +255,7 @@ class NoBuildImpactTests(PathsTestBase):
 
     def test_views_only_diff_rebuilds_nothing(self) -> None:
         payload = self.payload(
-            ["generated.manifest", "mkdocs.yml", "docs/index.md"]
+            ["generated.manifest", "homeworks.code-workspace", "README.md"]
         )
 
         self.assertEqual({"build": [], "simulate": []}, payload)

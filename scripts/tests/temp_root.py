@@ -92,7 +92,6 @@ def write_synthetic_root(
     *,
     source_root=None,
     homeworks=True,
-    docs=True,
     tests_project=True,
     boards=True,
 ):
@@ -122,10 +121,6 @@ def write_synthetic_root(
       the fixture cannot prove that a ``lib/**`` change reaches the shared
       native suite, and without ``extends = native_unity`` the environment has
       no resolvable ``platform``;
-    * when *docs* is true, a ``docs/index.md`` carrying two sentences of
-      authored prose around the ``homeworks`` marker region, plus
-      ``docs/decisions/README.md``. The markers are mandatory because 05-07
-      treats a region file without them as an ``ERROR``;
     * when *boards* is true, ``boards/esp32-s3-devkitc-1.yaml`` copied from
       ``templates/board-profile/profile.yaml``.
 
@@ -197,28 +192,6 @@ def write_synthetic_root(
 
     if tests_project:
         _write_synthetic_tests_project(root / "tests")
-
-    if docs:
-        (root / "docs").mkdir(parents=True, exist_ok=True)
-        (root / "docs" / "index.md").write_text(
-            "# Homeworks\n"
-            "\n"
-            "This site is a catalog of the homework projects in the repository.\n"
-            "Every page under Homeworks is generated from `homework.yaml`.\n"
-            "\n"
-            "<!-- BEGIN GENERATED: homeworks -->\n"
-            "<!-- END GENERATED -->\n",
-            encoding="utf-8",
-        )
-        decisions = root / "docs" / "decisions"
-        decisions.mkdir(parents=True, exist_ok=True)
-        (decisions / "README.md").write_text(
-            "# Decision records\n"
-            "\n"
-            "| Date | Decision | Why | Change cost | Status | Record |\n"
-            "|------|----------|-----|-------------|--------|--------|\n",
-            encoding="utf-8",
-        )
 
     if boards:
         _copy(

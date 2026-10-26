@@ -16,9 +16,8 @@ Fanout table (D-24, with the explicit no-build-impact reading of RESEARCH Open
 Question 1). Each entry reads `<changed path> -> <effect>`:
 
 - `.planning/`, `docs/`, `.github/`, `templates/views/`, `boards/`, or exactly
-  `README.md`, `AGENTS.md`, `LICENSE`, `generated.manifest`, `mkdocs.yml`,
-  `requirements-docs.txt`, `homeworks.code-workspace`
-  -> no build, no simulation
+  `README.md`, `AGENTS.md`, `LICENSE`, `generated.manifest`,
+  `homeworks.code-workspace` -> no build, no simulation
 - `homeworks/<id>/...` -> that project's environments
 - `lib/<name>/...` -> every project whose `lib_deps` names `<name>`, transitively
   through `library.json` `dependencies`
@@ -89,7 +88,7 @@ from scripts.metadata.platformio import (  # noqa: E402
 )
 from scripts.metadata.yaml_loader import StrictSafeLoader  # noqa: E402
 
-# Paths that feed the documentation site and the generated views, never a
+# Paths that feed the authored documentation and the generated views, never a
 # PlatformIO build. Directory entries end with `/` and match by prefix; a file
 # entry matches exactly, so `boards/` cannot match `boards-notes.md`. The set is
 # deliberately explicit: an unknown path still widens (T-5-12).
@@ -103,8 +102,6 @@ NO_BUILD_IMPACT = (
     "AGENTS.md",
     "LICENSE",
     "generated.manifest",
-    "mkdocs.yml",
-    "requirements-docs.txt",
     "homeworks.code-workspace",
 )
 
