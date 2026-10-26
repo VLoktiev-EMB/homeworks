@@ -2,6 +2,38 @@
   "version": 1,
   "entries": [
     {
+      "path": ".agents/skills/_shared/guardrails.md",
+      "owner": "skills",
+      "source": ".claude/skills/_shared/guardrails.md",
+      "mode": "whole",
+      "sha256": "497d7cf7764a164461a53d482a2878e91c436d12abf0b1307ca364a47b12dea6",
+      "bytes": 3009
+    },
+    {
+      "path": ".agents/skills/hw-report/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "2794ef99c60612d5eff5a488c48aeb0a8f59448848f0e093c090d04b8cc880be",
+      "bytes": 383
+    },
+    {
+      "path": ".agents/skills/hw-report/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/LESSONS.md",
+      "mode": "whole",
+      "sha256": "ff661244d961cdc061f0e65f40a716f7f27e3f25c33957135c058c71af94b068",
+      "bytes": 348
+    },
+    {
+      "path": ".agents/skills/hw-report/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-report/SKILL.md",
+      "mode": "whole",
+      "sha256": "e4fbd31d07ac58d3ae6ae55e6ba4530785eea0ca37a73ec848bbc7edffa34678",
+      "bytes": 1179
+    },
+    {
       "path": ".agents/skills/simulate/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/simulate/CHANGELOG.md",
