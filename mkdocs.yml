@@ -38,6 +38,7 @@ nav:
       - "Squash-merge commit title and message": decisions/0011-squash-merge-commit-message.md
       - "Formatting is a documented approximation of ESP-IDF style": decisions/0012-formatting-approximation.md
       - "clangd and the multi-root editor contract": decisions/0013-clangd-multi-root-contract.md
+      - "Simulator selection and the platform-role matrix": decisions/0014-simulator-selection.md
 validation:
   nav:
     omitted_files: warn

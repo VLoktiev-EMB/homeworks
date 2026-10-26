@@ -1,19 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 7
-current_phase_name: Simulation Spike
-status: planning
-stopped_at: Phase 06.1 complete, ready to plan Phase 7
-last_updated: "2026-10-26T13:02:22.045Z"
+current_phase: 8
+current_phase_name: Fast CI
+status: "Phase 07 shipped — PR #17"
+stopped_at: Phase 07 complete, ready to plan Phase 8
+last_updated: "2026-10-26T16:44:31.137Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 06.1 complete, transitioned to Phase 7
-state_head: 5842b81fcd18607436651e7bc841057e360c3c5e
+state_head: 6169cf2582349cbfe2adbb365ff9562c863aa045
 progress:
   total_phases: 14
-  completed_phases: 8
-  total_plans: 65
-  completed_plans: 65
-  percent: 62
+  completed_phases: 9
+  total_plans: 69
+  completed_plans: 69
+  percent: 69
 ---
 
 # Project State
@@ -23,21 +22,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 07 — Simulation Spike
+**Current focus:** Phase 8 — Fast CI
 
 ## Current Position
 
-Phase: 7 — Simulation Spike
+Phase: 8 — Fast CI
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-26 — Phase 06.1 complete, transitioned to Phase 7
+Status: Phase 07 shipped — PR #17
+Last activity: 2026-10-26
 
-Progress: [██████░░░░] 62%
+Progress: [████████████████████] 69/69 plans ([███████░░░] 69%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65
+- Total plans completed: 69
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -54,6 +53,7 @@ Progress: [██████░░░░] 62%
 | 05 | 9 | - | - |
 | 06 | 6 | - | - |
 | 06.1 | 1 | - | - |
+| 07 | 4 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -96,6 +96,11 @@ Recent decisions affecting current work:
 - Phase 06.1: `lib/common` and `lib/port` are compiled in three environments; the native context is the deliberate representative choice, not a wrong command.
 - Phase 06.1: the wrapper's bounded allowlist gained `/usr/bin/gcc`, `/usr/bin/cc` and `/usr/bin/clang` because esp-clangd ships no resource headers; PATH is never consulted.
 - Phase 06.1: both templates lack a compile database of their own and stay out of scope; the residual is recorded as a deferred follow-up.
+- Phase 7: ADR-0014 replaces the roadmap's historical ADR-0004 reference; the record is evidence-based — Wokwi executed 3/3 (cold 3.759 s, warm 6.753/11.238 s), Velxio self-hosted from `ghcr.io/...@sha256:5d673722…`, Renode and Fritzing `not measured` with reasons.
+- Phase 7: the five-label evidence vocabulary (`measured`, `calculated`, `simulated`, `datasheet`, `not measured`) plus `calculated (upper bound)` is semantic; a simulated value is never bench evidence and quota is never derived from wall clock.
+- Phase 7: `simulation.status: verified` follows only `**Outcome:** scenario passed`; execution alone is not success, and a failed or blocked outcome leaves `pending` with a blocker.
+- Phase 7: the shared `scripts/pio/merge_firmware.py` replaces the project-local copy; esptool 5 `merge-bin` runs in a clean build, and the failure path raises `RuntimeError`.
+- Phase 7: no Velxio source, image layer or Fritzing part graphic is vendored; the AGPLv3 image is referenced by immutable digest only, and `diagram.json` stays the wiring source of truth.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -176,6 +181,8 @@ Recent decisions affecting current work:
 - **[Phase 6, open findings]** IN-01..IN-05 are info-level review observations recorded in `06-REVIEW-DISPOSITION.md`; none has a failing test or a reproducible defect against the phase goal. The CI layer of TOOL-03 is Phase 8 scope (TOOL-05, TOOL-06).
 - **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
 - **[Phase 06.1, deferred]** `templates/**/src/*` have no compile database of their own, so both template entry points still show clangd errors. Recorded as a deferred follow-up in `06.1-UAT.md`; out of scope for the phase goal.
+- **[Phase 7, open findings]** Five ADR wording warnings (WR-02..WR-06) and the info notes remain `open` in `07-REVIEW-DISPOSITION.md`; none breaks a phase must-have, and the CR-01 merge-failure defect was fixed in `4f053b2`.
+- **[Phase 7, for Phase 8]** The CI simulation run is now unblocked by evidence: ADR-0014 carries a `calculated (upper bound)` cost basis (`15 s` per run, `45 s` for the spike). A real CI run remains Phase 8 scope and must not be claimed before it executes.
 
 ### Quick Tasks Completed
 
@@ -204,6 +211,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T13:20:00.000Z
-Stopped at: Phase 06.1 complete, ready to plan Phase 7
+Last session: 2026-10-26T16:42:09.000Z
+Stopped at: Phase 07 complete, ready to plan Phase 8
 Resume file: None

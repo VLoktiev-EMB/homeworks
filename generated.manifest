@@ -21,8 +21,8 @@
       "path": "docs/homeworks/1_3-police-flasher.md",
       "owner": "docs",
       "mode": "whole",
-      "sha256": "8d3efe93a78e669f7a7e563dfa95efdfb93a2c943ae569775038f26711f4243e",
-      "bytes": 596
+      "sha256": "73ed0ddc9ec89f3904f9578e62ec9298837b12fa9d591c8f891faa0249d6993f",
+      "bytes": 597
     },
     {
       "path": "docs/index.md",
@@ -44,8 +44,8 @@
       "path": "mkdocs.yml",
       "owner": "nav",
       "mode": "whole",
-      "sha256": "6b81960443607d81150c4d1be545cd14590295fd061b128625bf376bf5cce7cc",
-      "bytes": 2861
+      "sha256": "c6b0a2ebce9a0643847ab67d0f05e9073140e5c66695b860982c234be47398be",
+      "bytes": 2959
     },
     {
       "path": "platformio.shared.ini",
