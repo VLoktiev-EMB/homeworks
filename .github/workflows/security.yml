@@ -28,8 +28,13 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          # The release URL is assembled in three parts so the YAML line stays
+          # readable; the resulting download is byte-identical to the one-line
+          # spelling. The checksum check below still fails closed.
+          release="https://github.com/gitleaks/gitleaks/releases/download"
+          release="${release}/v${GITLEAKS_VERSION}"
           curl --proto '=https' --tlsv1.2 -sSfL \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            "${release}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             -o "$archive"
           # Fail closed: a substituted or truncated artifact stops the job
           # before the binary is unpacked or executed.
