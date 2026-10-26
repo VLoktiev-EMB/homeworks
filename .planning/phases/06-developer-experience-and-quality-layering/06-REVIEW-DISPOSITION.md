@@ -5,23 +5,23 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "`HeaderFilterRegex` is anchored to a repository-relative prefix, so every header diagnostic is discarded"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "A header-only push passes the pre-push gate with no analysis at all"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The database guard passes when a newly added source is missing from the database"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The wrapper can select a non-executable esp-clangd and exit 1, contradicting its documented exit codes"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The onboarding guide overstates what is pinned and how many hooks run"
   - id: IN-01
     severity: info
@@ -43,20 +43,20 @@ findings:
     severity: info
     disposition: open
     title: "Ruff targets Python 3.13 while the entry scripts declare 3.11"
-open: 10
+open: 5
 total: 10
-recorded: 2026-10-26T11:46:33.622Z
+recorded: 2026-10-26T11:46:46.362Z
 ---
 
 # Phase 06: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| CR-02 | critical | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| CR-01 | critical | fixed | 06-REVIEW-FIX.md |
+| CR-02 | critical | fixed | 06-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 06-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 06-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 06-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
