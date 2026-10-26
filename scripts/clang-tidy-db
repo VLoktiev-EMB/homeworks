@@ -16,9 +16,10 @@ Usage:
   python3 scripts/clang-tidy-db [--dir PATH]
 
 Exit codes (the same 0/1/2 vocabulary as `scripts/check_architecture.py`):
-  0  the database exists, parses, and is not older than any input it depends on
-  1  the database is absent, or older than a configuration input or a source it
-     describes
+  0  the database exists, parses, and describes every analysed source, with no
+     input newer than the database
+  1  the database is absent, older than a configuration input or a source it
+     describes, or missing an analysed source that exists on disk
   2  usage or environment error (bad arguments, unusable root, unreadable or
      malformed database)
 
@@ -30,6 +31,14 @@ to `<root>/tests`). Resolving a relative entry against the root instead would
 report a falsely stale database for every relative entry. An entry whose
 resolved path no longer exists is skipped, because only entries that still exist
 can be out of date.
+
+The candidate set is built from both sides. The mtime comparison alone cannot
+see a source that was added after the database was written — the database does
+not name it, so it is not a candidate — and clang-tidy would then skip the new
+file for want of a compile command while the hook reported success. Every `.c`
+under the analysed trees that the database does not describe is therefore
+stale. Headers are excluded: they are not translation units, so the database is
+not expected to describe them.
 """
 
 from __future__ import annotations
@@ -45,6 +54,10 @@ DATABASE = Path("tests") / "compile_commands.json"
 # The two configuration inputs that define the native environment. A database
 # older than either one was built from a different environment.
 CONFIG_INPUTS = (Path("tests") / "platformio.ini", Path("platformio.shared.ini"))
+
+# The trees clang-tidy analyses. Every `.c` here must be a compile unit in the
+# database; a `.c` that is not is new code the database has not seen.
+ANALYSER_SOURCES = (Path("lib") / "common" / "src", Path("lib") / "host" / "src")
 
 REMEDY = "pio run -d tests -e native -t compiledb"
 
@@ -118,6 +131,29 @@ def described_paths(entries: list, root: Path) -> list[Path]:
     return resolved
 
 
+def scoped_sources(root: Path) -> list[Path]:
+    """Return every `.c` that exists under the analysed trees."""
+    sources: list[Path] = []
+    for relative in ANALYSER_SOURCES:
+        base = root / relative
+        if not base.is_dir():
+            continue
+        sources.extend(path for path in base.rglob("*.c") if path.is_file())
+    return sorted(sources)
+
+
+def undescribed_sources(root: Path, described: list[Path]) -> list[Path]:
+    """Return analysed sources on disk that the database does not describe.
+
+    A newly added source is invisible to the mtime comparison: the database
+    does not name it, so it is never a candidate. Comparing the database's
+    resolved `file` set with the analysed tree is what catches new code
+    arriving without a regenerated database.
+    """
+    known = {path.resolve() for path in described}
+    return [source for source in scoped_sources(root) if source.resolve() not in known]
+
+
 def stale_inputs(root: Path, database: Path, described: list[Path]) -> list[Path]:
     """Return every existing input newer than the database."""
     database_mtime = database.stat().st_mtime
@@ -145,6 +181,7 @@ def run_check(root: Path) -> tuple[int, list[str]]:
     described = described_paths(entries, root)
     try:
         stale = stale_inputs(root, database, described)
+        missing = undescribed_sources(root, described)
     except OSError as exc:
         raise EnvironmentProblem(f"cannot stat {database} or its inputs: {exc}") from exc
 
@@ -152,6 +189,14 @@ def run_check(root: Path) -> tuple[int, list[str]]:
         return 1, [
             f"FAIL clang-tidy-db: {database} is older than {len(stale)} input(s):",
             *(f"  {path}" for path in stale),
+            f"  regenerate it with: {REMEDY}",
+        ]
+
+    if missing:
+        return 1, [
+            f"FAIL clang-tidy-db: {database} does not describe "
+            f"{len(missing)} analysed source(s):",
+            *(f"  {path}" for path in missing),
             f"  regenerate it with: {REMEDY}",
         ]
 

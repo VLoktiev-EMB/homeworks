@@ -650,6 +650,34 @@ class ClangTidyDbGuardTests(unittest.TestCase):
         self.assert_guard_fails(result)
         self.assertIn(str(self.absolute_source), result.stdout)
 
+    def test_a_new_scoped_source_absent_from_the_database_exits_one(self) -> None:
+        """WR-01: a new `.c` is invisible to the mtime comparison.
+
+        Its mtime is deliberately older than the database, so only the
+        description check can fail this case; an mtime-only guard passes it.
+        """
+        new_source = self.root / "lib" / "common" / "src" / "new_feature.c"
+        new_source.write_text("x", encoding="utf-8")
+        self.age(new_source, self.OLD)
+
+        result = self.run_guard()
+
+        self.assert_guard_fails(result)
+        self.assertIn("does not describe", result.stdout)
+        self.assertIn(str(new_source), result.stdout)
+
+    def test_a_header_absent_from_the_database_is_not_stale(self) -> None:
+        """Headers are not translation units, so the database need not name them."""
+        header = self.root / "lib" / "common" / "include" / "common" / "hex.h"
+        header.parent.mkdir(parents=True)
+        header.write_text("x", encoding="utf-8")
+        self.age(header, self.NEW + 1_000)
+
+        result = self.run_guard()
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("PASS clang-tidy-db:", result.stdout)
+
     def test_a_database_older_than_a_relative_source_exits_one(self) -> None:
         """The case that fails if the guard resolves against the root."""
         self.age(self.relative_source, self.NEW + 1_000)
