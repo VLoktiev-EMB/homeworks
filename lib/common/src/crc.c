@@ -15,12 +15,12 @@ uint16_t common_crc16_update(uint16_t crc, const uint8_t *data, size_t length)
     /* Bitwise implementation: no 256-byte table, no allocation, and the
        polynomial stays visible beside the code it defines. */
     for (index = 0u; index < length; index++) {
-        crc ^= (uint16_t)((uint16_t)data[index] << 8);
+        crc ^= (uint16_t)((unsigned int)(uint16_t)data[index] << 8u);
         for (bit = 0; bit < 8; bit++) {
             if ((crc & 0x8000u) != 0u) {
-                crc = (uint16_t)((uint16_t)(crc << 1) ^ 0x1021u);
+                crc = (uint16_t)(((unsigned int)crc << 1u) ^ 0x1021u);
             } else {
-                crc = (uint16_t)(crc << 1);
+                crc = (uint16_t)((unsigned int)crc << 1u);
             }
         }
     }

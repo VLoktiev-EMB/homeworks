@@ -1,5 +1,7 @@
 minimum_pre_commit_version: '4.7.0'
-default_install_hook_types: [pre-commit]
+# D-10: one `pre-commit install` wires both stages, so a novice cannot forget
+# the pre-push half of the gate.
+default_install_hook_types: [pre-commit, pre-push]
 
 # `default_stages` defaults to ALL stages, so without this line every hook
 # would also run at pre-push. D-08 reserves that stage for clang-tidy only, so
@@ -11,6 +13,7 @@ repos:
     rev: v8.30.1
     hooks:
       - id: gitleaks          # entry: gitleaks git --pre-commit --redact --staged --verbose
+        stages: [pre-commit]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -20,13 +23,23 @@ repos:
       # minified JavaScript carries no final newline, so a normalizing hook
       # would rewrite it and break the integrity gate. The vendor tree is
       # therefore excluded from both text-normalizing hooks.
+      #
+      # Every hook here names `stages: [pre-commit]` explicitly. This pinned
+      # manifest declares `stages: [pre-commit, pre-push, manual]` for three of
+      # its hooks, and a hook's own `stages` overrides the top-level
+      # `default_stages` — without the per-hook declaration those three would
+      # run at pre-push and break D-08's "pre-push runs clang-tidy only".
       - id: trailing-whitespace
         exclude: ^docs/assets/vendor/
+        stages: [pre-commit]
       - id: end-of-file-fixer
         exclude: ^docs/assets/vendor/
+        stages: [pre-commit]
       - id: check-merge-conflict
+        stages: [pre-commit]
       - id: check-added-large-files
         args: [--maxkb=1024]
+        stages: [pre-commit]
 
   # D-04: the hook is CHECK-ONLY. The mirror's default entry is
   # `clang-format -i`, which would rewrite and therefore repair the very file
@@ -40,6 +53,7 @@ repos:
         entry: clang-format --dry-run --Werror
         args: [-style=file]
         types_or: [c, c++]
+        stages: [pre-commit]
 
   # D-13: ruff's policy lives once, in the root `pyproject.toml`, which the hook
   # resolves from the repository root without a `-c` argument. D-06: the pinned
@@ -52,6 +66,7 @@ repos:
     rev: v0.17.2
     hooks:
       - id: ruff-check
+        stages: [pre-commit]
 
   # D-14: the policy file is resolved from the working directory, and the hook
   # runs from the repository root, so no `-c` argument is needed. D-06: the
@@ -71,6 +86,7 @@ repos:
       - id: yamllint
         files: >-
           ^(\.github/workflows/|homeworks/[^/]+/homework\.yaml$|boards/[^/]+\.yaml$|templates/.*\.ya?ml$|\.pre-commit-config\.yaml$|\.yamllint\.ya?ml$)
+        stages: [pre-commit]
 
   # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
   # `.claude/` is the generated adapter, and the generated pages plus the vendor
@@ -86,6 +102,7 @@ repos:
       - id: markdownlint-cli2
         exclude: >-
           ^(\.planning/|\.claude/|docs/index\.md$|docs/homeworks/|docs/boards/|docs/assets/vendor/)
+        stages: [pre-commit]
 
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
   # so the ignore rules alone do not enforce "generated files are never
@@ -117,6 +134,7 @@ repos:
           echo "$tracked" >&2; exit 1; fi'
         pass_filenames: false
         always_run: true
+        stages: [pre-commit]
 
       # `ARCH-05` needs the dependency rule to fail locally, not only under
       # test. The `files` pattern names the checker and its allowlist as well as
@@ -129,6 +147,7 @@ repos:
         entry: python3 scripts/check_architecture.py
         files: ^(lib/|homeworks/|scripts/architecture/|scripts/check_architecture\.py)
         pass_filenames: false
+        stages: [pre-commit]
 
       # D-13: the pre-commit hook builds its own isolated Python environment
       # from these two pins and never depends on `uv`. The same two pins live in
@@ -151,6 +170,7 @@ repos:
         entry: python scripts/check_metadata.py
         files: ^(homeworks/|boards/|schema/|scripts/(check_metadata\.py|new_homework$|gen_views\.py$|metadata/))
         pass_filenames: false
+        stages: [pre-commit]
 
       # D-21: the drift contract needs a local enforcement point, not only the
       # `generated-views` pull-request workflow. This hook is CHECK-ONLY: it
@@ -183,3 +203,50 @@ repos:
           |scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$
           |mkdocs\.yml$|platformio\.shared\.ini$|homeworks\.code-workspace$)
         pass_filenames: false
+        stages: [pre-commit]
+
+  # D-09 / Pitfall 3: `cpp-linter-hooks` SKIPS clang-tidy locally when no
+  # compilation database exists and fails only when `CI` is set — the exact
+  # inverse of the contract this phase needs. Worse, `--compile-commands=tests`
+  # makes the hook run anyway, so the database-presence check disappears.
+  #
+  # This guard therefore owns the failure and runs FIRST: pre-commit executes
+  # repositories in file order, so a guard placed after the clang-tidy repo
+  # would never protect the gate. It validates and reports; it never generates
+  # the database, never writes `.pio/`, and never skips silently. Exit 0 on a
+  # fresh database, 1 when the database is absent or stale, 2 on an environment
+  # error. Regenerating the database is a developer action, not a hook action.
+  #
+  # D-08a: the analysed set is host-compiled code only — `lib/common`,
+  # `lib/host`, and the `lib/port` headers. Native test translation units are
+  # out of scope because `pio test` exposes no compiledb target; the gap is
+  # recorded in ADR 0013 and handed to Phase 8.
+  #
+  # The `files` pattern names the `include` trees as well as `src`: the public
+  # headers live outside `src/`, so a pattern limited to sources would let a
+  # header-only change bypass both this guard and clang-tidy entirely.
+  - repo: local
+    hooks:
+      - id: clang-tidy-db
+        name: clang-tidy compilation database present
+        language: system
+        entry: python3 scripts/clang-tidy-db
+        pass_filenames: false
+        files: ^(lib/(common|host)/(src|include)/.*\.(c|h)|lib/port/include/.*\.h)$
+        stages: [pre-push]
+
+  # D-07: clang-tidy is delivered only by this pinned hook, at 23.1.3 so it
+  # matches clang-format. The platform's bundled `tool-clangtidy` 19.1.0 is
+  # never used, and a `--version` the hook cannot resolve must surface as a
+  # failure rather than silently degrade.
+  #
+  # The `files` pattern is identical to the guard's: a guard that fires while
+  # clang-tidy stays silent is worse than no guard, because it reports a checked
+  # tree that was never analysed.
+  - repo: https://github.com/cpp-linter/cpp-linter-hooks
+    rev: v1.8.1
+    hooks:
+      - id: clang-tidy
+        args: [--version=23.1.3, --compile-commands=tests]
+        files: ^(lib/(common|host)/(src|include)/.*\.(c|h)|lib/port/include/.*\.h)$
+        stages: [pre-push]
