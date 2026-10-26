@@ -11,41 +11,11 @@
       "bytes": 326
     },
     {
-      "path": "docs/boards/esp32-s3-devkitc-1.md",
-      "owner": "docs",
-      "mode": "whole",
-      "sha256": "0eb2d0f5de50e5c94fa352f03fb88256115c4c220c0685b989446dadc088b858",
-      "bytes": 444
-    },
-    {
-      "path": "docs/homeworks/1_3-police-flasher.md",
-      "owner": "docs",
-      "mode": "whole",
-      "sha256": "73ed0ddc9ec89f3904f9578e62ec9298837b12fa9d591c8f891faa0249d6993f",
-      "bytes": 597
-    },
-    {
-      "path": "docs/index.md",
-      "owner": "docs",
-      "mode": "region",
-      "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
-      "marker_end": "<!-- END GENERATED -->",
-      "sha256": "2fe2abc291742028df1e4d0b99a424162f18a3fb0357f281bf8a5715d97ceda7",
-      "bytes": 430
-    },
-    {
       "path": "homeworks.code-workspace",
       "owner": "workspace",
       "mode": "whole",
       "sha256": "c3c08c025e2593e814da90e1c4e51b247932a72c5207a028f7b78e732a0d061c",
       "bytes": 925
-    },
-    {
-      "path": "mkdocs.yml",
-      "owner": "nav",
-      "mode": "whole",
-      "sha256": "c6b0a2ebce9a0643847ab67d0f05e9073140e5c66695b860982c234be47398be",
-      "bytes": 2959
     },
     {
       "path": "platformio.shared.ini",
