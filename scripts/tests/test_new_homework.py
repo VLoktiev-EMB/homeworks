@@ -184,6 +184,45 @@ class InventoryTests(ScaffoldTestBase):
                 self.assertTrue((target / relative).is_file())
 
 
+class GeneratedTemplateOutputTests(ScaffoldTestBase):
+    """A generated template tree is not scaffolded as authored content.
+
+    Generating the ESP-IDF compilation database writes `.pio/`, `CMakeLists.txt`,
+    `src/CMakeLists.txt` and `sdkconfig.<env>` into the template tree. Rendering
+    them would scaffold a binary and generated build files into a new homework,
+    so the scaffold skips them; the authored `sdkconfig.defaults` must survive.
+    """
+
+    def test_generated_template_entries_are_not_scaffolded(self) -> None:
+        template = self.root / "templates" / "homework-espidf"
+        (template / ".pio" / "build").mkdir(parents=True, exist_ok=True)
+        (template / ".pio" / "build" / "artifact.bin").write_bytes(b"\x80\x00")
+        (template / "CMakeLists.txt").write_text("generated\n", encoding="utf-8")
+        (template / "src").mkdir(parents=True, exist_ok=True)
+        (template / "src" / "CMakeLists.txt").write_text(
+            "generated\n", encoding="utf-8"
+        )
+        (template / "sdkconfig.esp32s3_espidf").write_text(
+            "generated\n", encoding="utf-8"
+        )
+        (template / "compile_commands.json").write_text("[]\n", encoding="utf-8")
+
+        result = self.scaffold(self.root, template="espidf")
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        target = self.target(self.root)
+        for relative in (
+            ".pio",
+            "CMakeLists.txt",
+            "src/CMakeLists.txt",
+            "sdkconfig.esp32s3_espidf",
+            "compile_commands.json",
+        ):
+            with self.subTest(relative=relative):
+                self.assertFalse((target / relative).exists(), relative)
+        self.assertTrue((target / "sdkconfig.defaults").is_file())
+
+
 class GoldenTreeTests(ScaffoldTestBase):
     """D-37: a committed expected tree, reported as a unified diff."""
 

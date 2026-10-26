@@ -306,6 +306,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 1**
 - [x] 06-06-PLAN.md — G-06-1: the attached esp-clangd check form in the guide and both live manual-test contracts, plus a non-vacuous regression guard
 
+### Phase 06.1: Shared-library IntelliSense compile database (INSERTED)
+
+**Goal:** clangd resolves every shared-library source under `lib/` with the correct compile command, so IntelliSense works in the `lib` folder of the multi-root workspace as well as inside a homework project. A generated root `compile_commands.json` covers `lib/arduino`, `lib/espidf`, `lib/common`, `lib/port` and `lib/host` from their representative build contexts; the root `.clangd` carries the proven esp-clangd settings; a coverage test fails when a `lib/**/*.c` source has no entry.
+**Requirements**: TOOL-02 (follow-up), TOOL-04 (follow-up)
+**Depends on:** Phase 6
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 06.1-01-PLAN.md — Generate the root compile database from three source databases, add the root `.clangd`, let the wrapper query the host compiler, and machine-check the coverage and the guide
+
 ### Phase 7: Simulation Spike
 
 **Goal**: An evidence-based simulator decision recorded in ADR-0004, with measured costs and fidelity limits.

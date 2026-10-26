@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 7
 current_phase_name: Simulation Spike
 status: planning
-stopped_at: Phase 06 complete, ready to plan Phase 7
-last_updated: "2026-10-26T12:25:42.139Z"
+stopped_at: Phase 06.1 complete, ready to plan Phase 7
+last_updated: "2026-10-26T13:02:22.045Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 06 complete, transitioned to Phase 7
-state_head: a5cd3da619647bf9df326c12ca48807b6b8f7555
+last_activity_desc: Phase 06.1 complete, transitioned to Phase 7
+state_head: 5842b81fcd18607436651e7bc841057e360c3c5e
 progress:
-  total_phases: 13
+  total_phases: 14
   completed_phases: 8
-  total_plans: 64
-  completed_plans: 64
+  total_plans: 65
+  completed_plans: 65
   percent: 62
 ---
 
@@ -30,14 +30,14 @@ See: .planning/PROJECT.md (updated 2026-10-26)
 Phase: 7 — Simulation Spike
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-26 — Phase 06 complete, transitioned to Phase 7
+Last activity: 2026-10-26 — Phase 06.1 complete, transitioned to Phase 7
 
 Progress: [██████░░░░] 62%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64
+- Total plans completed: 65
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -53,6 +53,7 @@ Progress: [██████░░░░] 62%
 | 04.2 | 11 | - | - |
 | 05 | 9 | - | - |
 | 06 | 6 | - | - |
+| 06.1 | 1 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -90,6 +91,11 @@ Recent decisions affecting current work:
 - Phase 6: a documented command is regression-guarded by a positive, negative and non-vacuity test (`ClangdCheckCommandTests`), so a guide that drifts back to a rejected invocation fails the suite instead of shipping.
 - Phase 6: the local quality layers are live (pre-commit fast hooks, clang-tidy on pre-push with a compile-database freshness guard); the CI layer stays Phase 8 (TOOL-05, TOOL-06).
 - Phase 6: gap closure G-06-1 was a one-command documentation defect; the re-verification passed 56/56 must-haves with the covered-input digest recomputed by the CLI.
+- Phase 06.1: clangd discovers compile databases upward only, so shared sources under `lib/` had none — the per-project databases are siblings. One generated root `compile_commands.json` merges the native, Arduino and ESP-IDF databases and stays untracked.
+- Phase 06.1: the root `.clangd` names no `CompilationDatabase` on purpose, so each project's own fragment and the nearer `tests/` database keep precedence.
+- Phase 06.1: `lib/common` and `lib/port` are compiled in three environments; the native context is the deliberate representative choice, not a wrong command.
+- Phase 06.1: the wrapper's bounded allowlist gained `/usr/bin/gcc`, `/usr/bin/cc` and `/usr/bin/clang` because esp-clangd ships no resource headers; PATH is never consulted.
+- Phase 06.1: both templates lack a compile database of their own and stay out of scope; the residual is recorded as a deferred follow-up.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -169,6 +175,8 @@ Recent decisions affecting current work:
 - **[Phase 5, resolved]** The deploy path is no longer unverified: PR #12 merged as `0384ed7`, the `docs` workflow's `build and deploy` job succeeded, and the live Pages site was checked page by page.
 - **[Phase 6, open findings]** IN-01..IN-05 are info-level review observations recorded in `06-REVIEW-DISPOSITION.md`; none has a failing test or a reproducible defect against the phase goal. The CI layer of TOOL-03 is Phase 8 scope (TOOL-05, TOOL-06).
 - **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
+- **[Phase 06.1, deferred]** `templates/**/src/*` have no compile database of their own, so both template entry points still show clangd errors. Recorded as a deferred follow-up in `06.1-UAT.md`; out of scope for the phase goal.
+- **[Phase 06.1, queued]** A pass over `scripts/tests/test_tooling_config.py` removes 12 prose/doc-sync tests and replaces the G-06-1 text guard with one behavioral test that runs the guide's documented command. Queued after the phase merge.
 
 ### Quick Tasks Completed
 
@@ -182,6 +190,7 @@ Recent decisions affecting current work:
 
 - Phase 4.1 inserted after Phase 4: Ceremony Trim (URGENT)
 - Phase 4.2 inserted after Phase 4: Tracer Homework 1.3 (URGENT)
+- Phase 06.1 inserted after Phase 6: Shared-library IntelliSense compile database (URGENT)
 
 ## Deferred Items
 
@@ -195,6 +204,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T12:25:42.139Z
-Stopped at: Phase 06 complete, ready to plan Phase 7
+Last session: 2026-10-26T13:20:00.000Z
+Stopped at: Phase 06.1 complete, ready to plan Phase 7
 Resume file: None
