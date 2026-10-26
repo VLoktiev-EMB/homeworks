@@ -134,7 +134,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **TOOL-03**: Checks are layered: fast hooks (format, markdownlint, yamllint, ruff,
       gitleaks) in pre-commit; clang-tidy in pre-push; full build, tests, schema, docs,
       architecture, and simulation checks in CI.
-- [ ] **TOOL-04**: `docs/standards/vscode.md` onboards a VS Code beginner: extensions,
+- [x] **TOOL-04**: `docs/standards/vscode.md` onboards a VS Code beginner: extensions,
       tasks, format-on-save, Problems panel, clangd, and a no-hardware simulation path.
 - [ ] **TOOL-05**: CI has a fast `meta` job (schema, `--check` drift, lint, gitleaks,
       architecture check) and a `changes` job that computes the affected matrix.
@@ -325,7 +325,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-01 | Phase 6 | Complete |
 | TOOL-02 | Phase 6 | Complete |
 | TOOL-03 | Phase 6 | Complete |
-| TOOL-04 | Phase 6 | Pending |
+| TOOL-04 | Phase 6 | Complete |
 | TOOL-05 | Phase 8 | Pending |
 | TOOL-06 | Phase 8 | Pending |
 | TOOL-07 | Phase 1 | Complete |
