@@ -727,3 +727,47 @@ Answer: `ні` — a non-affirmative answer, so the outcome is **consent refused
 The sampling is deliberate and narrow: both the scaffold and the controller were
 exercised end to end, every other block was exercised as far as its deliverable and
 its run/no-run rule, and only the repeated pause/questions interaction was sampled.
+
+## Phase gate
+
+Each command was run from the repository root after the legs were recorded:
+
+| Command | Exit | Evidence |
+|---------|------|----------|
+| `uv run scripts/gen_skills.py --check` | 0 | every `.agents/skills/**` file and `generated.skills.manifest` report `UNCHANGED` |
+| `pre-commit run --all-files` | 0 | all fourteen hooks pass, including the secret scan and both drift checks |
+| `uv run scripts/check_metadata.py` | 0 | `PASS: metadata contract satisfied` |
+| `python3 -m unittest discover scripts/tests` | 0 | `Ran 375 tests in 23.482s` — `OK (skipped=1)` |
+
+Transcript repairs and reruns: one mechanical repair was made. The first gate run
+over the appended file failed the `end-of-file-fixer` hook, which appended the
+missing final newline in place (`exit 1`, `files were modified by this hook`). No
+sentence was removed or rewritten — the change is the trailing newline only — and
+the scan under "Privacy check" found no platform absolute path root, no
+token-shaped value and no raw device output, so no content redaction was needed.
+After that repair the whole phase gate was rerun against the repaired file:
+`uv run scripts/gen_skills.py --check`, `pre-commit run --all-files`,
+`uv run scripts/check_metadata.py` and `python3 -m unittest discover scripts/tests`
+all exited 0.
+
+## Traceability
+
+| Requirement | Evidenced by |
+|-------------|--------------|
+| FLOW-02 | Leg 1 — all eight bank topics asked in order with `mode` first; Leg 3 — one-shot asked only the five non-inferable topics |
+| FLOW-03 | Leg 2 — the block loop with the exact pause menu and a `Поясни глибше` answer that re-explained the same concept without advancing |
+| FLOW-04 | Legs 1–3 — the `intake`, `code` and `report` checkpoints, the one-shot run's three checkpoint records, and the commit and flash guardrails left intact |
+| FLOW-05 | Leg 3 — `A-01` recorded as `proposed`, accepted by a literal answer, and transcribed into the report's assumptions section |
+| FLOW-06 | Leg 4 — green with no repair; Leg 5 — three independent errors, exactly two repairs, and an escalation with the unresolved `E3` and no third edit |
+| FLOW-07 | Leg 6 — the board, environment and exact upload command printed, a non-affirmative answer received, and no upload or capture run |
+
+## Privacy check
+
+The transcript contains no token value, no credential and no private absolute path
+from any platform root. Every command output was sanitized before it was pasted: the
+compiler prints project-relative paths, and the disposable roots appear only as
+`<root>` and `<root-b>`. `simulation_token_present` is recorded only as a boolean
+(`false`); no token value was ever asked for, read, echoed or written. No serial log
+was captured because the flash leg stopped at its gate, so there is no raw device
+output to redact. A final scan of this file for token-shaped assignments, platform
+root prefixes and raw device output found nothing.
