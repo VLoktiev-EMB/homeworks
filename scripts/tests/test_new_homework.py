@@ -6,16 +6,17 @@ repository itself, so a failure cannot leave a `homeworks/` directory behind.
 
 The module pins the four META-04 behaviours — scaffold, content idempotency,
 `--dry-run` parity and refusal to overwrite — and the eight FOUND-01 paths.
-Two committed golden trees make any unintended change to a rendered file
-visible as a unified diff. Every refusal path asserts both the exit code and
-the absence of plan output, because "exit 2 before any plan output" is the
-contract, not just the status.
+Every scaffolded tree is asserted against the live template it was rendered
+from — file-set equality, byte equality for every placeholder-free source and
+the substituted documents — so a template edit and a renderer change cannot
+drift apart. Every refusal path asserts both the exit code and the absence of
+plan output, because "exit 2 before any plan output" is the contract, not just
+the status.
 """
 
 from __future__ import annotations
 
 import ast
-import difflib
 import json
 import shutil
 import subprocess
@@ -27,19 +28,18 @@ from pathlib import Path
 from scripts.metadata.errors import CheckError
 from scripts.metadata.render import render
 from scripts.tests import temp_root
+from scripts.tests.temp_root import snapshot_tree
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = "scripts/new_homework"
-GOLDEN_ROOT = REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden"
 METADATA_DIR = REPO_ROOT / "scripts" / "metadata"
 
 HOMEWORK_ID = "1_3-fixture"
 TEMPLATES = ("arduino", "espidf")
 
-# FOUND-01: the eight paths a scaffolded homework must contain.
-EIGHT_PATHS = (
+# FOUND-01: the seven shared paths plus the framework-specific entry point.
+SHARED_PATHS = (
     "platformio.ini",
-    "src/main.cpp",
     "include/.gitkeep",
     "test/test_homework/test_homework.c",
     "assets/.gitkeep",
@@ -47,6 +47,45 @@ EIGHT_PATHS = (
     "task.md",
     "homework.yaml",
 )
+
+ENTRY_POINTS = {"arduino": "src/main.cpp", "espidf": "src/main.c"}
+LANGUAGES = {"arduino": "cpp", "espidf": "c"}
+
+
+def eight_paths(template: str) -> tuple:
+    """Return the eight FOUND-01 paths for *template*."""
+    return (ENTRY_POINTS[template],) + SHARED_PATHS
+
+
+def authored_template_files(template_dir: Path) -> dict:
+    """Return `relative POSIX path -> source path` for every authored file.
+
+    This mirrors the skip rules in `scripts/new_homework`: the root
+    `template.yaml` manifest, `.pio/`, a generated `CMakeLists.txt` or
+    `compile_commands.json`, and any `sdkconfig.*` other than
+    `sdkconfig.defaults` are infrastructure rather than rendered content.
+    `GeneratedTemplateOutputTests` pins the same rule against an injected
+    template.
+    """
+    template_dir = Path(template_dir)
+    files = {}
+    for path in sorted(template_dir.rglob("*"), key=lambda item: item.as_posix()):
+        if path.is_symlink() or not path.is_file():
+            continue
+        relative = path.relative_to(template_dir)
+        if relative.as_posix() == "template.yaml":
+            continue
+        if ".pio" in relative.parts:
+            continue
+        if relative.name in ("CMakeLists.txt", "compile_commands.json"):
+            continue
+        if (
+            relative.name.startswith("sdkconfig.")
+            and relative.name != "sdkconfig.defaults"
+        ):
+            continue
+        files[relative.as_posix()] = path
+    return files
 
 
 def run_scaffold(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
@@ -63,15 +102,6 @@ def run_scaffold(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
         timeout=timeout,
         check=False,
     )
-
-
-def snapshot(directory: Path) -> dict:
-    """Return every file under *directory* as `relative path -> bytes`."""
-    return {
-        path.relative_to(directory).as_posix(): path.read_bytes()
-        for path in sorted(directory.rglob("*"), key=lambda item: item.as_posix())
-        if path.is_file()
-    }
 
 
 class ScaffoldTestBase(unittest.TestCase):
@@ -107,31 +137,44 @@ class ScaffoldTestBase(unittest.TestCase):
         self.assertEqual("", result.stdout, "a usage error must print no plan")
         self.assertIn("ERROR:", result.stderr)
 
-    def assert_golden(self, root: Path, template: str) -> None:
-        expected_dir = GOLDEN_ROOT / f"homework-{template}"
-        actual_dir = self.target(root)
-        expected = snapshot(expected_dir)
-        actual = snapshot(actual_dir)
+    def assert_matches_live_template(self, root: Path, template: str) -> None:
+        """Assert the scaffolded tree equals the live template plus `task.md`.
+
+        Four checks, in order: the file sets are equal; every template source
+        free of a `{{` placeholder is byte-identical to its scaffolded copy;
+        no scaffolded file retains a `{{` token; and `homework.yaml` carries
+        the template's language, so a wrong `LANGUAGES` entry cannot pass.
+        """
+        target = self.target(root)
+        template_dir = REPO_ROOT / "templates" / f"homework-{template}"
+        expected = authored_template_files(template_dir)
+        expected["task.md"] = REPO_ROOT / "templates" / "task" / "task.md"
+        actual = snapshot_tree(target)
 
         self.assertEqual(
             sorted(expected), sorted(actual), "the scaffolded file set differs"
         )
-        differences = []
-        for name in sorted(expected):
-            if actual[name] == expected[name]:
+
+        for relative, source in sorted(expected.items()):
+            source_bytes = source.read_bytes()
+            if b"{{" in source_bytes:
                 continue
-            left = actual[name].decode("utf-8").splitlines()
-            right = expected[name].decode("utf-8").splitlines()
-            differences.extend(
-                difflib.unified_diff(
-                    left,
-                    right,
-                    fromfile=f"scaffolded/{name}",
-                    tofile=f"golden/homework-{template}/{name}",
-                    lineterm="",
+            with self.subTest(path=relative):
+                self.assertEqual(
+                    source_bytes,
+                    actual[relative],
+                    f"scaffolded/{relative} differs from "
+                    f"{source.relative_to(REPO_ROOT).as_posix()}",
                 )
-            )
-        self.assertEqual([], differences, "\n".join(differences))
+
+        for relative, content in sorted(actual.items()):
+            with self.subTest(path=relative):
+                self.assertNotIn(
+                    "{{", content.decode("utf-8"), "a rendered file kept a token"
+                )
+
+        rendered = (target / "homework.yaml").read_text(encoding="utf-8")
+        self.assertIn(f"language: {LANGUAGES[template]}", rendered)
 
 
 class InventoryTests(ScaffoldTestBase):
@@ -141,14 +184,18 @@ class InventoryTests(ScaffoldTestBase):
         result = self.scaffold(self.root)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
-        missing = [name for name in EIGHT_PATHS if not (target / name).is_file()]
+        missing = [
+            name for name in eight_paths("arduino") if not (target / name).is_file()
+        ]
         self.assertEqual([], missing)
 
     def test_espidf_scaffold_creates_the_eight_paths(self) -> None:
         result = self.scaffold(self.root, template="espidf")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
-        missing = [name for name in EIGHT_PATHS if not (target / name).is_file()]
+        missing = [
+            name for name in eight_paths("espidf") if not (target / name).is_file()
+        ]
         self.assertEqual([], missing)
         self.assertTrue((target / "sdkconfig.defaults").is_file())
 
@@ -165,8 +212,32 @@ class InventoryTests(ScaffoldTestBase):
                 self.assertIn('title: "Fixture"', text)
                 self.assertIn("status: planned", text)
                 self.assertIn(f"framework: {template}", text)
+                self.assertIn(f"language: {LANGUAGES[template]}", text)
                 self.assertIn('platformio: "6.2.0"', text)
                 self.assertIn('platform: "espressif32@8.0.0"', text)
+
+    def test_rendered_documents_substitute_their_placeholders(self) -> None:
+        for template in TEMPLATES:
+            root = self.build(f"documents-{template}")
+            result = self.scaffold(root, template=template)
+            with self.subTest(template=template):
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                target = self.target(root)
+                readme = (target / "README.md").read_text(encoding="utf-8")
+                task = (target / "task.md").read_text(encoding="utf-8")
+                self.assertIn("# Fixture", readme)
+                self.assertIn("homework for `1_3-fixture`", readme)
+                self.assertIn("# Fixture", task)
+                for key in (
+                    "source_url:",
+                    "retrieved:",
+                    "attribution:",
+                    "license:",
+                ):
+                    with self.subTest(document="task.md", key=key):
+                        self.assertIn(key, task)
+                self.assertNotIn("{{", readme)
+                self.assertNotIn("{{", task)
 
     def test_fresh_root_creates_nested_parents(self) -> None:
         root = self.build("fresh", homeworks=False)
@@ -179,7 +250,7 @@ class InventoryTests(ScaffoldTestBase):
         for relative in ("src", "include", "test/test_homework", "assets"):
             with self.subTest(directory=relative):
                 self.assertTrue((target / relative).is_dir())
-        for relative in EIGHT_PATHS:
+        for relative in eight_paths("arduino"):
             with self.subTest(file=relative):
                 self.assertTrue((target / relative).is_file())
 
@@ -223,18 +294,18 @@ class GeneratedTemplateOutputTests(ScaffoldTestBase):
         self.assertTrue((target / "sdkconfig.defaults").is_file())
 
 
-class GoldenTreeTests(ScaffoldTestBase):
-    """D-37: a committed expected tree, reported as a unified diff."""
+class TemplateParityTests(ScaffoldTestBase):
+    """The scaffolded tree equals the live template it read, not a stored copy."""
 
-    def test_arduino_tree_matches_its_golden(self) -> None:
+    def test_arduino_scaffold_matches_its_live_template(self) -> None:
         result = self.scaffold(self.root)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assert_golden(self.root, "arduino")
+        self.assert_matches_live_template(self.root, "arduino")
 
-    def test_espidf_tree_matches_its_golden(self) -> None:
+    def test_espidf_scaffold_matches_its_live_template(self) -> None:
         result = self.scaffold(self.root, template="espidf")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assert_golden(self.root, "espidf")
+        self.assert_matches_live_template(self.root, "espidf")
 
 
 class IdempotencyTests(ScaffoldTestBase):
@@ -252,12 +323,12 @@ class IdempotencyTests(ScaffoldTestBase):
 
     def test_two_real_runs_are_byte_identical(self) -> None:
         self.assertEqual(0, self.scaffold(self.root).returncode)
-        first = snapshot(self.target(self.root))
+        first = snapshot_tree(self.target(self.root))
 
         result = self.scaffold(self.root)
 
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(first, snapshot(self.target(self.root)))
+        self.assertEqual(first, snapshot_tree(self.target(self.root)))
 
 
 class ConflictTests(ScaffoldTestBase):
@@ -271,7 +342,7 @@ class ConflictTests(ScaffoldTestBase):
         with (target / "README.md").open("a", encoding="utf-8") as handle:
             handle.write("x\n")
         (target / "assets" / ".gitkeep").unlink()
-        before = snapshot(target)
+        before = snapshot_tree(target)
 
         result = self.scaffold(self.root, template="espidf")
 
@@ -281,7 +352,7 @@ class ConflictTests(ScaffoldTestBase):
             (target / "assets" / ".gitkeep").exists(),
             "a blocked run must not recreate the deleted file",
         )
-        self.assertEqual(before, snapshot(target), "a blocked run must not write")
+        self.assertEqual(before, snapshot_tree(target), "a blocked run must not write")
 
     def test_symlinked_target_is_conflict_and_left_intact(self) -> None:
         target = self.target(self.root)

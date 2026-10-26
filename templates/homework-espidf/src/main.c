@@ -16,9 +16,9 @@
 /* Must match the wiring recorded in assets/ and in the report. */
 static const uint8_t LED_PIN = 2;
 
-/* app_main is called by the FreeRTOS scheduler, which is C; the C++ entry point
-   therefore needs C linkage or the symbol is mangled and never found. */
-extern "C" void app_main(void)
+/* app_main is called by the FreeRTOS scheduler, which is C. A C definition
+   already has C linkage, so the symbol is found without a wrapper. */
+void app_main(void)
 {
     /* Function-scope contracts: app_main outlives them for the life of the
        task, and passing them by pointer keeps library code free of globals. */

@@ -45,6 +45,9 @@ every checkpoint menu, whatever the user then chooses (D-14).
 }
 ```
 
+The example above uses the Arduino framework, so its `intake.language` is `cpp`; an
+ESP-IDF run records `c`.
+
 ## Fields
 
 | Field | Type | Values |
@@ -56,7 +59,7 @@ every checkpoint menu, whatever the user then chooses (D-14).
 | `root` | string | `repository` or `temporary` |
 | `intake.board` | string | a board id |
 | `intake.framework` | string | `arduino` or `espidf` |
-| `intake.language` | string | the literal `cpp` |
+| `intake.language` | string | `cpp` for `arduino`, `c` for `espidf` |
 | `intake.specification` | string | `ready` or `free-form` |
 | `intake.simulation` | string | `none`, `wokwi` or `other` |
 | `intake.simulation_token_present` | boolean | `true` or `false` |
