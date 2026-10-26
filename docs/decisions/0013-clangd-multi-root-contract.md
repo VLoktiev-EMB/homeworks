@@ -187,13 +187,20 @@ describe a test build, and fails on a missing `unity_config.h`. The pre-push sco
 host-compiled code only. The gap is handed to Phase 8, where CI owns database generation and
 can decide whether a test build can be described without a second build system.
 
-### Port headers
+### Analysed scope: translation units, not headers
 
 Plan 06-04 probed both pre-push hooks against `lib/common/include/common/hex.h` and
-`lib/port/include/port/gpio.h`; both exited 0. Both hooks therefore keep the widened
-`(src|include)` pattern and no narrowing branch was taken. The analysis is borrowed from the
-host translation unit that the database describes, because `lib/port` has no translation unit
-of its own. A zero exit for a bare header is the documented criterion, but it does not by
-itself prove that the header was analysed rather than skipped; proving per-header analysis is
-Phase 8 work, when CI owns database generation. A header-only change is at least routed to the
-gate instead of bypassing it.
+`lib/port/include/port/gpio.h`; both exited 0. That zero did not prove analysis: a bare header
+has no compile command in `tests/compile_commands.json`, so clang-tidy skipped it and exited 0.
+Pinned clang-tidy 23.1.3 skips silently; older builds print
+`Skipping <file>. Compile command not found.`. Either way `cpp-linter-hooks` reported success.
+
+The resolved contract is the narrow one. Both hook `files` patterns reach `.c` files under
+`lib/common/src` and `lib/host/src` only, and `scripts/clang-tidy-hook` fails before running when
+a source argument is absent from the database (closing the silent path) and also on a
+`Compile command not found` line (closing the older path), so a skipped file can never be
+reported as checked. A header is analysed through a translation unit that includes it, and the
+unanchored `HeaderFilterRegex` is what lets the diagnostics those units emit for headers surface.
+`lib/port` has no translation unit of its own and is covered only where a unit includes it. A
+header-only change is therefore not analysed locally; Phase 8 CI, which owns database generation,
+is where broader coverage belongs.

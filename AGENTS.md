@@ -175,13 +175,17 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
   Every formatter and linter named in this section arrives through a pinned `pre-commit`
   revision, never a system package manager, so the gate is byte-identical on every machine.
-- **[MUST]** **[ENFORCED: pre-push]** clang-tidy 23.1.3 analyses host-compiled code —
-  `lib/common`, `lib/host`, and the `lib/port` headers — and never runs at pre-commit. Native
-  test translation units are out of scope until Phase 8 CI owns a database for them.
-- **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent or older
-  than a described source, `scripts/clang-tidy-db` fails and prints
-  `pio run -d tests -e native -t compiledb`. Regenerating the database is a developer action;
-  no hook generates it.
+- **[MUST]** **[ENFORCED: pre-push]** clang-tidy 23.1.3 analyses the host translation units
+  under `lib/common/src` and `lib/host/src`, and never runs at pre-commit. A header is analysed
+  through a translation unit that includes it, never as a file of its own: a bare header has no
+  compile command, so a header-only change is not analysed locally, and `lib/port` is covered
+  only where a unit includes it. Native test translation units are out of scope until Phase 8
+  CI owns a database for them.
+- **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent, older than
+  a configuration input or a described source, or missing a `.c` file under the analysed trees,
+  `scripts/clang-tidy-db` fails and prints `pio run -d tests -e native -t compiledb`. The
+  clang-tidy hook fails rather than reporting success when clang-tidy skips a file for want of a
+  compile command. Regenerating the database is a developer action; no hook generates it.
 - **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
   not from ad-hoc settings. The committed editor contract is emitted by the generator and
   mirrored into `.vscode/settings.json`, and a drift test keeps the two equal.

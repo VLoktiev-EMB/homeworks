@@ -13,6 +13,10 @@ test would make the fast suite depend on a downloaded wheel.
 
 from __future__ import annotations
 
+import contextlib
+import importlib.machinery
+import importlib.util
+import io
 import json
 import os
 import re
@@ -20,8 +24,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FORMAT_CONFIG = REPO_ROOT / ".clang-format"
@@ -429,18 +435,21 @@ TIDY_GUARD = REPO_ROOT / "scripts" / "clang-tidy-db"
 TIDY_REMEDY = "pio run -d tests -e native -t compiledb"
 TIMEOUT = 60
 
-# D-08a: the four path classes both pre-push hooks must reach. A guard pattern
-# limited to `src/` would let a header-only change bypass the whole stage.
+# D-08a: the pre-push scope is every translation unit the database describes in
+# the analysed trees. Headers are not translation units, so both hook patterns
+# stop at `.c`; a header is analysed only through a unit that includes it.
 PUSH_SCOPE_SAMPLES = (
     "lib/common/src/hex.c",
+    "lib/common/src/crc.c",
+    "lib/host/src/fake_gpio.c",
+)
+
+# The header trees the narrowed patterns must deliberately not reach.
+PUSH_OUT_OF_SCOPE_SAMPLES = (
     "lib/common/include/common/hex.h",
     "lib/host/include/host/fake_gpio.h",
     "lib/port/include/port/gpio.h",
 )
-
-# The one sanctioned divergence: if the header probe shows a bare header has no
-# compile command, only the clang-tidy hook narrows to the source tree.
-NARROWED_TIDY_PATTERN = r"^(lib/(common|host)/src/.*\.(c|h))$"
 
 # 05/D-21: every hook reports; none repairs or filters.
 AUTO_CORRECT_FLAGS = ("--fix", "clang-format -i", "--all-lines")
@@ -645,6 +654,121 @@ class ClangTidyDbGuardTests(unittest.TestCase):
         self.assertEqual(before, after)
 
 
+CLANG_TIDY_HOOK = REPO_ROOT / "scripts" / "clang-tidy-hook"
+
+
+class ClangTidyHookWrapperTests(unittest.TestCase):
+    """CR-02: a skipped file must never be reported as a checked file.
+
+    cpp-linter-hooks' own entry point hides the output of a passing run, so it
+    cannot see the `Skipping ... Compile command not found.` line. The wrapper
+    calls `run_clang_tidy` itself; a fake module stands in for the pinned
+    package so the suite stays stdlib-only and does not download a toolchain.
+    """
+
+    def load(self) -> types.ModuleType:
+        loader = importlib.machinery.SourceFileLoader(
+            "clang_tidy_hook", str(CLANG_TIDY_HOOK)
+        )
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        loader.exec_module(module)
+        return module
+
+    def invoke(self, retval: int, output: str) -> tuple[int, str, str]:
+        module = self.load()
+        package = types.ModuleType("cpp_linter_hooks")
+        hook = types.ModuleType("cpp_linter_hooks.clang_tidy")
+        hook.run_clang_tidy = lambda: (retval, output)
+        package.clang_tidy = hook
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.dict(
+            sys.modules,
+            {"cpp_linter_hooks": package, "cpp_linter_hooks.clang_tidy": hook},
+        ):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(
+                stderr
+            ):
+                status = module.main()
+        return status, stdout.getvalue(), stderr.getvalue()
+
+    def test_a_skipped_file_fails_the_hook(self) -> None:
+        status, _, stderr = self.invoke(
+            0, "Skipping lib/common/src/hex.c. Compile command not found.\n"
+        )
+
+        self.assertEqual(1, status)
+        self.assertIn("FAIL clang-tidy:", stderr)
+        self.assertIn(TIDY_REMEDY, stderr)
+
+    def test_a_clean_run_passes_quietly(self) -> None:
+        status, stdout, stderr = self.invoke(0, "")
+
+        self.assertEqual(0, status)
+        self.assertEqual("", stdout)
+        self.assertEqual("", stderr)
+
+    def test_a_normal_finding_still_fails_with_its_output(self) -> None:
+        status, stdout, _ = self.invoke(1, "hex.c:1:1: warning: something\n")
+
+        self.assertEqual(1, status)
+        self.assertIn("warning: something", stdout)
+
+    def test_a_source_absent_from_the_database_is_rejected_before_running(
+        self,
+    ) -> None:
+        """23.1.3 skips an undescribed file silently, so membership is checked."""
+        module = self.load()
+        with tempfile.TemporaryDirectory(prefix="clang-tidy-db-") as directory:
+            root = Path(directory)
+            tests = root / "tests"
+            tests.mkdir()
+            described = tests / "described.c"
+            described.write_text("x", encoding="utf-8")
+            absent = tests / "absent.c"
+            absent.write_text("x", encoding="utf-8")
+            (tests / "compile_commands.json").write_text(
+                json.dumps([{"directory": str(tests), "file": "described.c"}]),
+                encoding="utf-8",
+            )
+
+            with self.subTest(case="described"):
+                self.assertEqual(
+                    [],
+                    module.undescribed_sources(
+                        ["--compile-commands=tests", str(described)], root=root
+                    ),
+                )
+            with self.subTest(case="absent"):
+                self.assertEqual(
+                    [str(absent)],
+                    module.undescribed_sources(
+                        ["--compile-commands=tests", str(absent)], root=root
+                    ),
+                )
+
+    def test_main_fails_before_running_an_undescribed_source(self) -> None:
+        module = self.load()
+        with tempfile.TemporaryDirectory(prefix="clang-tidy-db-") as directory:
+            tests = Path(directory) / "tests"
+            tests.mkdir()
+            absent = tests / "absent.c"
+            absent.write_text("x", encoding="utf-8")
+            (tests / "compile_commands.json").write_text("[]", encoding="utf-8")
+            stderr = io.StringIO()
+            with mock.patch.object(
+                sys,
+                "argv",
+                ["clang-tidy-hook", f"--compile-commands={tests}", str(absent)],
+            ), contextlib.redirect_stderr(stderr):
+                status = module.main()
+
+        self.assertEqual(1, status)
+        self.assertIn("FAIL clang-tidy:", stderr.getvalue())
+        self.assertIn(TIDY_REMEDY, stderr.getvalue())
+
+
 class HookLayeringTests(unittest.TestCase):
     """TOOL-03 / success criterion 4: the two layers never swap stages."""
 
@@ -706,25 +830,49 @@ class HookLayeringTests(unittest.TestCase):
             text.index("repo: https://github.com/cpp-linter/cpp-linter-hooks"),
         )
 
-    def test_the_guard_pattern_reaches_both_include_trees(self) -> None:
-        pattern = _hook_field(_hook_block(self.config(), "clang-tidy-db"), "files")
-        self.assertNotEqual("", pattern)
-        for sample in PUSH_SCOPE_SAMPLES:
-            with self.subTest(path=sample):
-                self.assertIsNotNone(
-                    re.search(pattern, sample),
-                    f"{pattern!r} does not match {sample!r}",
-                )
+    def test_both_push_patterns_reach_every_analysed_source_tree(self) -> None:
+        text = self.config()
+        for hook_id in ("clang-tidy-db", "clang-tidy"):
+            pattern = _hook_field(_hook_block(text, hook_id), "files")
+            self.assertNotEqual("", pattern, hook_id)
+            for sample in PUSH_SCOPE_SAMPLES:
+                with self.subTest(hook=hook_id, path=sample):
+                    self.assertIsNotNone(
+                        re.search(pattern, sample),
+                        f"{pattern!r} does not match {sample!r}",
+                    )
 
-    def test_the_clang_tidy_pattern_is_identical_or_the_documented_narrowing(
-        self,
-    ) -> None:
+    def test_the_guard_and_clang_tidy_patterns_are_identical(self) -> None:
+        """CR-02: a guard that fires while clang-tidy stays silent is worse
+        than no guard, so both patterns name the same translation-unit scope."""
         text = self.config()
         guard_pattern = _hook_field(_hook_block(text, "clang-tidy-db"), "files")
         tidy_pattern = _hook_field(_hook_block(text, "clang-tidy"), "files")
         self.assertNotEqual("", tidy_pattern)
-        if tidy_pattern != guard_pattern:
-            self.assertEqual(NARROWED_TIDY_PATTERN, tidy_pattern)
+        self.assertEqual(guard_pattern, tidy_pattern)
+
+    def test_both_push_patterns_exclude_the_header_trees(self) -> None:
+        """CR-02: a bare header has no compile command, so it is not in scope.
+
+        The narrowed scope is the honest contract: a header is analysed through
+        a translation unit that includes it, never as a file of its own.
+        """
+        text = self.config()
+        for hook_id in ("clang-tidy-db", "clang-tidy"):
+            pattern = _hook_field(_hook_block(text, hook_id), "files")
+            for sample in PUSH_OUT_OF_SCOPE_SAMPLES:
+                with self.subTest(hook=hook_id, path=sample):
+                    self.assertIsNone(
+                        re.search(pattern, sample),
+                        f"{pattern!r} must not match the header {sample!r}",
+                    )
+
+    def test_the_clang_tidy_hook_runs_the_skip_failing_wrapper(self) -> None:
+        """CR-02: cpp-linter's own entry hides a passing run's output, so a
+        skipped file would report success. The entry is the wrapper instead."""
+        block = _hook_block(self.config(), "clang-tidy")
+        self.assertEqual("python scripts/clang-tidy-hook", _hook_field(block, "entry"))
+        self.assertTrue((REPO_ROOT / "scripts" / "clang-tidy-hook").is_file())
 
     def test_only_the_guard_suppresses_filenames(self) -> None:
         text = self.config()
