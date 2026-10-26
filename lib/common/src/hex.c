@@ -4,7 +4,8 @@ static const char HEX_DIGITS[] = "0123456789abcdef";
 
 /* Value of one hexadecimal digit, or -1 when the character is not one.
    Locale-independent by construction: only the ASCII ranges are accepted. */
-static int hex_digit_value(char character) {
+static int hex_digit_value(char character)
+{
     if (character >= '0' && character <= '9') {
         return character - '0';
     }
@@ -17,8 +18,8 @@ static int hex_digit_value(char character) {
     return -1;
 }
 
-bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out_size,
-                       size_t *out_length) {
+bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out_size, size_t *out_length)
+{
     size_t index;
     size_t needed;
 
@@ -53,8 +54,8 @@ bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out
     return true;
 }
 
-bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out_size,
-                       size_t *out_length) {
+bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out_size, size_t *out_length)
+{
     size_t index;
     size_t needed;
 
@@ -86,8 +87,7 @@ bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out
     }
 
     for (index = 0u; index < needed; index++) {
-        out[index] = (uint8_t)((hex_digit_value(text[index * 2u]) << 4) |
-                               hex_digit_value(text[index * 2u + 1u]));
+        out[index] = (uint8_t)((hex_digit_value(text[index * 2u]) << 4) | hex_digit_value(text[index * 2u + 1u]));
     }
     *out_length = needed;
     return true;
