@@ -14,8 +14,11 @@ test would make the fast suite depend on a downloaded wheel.
 from __future__ import annotations
 
 import json
+import os
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -419,6 +422,309 @@ class EditorContractTests(unittest.TestCase):
     def test_the_template_uses_the_closed_placeholder(self) -> None:
         text = WORKSPACE_TEMPLATE.read_text(encoding="utf-8")
         self.assertEqual(1, text.count("{{clangd_wrapper_path}}"))
+
+
+TIDY_CONFIG = REPO_ROOT / ".clang-tidy"
+TIDY_GUARD = REPO_ROOT / "scripts" / "clang-tidy-db"
+TIDY_REMEDY = "pio run -d tests -e native -t compiledb"
+TIMEOUT = 60
+
+# D-08a: the four path classes both pre-push hooks must reach. A guard pattern
+# limited to `src/` would let a header-only change bypass the whole stage.
+PUSH_SCOPE_SAMPLES = (
+    "lib/common/src/hex.c",
+    "lib/common/include/common/hex.h",
+    "lib/host/include/host/fake_gpio.h",
+    "lib/port/include/port/gpio.h",
+)
+
+# The one sanctioned divergence: if the header probe shows a bare header has no
+# compile command, only the clang-tidy hook narrows to the source tree.
+NARROWED_TIDY_PATTERN = r"^(lib/(common|host)/src/.*\.(c|h))$"
+
+# 05/D-21: every hook reports; none repairs or filters.
+AUTO_CORRECT_FLAGS = ("--fix", "clang-format -i", "--all-lines")
+
+
+def _hook_block(text: str, hook_id: str) -> str:
+    """Return one hook's block, or an empty string when the hook is absent.
+
+    A block starts at `- id: <hook_id>` and ends at the next non-blank line
+    indented no deeper than that line, so a sibling hook cannot leak in.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        # A `- id:` line may carry an inline comment, as the gitleaks entry does.
+        stripped = line.split("#", 1)[0].strip()
+        if stripped != f"- id: {hook_id}":
+            continue
+        indent = len(line) - len(line.lstrip())
+        block = [line]
+        for following in lines[index + 1 :]:
+            if following.strip() and len(following) - len(following.lstrip()) <= indent:
+                break
+            block.append(following)
+        return "\n".join(block)
+    return ""
+
+
+def _hook_field(block: str, field: str) -> str:
+    """Return a hook block's scalar field value, or an empty string."""
+    for line in block.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(f"{field}:"):
+            return stripped[len(field) + 1 :].strip()
+    return ""
+
+
+class ClangTidyConfigTests(unittest.TestCase):
+    """TOOL-01: the committed policy is the six families, warnings-first."""
+
+    def test_every_check_family_is_selected(self) -> None:
+        text = TIDY_CONFIG.read_text(encoding="utf-8")
+        for family in (
+            "bugprone-*",
+            "cert-*",
+            "performance-*",
+            "portability-*",
+            "readability-*",
+            "clang-analyzer-*",
+        ):
+            with self.subTest(family=family):
+                self.assertIn(family, text)
+
+    def test_the_pragma_once_policy_is_disabled(self) -> None:
+        text = TIDY_CONFIG.read_text(encoding="utf-8")
+        self.assertIn("-portability-avoid-pragma-once", text)
+
+    def test_warnings_are_not_promoted_to_errors(self) -> None:
+        text = TIDY_CONFIG.read_text(encoding="utf-8")
+        self.assertEqual(1, text.count('WarningsAsErrors: ""'))
+
+
+class ClangTidyDbGuardTests(unittest.TestCase):
+    """D-09: the guard owns the missing/stale-database failure.
+
+    Every case runs the real guard with ``--dir`` against a temporary root whose
+    mtimes are set explicitly: a fresh fixture on a fast filesystem would pass
+    any resolution rule by accident, so the stale cases are only meaningful when
+    the database and each input carry a fixed, distinguishable mtime.
+
+    The fixture mirrors the real database's mixed `file` forms: one absolute
+    path, one relative to the entry's own `directory`, and one nested relative
+    path. Resolving a relative entry against the repository root instead of
+    `directory` would miss both relative entries and report a false pass.
+    """
+
+    OLD = 1_000_000_000
+    NEW = 1_000_100_000
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="clang-tidy-db-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        self.tests = self.root / "tests"
+        self.tests.mkdir()
+        self.database = self.tests / "compile_commands.json"
+        self.absolute_source = self.root / "lib" / "common" / "src" / "hex.c"
+        self.absolute_source.parent.mkdir(parents=True)
+        self.relative_source = self.tests / "src" / "main.c"
+        self.relative_source.parent.mkdir()
+        self.unity_source = (
+            self.tests / ".pio" / "libdeps" / "native" / "Unity" / "src" / "unity.c"
+        )
+        self.unity_source.parent.mkdir(parents=True)
+        for path in (
+            self.root / "platformio.shared.ini",
+            self.tests / "platformio.ini",
+            self.absolute_source,
+            self.relative_source,
+            self.unity_source,
+        ):
+            path.write_text("x", encoding="utf-8")
+            self.age(path, self.OLD)
+        self.write_database()
+
+    def age(self, path: Path, when: int) -> None:
+        os.utime(path, (when, when))
+
+    def entries(self) -> list:
+        return [
+            {"directory": str(self.tests), "file": str(self.absolute_source)},
+            {"directory": str(self.tests), "file": "src/main.c"},
+            {
+                "directory": str(self.tests),
+                "file": ".pio/libdeps/native/Unity/src/unity.c",
+            },
+        ]
+
+    def write_database(self, raw: str | None = None, when: int | None = None) -> None:
+        self.database.write_text(
+            raw if raw is not None else json.dumps(self.entries()), encoding="utf-8"
+        )
+        self.age(self.database, self.NEW if when is None else when)
+
+    def run_guard(self) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(TIDY_GUARD), "--dir", str(self.root)],
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT,
+        )
+
+    def assert_guard_fails(self, result: subprocess.CompletedProcess) -> None:
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("FAIL clang-tidy-db:", result.stdout)
+        self.assertIn(TIDY_REMEDY, result.stdout)
+
+    def test_a_missing_database_exits_one_with_the_regeneration_command(self) -> None:
+        self.database.unlink()
+
+        result = self.run_guard()
+
+        self.assert_guard_fails(result)
+        self.assertIn(str(self.database), result.stdout)
+
+    def test_a_database_older_than_the_test_environment_exits_one(self) -> None:
+        self.age(self.tests / "platformio.ini", self.NEW + 1_000)
+
+        self.assert_guard_fails(self.run_guard())
+
+    def test_a_database_older_than_the_shared_configuration_exits_one(self) -> None:
+        self.age(self.root / "platformio.shared.ini", self.NEW + 1_000)
+
+        self.assert_guard_fails(self.run_guard())
+
+    def test_a_database_older_than_an_absolute_source_exits_one(self) -> None:
+        self.age(self.absolute_source, self.NEW + 1_000)
+
+        result = self.run_guard()
+
+        self.assert_guard_fails(result)
+        self.assertIn(str(self.absolute_source), result.stdout)
+
+    def test_a_database_older_than_a_relative_source_exits_one(self) -> None:
+        """The case that fails if the guard resolves against the root."""
+        self.age(self.relative_source, self.NEW + 1_000)
+
+        result = self.run_guard()
+
+        self.assert_guard_fails(result)
+        self.assertIn(str(self.relative_source), result.stdout)
+
+    def test_a_relative_entry_that_no_longer_exists_is_skipped(self) -> None:
+        self.unity_source.unlink()
+
+        result = self.run_guard()
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("PASS clang-tidy-db:", result.stdout)
+
+    def test_a_fresh_database_exits_zero_with_a_pass_line(self) -> None:
+        result = self.run_guard()
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("PASS clang-tidy-db:", result.stdout)
+
+    def test_malformed_json_exits_two_with_an_error_line(self) -> None:
+        self.write_database(raw="{not json")
+
+        result = self.run_guard()
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("ERROR:", result.stderr)
+
+    def test_no_case_writes_a_new_file_into_the_root(self) -> None:
+        before = sorted(path.relative_to(self.root) for path in self.root.rglob("*"))
+
+        self.run_guard()
+        self.write_database(raw="{not json")
+        self.run_guard()
+
+        after = sorted(path.relative_to(self.root) for path in self.root.rglob("*"))
+        self.assertEqual(before, after)
+
+
+class HookLayeringTests(unittest.TestCase):
+    """TOOL-03 / success criterion 4: the two layers never swap stages."""
+
+    def config(self) -> str:
+        return PRECOMMIT_CONFIG.read_text(encoding="utf-8")
+
+    def test_the_default_stage_is_pre_commit_only(self) -> None:
+        self.assertIn("default_stages: [pre-commit]", self.config())
+
+    def test_one_install_wires_both_stages(self) -> None:
+        self.assertIn(
+            "default_install_hook_types: [pre-commit, pre-push]", self.config()
+        )
+
+    def test_every_fast_hook_keeps_the_pre_commit_stage(self) -> None:
+        text = self.config()
+        for hook_id in (
+            "gitleaks",
+            "trailing-whitespace",
+            "clang-format",
+            "ruff-check",
+            "markdownlint-cli2",
+            "yamllint",
+        ):
+            with self.subTest(hook=hook_id):
+                self.assertNotEqual("", _hook_block(text, hook_id), hook_id)
+                self.assertNotIn("stages: [pre-push]", _hook_block(text, hook_id))
+
+    def test_both_push_hooks_declare_the_pre_push_stage(self) -> None:
+        text = self.config()
+        for hook_id in ("clang-tidy-db", "clang-tidy"):
+            with self.subTest(hook=hook_id):
+                block = _hook_block(text, hook_id)
+                self.assertNotEqual("", block, hook_id)
+                self.assertIn("stages: [pre-push]", block)
+
+    def test_the_guard_precedes_the_clang_tidy_repository(self) -> None:
+        text = self.config()
+        self.assertLess(
+            text.index("- id: clang-tidy-db"),
+            text.index("repo: https://github.com/cpp-linter/cpp-linter-hooks"),
+        )
+
+    def test_the_guard_pattern_reaches_both_include_trees(self) -> None:
+        pattern = _hook_field(_hook_block(self.config(), "clang-tidy-db"), "files")
+        self.assertNotEqual("", pattern)
+        for sample in PUSH_SCOPE_SAMPLES:
+            with self.subTest(path=sample):
+                self.assertIsNotNone(
+                    re.search(pattern, sample),
+                    f"{pattern!r} does not match {sample!r}",
+                )
+
+    def test_the_clang_tidy_pattern_is_identical_or_the_documented_narrowing(
+        self,
+    ) -> None:
+        text = self.config()
+        guard_pattern = _hook_field(_hook_block(text, "clang-tidy-db"), "files")
+        tidy_pattern = _hook_field(_hook_block(text, "clang-tidy"), "files")
+        self.assertNotEqual("", tidy_pattern)
+        if tidy_pattern != guard_pattern:
+            self.assertEqual(NARROWED_TIDY_PATTERN, tidy_pattern)
+
+    def test_only_the_guard_suppresses_filenames(self) -> None:
+        text = self.config()
+        self.assertIn("pass_filenames: false", _hook_block(text, "clang-tidy-db"))
+        self.assertNotIn("pass_filenames: false", _hook_block(text, "clang-tidy"))
+
+    def test_no_hook_auto_corrects_or_filters_to_all_lines(self) -> None:
+        """Only the invocations matter: comments may name the rejected flags."""
+        invocations = [
+            line.strip()
+            for line in self.config().splitlines()
+            if line.strip().startswith(("entry:", "args:"))
+        ]
+        self.assertTrue(invocations, "no hook invocation found")
+        for flag in AUTO_CORRECT_FLAGS:
+            with self.subTest(flag=flag):
+                for invocation in invocations:
+                    self.assertNotIn(flag, invocation)
 
 
 if __name__ == "__main__":
