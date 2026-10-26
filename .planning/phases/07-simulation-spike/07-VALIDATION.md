@@ -45,14 +45,14 @@ points at a writable directory. Use the `UV_CACHE_DIR` form in any agent-run gat
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 7-01-01 | 01 | 1 | SIM-02 | T-7-01 | Token never written to a file, argv, or transcript | unit (pure function) | `python3 -m unittest scripts.tests.test_merge_firmware -v` | ❌ W0 | ⬜ pending |
-| 7-01-02 | 01 | 1 | SIM-02 | T-7-03 | Documented command resolves option paths relative to the positional project dir | unit (subprocess) | `python3 -m unittest scripts.tests.test_simulation_paths -v` | ❌ W0 | ⬜ pending |
-| 7-01-03 | 01 | 1 | SIM-02 | T-7-05 | Malformed inputs rejected offline by `lint` before any session | CLI exit code | `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` | ✅ command exists | ⬜ pending |
-| 7-02-01 | 02 | 2 | SIM-02 | T-7-01 | Token read with `read -rs`, never echoed, never logged | manual-only | owner-run checkpoint with fixed capture format | — | ⬜ pending |
-| 7-03-01 | 03 | 2 | SIM-02 | T-7-04 | Mutable container tag is pinned by recording `RepoDigests` | manual-only | owner-run checkpoint; digest recorded in evidence | — | ⬜ pending |
-| 7-04-01 | 04 | 3 | SIM-02 | T-7-06 | Simulator output never presented as hardware evidence | unit (existing) | `python3 -m unittest scripts.tests.test_docs_pins.PinConsistencyTests.test_nav_lists_every_markdown_file_under_docs` | ✅ existing test | ⬜ pending |
-| 7-04-02 | 04 | 3 | SIM-02 | — | Generated views regenerate after the status flip and ADR addition | generator check | `UV_CACHE_DIR="$TMPDIR/uvcache" uv run scripts/gen_views.py --all --check` | ✅ command exists | ⬜ pending |
-| 7-04-03 | 04 | 3 | SIM-03 | — | No Fritzing part graphics copied into assets or docs | manual-only | review: no new files under `docs/assets/` or `homeworks/*/assets/` | — (no artifact produced) | ⬜ pending |
+| 7-01-01 | 01 | 1 | SIM-02 | T-07-01 | Token never written to a file, argv, or transcript | unit (pure function) | `python3 -m unittest scripts.tests.test_merge_firmware -v` | ❌ W0 | ⬜ pending |
+| 7-01-02 | 01 | 1 | SIM-02 | T-07-01 | Documented command resolves option paths relative to the positional project dir | unit (subprocess) | `python3 -m unittest scripts.tests.test_simulation_paths -v` | ❌ W0 | ⬜ pending |
+| 7-01-03 | 01 | 1 | SIM-02 | T-07-05 | Malformed inputs rejected offline by `lint` before any session | CLI exit code | `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` | ✅ command exists | ⬜ pending |
+| 7-02-01 | 02 | 2 | SIM-02 | T-07-03 | Token read with `read -rs`, never echoed, never logged | manual-only | owner-run checkpoint with fixed capture format | — | ⬜ pending |
+| 7-03-01 | 03 | 3 | SIM-02 | T-07-06 | Mutable container tag is pinned by recording `RepoDigests` | manual-only | owner-run checkpoint; digest recorded in evidence | — | ⬜ pending |
+| 7-04-01 | 04 | 4 | SIM-02 | T-07-08 | Simulator output never presented as hardware evidence | unit (existing) | `python3 -m unittest scripts.tests.test_docs_pins.PinConsistencyTests.test_nav_lists_every_markdown_file_under_docs` | ✅ existing test | ⬜ pending |
+| 7-04-02 | 04 | 4 | SIM-02 | T-07-09 | Generated views regenerate after the status flip and ADR addition | generator check | `UV_CACHE_DIR="$TMPDIR/uvcache" uv run scripts/gen_views.py --all --check` | ✅ command exists | ⬜ pending |
+| 7-04-03 | 04 | 4 | SIM-03 | — | No Fritzing part graphics copied into assets or docs | manual-only | review: no new files under `docs/assets/` or `homeworks/*/assets/` | — (no artifact produced) | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
