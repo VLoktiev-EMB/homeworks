@@ -44,8 +44,8 @@
       "path": "mkdocs.yml",
       "owner": "nav",
       "mode": "whole",
-      "sha256": "6b81960443607d81150c4d1be545cd14590295fd061b128625bf376bf5cce7cc",
-      "bytes": 2861
+      "sha256": "c6b0a2ebce9a0643847ab67d0f05e9073140e5c66695b860982c234be47398be",
+      "bytes": 2959
     },
     {
       "path": "platformio.shared.ini",
