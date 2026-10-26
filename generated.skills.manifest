@@ -58,6 +58,22 @@
       "bytes": 1179
     },
     {
+      "path": ".agents/skills/new-homework/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/new-homework/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "df1e55ce85d1c302aeba7cf2c7c872c1bce6c0df443649ac7775dabe18de9b64",
+      "bytes": 680
+    },
+    {
+      "path": ".agents/skills/new-homework/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/new-homework/LESSONS.md",
+      "mode": "whole",
+      "sha256": "62fc40d843f70525bfa6e9a583e888ba2e2859ef28021b0cb84cfe16bdab43d6",
+      "bytes": 434
+    },
+    {
       "path": ".agents/skills/new-homework/SKILL.md",
       "owner": "skills",
       "source": ".claude/skills/new-homework/SKILL.md",
