@@ -151,7 +151,7 @@ this setup; it belongs to Phase 7.
 
 ## Hooks you will meet
 
-13 hooks run on commit and 2 on push. The formatters and linters among them come from the
+14 hooks run on commit and 2 on push. The formatters and linters among them come from the
 pinned pre-commit environments; esp-clangd, covered above, is the one hand-installed component,
 and it runs in the editor rather than in the gate.
 
@@ -181,6 +181,9 @@ On commit:
   the message and correct the document.
 - `gen-views-check` — a committed generated view is out of sync. Run
   `uv run scripts/gen_views.py --all`, review the diff, and commit the regenerated output.
+- `gen-skills-check` — the committed `.agents/skills/` mirror is out of sync with
+  `.claude/skills/`. Run `uv run scripts/gen_skills.py`, review the diff, and commit the
+  regenerated mirror.
 
 On push:
 
