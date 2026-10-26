@@ -286,10 +286,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 **Wave 1**
-- [ ] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
+- [x] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 06-02-PLAN.md — esp-clangd wrapper, per-project `.clangd`, generator-owned editor contract, `EditorContractTests` (tracer: a scaffolded `.clangd`)
@@ -389,7 +389,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
-| 6. Developer Experience and Quality Layering | 0/5 | Not started | - |
+| 6. Developer Experience and Quality Layering | 1/5 | In Progress | - |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
