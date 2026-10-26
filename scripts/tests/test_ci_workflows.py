@@ -1,15 +1,19 @@
 """Prove the LFS-pointer guard's behaviour and the workflow contracts.
 
-The generated-views workflow command is asserted, and so are the workflow
-trigger keys: yamllint's `truthy` policy relaxes KEY checking, so every workflow
+`ci.yml` is the one pull-request workflow: a fast `meta` job, a `changes` job that
+computes the affected matrix, a `build` matrix, and the literal fan-in `gate`. The
+generated-view drift check no longer has a workflow of its own — it lives in the
+`gen-views-check` pre-commit hook, and `meta` runs the whole reviewed hook surface.
+
+The workflow assertions here are deliberately limited to the names and commands the YAML
+must carry; whether a command works is proven by running it, and whether the matrix is
+correct is proven by `scripts/tests/test_affected.py`. The trigger-key tests are the
+durable guard against yamllint's `truthy` policy relaxing key checking, so every workflow
 must keep spelling its trigger as the text `on:`.
 
-The guard is behaviour, not text: `check_lfs_pointers.sh` is executed against a
-temporary directory so a clean tree, an empty file, a real pointer, a missing
-directory and a symlink each have an observed exit status. Grepping a workflow
-for the command would only prove that the string exists, so the workflow
-assertions here are deliberately limited to the names and commands the YAML must
-carry; whether the guard works is proven above by running it.
+`meta` runs contributor-controlled code on a pull-request event, so the file must never
+reference a repository secret, request a write scope, or accept a pull-request-target
+trigger; three assertions below pin that.
 
 The suite is stdlib-only (04/D-14): it imports neither PyYAML nor jsonschema and
 reads the workflows as plain text.
@@ -25,11 +29,37 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "ci" / "check_lfs_pointers.sh"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
-GENERATED_VIEWS = WORKFLOWS / "generated-views.yml"
+CI = WORKFLOWS / "ci.yml"
+PRECOMMIT = REPO_ROOT / ".pre-commit-config.yaml"
 YAMLLINT_POLICY = REPO_ROOT / ".yamllint.yaml"
 
 POINTER = "version https://git-lfs.github.com/spec/v1\noid sha256:" + "0" * 64 + "\nsize 42\n"
 TIMEOUT = 30
+
+
+def step_block(text: str, name: str) -> str:
+    """Return the YAML of the step whose `name:` is *name*.
+
+    A step begins at the six-space `- name:` (or `- uses:`) line and ends at the next line
+    at that indentation, so the slice carries the step's own `if:`, `env:` and `run:` bodies
+    and nothing after them.
+    """
+    lines = text.splitlines()
+    start = next(
+        (index for index, line in enumerate(lines) if line.strip() == f"- name: {name}"),
+        None,
+    )
+    if start is None:
+        raise AssertionError(f"ci.yml carries no step named {name!r}")
+    end = next(
+        (
+            index
+            for index in range(start + 1, len(lines))
+            if lines[index].startswith("      - ")
+        ),
+        len(lines),
+    )
+    return "\n".join(lines[start:end])
 
 
 class LfsPointerGuardTests(unittest.TestCase):
@@ -84,9 +114,31 @@ class LfsPointerGuardTests(unittest.TestCase):
 class WorkflowTextTests(unittest.TestCase):
     """The names and commands the YAML must carry; behaviour lives above."""
 
-    def test_generated_views_names_the_check_command(self) -> None:
-        text = GENERATED_VIEWS.read_text(encoding="utf-8")
-        self.assertIn("python scripts/gen_views.py --all --check", text)
+    def test_drift_gate_lives_in_the_hook_surface(self) -> None:
+        hooks = PRECOMMIT.read_text(encoding="utf-8")
+        self.assertIn("id: gen-views-check", hooks)
+        self.assertIn("entry: python scripts/gen_views.py --all --check", hooks)
+        ci = CI.read_text(encoding="utf-8")
+        self.assertIn("pre-commit run --all-files", ci)
+
+    def test_meta_validates_the_title(self) -> None:
+        step = step_block(CI.read_text(encoding="utf-8"), "Validate the pull-request title")
+        self.assertIn(
+            r"^(feat|fix|test|refactor|perf|docs|style|chore)\([a-z0-9._-]+\): .+$",
+            step,
+        )
+        self.assertIn("PR_TITLE: ${{ github.event.pull_request.title }}", step)
+        self.assertIn("github.event_name == 'pull_request'", step)
+        body = step.split("run:", 1)[1]
+        self.assertNotIn("${{ github.event", body)
+
+    def test_ci_never_uses_pull_request_target(self) -> None:
+        self.assertNotIn("pull_request_target", CI.read_text(encoding="utf-8"))
+
+    def test_ci_grants_no_write_permission(self) -> None:
+        text = CI.read_text(encoding="utf-8")
+        self.assertIn("contents: read", text)
+        self.assertNotIn(": write", text)
 
 
 class WorkflowTriggerKeyTests(unittest.TestCase):
