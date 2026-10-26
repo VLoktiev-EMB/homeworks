@@ -128,7 +128,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [ ] **TOOL-01**: clang-format 23.1.3 is configured as a documented ESP-IDF
       approximation (4 spaces, 120 columns, function brace on a new line); clang-tidy
       runs bugprone, cert, performance, and portability checks on host code.
-- [ ] **TOOL-02**: esp-clangd serves the workspace through `scripts/clangd-wrapper.sh`
+- [x] **TOOL-02**: esp-clangd serves the workspace through `scripts/clangd-wrapper.sh`
       with per-project `.clangd` files, `compiledb`-generated databases, and explicit
       absolute `--query-driver` globs; cpptools IntelliSense is disabled.
 - [ ] **TOOL-03**: Checks are layered: fast hooks (format, markdownlint, yamllint, ruff,
@@ -323,7 +323,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIM-03 | Phase 7 | Pending |
 | SIM-04 | Phase 8 | Pending |
 | TOOL-01 | Phase 6 | Pending |
-| TOOL-02 | Phase 6 | Pending |
+| TOOL-02 | Phase 6 | Complete |
 | TOOL-03 | Phase 6 | Pending |
 | TOOL-04 | Phase 6 | Pending |
 | TOOL-05 | Phase 8 | Pending |
