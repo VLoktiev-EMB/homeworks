@@ -163,6 +163,136 @@ Closing cleanup; the five named volumes stay in place so a later attempt does no
 docker rm -f velxio
 ```
 
+## Velxio self-host attempt
+
+**Provenance.** The repository owner disabled the command sandbox for this attempt — the
+Docker socket is unreachable from inside it — and the orchestrator then executed the Velxio
+protocol above in the owner's environment. Except for the board screenshot noted below, which
+is the owner's own live UI capture, everything here is agent-executed output from the owner's
+machine under that explicit sandbox change; it is **not** an owner-typed terminal capture, and
+it cannot be reproduced from inside the command sandbox.
+
+**Image identity.** The pull
+`docker pull ghcr.io/davidmonterocrespo24/velxio:master` reported
+`Status: Downloaded newer image for ghcr.io/davidmonterocrespo24/velxio:master`. The recorded
+identity is the immutable digest returned by
+`docker inspect --format '{{index .RepoDigests 0}}'` (`measured`):
+
+```text
+ghcr.io/davidmonterocrespo24/velxio@sha256:5d673722f66cf2c5c8cef1fe4a04421a7d88fd863a7a266f8661ff269b3b3bc5
+```
+
+The mutable `:master` tag is the pull reference only; it is never the recorded identity
+(T-07-06).
+
+**Run configuration.** Container name `velxio`; host port `3080` published to container port
+`80`; the five named volumes, exactly as in the protocol block:
+
+| Volume | Mount point |
+|--------|-------------|
+| `velxio-data` | `/app/data` |
+| `velxio-arduino-libs` | `/root/.arduino15` |
+| `velxio-arduino-user-libs` | `/root/Arduino` |
+| `velxio-ccache` | `/var/cache/ccache` |
+| `velxio-build` | `/var/lib/velxio-build` |
+
+`docker rm -f velxio` was run first as cleanup; no prior container of that name existed, so it
+removed nothing.
+
+**Boot measurement.** Two separate values, never merged:
+
+| Quantity | Value | Label | Basis |
+|----------|-------|-------|-------|
+| `docker run` wall time | 0.335 s | `measured` | `time` reported `0.01s user 0.01s system 5% cpu 0.335 total` |
+| First HTTP 200 | attempt 9 of 60, 16.988 s after the `docker run` start | `measured` | bounded poll, 2 s apart, `curl -sf -o /dev/null http://localhost:3080` |
+
+Boot readiness is defined as the interval from the `docker run` start to the first HTTP 200:
+**16.988 s (`measured`)**. The `0.335 s` wall time is the container-creation call returning,
+not boot; the difference between the two is not the boot interval and is not reported as one.
+The poll was bounded at 60 attempts two seconds apart, a 120 s ceiling
+(`calculated (upper bound)`); the ninth attempt succeeded, so the ceiling was never reached.
+The container id printed by `docker run` was `806f6276b45f` — an identifier, not a measurement.
+
+**Board coverage (observed) — simulator catalogue.** Capture: the owner's live UI screenshot,
+saved outside the repository at `$HOME/velxio-boards.png` (587620 bytes, `measured`), together
+with the page URL `http://localhost:3080`. The simulator board catalogue displays
+**BOARDS 47** (`measured`). The screenshot shows, among others, Arduino Uno/Nano/Mega 2560,
+Raspberry Pi Pico/Pico W, Raspberry Pi Zero/1B+/2B/3B/4B/5, ESP32 DevKit V1, ESP32 DevKit C V4,
+ESP32-CAM, Wemos Lolin32 Lite, **ESP32-S3 DevKit**, XIAO ESP32-S3, Arduino Nano ESP32,
+ESP32-C3 DevKit, XIAO ESP32-C3, ESP32-C3 SuperMini, **STM32 Blue Pill**, **STM32 Black Pill**
+and STM32 Blue Pill (F103CB). The simulator catalogue therefore carries AVR, RP2040, ESP32,
+ESP32-S3, ESP32-C3 and STM32 boards (`measured`).
+
+**Board coverage (observed) — arduino-cli compile backend, a separate list.** This is a
+different surface from the simulator catalogue and must not be read as one. The page URL
+`http://localhost:3080/api/compile/boards` returned HTTP 200 and listed **182 FQBNs
+(`measured`)**: 27 `arduino:avr:*` and 155 `rp2040:rp2040:*`, with no other core. That list
+carries no ESP32/ESP32-S3 or STM32 FQBN (`measured`). It is the compile backend's arduino-cli
+core list, not the simulator catalogue: an ESP32-family compile would go through the ESP-IDF /
+arduino-esp32 toolchains present in the image (see the toolchain row), not through those
+FQBNs. The setup-status URL `http://localhost:3080/api/compile/setup-status` returned HTTP 200
+with `arduino-cli 1.5.1`, cores `arduino:avr 1.8.8` and `rp2040:rp2040 6.3.1` (`measured`).
+
+**Toolchain presence — separate observation, from `docker logs --tail 50 velxio`.** The log
+shows ESP-IDF 5.5 activated (`IDF_PATH=/opt/esp-idf-v5`), the Arduino component at
+`/opt/arduino-esp32`, `arduino-esp32 3.x core (IDF5)` at `/opt/arduino-esp32-3`, the Velxio
+backend on `127.0.0.1:8001`, nginx on port 80, a completed uvicorn startup, and
+`GET https://velxio.dev/api/pro/news/feed` returning 200 (`measured`). These toolchains are
+what an ESP32-family compile in the simulator would use; they are a toolchain observation, not
+a board entry and not the arduino-cli FQBN list above.
+
+**Board coverage (vendor documentation).** Label: `datasheet`. The image's root page
+`http://localhost:3080` (HTML title/description) states, quoting the vendor text:
+
+> "19 boards: Arduino Uno/Nano/Mega/ATtiny85 (AVR8), ESP32 / ESP32-S3 (Xtensa QEMU),
+> ESP32-C3 / CH32V003 (RISC-V), Raspberry Pi Pico (RP2040), Raspberry Pi 3 (Linux ARM)"
+
+The `19 boards` figure is vendor text (`datasheet`), not an observation; the observed
+simulator catalogue shows 47 boards, a different count. The vendor page claims ESP32 and
+ESP32-S3, and the UI observation corroborates ESP32-S3. The vendor row and both observed rows
+stay separate and are never merged.
+
+**Pilot compile and serial.** Both `not measured`:
+
+| Quantity | Value | Label |
+|----------|-------|-------|
+| Pilot compile in Velxio | not measured — the self-hosted editor does not consume a PlatformIO project | `not measured` |
+| Pilot serial output in Velxio | not measured — no UI run of the pilot was performed in this session | `not measured` |
+
+The ESP32-S3 board **is** available in the simulator catalogue; the blocker is project format
+(the editor consumes sketches, not a PlatformIO project with `lib_deps`), not board support.
+No trivial ESP-IDF capability compile was run in the UI either, so there is no
+capability-observation row. The homework was not ported to a Velxio sketch to manufacture a
+measurement.
+
+**ESP32-S3 and STM32 presence — observed, against the prior expectation.** The simulator
+catalogue shows ESP32-S3 boards (ESP32-S3 DevKit, XIAO ESP32-S3, Arduino Nano ESP32) and STM32
+boards (STM32 Blue Pill, STM32 Black Pill, STM32 Blue Pill F103CB) (`measured`). This
+contradicts two earlier assumptions behind this plan — that ESP32-S3 was not available through
+the self-hosted editor, and that STM32 was not available at all. Both are recorded as present
+because the UI observation says so; the observation wins over the expectation. STM32
+simulation is therefore not Renode-exclusive in principle, although no STM32 run was attempted
+here.
+
+**Licence boundary (AGPLv3).** The image is AGPLv3 and is **referenced only**: no Velxio
+source, image layer, part graphic, or other asset is vendored into this MIT repository, and
+`git status --porcelain` shows no change outside `.planning/phases/07-simulation-spike/`. This
+record, a digest plus observed values, preserves that boundary (T-07-07).
+
+**Why the five named volumes matter.** Without them the first ESP-IDF compile after a restart
+is minutes rather than seconds (`datasheet`, quoted from the Velxio documentation: roughly
+5–7 minutes cold against 5–30 seconds with warmed volumes). Any compile timing taken from this
+image is meaningful only with all five volumes mounted; a number from a cold, volume-less
+container would describe toolchain installation, not compilation.
+
+**Cleanup record.** After the capture, `docker rm -f velxio` printed `velxio` and the container
+was gone (`measured`). The five named volumes persist intentionally — `velxio-arduino-libs`,
+`velxio-arduino-user-libs`, `velxio-build`, `velxio-ccache` and `velxio-data` — so a later
+attempt does not repay the cold ESP-IDF compile.
+
+**Wokwi quota.** This attempt consumed no Wokwi quota: it never contacted Wokwi, opened no
+session and used no token. The quota ledger above is unaffected.
+
 ## Free measurement ladder
 
 All measurements below are quota-free (D-03): no simulation session is opened. They were run
