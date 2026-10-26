@@ -11,6 +11,10 @@ symlink refusals, replace-not-append and concurrent writers.
 
 from __future__ import annotations
 
+import argparse
+import contextlib
+import io
+import json
 import subprocess
 import sys
 import tempfile
@@ -18,6 +22,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from scripts import serial_capture
 
@@ -250,6 +255,44 @@ class AtomicLogWriteTests(unittest.TestCase):
         self.assertIn(final, payloads)
         self.assertEqual([], self.temporary_files(self.log_path().parent))
 
+    def test_a_concurrent_reader_never_sees_a_torn_log(self) -> None:
+        payloads = (b"a" * 4096, b"b" * 4096)
+        serial_capture.write_log_atomically(self.root, HOMEWORK, payloads[0])
+        errors: list[BaseException] = []
+        observed: list[bytes] = []
+
+        def writer(payload: bytes) -> None:
+            try:
+                for _ in range(40):
+                    serial_capture.write_log_atomically(self.root, HOMEWORK, payload)
+            except BaseException as exc:  # reported below, never swallowed
+                errors.append(exc)
+
+        def reader() -> None:
+            try:
+                for _ in range(1000):
+                    try:
+                        observed.append(self.log_path().read_bytes())
+                    except FileNotFoundError:
+                        pass
+                    time.sleep(0.001)
+            except BaseException as exc:  # reported below, never swallowed
+                errors.append(exc)
+
+        writers = [threading.Thread(target=writer, args=(payload,)) for payload in payloads]
+        reader_thread = threading.Thread(target=reader)
+        reader_thread.start()
+        for thread in writers:
+            thread.start()
+        for thread in writers:
+            thread.join(timeout=60)
+        reader_thread.join(timeout=60)
+
+        self.assertEqual([], errors)
+        self.assertNotEqual([], observed)
+        for value in observed:
+            self.assertIn(value, payloads)
+
 
 class CaptureAndStoreTests(unittest.TestCase):
     """The shipped path scans before the filesystem is touched."""
@@ -317,6 +360,97 @@ class CliUsageTests(unittest.TestCase):
 
     def test_a_zero_duration_is_a_usage_error(self) -> None:
         self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--seconds", "0"))
+
+
+class BuildCommandTests(unittest.TestCase):
+    """The optional flags reach the monitor argv as the flags the monitor accepts."""
+
+    def build(self, **flags: object) -> list[str]:
+        args = argparse.Namespace(id=HOMEWORK, env=None, baud=None)
+        for name, value in flags.items():
+            setattr(args, name, value)
+        return serial_capture._build_command(args)
+
+    def test_base_argv_has_no_optional_flags(self) -> None:
+        self.assertEqual(
+            [
+                "pio",
+                "device",
+                "monitor",
+                "-d",
+                "homeworks/" + HOMEWORK,
+                "--raw",
+                "--quiet",
+            ],
+            self.build(),
+        )
+
+    def test_env_is_forwarded(self) -> None:
+        self.assertEqual(["-e", "esp32-s3"], self.build(env="esp32-s3")[-2:])
+
+    def test_baud_is_forwarded_as_dash_b(self) -> None:
+        argv = self.build(baud=115200)
+
+        self.assertEqual(["-b", "115200"], argv[-2:])
+        self.assertNotIn("--baud", argv)
+
+    def test_env_and_baud_together(self) -> None:
+        self.assertEqual(
+            ["-e", "esp32-s3", "-b", "115200"],
+            self.build(env="esp32-s3", baud=115200)[-4:],
+        )
+
+
+class CliResultPayloadTests(unittest.TestCase):
+    """`main`'s --json payload and exit code are the helper's public contract."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="serial-capture-cli-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+
+    def run_json(self, *arguments: str) -> tuple[int, str]:
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = serial_capture.main(list(arguments))
+        return code, buffer.getvalue()
+
+    def test_a_json_success_payload(self) -> None:
+        target = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
+
+        with mock.patch.object(
+            serial_capture, "capture_and_store", return_value=(target, 17)
+        ):
+            code, output = self.run_json(
+                "--id", HOMEWORK, "--dir", str(self.root), "--json"
+            )
+
+        self.assertEqual(0, code)
+        self.assertEqual(
+            {
+                "path": f".skill-state/logs/{HOMEWORK}.log",
+                "status": "CAPTURED",
+                "reason": "17 bytes captured",
+                "bytes": 17,
+            },
+            json.loads(output.strip()),
+        )
+
+    def test_a_json_refusal_payload(self) -> None:
+        refusal = serial_capture.CaptureFailed("credential-shaped device output")
+
+        with mock.patch.object(
+            serial_capture, "capture_and_store", side_effect=refusal
+        ):
+            code, output = self.run_json(
+                "--id", HOMEWORK, "--dir", str(self.root), "--json"
+            )
+
+        self.assertEqual(1, code)
+        payload = json.loads(output.strip())
+        self.assertEqual("REFUSED", payload["status"])
+        self.assertIn("capture unavailable", payload["reason"])
+        self.assertEqual(0, payload["bytes"])
 
 
 if __name__ == "__main__":

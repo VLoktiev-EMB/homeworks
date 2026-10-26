@@ -86,8 +86,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-flash/SKILL.md",
       "mode": "whole",
-      "sha256": "9b76c643327bbe94a85909769d35d07c8721a13c90bdf1a29a4e9be71ca487e5",
-      "bytes": 9606
+      "sha256": "1cc83846dbc753bfe84122650ed449353bd478096a521a2a4bb69c1f974adaee",
+      "bytes": 9976
     },
     {
       "path": ".agents/skills/hw-report/CHANGELOG.md",
