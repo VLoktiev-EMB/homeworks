@@ -194,6 +194,38 @@ class WorkflowTextTests(unittest.TestCase):
             text,
         )
 
+    def test_simulation_is_guarded_and_uploads_evidence(self) -> None:
+        # D-8/D-9/D-10: the guard is layered so a fork never reaches the secret, the token
+        # is tested in a step rather than in the job-level `if`, and the evidence upload is
+        # unconditional under a name derived in shell so it cannot carry a slash (T-8-21).
+        text = CI.read_text(encoding="utf-8")
+        for needle in (
+            "simulate /",
+            "github.event_name == 'pull_request'",
+            "needs.changes.result == 'success'",
+            "needs.meta.result == 'success'",
+            "github.event.pull_request.head.repo.full_name == github.repository",
+            "labels.*.name, 'simulate'",
+            "if: env.WOKWI_CLI_TOKEN == ''",
+            "--timeout 15000",
+            "--serial-log-file",
+            "ARTIFACT_NAME",
+            "name: ${{ env.ARTIFACT_NAME }}",
+            "actions/upload-artifact@",
+            "retention-days: 7",
+            "if-no-files-found: error",
+        ):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
+
+    def test_simulation_pins_the_cli_and_maps_exit_codes(self) -> None:
+        # Pitfall 12: the official action downloads `latest`; the pin and the recorded digest
+        # are the only reproducible identity. The Phase 7 spike maps exit 42 to a timeout.
+        text = CI.read_text(encoding="utf-8")
+        for needle in ("0.28.1", "WOKWI_CLI_SHA256", "42) outcome=timeout"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
+
     def test_nightly_computes_the_full_matrix(self) -> None:
         # `platformio.shared.ini` is the mapper's own WIDEN_ALL entry, so the nightly matrix
         # is the full project set without a curated list or a second flag.

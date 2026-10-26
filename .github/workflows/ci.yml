@@ -274,9 +274,151 @@ jobs:
       - name: Run the pre-push hook stage
         run: pre-commit run --all-files --hook-stage pre-push
 
+  simulate:
+    # D-8/D-9: simulation is opt-in. A maintainer applies the `simulate` label, and the head
+    # repository must equal the base repository, so a fork pull request can never reach the
+    # job or the secret. The event guard comes first: `workflow_dispatch` carries no
+    # pull-request context, so reading it before the guard would dereference null (Pitfall
+    # 14). `meta` in `needs` plus the two explicit result checks mean a policy-failing pull
+    # request never spends a metered minute (T-8-22).
+    name: simulate / ${{ matrix.project }} / ${{ matrix.env }}
+    needs: [changes, meta]
+    if: >-
+      ${{ !cancelled()
+      && github.event_name == 'pull_request'
+      && needs.changes.result == 'success'
+      && needs.meta.result == 'success'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && contains(github.event.pull_request.labels.*.name, 'simulate')
+      && needs.changes.outputs.simulate != ''
+      && needs.changes.outputs.simulate != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      # D-7: one failing entry must not cancel its siblings.
+      fail-fast: false
+      # T-8-14: parallel entries share one free-tier quota, so two at most.
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJson(needs.changes.outputs.simulate) }}
+    # D-9: the `secrets` context is unavailable in a job-level `if`, so the token enters
+    # here and is tested at step level. It is never echoed (T-8-11).
+    env:
+      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # D-18: the same pin-derived key as `build`, with no `restore-keys`.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install PlatformIO Core
+        run: python -m pip install platformio==6.2.0
+      - name: Refuse to run without a token
+        if: env.WOKWI_CLI_TOKEN == ''
+        run: |
+          echo "::error::WOKWI_CLI_TOKEN is not configured; add the repository secret before labelling a pull request"
+          exit 1
+      # Pitfall 13: `wokwi.toml` points at the merged firmware under `.pio/build/`, and no
+      # other job uploads it, so the target environment is built in this job first.
+      - name: Build the simulated firmware
+        env:
+          PROJECT: ${{ matrix.project }}
+          ENV_NAME: ${{ matrix.env }}
+        run: pio run -d "$PROJECT" -e "$ENV_NAME"
+      # D-10/Pitfall 12: the official action downloads `latest` and cannot tee stdout, so
+      # the pinned 0.28.1 binary is installed and checked against the recorded SHA-256.
+      - name: Install wokwi-cli
+        env:
+          WOKWI_CLI_VERSION: 0.28.1
+          WOKWI_CLI_SHA256: 869f194ee473257c6112ed58d786376527769020056320b0a49a37d9e7d3bdd7
+        run: |
+          set -euo pipefail
+          asset="$RUNNER_TEMP/wokwi-cli-linuxstatic-x64"
+          release="https://github.com/wokwi/wokwi-cli/releases/download"
+          curl --proto '=https' --tlsv1.2 -sSfL \
+            "${release}/v${WOKWI_CLI_VERSION}/wokwi-cli-linuxstatic-x64" \
+            -o "$asset"
+          # Fail closed: a substituted or truncated artifact stops the job before it runs.
+          echo "${WOKWI_CLI_SHA256}  ${asset}" | sha256sum -c -
+          install -m 0755 "$asset" /usr/local/bin/wokwi-cli
+      # T-8-23: the evidence directory and both log files exist before the CLI runs, so an
+      # early connection failure still leaves a diagnosable artifact set. T-8-21: the
+      # artifact name is derived here with every character outside [A-Za-z0-9._-] replaced;
+      # `actions/upload-artifact` rejects a slash, and a project id such as
+      # `homeworks/1_3-police-flasher` carries one.
+      - name: Prepare the evidence directory
+        env:
+          PROJECT: ${{ matrix.project }}
+          ENV_NAME: ${{ matrix.env }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/simulation"
+          mkdir -p "$out"
+          : > "$out/serial.log"
+          : > "$out/stdout.log"
+          safe_project="$(printf '%s' "$PROJECT" | LC_ALL=C tr -c 'A-Za-z0-9._-' '-')"
+          safe_env="$(printf '%s' "$ENV_NAME" | LC_ALL=C tr -c 'A-Za-z0-9._-' '-')"
+          printf 'ARTIFACT_NAME=simulation-%s-%s\n' \
+            "$safe_project" "$safe_env" >> "$GITHUB_ENV"
+      # The scenario reads the firmware built above. The exit status is recorded before it
+      # is returned, so a failed or timed-out run still produces its evidence (D-10).
+      - name: Run the scenario
+        env:
+          PROJECT: ${{ matrix.project }}
+          ENV_NAME: ${{ matrix.env }}
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/simulation"
+          started=$(date +%s)
+          wokwi-cli "$PROJECT" \
+            --timeout 15000 \
+            --scenario scenario.yaml \
+            --diagram-file assets/diagram.json \
+            --serial-log-file "$out/serial.log" \
+            2>&1 | tee "$out/stdout.log"
+          status=${PIPESTATUS[0]}
+          finished=$(date +%s)
+          case "$status" in
+            0) outcome=passed ;;
+            42) outcome=timeout ;;
+            *) outcome=failed ;;
+          esac
+          serial_bytes="$(stat -c %s "$out/serial.log")"
+          jq -n \
+            --arg project "$PROJECT" \
+            --arg env "$ENV_NAME" \
+            --argjson wall_clock_seconds "$((finished - started))" \
+            --argjson simulated_seconds_upper_bound 15 \
+            --arg quota_label "calculated (upper bound)" \
+            --argjson runs 1 \
+            --argjson exit_code "$status" \
+            --argjson serial_log_bytes "$serial_bytes" \
+            --arg outcome "$outcome" \
+            '{project: $project, env: $env, wall_clock_seconds: $wall_clock_seconds,
+              simulated_seconds_upper_bound: $simulated_seconds_upper_bound,
+              quota_label: $quota_label, runs: $runs, exit_code: $exit_code,
+              serial_log_bytes: $serial_log_bytes, outcome: $outcome}' \
+            > "$out/quota.json"
+          exit "$status"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: always()
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/simulation
+          retention-days: 7
+          if-no-files-found: error
+
   gate:
     name: gate
-    needs: [changes, meta, build, python-tests, static-analysis]
+    needs: [changes, meta, build, python-tests, static-analysis, simulate]
     # D-2: `!cancelled()` rather than `always()`, which also runs after cancellation.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
