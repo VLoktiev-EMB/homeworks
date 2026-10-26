@@ -1,56 +1,82 @@
 ---
 phase: 09-agent-workflow-and-skills
-verified: 2026-10-26T23:16:35Z
+verified: 2026-10-26T23:42:40Z
 status: gaps_found
-score: 14/16 must-haves verified
-covered_files: [".agents/skills/_shared/guardrails.md", ".agents/skills/hw-flash/SKILL.md", ".claude/CLAUDE.md", ".claude/skills/_shared/guardrails.md", ".claude/skills/course-index/SKILL.md", ".claude/skills/hw-build/SKILL.md", ".claude/skills/hw-build/references/repair-loop.md", ".claude/skills/hw-flash/CHANGELOG.md", ".claude/skills/hw-flash/LESSONS.md", ".claude/skills/hw-flash/SKILL.md", ".claude/skills/hw-report/SKILL.md", ".claude/skills/new-homework/SKILL.md", ".claude/skills/new-homework/references/question-bank.md", ".claude/skills/new-homework/references/state-file.md", ".claude/skills/schematic/SKILL.md", ".claude/skills/simulate/SKILL.md", ".gitignore", ".planning/phases/09-agent-workflow-and-skills/09-01-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-01-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-02-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-02-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-03-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-03-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-04-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-04-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-05-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-05-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-06-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-06-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-07-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-07-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-08-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-08-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-09-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-09-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-DRY-RUN.md", ".planning/phases/09-agent-workflow-and-skills/09-REVIEW-DISPOSITION.md", ".planning/phases/09-agent-workflow-and-skills/09-REVIEW.md", ".pre-commit-config.yaml", "AGENTS.md", "docs/decisions/README.md", "docs/standards/vscode.md", "generated.manifest", "generated.skills.manifest", "platformio.shared.ini", "scripts/affected.py", "scripts/gen_skills.py", "scripts/tests/temp_root.py", "scripts/tests/test_gen_skills.py", "scripts/tests/test_gen_views.py", "templates/views/shared-ini.ini.tmpl"]
-covered_digest: "v3:sha256:2006fca6ab6385849801640e0318caaf45f3112fc2a151f63fb62d397321d50b"
+score: 20/22 must-haves verified
+covered_files: [".agents/skills/_shared/guardrails.md", ".agents/skills/hw-flash/CHANGELOG.md", ".agents/skills/hw-flash/LESSONS.md", ".agents/skills/hw-flash/SKILL.md", ".claude/skills/_shared/guardrails.md", ".claude/skills/hw-flash/CHANGELOG.md", ".claude/skills/hw-flash/LESSONS.md", ".claude/skills/hw-flash/SKILL.md", ".planning/phases/09-agent-workflow-and-skills/09-01-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-01-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-02-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-02-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-03-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-03-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-04-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-04-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-05-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-05-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-06-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-06-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-07-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-07-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-08-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-08-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-09-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-09-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-10-PLAN.md", ".planning/phases/09-agent-workflow-and-skills/09-10-SUMMARY.md", ".planning/phases/09-agent-workflow-and-skills/09-REVIEW-DISPOSITION.md", "AGENTS.md", "generated.skills.manifest", "scripts/affected.py", "scripts/serial_capture.py", "scripts/tests/test_affected.py", "scripts/tests/test_serial_capture.py"]
+covered_digest: "v3:sha256:522c6b04bb555ad4165f213ffd4cbcaa2c0e7ca5c0eec767d55454f835343f98"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 13/15
+  previous_score: 14/16
   gaps_closed:
-    - "The `hw-flash` capture resolves `monitor_speed` from the project, stops when the key is absent, and the real homework now resolves 115200; the prior CR-02 (baud) is genuinely closed."
+    - "The `hw-flash` bounded capture now runs through the tested PTY helper and writes `.skill-state/logs/<id>.log` on the declared-baud path; the piped-monitor snippet is gone."
+    - "`find_credential` now matches the six shapes the earlier review executed, and a match writes nothing."
+    - "The shared guardrails again forbid a credential in the state file or any log outside the one scoped capture exception."
+    - "`AGENTS.md` names every Phase 9 no-build-impact path, including `scripts/serial_capture.py`."
   gaps_remaining:
-    - "No skill writes a credential to a log; the guardrails' secrets rule holds across every implemented skill."
-    - "The `hw-flash` bounded capture executes and writes the ignored log path."
+    - "The fail-closed baud branch is not wired to the helper: `hw-flash` says `-b <n>` while the helper accepts `--baud` (CR-03)."
+    - "The credential scan still misses ordinary password assignment forms (WR-12)."
   regressions: []
 gaps:
-  - truth: "The `hw-flash` bounded capture runs and writes the ignored `.skill-state/logs/<id>.log` after a confirmed upload."
+  - truth: "`hw-flash` wires the user-resolved baud into the shipped capture helper, so the declared `monitor_speed` is used and an absent key never falls through to PlatformIO's 9600."
     status: failed
-    reason: "The only executable capture example starts `pio device monitor` with `stdout=subprocess.PIPE` and `stderr=subprocess.PIPE` (`.claude/skills/hw-flash/SKILL.md:119`; mirror `:120`). PlatformIO 6.2.0 gates the monitor on `sys.stdout.isatty()` (`platformio/compat.py:37-39`) and `new_terminal()` raises `UserSideException` when stdout is not a TTY (`platformio/device/monitor/terminal.py:102-109`). Reproduced against the repository's only homework: `pio device monitor -d homeworks/1_3-police-flasher --raw -p /dev/null` with captured stdout returned exit 1 and printed the 'requires an interactive terminal' exception. The snippet therefore raises `CaptureFailed('monitor exited 1 before the bound')` on every run; the 'upload succeeded, capture succeeded' outcome is unreachable and no log is ever written. The dry run stopped at the consent gate (09-DRY-RUN.md Leg 6), so this path was never exercised before."
+    reason: "The only executable capture command is `uv run scripts/serial_capture.py --id <id> [--env <env>] [--seconds 20]`; it never passes `--baud`. The prose tells the agent to pass `-b <n>`, which is a monitor flag the helper's argparse rejects. In the absent-`monitor_speed` branch the agent either omits the baud (the monitor inherits PlatformIO's forbidden 9600) or appends `-b` and the CLI exits 2. The gate also announces `Baud: <n>`, so the announced capture is not the executed capture. Reproduced: `serial_capture.py --help` lists `--baud`, not `-b` (CR-03)."
     artifacts:
       - path: ".claude/skills/hw-flash/SKILL.md"
-        issue: "The capture snippet pipes stdout/stderr, which the monitor rejects; the executable example cannot produce a log."
+        issue: "Lines 67 and 108 announce a capture command without `--baud`; lines 43-44 and 143-145 say to pass `-b <n>`."
       - path: ".agents/skills/hw-flash/SKILL.md"
-        issue: "Generated mirror carries the same non-runnable snippet."
+        issue: "Generated mirror carries the same wrong flag."
+      - path: "scripts/serial_capture.py"
+        issue: "The helper exposes `--baud` (line 288), which appends `-b` to the monitor; no caller in the skill uses it."
     missing:
-      - "Replace the scripted `pio device monitor` invocation with a capture path that works headlessly: talk to the serial port directly (pyserial) or allocate a PTY for the child and read the master, and put the slave in raw mode so the captured bytes are not rewritten (09-REVIEW CR-01)."
-      - "Add a deterministic check that exercises the chosen capture path (a fake serial source is enough) so a non-TTY regression cannot ship again."
-      - "Regenerate `.agents/skills/` with `uv run scripts/gen_skills.py` after the skill change."
+      - "Add `[--baud <n>]` to both announced capture commands and state that the helper appends `-b <n>` to the monitor."
+      - "Update the 'nothing else is conditional' sentence to name `--env` and `--baud`."
+      - "Add a `_build_command` test that asserts the `-b` argv, then regenerate the mirror."
   - truth: "No skill writes a credential to a log; the shared guardrails' secrets rule holds across every implemented skill."
     status: failed
-    reason: "The guardrails' only permitted capture write requires that a credential-shape scan of the exact bytes finds no match for 'a token, secret, password, or API-key assignment' (`.claude/skills/_shared/guardrails.md:54-61`). The implementation is `re.compile(rb\"(?i)(token|secret|password|api[_-]?key)[=:]\\s*\\S+\")` (`.claude/skills/hw-flash/SKILL.md:135`; mirror `:136`). Executed against ordinary device-output shapes it misses `secret = hunter2`, `PASSWORD = hunter2`, `{\"token\": \"abc123\"}`, `{\"apiKey\": \"abc123\"}`, `password abc123` and `Authorization: Bearer ...`; only the unspaced `token=abc123` and `secret:abc` forms match. A device that prints an ordinary assignment therefore passes the scan and its bytes are persisted, violating the same file's `[MUST]` prohibition. The exception is closed in form but not in substance."
+    reason: "The sole permitted write is conditioned on a scan that finds no password assignment, but `find_credential` returns False for `password is hunter2`, `userpassword = hunter2`, `passphrase = hunter2` and `pwd = hunter2`. The long-form branch requires six non-space characters immediately after the whitespace, so the copula form misses; the leading `(?<![a-z0-9])` rejects a keyword preceded by a letter; `passphrase` and `pwd` are absent from the keyword set. Verified by executing the shipped regex. The same class of miss was CR-02 (WR-12)."
     artifacts:
-      - path: ".claude/skills/hw-flash/SKILL.md"
-        issue: "The credential-shape regex requires the separator to touch the keyword and allows no quoting or whitespace, so ordinary assignment forms pass the gate."
-      - path: ".agents/skills/hw-flash/SKILL.md"
-        issue: "Generated mirror carries the same narrow regex."
+      - path: "scripts/serial_capture.py"
+        issue: "`_KEYWORDS` (line 82) and `CREDENTIAL` (lines 84-88) miss the four forms above."
       - path: ".claude/skills/_shared/guardrails.md"
-        issue: "States the assignment shapes the scan must catch; the implementation does not."
+        issue: "The exception promises a scan for a token, secret, password or API-key assignment; the implementation does not cover these password assignments."
+      - path: ".agents/skills/_shared/guardrails.md"
+        issue: "Generated mirror carries the same policy text."
     missing:
-      - "Widen the scan to tolerate optional whitespace and quotes around the separator and cover the authorization form, for example `(?i)(?:token|secret|passw(?:or)?d|api[ _-]?key|auth(?:orization)?)[\"']?\\s*[=:]\\s*[\"']?\\S+` (09-REVIEW CR-02)."
-      - "Decide explicitly whether the space-separated form (`password abc123`) is fail-closed; if so, add a `\\s+\\S{8,}` alternative and accept occasional false positives."
-      - "Regenerate `.agents/skills/` with `uv run scripts/gen_skills.py` after the fix."
+      - "Widen `_KEYWORDS` to `pass(?:word|wd|phrase)` and allow the copula in the long-form branch."
+      - "Add the four shapes to `REVIEW_SHAPES` and the credential suite."
+      - "Widen the guardrails sentence in the same change and regenerate the mirror."
+  - truth: "The helper's CLI rejects a non-finite `--seconds` as a usage error instead of crashing with a traceback."
+    status: partial
+    reason: "`if args.seconds <= 0` is False for NaN and infinity, so `select.select` receives a non-finite timeout. Reproduced outside the sandbox: `capture_pty(..., float('nan'))` raises `ValueError: Invalid value NaN`, and `float('inf')` raises `OverflowError: timestamp out of range`; neither is `CaptureFailed` or `CheckError`, so `main` exits with a traceback and no cleanup (WR-10)."
+    artifacts:
+      - path: "scripts/serial_capture.py"
+        issue: "Lines 310-311 validate only `<= 0`; the read loop at 143-153 does not catch non-finite `select` failures."
+    missing:
+      - "Reject a non-finite `--seconds` with `math.isfinite` and a `CheckError`, and consider a sane upper bound."
+  - truth: "An exception in the read loop always reaps the started monitor, so the serial port is never left busy."
+    status: partial
+    reason: "`_terminate` runs only on the deadline, the not-ready branch and the EOF/EIO refusal. Any other exception after `Popen` (`KeyboardInterrupt`, the WR-10 `ValueError`/`OverflowError`, `MemoryError`) propagates while the `finally` closes only the master fd; the child is neither killed nor waited (WR-11)."
+    artifacts:
+      - path: "scripts/serial_capture.py"
+        issue: "The `finally` at lines 165-166 closes the master but does not kill or reap the child."
+    missing:
+      - "Reap the child in the `finally` block (kill if still running, then wait) and keep the early-return paths."
+advisory: []
+human_verification:
+  - test: "With a board connected, run `uv run scripts/serial_capture.py --id 1_3-police-flasher --seconds 20` after a confirmed upload and inspect the exit line and the ignored log."
+    expected: "Exit 0, a `CAPTURED — N bytes captured` line naming `.skill-state/logs/1_3-police-flasher.log`, and a log whose bytes are the raw device output."
+    why_human: "The automated suite uses a fake `sys.executable -c` child on a PTY; the real `pio device monitor` needs a board and a serial port. The declared-baud path is the only capture branch that is not blocked by CR-03."
 ---
 
 # Phase 9: Agent Workflow and Skills Verification Report
 
-**Phase Goal:** Seven versioned agent skills exist, with `new-homework` and `hw-build` fully usable in guided and one-shot modes.
-**Verified:** 2026-10-26T23:16:35Z
+**Phase Goal:** Seven versioned agent skills exist, with `new-homework` and `hw-build` fully usable in guided and one-shot modes. The Phase 4.2 friction log must justify the intake, build, and report skills.
+**Verified:** 2026-10-26T23:42:40Z
 **Status:** gaps_found
-**Re-verification:** Yes — after gap closure (plan 09-09)
+**Re-verification:** Yes — after gap-closure plan 09-10 and the incremental review of that change set
 
 ## Goal Achievement
 
@@ -58,127 +84,137 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Seven project-local skills exist under `.claude/skills/`, each with `SKILL.md`, `CHANGELOG.md` and `LESSONS.md`; `new-homework` and `hw-build` are active and four skills are stubs. | ✓ VERIFIED | `find` inventory: seven directories plus `_shared/`; every skill has the three files. Six are `version: "0.1"`; `new-homework` is `0.2` with a dated changelog (deviation below). `course-index`, `hw-report`, `schematic`, `simulate` carry `status: stub`. |
-| 2 | `new-homework` supports guided and one-shot modes with an adaptive question bank in the order mode, board, framework, language, specification, simulation, tests, deliverables. | ✓ VERIFIED | `references/question-bank.md` has all eight `##` sections in that order; `SKILL.md` "Intake" states guided asks the full bank and one-shot asks only non-inferable intake. Dry-run Legs 1 and 3. |
-| 3 | Guided mode runs explain → write code → explain → run → questions → pause, with the exact menu `[Продовжити | Поясни глибше | Стоп]`; deepening never advances the block. | ✓ VERIFIED | `.claude/skills/new-homework/SKILL.md:101-133`; dry-run Leg 2 records the menu and `next_block` unchanged after `Поясни глибше`. |
-| 4 | Both modes checkpoint after intake, after code and after report; the state file is written before each menu and block pauses do not append named checkpoints. | ✓ VERIFIED | `SKILL.md:135-145`; `references/state-file.md`; dry-run Legs 1–3. |
-| 5 | Shared guardrails state the flashing, commit/PR, spec-vs-best-practice, ambiguity and secrets rules with severity and enforcement; conflicts produce a recorded recommendation transcribed into the report. | ✓ VERIFIED | `_shared/guardrails.md` every rule `[MUST] [ENFORCED: review]`; dry-run Leg 3 records `A-01` accepted and transcribed. The secrets rule is contradicted by truth 10. |
-| 6 | `hw-build` runs the real target build and native suite with real exit codes, caps each leg at two repairs, preserves warnings, never commits/resets, and escalates with evidence. | ✓ VERIFIED | `hw-build/SKILL.md`; `references/repair-loop.md:8-19,21-35,85-98`; dry-run Legs 4–5 (green build; three errors, exactly two repairs, stop, no third edit). |
-| 7 | `hw-flash` prints the board, environment and exact upload command, requires the literal `так`/`yes`, runs no upload on a non-affirmative answer, and never pre-approves `upload`. | ✓ VERIFIED | `hw-flash/SKILL.md:46-94`; dry-run Leg 6 (`ні`, no upload, no capture, no reused confirmation). |
-| 8 | `hw-flash` resolves the baud from the project fail-closed; the repository's only real homework resolves 115200 instead of PlatformIO's 9600 default. | ✓ VERIFIED | `platformio.shared.ini:9,27` and `templates/views/shared-ini.ini.tmpl:9,27` declare `monitor_speed = 115200`; `pio project config -d homeworks/1_3-police-flasher --json-output` resolves 115200 for `env:esp32s3_arduino`; `SKILL.md:35-42` stops when the key is absent. Prior CR-02 (baud) is closed; the regression test passes. |
-| 9 | The `hw-flash` bounded capture runs and writes `.skill-state/logs/<id>.log`. | ✗ FAILED | The snippet pipes the monitor's stdout; `pio device monitor` requires a TTY and exits 1 immediately. Reproduced directly. See gap 1. |
-| 10 | No skill writes a credential to a log; the guardrails' secrets rule holds across every skill. | ✗ FAILED | The credential-shape regex misses ordinary assignment forms (`secret = …`, JSON `{"token": …}`, space-separated, `Authorization: Bearer …`). See gap 2. |
-| 11 | `scripts/gen_skills.py` is the only mirror writer, maintains `generated.skills.manifest`, supports `--check`, and the committed tree is in sync. | ✓ VERIFIED | `python3 scripts/gen_skills.py --check` exits 0, every record `UNCHANGED`; 25 mirror files and 25 manifest entries match. |
-| 12 | The drift gate is wired: `gen-skills-check` runs at `pre-commit`, watches the generator/ledger/both trees/`scripts/metadata/`, and passes no filenames; `markdownlint-cli2` lints authored skills and excludes the mirror. | ✓ VERIFIED | `.pre-commit-config.yaml:229-239`; the hook is present at `pre-commit` with `pass_filenames: false`. |
-| 13 | `.gitignore` exposes `generated.skills.manifest`, ignores `.skill-state/`, and `scripts/affected.py` treats both skill trees, the ledger, the state directory and the generator as no-build-impact. | ✓ VERIFIED | `.gitignore:83,270-272`; `scripts/affected.py:99-120` includes every Phase 9 path. |
-| 14 | `AGENTS.md` documents the live skills layout, the drift command, the routing row and the two generated-file classes; `docs/standards/vscode.md` states 14 commit hooks and lists `gen-skills-check` with its repair command. | ✓ VERIFIED | `AGENTS.md:50-59,81-85,243-248,294`; `docs/standards/vscode.md:154,184-186`. |
-| 15 | The `.claude/CLAUDE.md` `GSD:skills` block lists exactly seven skills with canonical paths, and `docs/decisions/README.md` records the canonical/mirror decision as `costly`/`accepted`. | ✓ VERIFIED | The block has exactly seven rows; the decision row is dated 2026-10-26 with `costly` and `accepted`. |
-| 16 | The dry-run transcript records the guided, one-shot, conflict, build-repair and flash-gate legs, a validation-sampling table, and contains no credential or private absolute path. | ✓ VERIFIED | `09-DRY-RUN.md:687-709,810-860`; `grep` for `/Users/`, `/home/` and token assignments returns nothing. It does not exercise the capture (stopped at the gate). |
+| 1 | A capture started by `capture_and_store` returns the exact bytes a child writing to a PTY produced, including CR, LF, NUL and 0xff; the child sees stdin and stdout as TTYs, and the same child under a pipe exits non-zero. | ✓ VERIFIED | `scripts/serial_capture.py:122-166`; `CapturePtyTests.test_capture_preserves_every_byte_and_sees_a_tty` and `test_a_pipe_capture_would_fail_the_same_child` pass outside the sandbox (26/26). |
+| 2 | A capture refuses with `capture unavailable` when the command cannot start, exits before the bound, or reaches the bound with zero bytes; reaching the bound with bytes is the success path. | ✓ VERIFIED | `capture_pty` raises on start/early-exit (`:126-163`); `capture_and_store` refuses empty bytes (`:255-256`); `main` prefixes `capture unavailable` (`:315-330`). Tests `test_capture_fails_on_an_early_{zero,nonzero}_exit`, `test_an_empty_child_writes_nothing`, `test_capture_stops_at_the_deadline` pass. The zero-byte branch lives in `capture_and_store`, not `capture_pty` (IN-08, wording only). |
+| 3 | `find_credential` matches the six review shapes, does not match a benign boot log, and a match writes nothing. | ✓ VERIFIED | `scripts/serial_capture.py:82-103`; `CredentialScanTests` (all six shapes, `passwd`, `PASSWORD`, `password abc123`, `secret is`, boot log) pass; `test_a_credential_child_writes_nothing`. Narrowly true; the broader policy fails at truth 17. |
+| 4 | `write_log_atomically` writes under the resolved root, refuses a symlinked `.skill-state`, `logs` or log component, leaves no temporary file, and replaces rather than appends. | ✓ VERIFIED | `scripts/serial_capture.py:202-247` uses `O_DIRECTORY | O_NOFOLLOW` and `dir_fd`; `AtomicLogWriteTests` (seven cases) pass. |
+| 5 | Two concurrent atomic writes leave exactly one whole payload and no temporary file. | ✓ VERIFIED | `test_concurrent_writes_leave_one_whole_payload` passes. |
+| 6 | `hw-flash` invokes `scripts/serial_capture.py` instead of a piped monitor, normalizes `monitor_speed` with `int(str(value))`, announces the conditional `-e env` segment, and its outcome table no longer calls the designed bound a timeout. | ✓ VERIFIED | `SKILL.md:67,108` invoke the helper; `:37` normalizes; `:71-72` states the conditional `-e`; `:177-182` has `Upload succeeded, capture failed`. No `stdout=subprocess.PIPE` in the skill. |
+| 7 | The shared guardrails' general prohibition again covers the state file and any log outside the one scoped capture exception, and the exception states the fail-closed scan shapes. | ✓ VERIFIED | `_shared/guardrails.md:50-64` says "or any log" and enumerates optional separator, quoting, authorization and the six-character space-separated form. |
+| 8 | The regenerated mirror and `generated.skills.manifest` match the canonical tree under `gen_skills.py --check`, and `scripts/affected.py` maps `scripts/serial_capture.py` to no build impact. | ✓ VERIFIED | `gen_skills.py --check` exits 0 with every record `UNCHANGED`; canonical and mirror bodies compare equal; `scripts/affected.py:123` and `test_affected.py:251`. |
+| 9 | Seven project-local skills exist, each with `SKILL.md`, `CHANGELOG.md` and `LESSONS.md`; `new-homework` and `hw-build` are active and four skills are stubs. | ✓ VERIFIED | 21 skill files; `hw-build`, `hw-flash`, `new-homework` are active; `course-index`, `hw-report`, `schematic`, `simulate` carry `status: stub`. Version deviation: `new-homework` is `0.2` (see Deviations). |
+| 10 | The Phase 4.2 friction log justifies the intake, build and report skills. | ✓ VERIFIED | `04.2-FRICTION-LOG.md` has `F-01` (intake/scaffold), `F-03`–`F-05` (build), `F-11`–`F-13` (report). |
+| 11 | `new-homework` supports guided and one-shot modes with an adaptive bank in the order mode, board, framework, language, specification, simulation, tests, deliverables. | ✓ VERIFIED | `SKILL.md:47-49`; `references/question-bank.md` has the eight `##` sections in order; dry-run Legs 1–3. |
+| 12 | Guided mode follows explain → code → run → questions at block granularity, pauses with `[Продовжити | Поясни глибше | Стоп]`, and deepening never advances the block. | ✓ VERIFIED | `new-homework/SKILL.md` block loop; dry-run Leg 2. |
+| 13 | Both modes checkpoint after intake, after code and after report; guardrails apply. | ✓ VERIFIED | `references/state-file.md:69-99`; dry-run Legs 1–3. |
+| 14 | Spec-vs-best-practice conflicts and ambiguity produce a recommended assumption transcribed into the report. | ✓ VERIFIED | `guardrails.md:34-48`; `A-01` in the dry run and report excerpt. |
+| 15 | `hw-build` runs the real target build and native suite, caps each leg at two repairs, preserves warnings, never commits/resets, and escalates with evidence. | ✓ VERIFIED | `hw-build/SKILL.md`; `references/repair-loop.md`; dry-run Legs 4–5. |
+| 16 | `hw-flash` prints the board, environment and exact upload command, requires a literal `так`/`yes`, runs no upload on a non-affirmative answer, and never pre-approves `upload`. | ✓ VERIFIED | `SKILL.md:50-101`; dry-run Leg 6. |
+| 17 | `hw-flash` resolves the baud from the project fail-closed; the real homework resolves 115200 and an absent key stops before the monitor. | ✓ VERIFIED | `SKILL.md:35-44`; `platformio.shared.ini` declares 115200; `pio project config` resolves it; the absent-key branch stops and asks. |
+| 18 | `hw-flash` wires the user-named baud into the shipped capture helper so the announced baud is the executed baud. | ✗ FAILED | The helper exposes `--baud`; the skill says `-b <n>` and never includes `--baud` in the capture command (CR-03). See gap 1. |
+| 19 | No skill writes a credential to a log; the guardrails' secrets rule holds across every implemented skill. | ✗ FAILED | `find_credential` misses `password is hunter2`, `userpassword = hunter2`, `passphrase = hunter2`, `pwd = hunter2`; those bytes would be persisted (WR-12). See gap 2. |
+| 20 | `scripts/gen_skills.py` is the only mirror writer, maintains the manifest, supports `--check`, and the committed tree is in sync. | ✓ VERIFIED | `gen_skills.py --check` exit 0; 25 mirror files, 25 manifest entries, no self-entry. |
+| 21 | The drift gate is wired and `affected.py`/`.gitignore`/`AGENTS.md` cover the Phase 9 paths. | ✓ VERIFIED | `.pre-commit-config.yaml:229-239`; `.gitignore:83,270-272`; `affected.py:99-123`; the `AGENTS.md` no-build-impact paragraph names every path. |
+| 22 | The `.claude/CLAUDE.md` `GSD:skills` block lists exactly seven skills and the decision row records the canonical/mirror split. | ✓ VERIFIED | Seven rows; `docs/decisions/README.md:33` dated `costly`/`accepted`. |
+| 23 | The dry-run transcript records the guided, one-shot, conflict, build-repair and flash-gate legs and contains no credential or private absolute path. | ✓ VERIFIED | `09-DRY-RUN.md` Legs 1–6; no `/Users/`, `/home/`, token or password assignment. |
+| 24 | The full local gate is green. | ✓ VERIFIED (20/22 truths) | `pre-commit run --all-files` exit 0 (14 hooks); `check_metadata.py` PASS; `python3 -m unittest discover scripts/tests` 403 OK; `pio test -d tests -e native` 73/73; `gen_views.py --all --check` and `gen_skills.py --check` exit 0. |
 
-**Score:** 14/16 truths verified (0 present, behavior-unverified)
+**Score:** 20/22 truths verified (0 present, behavior-unverified). Rows 18 and 19 are the two failed must-haves. Rows 3 and 6 are narrow task-level truths that pass; the broader failures are recorded at 18 and 19.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `.claude/skills/new-homework/` | `SKILL.md`, two references, changelog, lessons | ✓ VERIFIED | Present and substantive; mirror in sync. |
-| `.claude/skills/hw-build/` | `SKILL.md`, `references/repair-loop.md`, changelog, lessons | ✓ VERIFIED | Present and substantive. |
-| `.claude/skills/hw-flash/` | `SKILL.md`, changelog, lessons | ⚠️ PRESENT, DEFECTIVE | Present and wired, but the capture cannot run and the credential gate is incomplete. |
-| `.claude/skills/{hw-report,schematic,course-index,simulate}/` | Stub `SKILL.md` + changelog + lessons | ✓ VERIFIED | All carry `metadata.status: stub` and a body banner. |
-| `.claude/skills/_shared/guardrails.md` | Shared policy | ✓ VERIFIED | Every rule has severity and enforcement; the capture exception has one owner. |
-| `.agents/skills/**` | Generated mirror | ✓ VERIFIED | 25 files, all `UNCHANGED` under `--check`. |
-| `generated.skills.manifest` | Committed ledger | ✓ VERIFIED | 25 entries, sorted, `owner`/`mode` literals, no self-entry. |
-| `scripts/gen_skills.py` | Only mirror owner | ✓ VERIFIED | `--check`/`--json`/`--dir`; suite green. |
-| `scripts/tests/test_gen_skills.py`, `temp_root.py` | Integration suite and fixture | ✓ VERIFIED | Present; suite green. |
-| `gen-skills-check` hook | Pre-commit drift gate | ✓ VERIFIED | Present at `pre-commit`, no filenames. |
-| `docs/decisions/README.md` row | One decision record | ✓ VERIFIED | Dated row present. |
-| `.claude/CLAUDE.md` `GSD:skills` | Seven-row generated block | ✓ VERIFIED | Exactly seven rows. |
-| `templates/views/shared-ini.ini.tmpl`, `platformio.shared.ini` | Declared monitor baud | ✓ VERIFIED | `monitor_speed = 115200` in both ESP sections. |
-| `scripts/tests/test_gen_views.py` | Baud regression test | ✓ VERIFIED | `test_both_esp_sections_declare_the_monitor_baud` passes. |
-| `09-DRY-RUN.md` | Phase evidence transcript | ✓ VERIFIED | Complete; capture leg not exercised. |
+| `scripts/serial_capture.py` | PTY capture, scan, atomic write, CLI | ✓ VERIFIED | Substantive, stdlib-only, 5 public callables; tests drive the shipped path. |
+| `scripts/tests/test_serial_capture.py` | PTY, scan, write tests | ✓ VERIFIED | 26 tests, no skip; 26/26 pass outside the sandbox. |
+| `scripts/affected.py`, `scripts/tests/test_affected.py` | Helper in no-build-impact policy | ✓ VERIFIED | Both entries present. |
+| `.claude/skills/hw-flash/SKILL.md` | Helper invocation, corrected contract | ⚠️ PARTIAL | Helper wired, piped snippet gone; the baud flag is wrong (CR-03). |
+| `.claude/skills/hw-flash/CHANGELOG.md`, `LESSONS.md` | Dated 2026-10-27 entries | ✓ VERIFIED | Both present. |
+| `.claude/skills/_shared/guardrails.md` | Restored log prohibition and scan shapes | ✓ VERIFIED | Text present; implementation gap at WR-12. |
+| `AGENTS.md` | No-build-impact paragraph names every Phase 9 path | ✓ VERIFIED | `.claude/`, `.agents/`, `.skill-state/`, both ledgers, both scripts. |
+| `.agents/skills/**`, `generated.skills.manifest` | Regenerated projections | ✓ VERIFIED | 25 files, 25 entries, all `UNCHANGED`; bodies equal. |
+| `09-REVIEW-DISPOSITION.md` | Findings recorded fixed | ✓ VERIFIED | Eleven fixed rows, `WR-09` added; the later review added nine open rows, so the recorded counts are `open: 14`, `total: 25` (supersedure, not drift). |
+| Seven skill directories | Three files each, versioned, four stubs | ✓ VERIFIED | 21 files; versions as above. |
+| `04.2-FRICTION-LOG.md` | Intake, build and report entries | ✓ VERIFIED | `F-01`, `F-03`–`F-05`, `F-11`–`F-13`. |
+| `09-DRY-RUN.md` | Phase evidence transcript | ✓ VERIFIED | Legs 1–6; sanitized. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `.claude/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` | `gen_skills.py` transform | ✓ WIRED | `--check` exits 0. |
-| Every mirror file | `generated.skills.manifest` | `--check` byte comparison | ✓ WIRED | All records `UNCHANGED`. |
-| `gen-skills-check` | `gen_skills.py --check` | pre-commit hook | ✓ WIRED | `.pre-commit-config.yaml:229-239`. |
-| `.gitignore` negation | Tracked ledger | `!generated.skills.manifest` | ✓ WIRED | Ledger tracked. |
-| `affected.py` entries | No-build-impact selection | `NO_BUILD_IMPACT` | ✓ WIRED | Tuple includes all Phase 9 paths. |
-| `_shared/guardrails.md` | `new-homework`/`hw-build`/`hw-flash` | `../_shared/guardrails.md` | ✓ WIRED | All three read it before the first write/edit. |
-| `course-index` | README generated region | `<!-- BEGIN GENERATED: homeworks -->` | ✓ WIRED | Stub names the exact region. |
-| Seven skill directories | `GSD:skills` block | GSD `generate-claude-md` | ✓ WIRED | Seven rows with canonical paths. |
-| `templates/views/shared-ini.ini.tmpl` | `platformio.shared.ini` | `gen_views.py` | ✓ WIRED | `--all --check` exit 0. |
-| `homeworks/<id>/platformio.ini` | `pio project config` | shared ini inheritance | ✓ WIRED | Resolves 115200 for the real homework. |
-| `hw-flash` capture | `.skill-state/logs/<id>.log` | `pio device monitor` → `write_log_atomically` | ✗ NOT_WIRED | The monitor exits 1 before producing bytes, so the write is never reached. |
+| PTY master | `capture_pty` → `find_credential` → `write_log_atomically` → ignored log | `scripts/serial_capture.py` | ✓ WIRED | Tests exercise the exact path. |
+| `.claude/skills/hw-flash/SKILL.md` | `uv run scripts/serial_capture.py` → `capture_and_store` | helper CLI | ✓ WIRED | The command is present; `--baud` is not (CR-03). |
+| `_shared/guardrails.md` policy | helper scan → six review fixtures | `find_credential` | ✓ WIRED | Six shapes pass; four more shapes miss (WR-12). |
+| `.claude/skills/**` | `gen_skills.py` → `.agents/skills/**` → manifest → `gen-skills-check` | generator | ✓ WIRED | `--check` exit 0; hook present. |
+| `affected.py` `NO_BUILD_IMPACT` | `NoBuildImpactTests.NO_BUILD_IMPACT_PATHS` | test tuple | ✓ WIRED | Same path in both. |
+| `homeworks/<id>/platformio.ini` | `pio project config` → declared 115200 | shared ini inheritance | ✓ WIRED | Real homework resolves 115200. |
+| User-named baud | helper `--baud` → monitor `-b` | `_build_command` | ✗ NOT_WIRED | `_build_command` supports `--baud`, but no skill command passes it. |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |----------|---------------|--------|--------------------|--------|
-| `scripts/gen_skills.py` | mirror bytes | canonical `.claude/skills/**` | Yes — reads the authored tree and writes the mirror/ledger | ✓ FLOWING |
-| `generated.skills.manifest` | `sha256`/`bytes` | generator transform | Yes — matches the committed mirror | ✓ FLOWING |
-| `course-index` stub | README region | root `README.md` generated table | Yes — names the live generated region | ✓ FLOWING (stub, by design) |
-| `hw-flash` capture | raw device bytes | `pio device monitor` | No — the process exits 1 on the non-TTY stdout, so no bytes exist to scan or write | ✗ DISCONNECTED |
+| `scripts/serial_capture.py` | raw bytes | PTY master from the child | Yes — exact `bytes(range(256))` | ✓ FLOWING |
+| `write_log_atomically` | log bytes | scanned capture bytes | Yes — log equals payload | ✓ FLOWING |
+| `gen_skills.py` | mirror bytes | canonical `.claude/skills/**` | Yes | ✓ FLOWING |
+| `generated.skills.manifest` | `sha256`/`bytes` | generator transform | Yes — 25 entries | ✓ FLOWING |
+| `hw-flash` baud branch | `user_baud` | `monitor_speed` / user answer | No — the helper never receives it | ✗ DISCONNECTED |
+| Credential scan | device bytes | `find_credential` | Partial — four password forms pass unscanned | ⚠️ STATIC |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Generator and mirror are in sync | `python3 scripts/gen_skills.py --check` | exit 0, every record `UNCHANGED` | ✓ PASS |
-| Full Python suite | `UV_CACHE_DIR=… python3 -m unittest discover scripts/tests` | `Ran 377 tests … OK` | ✓ PASS |
+| PTY capture suite | `python3 -m unittest scripts.tests.test_serial_capture -v` (outside sandbox) | `Ran 26 tests … OK` | ✓ PASS |
+| PTY denial is environmental | same command in the sandbox | `out of pty devices`; retried outside the sandbox | ✓ environmental |
+| Full Python suite | `python3 -m unittest discover scripts/tests` | `Ran 403 tests … OK` | ✓ PASS |
+| Native suite | `pio test -d tests -e native` | 73/73 succeeded | ✓ PASS |
 | Metadata contract | `uv run scripts/check_metadata.py` | `PASS: metadata contract satisfied` | ✓ PASS |
-| Generated views in sync | `uv run scripts/gen_views.py --all --check` | exit 0, `UNCHANGED` | ✓ PASS |
-| Baud regression test | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests.test_both_esp_sections_declare_the_monitor_baud` | `Ran 1 test … OK` | ✓ PASS |
-| Real homework resolves the baud | `pio project config -d homeworks/1_3-police-flasher --json-output` | `env:esp32s3_arduino 115200` | ✓ PASS |
-| Capture command under a pipe | `pio device monitor -d homeworks/1_3-police-flasher --raw -p /dev/null` with captured stdout | exit 1, `UserSideException: … requires an interactive terminal` | ✗ FAIL (proves gap 1) |
-| Credential scan coverage | Execute the skill's regex against ordinary assignment samples | misses `secret = hunter2`, `{"token": "abc123"}`, `password abc123`, `Authorization: Bearer …` | ✗ FAIL (proves gap 2) |
+| Generated views | `uv run scripts/gen_views.py --all --check` | all `UNCHANGED` | ✓ PASS |
+| Skills mirror | `uv run scripts/gen_skills.py --check` | all `UNCHANGED` | ✓ PASS |
+| Full pre-commit gate | `pre-commit run --all-files` (outside sandbox) | exit 0, 14 hooks, no modified file | ✓ PASS |
+| Credential misses | execute `find_credential` on the four forms | `password is hunter2`, `userpassword = hunter2`, `passphrase = hunter2`, `pwd = hunter2` all False | ✗ FAIL (WR-12) |
+| Non-finite duration | `capture_pty(..., float("nan"))` / `float("inf")` | `ValueError: Invalid value NaN` / `OverflowError: timestamp out of range` | ✗ FAIL (WR-10) |
+| Baud flag surface | `scripts/serial_capture.py --help`; grep `--baud` in the skill | helper has `--baud`; skill has none, only `-b` | ✗ FAIL (CR-03) |
 
 ### Probe Execution
 
-No `scripts/*/tests/probe-*.sh` probes are declared for this phase; Step 7c is not applicable. The D-22 dry run is the phase's behavioral evidence.
+No `scripts/*/tests/probe-*.sh` probes are declared for this phase; the D-22 dry run is the phase's behavioral evidence.
 
 ### Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| FLOW-01 | 09-01, 09-06, 09-07 | Seven skills at version 0.1; `new-homework` and `hw-build` fully implemented first | ✓ SATISFIED (with documented version deviation) | Seven directories with changelog + lessons; six at 0.1, `new-homework` at 0.2 after quick task `261026-x78`; live layout and adapter block verified. |
-| FLOW-02 | 09-03, 09-08 | `new-homework` guided + one-shot with an adaptive question bank over eight topics | ✓ SATISFIED | Bank sections and dry-run Legs 1/3. |
-| FLOW-03 | 09-03, 09-08 | Guided explanation → code → run → questions at block granularity; pauses; deepens | ✓ SATISFIED | `SKILL.md` block loop and dry-run Leg 2. |
-| FLOW-04 | 09-02, 09-03, 09-08 | Checkpoints after intake, code, report; guardrails for flashing, commit/PR, conflicts, ambiguity | ✓ SATISFIED | Skill contract and dry-run state excerpts. |
-| FLOW-05 | 09-03, 09-08 | Conflicts/ambiguity with a recorded recommended assumption transcribed into the report | ✓ SATISFIED | `A-01` in dry-run Leg 3 and the report assumptions excerpt. |
-| FLOW-06 | 09-04, 09-08 | Failing build repaired at most twice, then explained and escalated | ✓ SATISFIED | `repair-loop.md` and dry-run Leg 5. |
-| FLOW-07 | 09-01, 09-02, 09-05, 09-08 | `hw-flash` requires explicit confirmation and captures serial logs; four thin stubs | ✗ BLOCKED | Consent gate and four stubs verified, but the capture path cannot run (truth 9) and its credential gate is incomplete (truth 10). |
+| FLOW-01 | 09-01, 09-06, 09-07, 09-09, 09-10 | Seven skills at version 0.1; `new-homework` and `hw-build` implemented first | ✓ SATISFIED (with version deviation) | Seven directories; six at 0.1, `new-homework` at 0.2; mirror, ledger and adapter block wired. |
+| FLOW-02 | 09-03, 09-08, 09-09, 09-10 | Guided + one-shot with an eight-topic adaptive bank | ✓ SATISFIED | Bank order and dry-run Legs 1/3. |
+| FLOW-03 | 09-03, 09-08, 09-09, 09-10 | Explain → code → run → questions, pause per block, deepen when stuck | ✓ SATISFIED | Block loop and dry-run Leg 2. |
+| FLOW-04 | 09-02, 09-03, 09-08, 09-09, 09-10 | Checkpoints after intake/code/report; guardrails always apply | ✓ SATISFIED | State schema and guardrails. |
+| FLOW-05 | 09-03, 09-08, 09-09, 09-10 | Conflict/ambiguity with a recorded recommended assumption transcribed into the report | ✓ SATISFIED | `A-01` and report excerpt. |
+| FLOW-06 | 09-04, 09-08, 09-09, 09-10 | Build repaired at most twice, then explained and escalated | ✓ SATISFIED | `repair-loop.md` and dry-run Leg 5. |
+| FLOW-07 | 09-01, 09-02, 09-05, 09-08, 09-09, 09-10 | `hw-flash` requires explicit confirmation and captures serial logs; four thin stubs | ✗ BLOCKED | Consent gate and stubs verified; the capture is unsafe/incomplete in the baud branch (CR-03) and the credential scan still misses ordinary password assignments (WR-12). |
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| `.claude/skills/hw-flash/SKILL.md` (mirror too) | 119 / 120 | `subprocess.Popen(..., stdout=subprocess.PIPE)` for a monitor that requires a TTY | 🛑 BLOCKER | The capture leg never runs; the shipped skill's main capability is non-functional. |
-| `.claude/skills/hw-flash/SKILL.md` (mirror too) | 135 / 136 | Credential regex misses ordinary assignment forms | 🛑 BLOCKER | A credential can be persisted to the log under the guardrails' only permitted write. |
-| `.claude/skills/hw-flash/SKILL.md` | 139, 185 | Log path is cwd-relative, contradicting the repo-root rule three paragraphs later | ⚠️ WARNING | A capture from another directory writes outside the ignored tree. |
-| `.claude/skills/hw-flash/SKILL.md` | 167-170, 186-197 | Symlink discipline claims a race-free guarantee the path-based helper does not implement | ⚠️ WARNING | TOCTOU gap; the prose overstates the guarantee. |
-| `.claude/skills/hw-flash/SKILL.md` | 142-147, 225 | Outcome table says "failed or timed out" while the prose says the 20-second bound is success | ⚠️ WARNING | A valid log can be discarded or success misreported. |
-| `.claude/skills/hw-flash/SKILL.md` | 63 | Consent example omits the conditional `-e <env>` | ⚠️ WARNING | The announced command can differ from the executed one. |
-| `.claude/skills/_shared/guardrails.md` | 52-53 | General prohibition now covers only the state file, not logs | ⚠️ WARNING | A future diagnostic log is no longer plainly forbidden from carrying a credential. |
-| `.claude/skills/hw-flash/SKILL.md` | 100-112 | Monitor argv omits `--quiet`; the banner would enter the log once the TTY defect is fixed | ⚠️ WARNING | The log would not be the raw device bytes the scan describes. |
-| `AGENTS.md` | 67-72 | No-build-impact paragraph omits `.claude/`, `.agents/`, `.skill-state/`, the ledger and the generator | ⚠️ WARNING | The rulebook understates the mapper, although `affected.py` is correct. |
-| `.claude/skills/hw-flash/SKILL.md` | 108-140 | `CaptureFailed`, `env`, `needs_e_flag`, `user_baud`, `hw_id` are unbound; `user_baud` is not validated as a positive integer | ℹ️ INFO | The snippet is not runnable as a standalone unit. |
-| `.claude/skills/hw-flash/SKILL.md` | 35-43 | `pio project config` emits `monitor_speed` as an integer under `env:` and a string under the base section; no normalization is stated | ℹ️ INFO | A string comparison can misclassify the value as absent. |
-| `09-REVIEW-DISPOSITION.md` | — | The post-09-09 review recorded all 15 findings as `open`, including the two critical ones | ℹ️ INFO | The phase currently carries two open critical findings. |
+| `.claude/skills/hw-flash/SKILL.md` (mirror too) | 67, 108, 143-145 | Capture command omits `--baud`; prose says `-b <n>` | 🛑 BLOCKER | The announced baud is not the executed baud; the absent-key branch either exits 2 or runs at 9600. |
+| `scripts/serial_capture.py` | 82-88 | Credential regex misses `password is …`, `userpassword = …`, `passphrase = …`, `pwd = …` | 🛑 BLOCKER | A credential can be written under the sole permitted capture exception. |
+| `scripts/serial_capture.py` | 310-311, 143-153 | `--seconds` accepts NaN/infinity; traceback and unreaped child | ⚠️ WARNING | A usage error surfaces as a traceback and can leave the monitor running. |
+| `scripts/serial_capture.py` | 165-166 | `finally` closes the master but does not kill/reap the child | ⚠️ WARNING | A busy serial port and a ResourceWarning after an unexpected exception. |
+| `scripts/serial_capture.py` | 90, 204, 301-307 | `^…$` validators accept a trailing newline; env accepts a leading `-` | ⚠️ WARNING | The validators do not implement the canonical shape (IN-09). |
+| `scripts/tests/test_serial_capture.py` | 292-319, 230-251 | No `_build_command`, CLI payload or concurrent-reader test; concurrency torn-read unproven | ℹ️ INFO | The exact place CR-03 lives is untested (IN-06). |
+| `scripts/serial_capture.py` | 202-247 | The write does not enforce the scan that gates it | ℹ️ INFO | Holds only while the sole caller scans first (IN-07). |
+| `.planning/.../09-10-PLAN.md` | 35 | Zero-byte refusal attributed to `capture_pty`, implemented in `capture_and_store` | ℹ️ INFO | Contract wording mismatch; CLI behavior correct (IN-08). |
+| `scripts/tests/test_affected.py` | 236-252 | `.skill-state/` has no test entry | ℹ️ INFO | A future drop of that rule would not fail (IN-10). |
+
+### Human Verification Required
+
+| Test | Expected | Why Human |
+|------|----------|-----------|
+| With a board connected, run `uv run scripts/serial_capture.py --id 1_3-police-flasher --seconds 20` after a confirmed upload. | Exit 0, `CAPTURED — N bytes captured`, and a raw device log under `.skill-state/logs/`. | The suite uses a fake PTY child; the real monitor needs hardware and a serial port. Run only after CR-03 is fixed if the absent-baud branch is exercised. |
 
 ### Deviations
 
-- **`new-homework` is version 0.2, not 0.1.** Quick task `261026-x78` changed the ESP-IDF template to pure C (`src/main.c`, `language: c`) and bumped the skill, with a dated changelog entry. Six skills remain at 0.1. The roadmap SC's literal "0.1" is therefore no longer true for one skill; the intent — a versioned skill — still holds, and the 0.2 contract is internally consistent (`SKILL.md:29-38`, `question-bank.md:46-55`, both templates). If the roadmap literal must be enforced, record an override or amend SC1.
+- **`new-homework` is version 0.2, not 0.1.** Quick task `261026-x78` changed the ESP-IDF template to pure C and bumped the skill with a dated changelog. Six skills remain at 0.1. The roadmap SC1 literal is no longer true for one skill; the intent — a versioned skill — holds, and the 0.2 contract is internally consistent. Carried forward from the previous verification; if the literal must be enforced, record an override or amend SC1.
+- **The disposition counts are `open: 14`, `total: 25`, not the plan's `open: 5`, `total: 16`.** The incremental review of the 09-10 change set added nine findings (`CR-03`, `WR-10`–`WR-12`, `IN-06`–`IN-10`) after the plan ran. The record reflects the current tree honestly; the plan's exact counts are superseded, not silently wrong.
 
 ### Gaps Summary
 
-The gap-closure plan 09-09 resolved the baud half of the prior finding: `monitor_speed = 115200` is declared in the shared template and regenerated config, the real homework resolves it through `pio project config`, and the skill stops when the key is absent. The mirror, manifest, hooks and phase gate are all green, and `new-homework` and `hw-build` remain substantively complete.
+Plan 09-10 genuinely closed the two previous blockers for the main path. The piped-monitor snippet is gone: `scripts/serial_capture.py` allocates a PTY, sets the slave to raw mode, preserves `bytes(range(256))`, refuses an early exit and an empty capture, scans the bytes before any file exists, and writes the log through `O_DIRECTORY | O_NOFOLLOW` descriptors with `dir_fd`. The suite proves the pipe regression cannot return (26/26 pass outside the sandbox), the mirror and manifest are `UNCHANGED`, `scripts/serial_capture.py` maps to no build, `AGENTS.md` and the guardrails were corrected, and the full gate is green (403 Python tests, 73 native cases, metadata, views, skills, 14 pre-commit hooks).
 
-The remaining gap is concentrated in the `hw-flash` capture (FLOW-07). Two independently reproduced defects block it. First, the only executable capture snippet pipes the monitor's stdout, and PlatformIO's monitor refuses a non-TTY stdout, so every capture exits 1 before any bytes are collected; the "capture succeeded" outcome is unreachable and no log is ever written. Second, the credential-shape scan that gates the one permitted write misses ordinary assignment forms — `secret = hunter2`, JSON `{"token": "abc123"}`, the space-separated form and `Authorization: Bearer …` — so a device printing one of them would have it persisted, contradicting the shared guardrails' `[MUST]`. The dry run stopped at the consent gate, so neither defect had been exercised end to end. The phase goal is therefore not fully achieved while a shipped, non-stub skill's capture is both non-functional and unsafe.
+Two must-haves still fail in the shipped, active `hw-flash` path. First, the skill never passes the user-resolved baud to the helper: the helper takes `--baud`, the skill says `-b <n>`, and the announced capture command has neither. In the absent-`monitor_speed` branch the run either exits 2 or silently monitors at PlatformIO's forbidden 9600, and the announced `Baud:` line is not the executed one. Second, the credential scan is still narrower than the policy it claims to implement: `password is hunter2`, `userpassword = hunter2`, `passphrase = hunter2` and `pwd = hunter2` all pass the gate, so a credential can be persisted under the only permitted write. These are the same classes as the prior CR-02 and the prior truth-10 failure, so the phase goal is not yet fully achieved. The remaining review findings (non-finite `--seconds`, unreaped child, trailing-newline validators, test gaps) are warnings or informational and do not independently block the goal.
 
 ---
 
-_Verified: 2026-10-26T23:16:35Z_
+_Verified: 2026-10-26T23:42:40Z_
 _Verifier: Claude (gsd-verifier)_
