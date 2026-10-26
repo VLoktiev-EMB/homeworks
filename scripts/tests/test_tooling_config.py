@@ -281,6 +281,32 @@ class ClangdWrapperTests(unittest.TestCase):
 
         self.assertEqual("espressif", label)
 
+    def test_a_non_executable_espressif_candidate_exits_2(self) -> None:
+        """WR-02: a candidate without its execute bit must never reach exec.
+
+        Executing it would fail with `Permission denied` and exit 1, which the
+        documented contract does not allow.
+        """
+        broken = self.espressif_binary("21.1.3_20260408", "broken")
+        broken.chmod(0o644)
+
+        result = self.run_wrapper("--version")
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("FAIL clangd-wrapper:", result.stderr)
+        self.assertNotIn("Permission denied", result.stderr)
+
+    def test_a_non_executable_newest_candidate_falls_back_to_an_executable_one(
+        self,
+    ) -> None:
+        self.espressif_binary("21.1.3_20260408", "usable")
+        newest = self.espressif_binary("21.1.10_20270101", "broken")
+        newest.chmod(0o644)
+
+        label, _ = self.resolved(self.run_wrapper("--version"))
+
+        self.assertEqual("usable", label)
+
     def test_empty_espressif_tree_exits_2_without_a_shell_diagnostic(self) -> None:
         self.bin.mkdir(exist_ok=True)
 

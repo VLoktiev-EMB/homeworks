@@ -48,12 +48,26 @@ fi
 # Step 3: with `nullglob` a non-matching glob yields an empty array instead of
 # a literal path, so the fallback cannot be defeated by a no-match status. A
 # bare `ls ... | sort | tail` pipeline would abort under `pipefail`.
+#
+# A partially installed build can leave a candidate without its execute bit.
+# Executing it would fail with `Permission denied` and exit 1, contradicting the
+# documented exit-2 contract, so only executable candidates are eligible.
 if [ -z "${CLANGD:-}" ]; then
   shopt -s nullglob
   candidates=("$HOME"/.espressif/tools/esp-clangd/esp-*/esp-clangd/bin/clangd)
   shopt -u nullglob
+  executable=()
+  # bash 3.2 treats an empty `"${array[@]}"` as unbound under `set -u`, so the
+  # loop is guarded by the count rather than iterating an empty array.
   if [ "${#candidates[@]}" -gt 0 ]; then
-    CLANGD="$(printf '%s\n' "${candidates[@]}" | sort -V | tail -1)"
+    for candidate in "${candidates[@]}"; do
+      if [ -x "$candidate" ]; then
+        executable+=("$candidate")
+      fi
+    done
+  fi
+  if [ "${#executable[@]}" -gt 0 ]; then
+    CLANGD="$(printf '%s\n' "${executable[@]}" | sort -V | tail -1)"
   fi
 fi
 
