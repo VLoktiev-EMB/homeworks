@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 9/9 plans executed, 2 gap-closure plans
+**Plans:** 10/10 plans executed, 2 gap-closure plans
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -409,7 +409,7 @@ Plans:
 
 **Gap closure**
 - [x] 09-09-PLAN.md — close CR-02 (declared baud), CR-01 (scoped capture exception) and WR-01 (capture snippet) in `hw-flash`
-- [ ] 09-10-PLAN.md — close CR-01 (headless PTY capture helper) and CR-02 (widened credential scan), restore the shared secrets rule, and regenerate the mirror
+- [x] 09-10-PLAN.md — close CR-01 (headless PTY capture helper) and CR-02 (widened credential scan), restore the shared secrets rule, and regenerate the mirror
 
 ### Phase 10: Report and Evidence System
 
@@ -458,7 +458,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
-| 9. Agent Workflow and Skills | 9/9 | In Progress | - |
+| 9. Agent Workflow and Skills | 10/10 | In Progress | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
