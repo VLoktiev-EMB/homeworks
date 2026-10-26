@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-26 — 0.2 language follows the framework
+
+- The ESP-IDF template now ships `src/main.c` and `language: c`, so the intake derives
+  the language from the framework instead of always recording `cpp`; the Arduino
+  template stays C++.
+
 ## 2026-10-26 — initial 0.1 contract, phase 9 planning run
 
 - Added the eight-topic intake bank — mode, board, framework, language,

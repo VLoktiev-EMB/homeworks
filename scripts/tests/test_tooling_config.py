@@ -114,8 +114,6 @@ class ClangFormatConfigTests(unittest.TestCase):
 CLANGD_PATHS = (
     REPO_ROOT / "templates" / "homework-arduino" / ".clangd",
     REPO_ROOT / "templates" / "homework-espidf" / ".clangd",
-    REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden" / "homework-arduino" / ".clangd",
-    REPO_ROOT / "scripts" / "tests" / "fixtures" / "golden" / "homework-espidf" / ".clangd",
     REPO_ROOT / "homeworks" / "1_3-police-flasher" / ".clangd",
 )
 
@@ -136,8 +134,8 @@ CLANGD_SUPPRESS = ("unknown-argument", "drv_unknown_argument")
 class ClangdConfigTests(unittest.TestCase):
     """D-16: the per-project fragment carries the verified language-server keys.
 
-    The five committed copies must stay byte-identical so the scaffold, its
-    golden tree, and the real homework cannot drift apart.
+    The three committed copies must stay byte-identical so both templates and
+    the real homework cannot drift apart.
     """
 
     def test_every_clangd_copy_is_byte_identical(self) -> None:

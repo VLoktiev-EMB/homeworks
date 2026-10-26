@@ -46,11 +46,14 @@ the scaffold template name: `arduino` or `espidf`, which is the value the skill 
 
 ## language
 
-Ask only to confirm the language. The default is `cpp` for both frameworks:
+Ask only to confirm the language, which is derived from the framework answer rather than
+chosen. `arduino` -> `cpp`, because the Arduino API is C++; `espidf` -> `c`, because
+ESP-IDF's native API is C and `app_main` is a plain C symbol.
 `templates/homework-arduino/homework.yaml:7` and
-`templates/homework-espidf/homework.yaml:7` both ship `language: cpp`, so the scaffold
-cannot produce anything else. Record `intake.language: cpp`. There is no branch to `c`
-for ESP-IDF, because deriving it would record metadata the scaffold does not produce.
+`templates/homework-espidf/homework.yaml:7` are the source of the scaffolded value, so
+record `intake.language` from `intake.framework` and never offer the other value. A C++
+firmware in the ESP-IDF template is not a scaffold output and would require hand-editing,
+so it is recorded as a manual deviation, never as an intake answer.
 
 ## specification
 

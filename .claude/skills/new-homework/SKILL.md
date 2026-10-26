@@ -3,7 +3,7 @@ name: new-homework
 description: Scaffolds a new PlatformIO homework through the repository's only supported path, then guides the user block by block from intake to report. Use when starting a new assignment, creating a homeworks directory, or asking for the guided homework workflow.
 disable-model-invocation: true
 metadata:
-  version: "0.1"
+  version: "0.2"
   status: active
 ---
 
@@ -33,8 +33,11 @@ Only the default board can be scaffolded. `scripts/new_homework:90` hardcodes
 unsupported-scaffold escalation that names the manual path. The skill never claims to
 scaffold an arbitrary board.
 
-The language is `cpp` for both frameworks: both templates ship `language: cpp`, so the
-language question only confirms it and never derives `c` for ESP-IDF.
+The language follows the framework and the scaffold fixes it: `arduino` -> `cpp`, because
+the Arduino API is C++; `espidf` -> `c`, because ESP-IDF's native API is C and `app_main`
+is a plain C symbol. `templates/homework-arduino/homework.yaml` ships `language: cpp` and
+`templates/homework-espidf/homework.yaml` ships `language: c`. The language question
+confirms the framework's value and never overrides it.
 
 ## Intake
 
