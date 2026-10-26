@@ -14,7 +14,7 @@ toolchain:
 simulation:
   tool: wokwi
   diagram: assets/diagram.json
-  status: pending
+  status: verified
 tests:
   framework: unity
   native: true

@@ -41,5 +41,8 @@ resolution, so it cannot prove the paths. Run the command with
 WebSocket connection or token stage without a real credential. The only token value
 that belongs in this file is `dummy`; never write a real token here.
 `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` validates the
-wiring without one. The run is deferred to Phase 7, so `simulation.status` in
-`homework.yaml` stays `pending`.
+wiring without one. The scenario has since been executed: all three counted runs exited 0 with
+one `pattern ready` line each, so `simulation.status` in `homework.yaml` is `verified`. The
+commands and per-run values are in
+`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool decision is in
+`docs/decisions/0014-simulator-selection.md`.
