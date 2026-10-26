@@ -22,7 +22,7 @@ status: all_fixed
 
 ## Fixed Issues
 
-### CR-01: `HeaderFilterRegex` discarded every header diagnostic
+### CR-01: `HeaderFilterRegex` is anchored to a repository-relative prefix, so every header diagnostic is discarded
 
 **Files modified:** `.clang-tidy`, `scripts/tests/test_tooling_config.py`
 **Commit:** `476c5fa`
@@ -41,7 +41,7 @@ that includes it was analysed under the committed config, and was reported as
 `--header-filter='^(lib|homeworks)/.*'`. Temporary probe files were removed and
 the working tree is clean.
 
-### CR-02: a header-only push passed the pre-push gate with no analysis
+### CR-02: A header-only push passes the pre-push gate with no analysis at all
 
 **Files modified:** `.pre-commit-config.yaml`, `AGENTS.md`,
 `docs/decisions/0013-clangd-multi-root-contract.md`, `scripts/clang-tidy-hook`
@@ -65,7 +65,7 @@ builds. Verified end to end: `pre-commit run clang-tidy --hook-stage pre-push
 --files lib/common/src/probe_skip.c` fails with the `FAIL clang-tidy:` remedy,
 and the same hook passes over the real described set.
 
-### WR-01: the database guard passed when a new source was missing
+### WR-01: The database guard passes when a newly added source is missing from the database
 
 **Files modified:** `scripts/clang-tidy-db`, `scripts/tests/test_tooling_config.py`
 **Commit:** `9c4e0fb`
@@ -77,7 +77,7 @@ headers are deliberately excluded. Added
 source's mtime set *older* than the database, so only the description check can
 fail it, and `test_a_header_absent_from_the_database_is_not_stale`.
 
-### WR-02: the wrapper could select a non-executable esp-clangd
+### WR-02: The wrapper can select a non-executable esp-clangd and exit 1, contradicting its documented exit codes
 
 **Files modified:** `scripts/clangd-wrapper.sh`, `scripts/tests/test_tooling_config.py`
 **Commit:** `b366eac`
@@ -89,7 +89,7 @@ count because bash 3.2 treats an empty `"${array[@]}"` as unbound under
 `set -u`. Added two cases: only-candidate non-executable exits 2 without
 `Permission denied`, and non-executable newest falls back to the executable one.
 
-### WR-03: the onboarding guide overstates what is pinned and the hook count
+### WR-03: The onboarding guide overstates what is pinned and how many hooks run
 
 **Files modified:** `docs/standards/vscode.md`, `scripts/tests/test_tooling_config.py`
 **Commit:** `b434aa7`
