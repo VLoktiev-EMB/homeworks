@@ -18,7 +18,8 @@ Question 1). Each entry reads `<changed path> -> <effect>`:
 - `.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
   `templates/views/`, `boards/`, `.skill-state/`, or exactly `README.md`,
   `AGENTS.md`, `LICENSE`, `generated.manifest`, `generated.skills.manifest`,
-  `homeworks.code-workspace`, `scripts/gen_skills.py` -> no build, no simulation
+  `homeworks.code-workspace`, `scripts/gen_skills.py`,
+  `scripts/serial_capture.py` -> no build, no simulation
 - `homeworks/<id>/...` -> that project's environments
 - `lib/<name>/...` -> every project whose `lib_deps` names `<name>`, transitively
   through `library.json` `dependencies`
@@ -117,6 +118,9 @@ NO_BUILD_IMPACT = (
     # Named explicitly because an unrecognised path widens the matrix: a
     # generator-only pull request must not rebuild every project.
     "scripts/gen_skills.py",
+    # The skill runtime helper captures serial output; it is never a
+    # compilation input.
+    "scripts/serial_capture.py",
 )
 
 # Shared inputs every project consumes. `scripts/affected.py` names itself so a
