@@ -745,5 +745,97 @@ class HookLayeringTests(unittest.TestCase):
                     self.assertNotIn(flag, invocation)
 
 
+RULEBOOK = REPO_ROOT / "AGENTS.md"
+GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
+
+# TOOL-04: the seven hook ids a contributor meets, in stage order.
+GUIDE_HOOKS = (
+    "gitleaks",
+    "clang-format",
+    "ruff-check",
+    "markdownlint-cli2",
+    "yamllint",
+    "clang-tidy-db",
+    "clang-tidy",
+)
+
+# D-06: every linter arrives through pre-commit, so a system install would be
+# a contradiction, not a convenience. These are the forms the guide must not
+# name; the positive form (`pre-commit install`) is asserted separately.
+FORBIDDEN_INSTALLS = (
+    "brew install",
+    "apt-get install",
+    "pip install --user",
+    "npm install -g",
+)
+
+ENFORCEMENT_TAGS = (
+    "[ENFORCED: pre-commit]",
+    "[ENFORCED: pre-push]",
+    "[ENFORCED: CI]",
+    "[ENFORCED: review]",
+)
+
+
+class RulebookAndGuideTests(unittest.TestCase):
+    """TOOL-04: the rulebook names the layers, and the guide carries the steps.
+
+    The assertions stay on command substrings and required terms rather than
+    full sentences, so ordinary prose editing does not break the test while a
+    dropped step still does. The negative assertion is the other half of D-06:
+    a guide that named a system package-manager install would contradict the
+    pinned-hook delivery path the same repository declares.
+    """
+
+    def rulebook(self) -> str:
+        return RULEBOOK.read_text(encoding="utf-8")
+
+    def guide(self) -> str:
+        return GUIDE.read_text(encoding="utf-8")
+
+    def test_the_rulebook_names_all_four_enforcement_points(self) -> None:
+        text = self.rulebook()
+        for tag in ENFORCEMENT_TAGS:
+            with self.subTest(tag=tag):
+                self.assertIn(tag, text)
+
+    def test_the_quality_tooling_section_exists(self) -> None:
+        self.assertIn("### Quality tooling", self.rulebook())
+
+    def test_a_routing_row_names_the_onboarding_guide(self) -> None:
+        rows = [
+            line
+            for line in self.rulebook().splitlines()
+            if line.startswith("|") and "docs/standards/vscode.md" in line
+        ]
+        self.assertTrue(rows, "no routing row names docs/standards/vscode.md")
+
+    def test_the_guide_carries_the_two_step_wrapper_command(self) -> None:
+        text = self.guide()
+        self.assertIn('mkdir -p "$HOME/.local/bin"', text)
+        self.assertIn("scripts/clangd-wrapper.sh", text)
+
+    def test_the_guide_installs_both_hook_stages_with_one_command(self) -> None:
+        self.assertIn("pre-commit install", self.guide())
+
+    def test_the_guide_names_the_editor_surfaces(self) -> None:
+        text = self.guide()
+        self.assertIn("Problems", text)
+        self.assertIn("format-on-save", text.lower())
+        self.assertIn("compiledb", text)
+
+    def test_the_guide_lists_every_hook(self) -> None:
+        text = self.guide()
+        for hook in GUIDE_HOOKS:
+            with self.subTest(hook=hook):
+                self.assertIn(hook, text)
+
+    def test_the_guide_names_no_system_package_manager_install(self) -> None:
+        text = self.guide()
+        for command in FORBIDDEN_INSTALLS:
+            with self.subTest(command=command):
+                self.assertNotIn(command, text)
+
+
 if __name__ == "__main__":
     unittest.main()
