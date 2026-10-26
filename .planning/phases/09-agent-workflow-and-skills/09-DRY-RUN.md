@@ -1,33 +1,44 @@
 # Phase 9 dry run — skill transcript
 
-Recorded 2026-10-26 by the executing agent for plan 09-08. This transcript is the
-phase evidence for D-22: the workflow contracts live in model instructions, so a
-recorded run is the only honest check that the prose works. Every command below was
-executed; every state excerpt is the real file content at that stage of the run.
+Recorded 2026-10-27 by the executing agent for plan 09-08, as a re-run of the
+locked dry run (D-22). This transcript is the phase evidence for D-22: the
+workflow contracts live in model instructions, so a recorded run is the only
+honest check that the prose works. Every command below was executed; every state
+excerpt is the real file content at that stage of the run.
+
+> **This transcript supersedes the pre-`261026-x78` run.** The earlier
+> transcript recorded the ESP-IDF scaffold as `src/main.cpp` with
+> `language: cpp`. Quick task `261026-x78` changed the ESP-IDF homework template
+> to pure C (`templates/homework-espidf/src/main.c`, `language: c`) and removed
+> the stored golden fixtures in favour of live-template parity assertions. The
+> old transcript is now invalid evidence: it is superseded here, not edited.
+> This re-run exercises the corrected contract end to end, including a green
+> ESP-IDF target build.
 
 `<root>` is the disposable repository root built by `build_root()` outside the
-repository. It is never the repository, never tracked, and is named relative to the
-project on purpose so no absolute path is published.
+repository. `<root-b>` is the second disposable root used by the negative repair
+leg. Neither is ever the repository, neither is tracked, and both are named
+relative to the project on purpose so no absolute path is published.
 
-The dry run is self-play: the operator executing the skill also supplies the answers
-it would give as a user. It therefore evidences that the prose is executable end to
-end; it is not evidence of a real human session.
+The dry run is self-play: the operator executing the skill also supplies the
+answers it would give as a user. It therefore evidences that the prose is
+executable end to end; it is not evidence of a real human session.
 
 ## Leg 0 — environment
 
-The disposable root is built with the same fixture builder the test suite uses, so
-the scaffold reads the real schema, templates, `platformio.shared.ini` and partition
-table without touching the repository:
+The disposable root is built with the same fixture builder the test suite uses,
+so the scaffold reads the real schema, templates, `platformio.shared.ini` and
+partition table without touching the repository:
 
 ```text
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run python -c \
-  "from scripts.tests.temp_root import build_root; print(build_root('<root>'))"
+$ env UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run python -c \
+    "from scripts.tests.temp_root import build_root; print(build_root('${TMPDIR:-/tmp}/phase9-rerun-root'))"
+<root>
+exit 0
 ```
 
-Exit code 0; the command printed the root path, recorded here as `<root>`.
-
-`<root>/README.md` was seeded by hand so the scaffold block's view regeneration has
-an authored file with the generated marker region to render into:
+`<root>/README.md` was seeded by hand so the scaffold block's view regeneration
+has an authored file with the generated marker region to render into:
 
 ```text
 # Homeworks
@@ -35,11 +46,11 @@ an authored file with the generated marker region to render into:
 <!-- BEGIN GENERATED: homeworks -->
 <!-- END GENERATED -->
 
-A disposable root for the Phase 9 dry run.
+A disposable root for the Phase 9 re-run of the locked dry run.
 ```
 
-The `root: "temporary"` condition is the absence of a git worktree, so it was proved
-directly:
+The `root: "temporary"` condition is the absence of a git worktree, so it was
+proved directly:
 
 ```text
 $ git -C <root> rev-parse
@@ -51,8 +62,10 @@ exit 128
 
 The id `9_1-dry-run` was supplied before the bank and validated against
 `^[0-9]+_[0-9]+-[a-z0-9-]+$`. It is not a bank topic, so `mode` stayed the first
-question (D-11). The template name `arduino` was validated against `arduino|espidf`
-before use.
+question (D-11). The template name `espidf` was validated against
+`arduino|espidf` before use. This leg deliberately uses the corrected ESP-IDF
+template, so the transcript evidences the pure-C contract rather than restating
+the removed C++ one.
 
 ### Intake
 
@@ -63,27 +76,27 @@ question in English and records the answer as written to the state file.
 |---|-------|-----------------------|-----------------|
 | 1 | `mode` | Guided or one-shot? | `guided` |
 | 2 | `board` | Which board does the assignment target? | `esp32-s3-devkitc-1` (the default, and the only board the scaffold supports) |
-| 3 | `framework` | Arduino or ESP-IDF? | `arduino` |
-| 4 | `language` | Confirm the language. | `cpp` (confirmed; the templates ship `language: cpp`) |
+| 3 | `framework` | Arduino or ESP-IDF? | `espidf` |
+| 4 | `language` | Confirm the language. | `c` (derived from `espidf`; the skill never offers `cpp` for this framework) |
 | 5 | `specification` | Ready specification or free-form task? | `free-form` (acceptance criteria derived; assumptions recorded) |
 | 6 | `simulation` | Simulated, and with what? | `none` |
 | 7 | `tests` | Pure logic that can run on the host? | `unity-native`, suite path `test/test_homework` |
 | 8 | `deliverables` | Which documents are required? | `["readme", "report"]` |
 
 `simulation: none` means the token question is never reached; `simulation` was
-recorded and `simulation_token_present` was written as `false` because no simulation
-was selected. No token value was asked for, read, echoed or written.
+recorded and `simulation_token_present` was written as `false` because no
+simulation was selected. No token value was asked for, read, echoed or written.
 
 ### Provenance gate
 
-The four `task.md` values were collected before the scaffold wrote anything. Because
-this is a dry-run fixture rather than a real assignment, the attribution says so
-explicitly instead of inventing a course source:
+The four `task.md` values were collected before the scaffold wrote anything.
+Because this is a dry-run fixture rather than a real assignment, the attribution
+says so explicitly instead of inventing a course source:
 
 | Key | Value |
 |-----|-------|
 | `source_url` | `https://github.com/VLoktiev-EMB/homeworks` |
-| `retrieved` | `2026-10-26T20:00:00Z` |
+| `retrieved` | `2026-10-26T22:22:00Z` |
 | `attribution` | `Phase 9 dry-run fixture, not a real course assignment.` |
 | `license` | `MIT` |
 | `status` | `complete` |
@@ -91,8 +104,8 @@ explicitly instead of inventing a course source:
 ### State file after intake
 
 `.skill-state/9_1-dry-run.json` was written before the checkpoint menu, with
-`root: "temporary"` and `"commit": null` because `git rev-parse --short HEAD` fails
-in the disposable root (state-file.md, "Git absence"):
+`root: "temporary"` and `"commit": null` because `git rev-parse --short HEAD`
+fails in the disposable root (state-file.md, "Git absence"):
 
 ```json
 {
@@ -103,8 +116,8 @@ in the disposable root (state-file.md, "Git absence"):
   "root": "temporary",
   "intake": {
     "board": "esp32-s3-devkitc-1",
-    "framework": "arduino",
-    "language": "cpp",
+    "framework": "espidf",
+    "language": "c",
     "specification": "free-form",
     "simulation": "none",
     "simulation_token_present": false,
@@ -112,7 +125,7 @@ in the disposable root (state-file.md, "Git absence"):
     "deliverables": ["readme", "report"],
     "provenance": {
       "source_url": "https://github.com/VLoktiev-EMB/homeworks",
-      "retrieved": "2026-10-26T20:00:00Z",
+      "retrieved": "2026-10-26T22:22:00Z",
       "attribution": "Phase 9 dry-run fixture, not a real course assignment.",
       "license": "MIT",
       "status": "complete"
@@ -123,7 +136,7 @@ in the disposable root (state-file.md, "Git absence"):
   "assumptions": [],
   "conflicts": [],
   "checkpoints": [
-    {"name": "intake", "at": "2026-10-26T20:05:00Z", "commit": null}
+    {"name": "intake", "at": "2026-10-26T22:23:00Z", "commit": null}
   ]
 }
 ```
@@ -143,11 +156,12 @@ answer would have been, and only this checkpoint appended to `checkpoints[]`.
 ### Scaffold block
 
 ```text
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/new_homework \
-  9_1-dry-run --template arduino --dir <root> --json
+$ env UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/new_homework \
+    9_1-dry-run --template espidf --dir <root> --json
+exit 0
 ```
 
-Exit code 0. Every record is `CREATE`:
+Every record is `CREATE`:
 
 | Path | Status |
 |------|--------|
@@ -157,20 +171,43 @@ Exit code 0. Every record is `CREATE`:
 | `homeworks/9_1-dry-run/homework.yaml` | `CREATE` |
 | `homeworks/9_1-dry-run/include/.gitkeep` | `CREATE` |
 | `homeworks/9_1-dry-run/platformio.ini` | `CREATE` |
-| `homeworks/9_1-dry-run/src/main.cpp` | `CREATE` |
+| `homeworks/9_1-dry-run/sdkconfig.defaults` | `CREATE` |
+| `homeworks/9_1-dry-run/src/main.c` | `CREATE` |
 | `homeworks/9_1-dry-run/task.md` | `CREATE` |
 | `homeworks/9_1-dry-run/test/test_homework/test_homework.c` | `CREATE` |
 
-No path recorded `CONFLICT` or `ERROR` (F-01).
+No path recorded `CONFLICT` or `ERROR` (F-01). The ESP-IDF template carries one
+more authored file than the Arduino template (`sdkconfig.defaults`), so the
+corrected contract produces ten records rather than nine.
+
+### The corrected contract, asserted
+
+The reason this transcript supersedes the earlier one is checked directly rather
+than inferred from the skill prose:
+
+```text
+$ ls <root>/homeworks/9_1-dry-run/src
+main.c
+$ test ! -e <root>/homeworks/9_1-dry-run/src/main.cpp && echo "src/main.cpp absent"
+src/main.cpp absent
+$ grep -E '^(framework|language):' <root>/homeworks/9_1-dry-run/homework.yaml
+framework: espidf
+language: c
+```
+
+The scaffold produces `src/main.c`, produces no `src/main.cpp`, and writes
+`language: c`. The Arduino template still produces `src/main.cpp` and
+`language: cpp`; Leg 3 exercises that half of the split.
 
 The scaffold block's second half is the view regeneration:
 
 ```text
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/gen_views.py \
-  --all --dir <root> --json
+$ env UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/gen_views.py \
+    --all --dir <root> --json
+exit 0
 ```
 
-Exit code 0. Diff 1 (guided id only):
+Diff 1 (guided ESP-IDF id only):
 
 ```json
 [
@@ -187,16 +224,16 @@ The rendered region became:
 <!-- BEGIN GENERATED: homeworks -->
 | ID | Project | Board | Framework | Status | Report |
 |----|---------|-------|-----------|--------|--------|
-| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | arduino | planned | none |
+| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | espidf | planned | none |
 <!-- END GENERATED -->
 ```
 
 Idempotence (F-01) was proved by re-running the same scaffold command:
 
 ```text
-$ ... scripts/new_homework 9_1-dry-run --template arduino --dir <root> --json
+$ ... scripts/new_homework 9_1-dry-run --template espidf --dir <root> --json
 exit 0
-"status": "UNCHANGED" — 9 records
+"status": "UNCHANGED" — 10 records
 "status": "CREATE"    — 0 records
 ```
 
@@ -207,40 +244,43 @@ Block: `controller`. The fixed sequence is `scaffold`, `controller`,
 
 ### Explanation before the code
 
-The controller block turns the starter's blocking `delay(500)` toggle into a
+The controller block turns the starter's blocking `vTaskDelay(500)` toggle into a
 non-blocking alternation of two LEDs. One concept this turn: a deadline stored in
-`next_toggle_ms`, compared against `millis()`, lets `loop()` return immediately and
-keep the board responsive; `delay()` would freeze every other responsibility. The
-block keeps the composition-root shape — the adapters are built once in `setup()`
-and the loop only ticks the controller.
+`next_toggle` as a FreeRTOS tick count, compared against `xTaskGetTickCount()`,
+lets the task check the deadline and yield with a one-tick delay, so other tasks
+keep running; a 500 ms `vTaskDelay` would freeze every other responsibility for
+that whole interval. The block keeps the composition-root shape — the adapters
+are built once in `app_main()` and the loop only ticks the controller.
 
 ### Code written
 
-`<root>/homeworks/9_1-dry-run/src/main.cpp`:
+`<root>/homeworks/9_1-dry-run/src/main.c`:
 
-```cpp
-/* Controller block for the Phase 9 dry-run homework.
+```c
+/* Controller block for the Phase 9 dry-run ESP-IDF homework.
 
-   Two LEDs alternate every 250 ms. The pure timing decision lives in
-   apply_phase() and loop(); the port contracts keep the logic testable and
-   the Arduino adapters keep it hardware-neutral. */
+   Two LEDs alternate every 250 ms without a blocking delay in the loop body.
+   The pure timing decision lives in apply_phase() and the tick comparison; the
+   port contracts keep the logic testable and the ESP-IDF adapters keep it
+   hardware-neutral. */
 
-#include <Arduino.h>
+#include <stdbool.h>
 
-#include "arduino/gpio.h"
-#include "arduino/log.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include "espidf/gpio.h"
+#include "espidf/log.h"
 #include "port/gpio.h"
 #include "port/log.h"
 
 /* Must match the wiring recorded in assets/ and in the report. */
 static const uint8_t LED_A_PIN = 4;
 static const uint8_t LED_B_PIN = 5;
-static const uint32_t TOGGLE_INTERVAL_MS = 250;
+static const TickType_t TOGGLE_INTERVAL_TICKS = pdMS_TO_TICKS(250);
 
 static port_gpio_t gpio;
 static port_log_t logger;
-static uint32_t next_toggle_ms = 0;
-static bool led_a_on = false;
 
 static void apply_phase(bool a_on)
 {
@@ -252,10 +292,13 @@ static void apply_phase(bool a_on)
     }
 }
 
-void setup(void)
+void app_main(void)
 {
-    gpio = arduino_gpio_port();
-    logger = arduino_log_port();
+    TickType_t next_toggle;
+    bool led_a_on = false;
+
+    gpio = espidf_gpio_port();
+    logger = espidf_log_port();
 
     if (gpio.set_mode(gpio.ctx, LED_A_PIN, PORT_GPIO_OUTPUT) != PORT_OK ||
         gpio.set_mode(gpio.ctx, LED_B_PIN, PORT_GPIO_OUTPUT) != PORT_OK) {
@@ -264,46 +307,56 @@ void setup(void)
         port_log_write(&logger, PORT_LOG_INFO, "controller ready");
     }
     apply_phase(led_a_on);
-    next_toggle_ms = millis() + TOGGLE_INTERVAL_MS;
-}
+    next_toggle = xTaskGetTickCount() + TOGGLE_INTERVAL_TICKS;
 
-void loop(void)
-{
-    const uint32_t now = millis();
+    for (;;) {
+        const TickType_t now = xTaskGetTickCount();
 
-    if (now < next_toggle_ms) {
-        return;
+        if ((int32_t)(now - next_toggle) >= 0) {
+            led_a_on = !led_a_on;
+            apply_phase(led_a_on);
+            next_toggle += TOGGLE_INTERVAL_TICKS;
+        }
+        /* One tick of yield: other tasks run between deadline checks. */
+        vTaskDelay(1);
     }
-    led_a_on = !led_a_on;
-    apply_phase(led_a_on);
-    next_toggle_ms += TOGGLE_INTERVAL_MS;
 }
 ```
 
 ### Explanation after the code
 
 `apply_phase()` is the only place that writes a pin, so both LEDs always move
-together and the phase is never half-applied. `setup()` establishes the first phase
-and seeds the deadline, so `loop()` does not fire on the first tick. `loop()` is a
-guard plus a toggle: the deadline advances by a fixed interval rather than by "now",
-so a late tick does not shift the whole schedule.
+together and the phase is never half-applied. `app_main()` establishes the first
+phase and seeds the deadline, so the first loop iteration does not fire early.
+The wrap-safe comparison is `(int32_t)(now - next_toggle) >= 0`: it stays correct
+when the 32-bit tick counter wraps, where `now >= next_toggle` would not. The
+deadline advances by a fixed interval rather than by "now", so a late tick does
+not shift the whole schedule.
 
 ### Verification
 
 ```text
 $ pio run -d <root>/homeworks/9_1-dry-run
 exit 0
-========================= [SUCCESS] Took 5.71 seconds =========================
-esp32s3_arduino  SUCCESS   00:00:05.713
+========================= [SUCCESS] Took 25.76 seconds =========================
+esp32s3_espidf  SUCCESS   00:00:25.761
+========================= 1 succeeded in 00:00:25.761 =========================
 ```
+
+This is a real ESP-IDF target build against the corrected pure-C sources, not an
+Arduino build standing in for it. It links `firmware.elf` and generates
+`firmware.bin` (RAM 5.0%, flash 2.8%).
 
 ### Comprehension questions
 
-- Open scenario: "What happens if `loop()` is delayed for 600 ms by some other work
-  — how many phases does the LED miss, and what would change if the deadline were
-  reset to `millis()` instead of advanced by the interval?"
-- Optional terminology check: "Which call lets other work run between LED changes —
-  `delay(250)` or a `millis()` deadline? (a) `delay(250)` (b) a `millis()` deadline."
+- Open scenario: "What happens if `vTaskDelay(1)` were replaced by
+  `vTaskDelay(pdMS_TO_TICKS(600))` — how many phases does the LED miss, and what
+  would change if the deadline were reset to `xTaskGetTickCount()` instead of
+  advanced by the interval?"
+- Optional terminology check: "Which call lets other tasks run between LED
+  changes — `vTaskDelay(pdMS_TO_TICKS(600))` or a `xTaskGetTickCount()`
+  deadline? (a) `vTaskDelay(pdMS_TO_TICKS(600))` (b) a `xTaskGetTickCount()`
+  deadline."
 
 ### Block pause and the deepening branch
 
@@ -315,10 +368,11 @@ The block paused with exactly:
 
 Answer: `Поясни глибше`. The same concept was re-explained with a smaller step and
 a concrete example — the deadline is an appointment on a clock, not a sleep: the
-board looks at the clock, and if the appointment has not arrived it does something
-else and looks again. Concretely, with `TOGGLE_INTERVAL_MS = 250`, the first
-appointment is `millis() + 250`; a tick at 100 ms returns, a tick at 260 ms toggles
-and moves the appointment to `previous_deadline + 250`.
+task looks at the clock, and if the appointment has not arrived it does something
+else and looks again. Concretely, with `TOGGLE_INTERVAL_TICKS = pdMS_TO_TICKS(250)`,
+the first appointment is `xTaskGetTickCount() + 250 ms`; a tick at 100 ms yields
+and returns, a tick at 260 ms toggles and moves the appointment to
+`previous_deadline + 250 ms`.
 
 The block did not advance: `next_block` stayed `controller` and the state file was
 not changed by the deepening answer. The menu was then offered again; answer
@@ -343,8 +397,8 @@ checkpoint entry:
   ],
   "next_block": "native-tests",
   "checkpoints": [
-    {"name": "intake", "at": "2026-10-26T20:05:00Z", "commit": null},
-    {"name": "code", "at": "2026-10-26T20:20:00Z", "commit": null}
+    {"name": "intake", "at": "2026-10-26T22:23:00Z", "commit": null},
+    {"name": "code", "at": "2026-10-26T22:28:00Z", "commit": null}
   ]
 ```
 
@@ -366,7 +420,7 @@ and asked before proceeding. The record was written immediately as `proposed`:
       "best_practice": "GPIO6 drives the third LED, because GPIO5 is a strapping pin",
       "recommendation": "Use GPIO6 and record the deviation in the report assumptions section",
       "impact_if_wrong": "The third LED may not light predictably at boot",
-      "recorded_at": "2026-10-26T20:24:00Z",
+      "recorded_at": "2026-10-26T22:30:00Z",
       "commit": null,
       "status": "proposed"
     }
@@ -401,7 +455,8 @@ written into the same file, so neither is mistaken for a sixth block.
 ### One-shot leg
 
 The id `9_2-dry-run-oneshot` was validated and the run started in `one-shot` mode in
-the same disposable root.
+the same disposable root, using the Arduino template so both halves of the
+language split are exercised: ESP-IDF is C in Leg 1, Arduino is C++ here.
 
 Intake questions actually asked — only what the run could not infer:
 
@@ -413,10 +468,10 @@ Intake questions actually asked — only what the run could not infer:
 | `simulation` | Not inferable; recorded `none`. |
 | `deliverables` | Not inferable; recorded `["readme", "report"]`. |
 
-Not asked: `mode` (the invocation selected one-shot), `language` (inferred `cpp`,
-the only value the scaffold writes), `tests` (inferred `unity-native` from pure
-timing logic), `simulation_token_present` (no simulation). Every answer was written
-to `.skill-state/9_2-dry-run-oneshot.json` as soon as it was given.
+Not asked: `mode` (the invocation selected one-shot), `language` (inferred `cpp`
+from the Arduino framework), `tests` (inferred `unity-native` from pure timing
+logic), `simulation_token_present` (no simulation). Every answer was written to
+`.skill-state/9_2-dry-run-oneshot.json` as soon as it was given.
 
 One-shot is not plan-only. It scaffolded, wrote every block's code and the report
 skeleton, and ran the verifications:
@@ -426,15 +481,15 @@ $ ... scripts/new_homework 9_2-dry-run-oneshot --template arduino --dir <root>
 exit 0 — 9 records, all CREATE
 
 $ pio run -d <root>/homeworks/9_2-dry-run-oneshot
-exit 0 — [SUCCESS] Took 5.66 seconds; esp32s3_arduino SUCCESS
+exit 0 — [SUCCESS] Took 5.98 seconds; esp32s3_arduino SUCCESS
 
 $ pio test -d <root>/homeworks/9_2-dry-run-oneshot -e native
-exit 0 — 2 test cases: 2 succeeded in 00:00:00.548
+exit 0 — 2 test cases: 2 succeeded in 00:00:00.693
 ```
 
 The wiring block skipped the run step (D-10) and wrote
 `<root>/homeworks/9_2-dry-run-oneshot/assets/diagram.json` (3 parts, 5 connections:
-board, 150 ohm resistor, red LED on GPIO2, plus the serial monitor pair). The report
+board, 150 ohm resistor, red LED on GPIO4, plus the serial monitor pair). The report
 block wrote the skeleton. No block pause and no comprehension question appeared
 anywhere in the one-shot leg.
 
@@ -452,9 +507,9 @@ The three checkpoints were still written, one entry each:
   ],
   "next_block": null,
   "checkpoints": [
-    {"name": "intake", "at": "2026-10-26T20:31:00Z", "commit": null},
-    {"name": "code", "at": "2026-10-26T20:36:00Z", "commit": null},
-    {"name": "report", "at": "2026-10-26T20:41:00Z", "commit": null}
+    {"name": "intake", "at": "2026-10-26T22:36:00Z", "commit": null},
+    {"name": "code", "at": "2026-10-26T22:40:00Z", "commit": null},
+    {"name": "report", "at": "2026-10-26T22:44:00Z", "commit": null}
   ]
 ```
 
@@ -475,10 +530,11 @@ conflated):
 ]
 ```
 
-The README region after diff 2 carries both rows:
+The README region after diff 2 carries both rows, and the two frameworks are
+visibly different:
 
 ```text
-| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | arduino | planned | none |
+| 9.1 | [9.1 Dry Run](homeworks/9_1-dry-run/) | esp32-s3-devkitc-1 | espidf | planned | none |
 | 9.2 | [9.2 Dry Run Oneshot](homeworks/9_2-dry-run-oneshot/) | esp32-s3-devkitc-1 | arduino | planned | none |
 ```
 
@@ -494,17 +550,18 @@ The id `1_3-police-flasher` was validated, `homework.yaml` was read for the boar
 ```text
 $ pio run -d homeworks/1_3-police-flasher
 exit 0
-========================= [SUCCESS] Took 0.49 seconds =========================
-esp32s3_arduino  SUCCESS   00:00:00.494
+========================= [SUCCESS] Took 7.57 seconds =========================
+esp32s3_arduino  SUCCESS   00:00:07.565
+========================= 1 succeeded in 00:00:07.565 =========================
 ```
 
 ```text
 $ pio test -d homeworks/1_3-police-flasher -e native
 exit 0
-native         test_homework    PASSED    00:00:00.618
-native         test_controller  PASSED    00:00:00.515
-native         test_pattern     PASSED    00:00:00.481
-================= 38 test cases: 38 succeeded in 00:00:01.613 =================
+native         test_homework    PASSED    00:00:00.602
+native         test_controller  PASSED    00:00:00.512
+native         test_pattern     PASSED    00:00:00.483
+================= 38 test cases: 38 succeeded in 00:00:01.597 =================
 ```
 
 No repair was attempted on either leg. The shared suite was not run: the user did
@@ -514,9 +571,9 @@ full pre-PR chain ran.
 
 ## Leg 5 — `hw-build` failing twice, then escalating
 
-A second disposable root was built with `build_root`, and
-`homeworks/1_3-police-flasher` was copied into it. Three independent errors were
-injected into the copy only:
+A second disposable root, `<root-b>`, was built with `build_root`, and
+`homeworks/1_3-police-flasher` was copied into it without its `.pio/` build cache.
+Three independent errors were injected into the copy only:
 
 | Name | File | Edit |
 |------|------|------|
@@ -532,7 +589,8 @@ Before the skill ran, the copy was confirmed red:
 ```text
 $ pio run -d <root-b>/homeworks/1_3-police-flasher
 exit 1
-========================== [FAILED] Took 2.86 seconds ==========================
+========================== [FAILED] Took 1.93 seconds ==========================
+esp32s3_arduino  FAILED    00:00:01.930
 ```
 
 The first diagnostic reported all three errors in one invocation, with `E3` first
@@ -567,7 +625,7 @@ $ pio run -d <root-b>/homeworks/1_3-police-flasher
 exit 1
 src/main.cpp:58:5: error: 'missing_helper_symbol' was not declared in this scope
 lib/pattern/src/controller.c:66:27: error: initialization of 'const char *' from 'uint16_t' ... [-Wint-conversion]
-========================== [FAILED] Took 0.81 seconds ==========================
+========================== [FAILED] Took 0.71 seconds ==========================
 ```
 
 `E2` and `E3` survive the first fix, so the build is still red.
@@ -585,7 +643,7 @@ $ pio run -d <root-b>/homeworks/1_3-police-flasher
 exit 1
 lib/pattern/src/controller.c:66:27: error: initialization of 'const char *' from 'uint16_t' {aka 'short unsigned int'} makes pointer from integer without a cast [-Wint-conversion]
 lib/pattern/src/controller.c:67:88: error: passing argument 3 of 'pattern_frame_at' makes integer from pointer without a cast [-Wint-conversion]
-========================== [FAILED] Took 0.70 seconds ==========================
+========================== [FAILED] Took 0.76 seconds ==========================
 ```
 
 Only `E3` remains, and the cap is now spent.
@@ -593,11 +651,12 @@ Only `E3` remains, and the cap is now spent.
 ### Escalation
 
 **Cause.** `apply_frame()` in the homework-local `pattern` library declares
-`base_ms` as `const char *` while `pattern_speed_base_ms()` returns a `uint16_t`.
-The pointer is then passed to `pattern_frame_at()`, whose third parameter is a
-`uint16_t`, so the second diagnostic at `controller.c:67` is the same defect
-propagating, not an independent error. The two `src/main.cpp` defects were real but
-unrelated: a missing terminator and a call to a symbol that does not exist.
+`base_ms` as `const char *` while `pattern_speed_base_ms()` returns a
+`uint16_t`. The pointer is then passed to `pattern_frame_at()`, whose third
+parameter is a `uint16_t`, so the second diagnostic at `controller.c:67` is the
+same defect propagating, not an independent error. The two `src/main.cpp` defects
+were real but unrelated: a missing terminator and a call to a symbol that does not
+exist.
 
 **The two fixes.**
 
@@ -653,13 +712,22 @@ Answer: `ні` — a non-affirmative answer, so the outcome is **consent refused
 
 ### Leg 0
 
-- No divergence. The plan's `build_root` command created a `.venv` in the executing
-  worktree as a side effect of `uv run`; it is ignored and never committed.
+- No divergence. `uv run` created a `.venv` in the executing worktree as a side
+  effect; it is ignored and never committed.
+- **F-01 reconfirmed.** The test suite shells out to `uv run`; without
+  `UV_CACHE_DIR` pointed at a writable directory, `uv` fails with `Could not
+  acquire lock` at its default cache, and every scaffold test fails for that
+  reason. Setting `UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache"` for the suite makes
+  all 37 tests pass. This is the F-01 cache rule applying to the test harness,
+  not a defect in the scaffold.
 
 ### Leg 1
 
 - No divergence in the scaffold block: the prose's `CREATE`-or-`UNCHANGED` rule is
   exactly what the tool prints, and the second run is all `UNCHANGED`.
+- **The corrected contract is confirmed.** The ESP-IDF template produces
+  `src/main.c`, no `src/main.cpp`, and `language: c`; the live-template parity
+  test `test_espidf_scaffold_matches_its_live_template` passes in the phase gate.
 - The state excerpts in this transcript were captured by replaying the documented
   write sequence against the same disposable root after the legs finished, so each
   excerpt is the real bytes at that stage rather than a hand-written sample.
@@ -674,22 +742,25 @@ Answer: `ні` — a non-affirmative answer, so the outcome is **consent refused
 - The code checkpoint was written after the controller block because the remaining
   blocks are contract-sampled in this dry run (see "Validation sampling"). The
   checkpoint's name, shape and write-before-menu timing are what this leg evidences.
+- The ESP-IDF target build completed in 25.76 s on a warm toolchain. The first
+  build in a fresh sandbox may also download platform packages; that download is
+  not a build failure.
 
 ### Leg 3
 
 - One-shot asked five intake topics, not the full bank, and still wrote three
   checkpoints. That matches D-11.
-- The one-shot controller was written twice: the first write left the opening
-  comment unterminated and the compiler rejected it (`src/main.cpp:1:1: error:
-  unterminated comment`, exit 1); the second write closed the comment and the build
-  went green. This is recorded so the final `SUCCESS` line is not read as a
-  first-try result. It is a fixture authoring mistake, not a skill divergence.
+- The one-shot controller compiled on the first attempt this run; the earlier
+  transcript's unterminated-comment fixture mistake did not recur, so there is no
+  second-write note here. The first-try `SUCCESS` is the real result.
+- The Arduino one-shot build proves the other half of the split: `src/main.cpp`
+  and `language: cpp`. The corrected contract did not turn the Arduino template
+  into C.
 - No other divergence.
 
 ### Leg 4
 
-- No divergence. The build was invoked twice (a cold first run and a warm second
-  run); both exited 0, and the warm run's summary line is the one recorded.
+- No divergence. The build was cold (a fresh worktree), and both commands exited 0.
 - The shared-suite trigger behaves as the prose says: `git diff --quiet -- lib/`
   exited 0, so neither trigger fired and the suite was skipped.
 
@@ -714,12 +785,19 @@ Answer: `ні` — a non-affirmative answer, so the outcome is **consent refused
 - No divergence. The gate is prose plus a stop, and a non-affirmative answer ran no
   command. This leg needed no hardware, which is exactly what D-22 asks of it.
 
+### Environment
+
+- The target builds and native runs each attempted an outbound version check that
+  the sandbox denied (`deny network-outbound …:80`). The denial is an expected
+  version check, not a build dependency: every build still linked its firmware and
+  exited 0. The F-03 cold-run note covers this case.
+
 ## Validation sampling
 
 | Block | Verdict | Reason |
 |-------|---------|--------|
-| `scaffold` | Exercised end to end | Guided Leg 1 ran the real scaffold twice, recorded every path, and proved idempotence; the one-shot leg ran it again. |
-| `controller` | Exercised end to end | Guided Leg 2 wrote the code, explained it before and after, ran `pio run`, asked the scenario and terminology questions, deepened, paused and checkpointed. |
+| `scaffold` | Exercised end to end | Guided Leg 1 ran the real ESP-IDF scaffold twice, recorded every path, asserted `src/main.c` and `language: c`, and proved idempotence; the one-shot leg ran the Arduino scaffold again. |
+| `controller` | Exercised end to end | Guided Leg 2 wrote the C code, explained it before and after, ran a real ESP-IDF `pio run`, asked the scenario and terminology questions, deepened, paused and checkpointed. |
 | `native-tests` | Contract-sampled | One-shot Leg 3 ran `pio test -e native` green against the scaffolded suite, evidencing the command; the guided block loop's pause and comprehension shape is already evidenced by `controller`, so repeating it adds length without new contract coverage. |
 | `wiring` | Contract-sampled | One-shot Leg 3 wrote the diagram deliverable and skipped the run step (D-10); the guided pause/question shape is the same as `controller`, so only the no-run rule and the deliverable were sampled. |
 | `report` | Contract-sampled | Guided Leg 3 wrote the report skeleton, the bill of materials, the calculations and the transcribed `A-01`; the guided pause and comprehension questions were not repeated. |
@@ -735,20 +813,28 @@ Each command was run from the repository root after the legs were recorded:
 | Command | Exit | Evidence |
 |---------|------|----------|
 | `uv run scripts/gen_skills.py --check` | 0 | every `.agents/skills/**` file and `generated.skills.manifest` report `UNCHANGED` |
-| `pre-commit run --all-files` | 0 | all fourteen hooks pass, including the secret scan and both drift checks |
+| `pre-commit run --all-files` | 0 | all hooks pass, including the secret scan and both drift checks |
 | `uv run scripts/check_metadata.py` | 0 | `PASS: metadata contract satisfied` |
-| `python3 -m unittest discover scripts/tests` | 0 | `Ran 375 tests in 23.482s` — `OK (skipped=1)` |
+| `python3 -m unittest discover scripts/tests` | 0 | `Ran 376 tests in 23.311s` — `OK (skipped=1)` |
 
-Transcript repairs and reruns: one mechanical repair was made. The first gate run
-over the appended file failed the `end-of-file-fixer` hook, which appended the
-missing final newline in place (`exit 1`, `files were modified by this hook`). No
-sentence was removed or rewritten — the change is the trailing newline only — and
-the scan under "Privacy check" found no platform absolute path root, no
-token-shaped value and no raw device output, so no content redaction was needed.
-After that repair the whole phase gate was rerun against the repaired file:
-`uv run scripts/gen_skills.py --check`, `pre-commit run --all-files`,
-`uv run scripts/check_metadata.py` and `python3 -m unittest discover scripts/tests`
-all exited 0.
+The scaffold suite was also run on its own during Leg 1:
+`python3 -m unittest scripts.tests.test_new_homework -v` — `Ran 37 tests`, `OK`,
+including `test_espidf_scaffold_matches_its_live_template`.
+
+Transcript repairs and reruns: no content repair was needed in this re-run. The
+only environment adjustment was `UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache"` for
+every `uv run` and for the test suite, per F-01; no line was removed or rewritten
+for privacy.
+
+The first `pre-commit run --all-files` invocation in the executing worktree
+reported `fix end of files` as failed with a `PermissionError: Operation not
+permitted` on several `.claude/skills/**` paths: the hook opens every file for
+write, and the executing sandbox denies writes under that directory. Every other
+hook in that run passed. The same command was re-run with the write sandbox
+lifted, exactly as the sandbox policy directs for a sandbox-caused failure, and
+all hooks then passed; `git status --short` afterwards showed only this transcript
+modified, so the failed attempt changed no repository file. The gate was run after
+the transcript was written, so the exit codes above describe the committed file.
 
 ## Traceability
 
