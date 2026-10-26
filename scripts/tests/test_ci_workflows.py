@@ -277,6 +277,19 @@ class WorkflowTextTests(unittest.TestCase):
             with self.subTest(needle=needle):
                 self.assertIn(needle, text)
 
+    def test_scenario_step_reads_pipestatus_under_errexit(self) -> None:
+        # CR-01: GitHub runs `run:` under `bash -e`, which `set -uo pipefail` does not
+        # clear. Without `set +e` a non-zero `wokwi-cli` exit aborts the pipeline before
+        # PIPESTATUS is read, so quota.json and the 42->timeout mapping never appear on
+        # exactly the failure path the evidence contract exists for.
+        block = step_block(CI.read_text(encoding="utf-8"), "Run the scenario")
+        pipeline = block.index('wokwi-cli "$PROJECT"')
+        capture = block.index("status=${PIPESTATUS[0]}")
+        self.assertLess(block.index("set +e"), pipeline)
+        self.assertLess(pipeline, capture)
+        self.assertLess(capture, block.index("set -e"))
+        self.assertIn('stat -c %s "$out/serial.log" 2>/dev/null || echo 0', block)
+
     def test_nightly_computes_the_full_matrix(self) -> None:
         # `platformio.shared.ini` is the mapper's own WIDEN_ALL entry, so the nightly matrix
         # is the full project set without a curated list or a second flag.

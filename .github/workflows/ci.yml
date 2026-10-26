@@ -378,6 +378,11 @@ jobs:
           set -uo pipefail
           out="$RUNNER_TEMP/simulation"
           started=$(date +%s)
+          # GitHub runs this script under `bash -e`; `set -uo pipefail` does not
+          # clear that inherited `-e`, so a non-zero `wokwi-cli` exit would abort
+          # the pipeline before PIPESTATUS is read and no evidence would be
+          # written. Disable `-e` for exactly the pipeline, then restore it.
+          set +e
           wokwi-cli "$PROJECT" \
             --timeout 15000 \
             --scenario scenario.yaml \
@@ -385,13 +390,16 @@ jobs:
             --serial-log-file "$out/serial.log" \
             2>&1 | tee "$out/stdout.log"
           status=${PIPESTATUS[0]}
+          set -e
           finished=$(date +%s)
           case "$status" in
             0) outcome=passed ;;
             42) outcome=timeout ;;
             *) outcome=failed ;;
           esac
-          serial_bytes="$(stat -c %s "$out/serial.log")"
+          # An interrupted run may never create the serial log; record 0 bytes
+          # instead of aborting before quota.json is written (T-8-23).
+          serial_bytes="$(stat -c %s "$out/serial.log" 2>/dev/null || echo 0)"
           jq -n \
             --arg project "$PROJECT" \
             --arg env "$ENV_NAME" \
