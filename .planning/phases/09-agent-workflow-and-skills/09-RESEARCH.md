@@ -417,10 +417,13 @@ answers so far, and records every answer in the state file.
 **Required coverage and order (D-11 fixes `mode` first):**
 
 1. `mode` — guided or one-shot. Always asked; recorded before anything else.
-2. `board` — default `esp32-s3-devkitc-1`; branch if the user names another board.
+2. `board` — default `esp32-s3-devkitc-1`; **corrected 2026-10-26 after review:**
+   `scripts/new_homework:90` hardcodes `BOARD = "esp32-s3-devkitc-1"`, so v0.1 scaffolds
+   only that board and any other board stops with an unsupported-scaffold escalation.
 3. `framework` — Arduino or ESP-IDF; branch from the board and the course module.
-4. `language` — derived from the framework (`arduino` -> `cpp`, `espidf` -> `c`); ask only
-   to confirm.
+4. `language` — **corrected 2026-10-26 after review:** both templates ship `cpp`
+   (`templates/homework-espidf/homework.yaml:7`), so the answer is `cpp` for both
+   frameworks; ask only to confirm. The earlier `espidf -> c` mapping was wrong.
 5. `specification` — ready specification or free-form; branch to "quote the acceptance
    criteria" versus "derive them and record assumptions".
 6. `simulation` — yes/no; if yes, ask about Wokwi token availability and the

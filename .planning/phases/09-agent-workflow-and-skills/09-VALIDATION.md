@@ -96,7 +96,7 @@ locked decision.
 | Guided block loop and "explain deeper" | FLOW-03 | Behaviour lives in model instructions | Run the D-22 dry run and record the pause menu and the deepening response. |
 | Checkpoints and guardrails | FLOW-04 | Behaviour lives in model instructions | Inspect `.skill-state/<id>.json` after intake, code, and report; confirm the confirmation gates. |
 | Conflict and ambiguity record | FLOW-05 | Behaviour lives in model instructions | Trigger one conflict in the dry run and confirm the recommended assumption is in the state file and the report. |
-| Two-attempt build repair then escalation | FLOW-06 | Behaviour lives in model instructions | Inject one compile error into a temporary copy of 1.3; confirm exactly two repairs, an explanation, and a stop. |
+| Two-attempt build repair then escalation | FLOW-06 | Behaviour lives in model instructions | Inject three independent compile errors (`E1`, `E2`, `E3`, one in homework-local `lib/pattern/src/controller.c`) into a temporary copy of 1.3, so no single fix turns the build green; confirm exactly two repairs, the unresolved `E3`, an explanation, and a stop with no third edit. |
 | Flash gate and stub markers | FLOW-07 | Hardware is unavailable; prose is review-enforced | Run `hw-flash` to the gate and decline; confirm four stubs carry `metadata.status: stub`. |
 
 ---
