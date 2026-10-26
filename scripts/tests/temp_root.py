@@ -9,6 +9,10 @@ repository itself. This module is that harness.
 serves the generator and diff-mapper suites: it writes a small, metadata-complete
 tree from string assembly instead of copying the authored ``docs/`` and
 ``homeworks/`` trees, so those tests cannot depend on authored content.
+``write_skills_root`` serves the skills-generator suite: it assembles a tiny
+canonical ``.claude/skills/`` tree of two skills plus ``_shared/``, and creates
+no ``.agents/`` mirror and no manifest, so that suite never reads the authored
+skills.
 
 Every helper is read-only with respect to the repository: they only copy out of
 it, and ``render_tree`` only reads a template source. ``render_tree`` performs
@@ -321,6 +325,92 @@ def _write_synthetic_tests_project(project):
         "}\n",
         encoding="utf-8",
     )
+
+
+def write_skills_root(base, *, source_root=None):
+    """Create a canonical skill tree at *base* and return it.
+
+    This is the fixture builder for the skills-generator suite. It writes, by
+    string assembly and never with PyYAML:
+
+    * ``.claude/skills/alpha/`` — an implemented skill: quoted
+      ``version: "0.1"``, ``status: active``, ``disable-model-invocation:
+      true``, a column-0 ``#`` comment inside the frontmatter, one
+      ``references/topic.md``, ``CHANGELOG.md`` and ``LESSONS.md``;
+    * ``.claude/skills/beta/`` — a stub: ``status: stub``, no
+      ``disable-model-invocation``, one reference;
+    * ``.claude/skills/_shared/guardrails.md`` — a shared file, not a skill.
+
+    It deliberately creates no ``.agents/`` mirror and no manifest, so every
+    test proves the generator's first run. *source_root* is accepted for
+    symmetry with ``build_root`` and ``write_synthetic_root`` and is never
+    used: the tree is assembled, never copied, so the suite cannot depend on
+    the authored ``.claude/skills/`` tree.
+    """
+    root = Path(base)
+    root.mkdir(parents=True, exist_ok=True)
+
+    skills = root / ".claude" / "skills"
+
+    alpha = skills / "alpha"
+    (alpha / "references").mkdir(parents=True, exist_ok=True)
+    (alpha / "SKILL.md").write_text(
+        "---\n"
+        "name: alpha\n"
+        "description: An authored fixture skill for the skills-generator suite.\n"
+        "# authored comment stays in place and is never a key\n"
+        "disable-model-invocation: true\n"
+        "metadata:\n"
+        '  version: "0.1"\n'
+        "  status: active\n"
+        "---\n"
+        "\n"
+        "# Alpha (fixture)\n"
+        "\n"
+        "Body for the alpha fixture skill.\n",
+        encoding="utf-8",
+    )
+    (alpha / "references" / "topic.md").write_text(
+        "# Alpha reference\n\nOne level deep, so the mirror may carry it.\n",
+        encoding="utf-8",
+    )
+    (alpha / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## 2026-10-26 — fixture\n- Added the alpha fixture.\n",
+        encoding="utf-8",
+    )
+    (alpha / "LESSONS.md").write_text(
+        "# Lessons\n\n## 2026-10-26 — fixture\n- The fixture is assembled.\n",
+        encoding="utf-8",
+    )
+
+    beta = skills / "beta"
+    (beta / "references").mkdir(parents=True, exist_ok=True)
+    (beta / "SKILL.md").write_text(
+        "---\n"
+        "name: beta\n"
+        "description: A stub fixture skill for the skills-generator suite.\n"
+        "metadata:\n"
+        '  version: "0.1"\n'
+        "  status: stub\n"
+        "---\n"
+        "\n"
+        "# Beta (stub fixture)\n"
+        "\n"
+        "Body for the beta fixture skill.\n",
+        encoding="utf-8",
+    )
+    (beta / "references" / "topic.md").write_text(
+        "# Beta reference\n\nOne level deep, so the mirror may carry it.\n",
+        encoding="utf-8",
+    )
+
+    shared = skills / "_shared"
+    shared.mkdir(parents=True, exist_ok=True)
+    (shared / "guardrails.md").write_text(
+        "# Guardrails\n\nShared prose mirrored as a file, never as a skill.\n",
+        encoding="utf-8",
+    )
+    return root
 
 
 def render_tree(source, target, mapping, skip=()):
