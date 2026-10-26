@@ -4,8 +4,8 @@
 so this module imports it in process and never spawns a build (04/D-14). The
 cases pin the command assembly the promotion depends on (D-12) and the esptool-5
 failure modes recorded in F-09: argv order, both offset renderings, per-argument
-quoting, the output target, board fallbacks, the two package failures, and the
-Windows binary name.
+quoting, the output target, board fallbacks, the two package failures, the
+Windows binary name, and the CR-01 status propagation.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from scripts.pio.merge_firmware import (
     build_merge_command,
     esptool_binary,
     esptool_directory,
+    merge_firmware,
 )
 
 BUILD_DIR = "/build/esp32s3_arduino"
@@ -51,7 +52,7 @@ class StubPlatform:
 
 
 class StubEnv:
-    """The four SCons surfaces the script uses, and nothing else."""
+    """The six SCons surfaces the script uses, and nothing else."""
 
     def __init__(
         self,
@@ -59,6 +60,7 @@ class StubEnv:
         extra_images: list | None = None,
         board: dict | None = None,
         platform: StubPlatform | None = None,
+        execute_status: int = 0,
     ) -> None:
         self.substitutions = {
             "$BUILD_DIR": BUILD_DIR,
@@ -72,6 +74,8 @@ class StubEnv:
             {"build.mcu": "esp32s3"} if board is None else board
         )
         self.platform = StubPlatform() if platform is None else platform
+        self.execute_status = execute_status
+        self.executed: list[str] = []
 
     def subst(self, value: str) -> str:
         for key, replacement in self.substitutions.items():
@@ -88,6 +92,13 @@ class StubEnv:
 
     def PioPlatform(self) -> StubPlatform:
         return self.platform
+
+    def VerboseAction(self, command: str, message: str) -> str:
+        return command
+
+    def Execute(self, command: str) -> int:
+        self.executed.append(command)
+        return self.execute_status
 
 
 class MergeCommandTests(unittest.TestCase):
@@ -195,6 +206,29 @@ class MergeCommandTests(unittest.TestCase):
         self.assertEqual(
             "/packages/tool-esptool/esptool", esptool_binary("/packages/tool-esptool")
         )
+
+
+class MergeActionTests(unittest.TestCase):
+    """CR-01: a failed ``env.Execute`` must fail the build, not pass silently."""
+
+    def test_failed_merge_raises(self) -> None:
+        env = StubEnv(execute_status=1)
+
+        with self.assertRaises(RuntimeError) as raised:
+            merge_firmware([], ["src/app.bin"], env)
+
+        message = str(raised.exception)
+        self.assertIn("merge-bin", message)
+        self.assertIn("status 1", message)
+        self.assertIn("firmware.merged.bin", message)
+
+    def test_successful_merge_does_not_raise(self) -> None:
+        env = StubEnv(execute_status=0)
+
+        merge_firmware([], ["src/app.bin"], env)
+
+        self.assertEqual(1, len(env.executed))
+        self.assertIn("merge-bin", env.executed[0])
 
 
 if __name__ == "__main__":

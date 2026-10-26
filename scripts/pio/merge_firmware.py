@@ -22,6 +22,11 @@ trust boundary.
 
 The PlatformIO package version is deliberately not parsed: ``package.json``
 reports ``2.50400.0`` while ``esptool version`` reports ``5.4.0`` (pitfall 9).
+
+``SCons.Environment.Execute`` returns a status instead of raising, and SCons
+reads a Python post action's return value as its status, so a bare call would
+leave ``pio run`` green after a failed merge. A non-zero status is therefore
+raised as ``RuntimeError``, which SCons converts into a failed build.
 """
 
 from __future__ import annotations
@@ -97,9 +102,14 @@ def merge_firmware(source, target, env):
 
     command = build_merge_command(env, esptool, build_dir, target[0])
 
-    env.Execute(
+    status = env.Execute(
         env.VerboseAction(" ".join(command), "Merging firmware images into " + merged)
     )
+    if status:
+        raise RuntimeError(
+            f"merge_firmware: `esptool merge-bin` failed with status {status}; "
+            f"`{merged}` was not written: {' '.join(command)}"
+        )
 
 
 if env is not None:
