@@ -106,6 +106,13 @@ status: complete
 
 # Phase 9 Plan 8: Dry run of the agent workflow Summary
 
+> **Evidence superseded 2026-10-27.** The transcript described in the original
+> sections below was replaced by the re-run recorded in `09-DRY-RUN.md` after
+> quick task `261026-x78` changed the ESP-IDF template to pure C and removed the
+> golden fixtures. The original accomplishments, commits and self-check remain
+> the historical record of the first run; the "Re-run after quick-261026-x78"
+> section at the end of this file is the current evidence.
+
 **A recorded dry run of the guided and one-shot homework workflows, the bounded build repair and the flash consent gate, closed by a green four-command phase gate.**
 
 ## Performance
@@ -247,3 +254,89 @@ None — no external service configuration was required, and no token was read o
 - `.planning/phases/09-agent-workflow-and-skills/09-DRY-RUN.md` exists (773 lines).
 - Task commits `d21eeb6`, `e470403` and `57dd77f` are ancestors of `HEAD`.
 - `git status --porcelain homeworks/` is empty; only the transcript changed in this plan.
+
+---
+
+## Re-run after quick-261026-x78
+
+**Date:** 2026-10-27
+**Commit:** `d1fadb0` — `docs(09-08): re-run the locked dry run against the pure-C template`
+
+### What changed
+
+Quick task `261026-x78` replaced the ESP-IDF homework template's `src/main.cpp`
+and `language: cpp` with `src/main.c` and `language: c`, and removed the stored
+golden fixtures in favour of live-template parity assertions. The previous
+`09-DRY-RUN.md` therefore recorded the wrong contract for ESP-IDF; this re-run
+supersedes it rather than editing it. The transcript now carries a header stating
+the supersession and its cause.
+
+The re-run used the same leg structure as the original plan, executed against two
+new disposable roots outside the repository:
+
+- **Leg 1** now scaffolds the corrected ESP-IDF template. It asserts directly that
+  the scaffold produces `src/main.c`, produces **no** `src/main.cpp`, and writes
+  `homework.yaml: language: c`. Ten `CREATE` records on the first run, ten
+  `UNCHANGED` on the second.
+- **Leg 2** is a real ESP-IDF controller block in C (`app_main`, FreeRTOS tick
+  deadline, `vTaskDelay(1)` yield). The target build links `firmware.elf` and
+  `firmware.bin` and exits 0 in 25.76 s.
+- **Leg 3** keeps the one-shot leg on the Arduino template, so the other half of
+  the split is still evidenced (`src/main.cpp`, `language: cpp`).
+- **Legs 4–6** repeat `hw-build` green, the three-error/two-repair escalation and
+  the `hw-flash` consent gate unchanged in intent.
+
+### New verification results
+
+| Check | Result |
+|-------|--------|
+| ESP-IDF scaffold contract | `src/main.c` present, `src/main.cpp` absent, `framework: espidf`, `language: c` |
+| ESP-IDF target build | exit 0 — `[SUCCESS] Took 25.76 seconds`; `esp32s3_espidf SUCCESS` |
+| Arduino one-shot build | exit 0 — `[SUCCESS] Took 5.98 seconds` |
+| Arduino one-shot native suite | exit 0 — `2 test cases: 2 succeeded` |
+| `hw-build` on `homeworks/1_3-police-flasher` | build exit 0 in 7.57 s; native `38 test cases: 38 succeeded` |
+| Negative repair leg | `E1`, `E2`, `E3` injected; exactly two repairs; `E3` unresolved; no third edit; `git status --porcelain homeworks/` empty |
+| `hw-flash` gate | board, environment and upload command printed; answer `ні`; no upload, no capture |
+| `uv run scripts/gen_skills.py --check` | exit 0 — all mirror files `UNCHANGED` |
+| `pre-commit run --all-files` | exit 0 — all fourteen hooks pass |
+| `uv run scripts/check_metadata.py` | exit 0 — `PASS: metadata contract satisfied` |
+| `python3 -m unittest discover scripts/tests` | exit 0 — `Ran 376 tests in 23.311s`, `OK (skipped=1)` |
+| `python3 -m unittest scripts.tests.test_new_homework -v` | exit 0 — `Ran 37 tests`, `OK`, including the ESP-IDF live-template parity test |
+
+### Deviations and findings
+
+- **Diagnostic ordering, reconfirmed.** The SCons build again reported all three
+  injected errors in the first invocation, with `E3` first. The repair loop's
+  first-actionable-error rule still needed the project-`src/`-before-homework-local-
+  `lib/**` tie-break; exactly two repairs were spent and `E3` remained. The
+  transcript records the real order instead of the plan's assumed serial order.
+- **Sandbox gate retry.** The first `pre-commit run --all-files` in the executing
+  worktree failed `fix end of files` with a `PermissionError` on `.claude/skills/**`
+  because the sandbox denies writes there; every other hook passed. The command was
+  re-run with the write sandbox lifted and all fourteen hooks passed, with no
+  repository file changed. The transcript records both attempts.
+- **F-01 applies to the test harness.** The suite shells out to `uv run`; without
+  `UV_CACHE_DIR` it fails with `Could not acquire lock` at `uv`'s default cache.
+  With `UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache"` the suite is green. This is the
+  F-01 cache rule, not a scaffold defect.
+- **One-shot first-try success.** The one-shot controller compiled on its first
+  attempt this run; the earlier unterminated-comment fixture mistake did not recur
+  and is not restated as if it had.
+
+The tracked tree is otherwise untouched: no file under `homeworks/`, `templates/`,
+`scripts/` or `.claude/skills/**` changed, and neither STATE.md nor ROADMAP.md was
+modified by this re-run.
+
+### Self-Check: PASSED
+
+- `.planning/phases/09-agent-workflow-and-skills/09-DRY-RUN.md` exists and carries
+  the supersession header, all seven legs, the corrected-contract assertion, the
+  phase gate, the traceability table and the privacy check.
+- All three plan verification expressions pass: the leg/menu/id/key assertion, the
+  `E1`/`E2`/`E3`/attempt assertion with no `attempt 3`, and the
+  traceability/privacy assertion with no platform path root and no token-shaped
+  value.
+- Commit `d1fadb0` is an ancestor of `HEAD`.
+- `git status --porcelain homeworks/` is empty; only the two planning documents
+  were modified by this re-run.
+- The four-command phase gate is green on the final content.
