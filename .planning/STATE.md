@@ -4,10 +4,10 @@ current_phase: 09
 current_phase_name: Agent Workflow and Skills
 status: executing
 stopped_at: Phase 9 context gathered
-last_updated: "2026-10-26T21:15:11.058Z"
+last_updated: "2026-10-26T22:20:00.222Z"
 last_activity: 2026-10-26
 last_activity_desc: Phase 09 execution started
-state_head: 9cf63651274d519e616bf068c0a2ba1faa16cf96
+state_head: 72d2b30208e8de45bf0d8827694eb2448bae0d76
 progress:
   total_phases: 14
   completed_phases: 10
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-26)
 Phase: 09 (Agent Workflow and Skills) — EXECUTING
 Plan: 1 of 8
 Status: Executing Phase 09
-Last activity: 2026-10-26 — Phase 09 execution started
+Last activity: 2026-10-27 — Completed quick task 261026-x78: Make the ESP-IDF template and new-homework skill pure C; remove golden fixtures
 
 Progress: [████████████████████] 73/73 plans ([███████░░░] 71%)
 
@@ -201,6 +201,7 @@ Recent decisions affecting current work:
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
 | 261025-vih | Fix the six residual findings from the Phase 04.2 verification | 2026-10-25 | 50d82ff | [261025-vih-fix-the-six-residual-findings-from-the-p](./quick/261025-vih-fix-the-six-residual-findings-from-the-p/) |
 | 3 | Ignore PlatformIO editor scaffolding and centralize IDE extensions | 2026-10-25 | 9b96a8f | — |
+| 261026-x78 | Make the ESP-IDF template and new-homework skill pure C; remove golden fixtures | 2026-10-27 | 72d2b30 | [261026-x78-make-the-esp-idf-homework-template-and-t](./quick/261026-x78-make-the-esp-idf-homework-template-and-t/) |
 
 ### Roadmap Evolution
 
