@@ -37,15 +37,15 @@
       "path": "homeworks.code-workspace",
       "owner": "workspace",
       "mode": "whole",
-      "sha256": "32e0a757901a13cff7d490d8e84ea6e0930060396709df43548ba2314658462a",
-      "bytes": 475
+      "sha256": "c3c08c025e2593e814da90e1c4e51b247932a72c5207a028f7b78e732a0d061c",
+      "bytes": 925
     },
     {
       "path": "mkdocs.yml",
       "owner": "nav",
       "mode": "whole",
-      "sha256": "667117a73a6d81ec4ebf5d548019c81aa714246065d1ac7b60710b3102fa3eee",
-      "bytes": 2589
+      "sha256": "6b81960443607d81150c4d1be545cd14590295fd061b128625bf376bf5cce7cc",
+      "bytes": 2861
     },
     {
       "path": "platformio.shared.ini",

@@ -1,8 +1,11 @@
+# Pull request
+
 ## What and why
 
 Describe the change and why it is needed.
 
 Optional cross-references:
+
 - **Phase / requirement:** `<e.g. FOUND-03, Phase 4.1>`
 - **ADR / issue:** `<docs/decisions/0003-... or #123>`
 

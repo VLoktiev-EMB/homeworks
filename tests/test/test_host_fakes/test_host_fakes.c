@@ -24,7 +24,8 @@ static host_fake_log_t log_fake;
 static port_log_t log_contract;
 static host_fake_time_t time_fake;
 
-void setUp(void) {
+void setUp(void)
+{
     host_fake_gpio_reset(&fake);
     gpio = host_fake_gpio_port(&fake);
     host_fake_i2c_reset(&i2c_fake);
@@ -38,13 +39,15 @@ void setUp(void) {
 
 void tearDown(void) {}
 
-static void test_fake_gpio_records_writes(void) {
+static void test_fake_gpio_records_writes(void)
+{
     TEST_ASSERT_EQUAL_INT(PORT_OK, gpio.write(gpio.ctx, 5u, PORT_GPIO_HIGH));
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)fake.writes);
     TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake.level[5]);
 }
 
-static void test_fake_gpio_replays_levels(void) {
+static void test_fake_gpio_replays_levels(void)
+{
     port_gpio_level_t level = PORT_GPIO_LOW;
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, gpio.write(gpio.ctx, 7u, PORT_GPIO_HIGH));
@@ -58,20 +61,19 @@ static void test_fake_gpio_replays_levels(void) {
     TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)fake.reads);
 }
 
-static void test_fake_gpio_out_of_range_pin_is_rejected(void) {
+static void test_fake_gpio_out_of_range_pin_is_rejected(void)
+{
     port_gpio_level_t level = PORT_GPIO_LOW;
 
-    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG,
-                          gpio.write(gpio.ctx, HOST_FAKE_GPIO_PINS, PORT_GPIO_HIGH));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, gpio.write(gpio.ctx, HOST_FAKE_GPIO_PINS, PORT_GPIO_HIGH));
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)fake.writes);
-    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG,
-                          gpio.set_mode(gpio.ctx, HOST_FAKE_GPIO_PINS, PORT_GPIO_OUTPUT));
-    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG,
-                          gpio.read(gpio.ctx, HOST_FAKE_GPIO_PINS, &level));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, gpio.set_mode(gpio.ctx, HOST_FAKE_GPIO_PINS, PORT_GPIO_OUTPUT));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, gpio.read(gpio.ctx, HOST_FAKE_GPIO_PINS, &level));
     TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, gpio.read(gpio.ctx, 0u, NULL));
 }
 
-static void test_fake_gpio_forced_status_is_one_shot(void) {
+static void test_fake_gpio_forced_status_is_one_shot(void)
+{
     host_fake_gpio_fail_next(&fake, PORT_ERR_IO);
 
     TEST_ASSERT_EQUAL_INT(PORT_ERR_IO, gpio.write(gpio.ctx, 1u, PORT_GPIO_HIGH));
@@ -82,7 +84,8 @@ static void test_fake_gpio_forced_status_is_one_shot(void) {
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)fake.writes);
 }
 
-static void test_fake_gpio_set_mode_and_write_mark_configured(void) {
+static void test_fake_gpio_set_mode_and_write_mark_configured(void)
+{
     port_gpio_level_t level = PORT_GPIO_LOW;
 
     TEST_ASSERT_FALSE(fake.configured[4]);
@@ -98,7 +101,8 @@ static void test_fake_gpio_set_mode_and_write_mark_configured(void) {
     TEST_ASSERT_FALSE(fake.configured[12]);
 }
 
-static void test_gpio_fake_returns_the_real_gpio_contract_type(void) {
+static void test_gpio_fake_returns_the_real_gpio_contract_type(void)
+{
     port_gpio_t returned = host_fake_gpio_port(&fake);
 
     TEST_ASSERT_EQUAL_PTR(&fake, returned.ctx);
@@ -106,7 +110,8 @@ static void test_gpio_fake_returns_the_real_gpio_contract_type(void) {
     TEST_ASSERT_EQUAL_INT(PORT_GPIO_HIGH, fake.level[2]);
 }
 
-static void test_fake_i2c_write_then_read(void) {
+static void test_fake_i2c_write_then_read(void)
+{
     const uint8_t payload[2] = {0xDEu, 0xADu};
     uint8_t received[2] = {0u, 0u};
 
@@ -120,12 +125,12 @@ static void test_fake_i2c_write_then_read(void) {
     TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)i2c_fake.transactions);
 }
 
-static void test_fake_i2c_combined_transfer(void) {
+static void test_fake_i2c_combined_transfer(void)
+{
     const uint8_t command[3] = {0x01u, 0x02u, 0x03u};
     uint8_t response[3] = {0u, 0u, 0u};
 
-    TEST_ASSERT_EQUAL_INT(PORT_OK,
-                          i2c.write_read(i2c.ctx, 0x20u, command, 3u, response, 3u));
+    TEST_ASSERT_EQUAL_INT(PORT_OK, i2c.write_read(i2c.ctx, 0x20u, command, 3u, response, 3u));
     TEST_ASSERT_EQUAL_UINT8(0x01u, response[0]);
     TEST_ASSERT_EQUAL_UINT8(0x02u, response[1]);
     TEST_ASSERT_EQUAL_UINT8(0x03u, response[2]);
@@ -133,18 +138,18 @@ static void test_fake_i2c_combined_transfer(void) {
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)i2c_fake.transactions);
 }
 
-static void test_fake_i2c_oversized_write_is_rejected(void) {
+static void test_fake_i2c_oversized_write_is_rejected(void)
+{
     uint8_t payload[HOST_FAKE_I2C_CAPACITY + 1u] = {0u};
 
-    TEST_ASSERT_EQUAL_INT(
-        PORT_ERR_INVALID_ARG,
-        i2c.write(i2c.ctx, 0x10u, payload, HOST_FAKE_I2C_CAPACITY + 1u));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, i2c.write(i2c.ctx, 0x10u, payload, HOST_FAKE_I2C_CAPACITY + 1u));
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)i2c_fake.transactions);
 
     TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, i2c.write(i2c.ctx, 0x10u, NULL, 1u));
 }
 
-static void test_fake_i2c_two_instances_hold_separate_buffers(void) {
+static void test_fake_i2c_two_instances_hold_separate_buffers(void)
+{
     host_fake_i2c_t first;
     host_fake_i2c_t second;
     port_i2c_t first_port;
@@ -170,7 +175,8 @@ static void test_fake_i2c_two_instances_hold_separate_buffers(void) {
     TEST_ASSERT_EQUAL_UINT8(0x44u, received[1]);
 }
 
-static void test_fake_spi_loops_back(void) {
+static void test_fake_spi_loops_back(void)
+{
     const uint8_t outgoing[3] = {0xA1u, 0xB2u, 0xC3u};
     uint8_t incoming[3] = {0u, 0u, 0u};
 
@@ -182,7 +188,8 @@ static void test_fake_spi_loops_back(void) {
     TEST_ASSERT_EQUAL_UINT32(3u, (uint32_t)spi_fake.length);
 }
 
-static void test_fake_spi_write_records_without_receive_buffer(void) {
+static void test_fake_spi_write_records_without_receive_buffer(void)
+{
     const uint8_t outgoing[2] = {0x5Au, 0xA5u};
     uint8_t oversized[HOST_FAKE_SPI_CAPACITY + 1u] = {0u};
 
@@ -192,13 +199,12 @@ static void test_fake_spi_write_records_without_receive_buffer(void) {
     TEST_ASSERT_EQUAL_UINT8(0xA5u, spi_fake.tx[1]);
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)spi_fake.transfers);
 
-    TEST_ASSERT_EQUAL_INT(
-        PORT_ERR_INVALID_ARG,
-        spi.write(spi.ctx, oversized, HOST_FAKE_SPI_CAPACITY + 1u));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, spi.write(spi.ctx, oversized, HOST_FAKE_SPI_CAPACITY + 1u));
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)spi_fake.transfers);
 }
 
-static void test_bus_fakes_keep_separate_contexts(void) {
+static void test_bus_fakes_keep_separate_contexts(void)
+{
     const uint8_t payload[1] = {0x77u};
     uint8_t received[1] = {0u};
 
@@ -218,7 +224,8 @@ static void test_bus_fakes_keep_separate_contexts(void) {
     TEST_ASSERT_EQUAL_UINT8(0x77u, received[0]);
 }
 
-static void test_fake_log_captures_level_and_text(void) {
+static void test_fake_log_captures_level_and_text(void)
+{
     const host_fake_log_line_t *line;
 
     port_log_write(&log_contract, PORT_LOG_WARN, "bus not ready");
@@ -236,7 +243,8 @@ static void test_fake_log_captures_level_and_text(void) {
     TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)host_fake_log_count(&log_fake));
 }
 
-static void test_fake_log_truncates_long_text_safely(void) {
+static void test_fake_log_truncates_long_text_safely(void)
+{
     char message[HOST_FAKE_LOG_TEXT + 16u];
     const host_fake_log_line_t *line;
     size_t index;
@@ -255,23 +263,23 @@ static void test_fake_log_truncates_long_text_safely(void) {
     TEST_ASSERT_EQUAL_INT('\0', line->text[HOST_FAKE_LOG_TEXT - 1u]);
 }
 
-static void test_fake_log_drops_after_capacity(void) {
+static void test_fake_log_drops_after_capacity(void)
+{
     size_t index;
 
     for (index = 0u; index < HOST_FAKE_LOG_LINES; ++index) {
         port_log_write(&log_contract, PORT_LOG_DEBUG, "line");
     }
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)HOST_FAKE_LOG_LINES,
-                             (uint32_t)host_fake_log_count(&log_fake));
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)HOST_FAKE_LOG_LINES, (uint32_t)host_fake_log_count(&log_fake));
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)log_fake.dropped);
 
     port_log_write(&log_contract, PORT_LOG_DEBUG, "overflow");
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)HOST_FAKE_LOG_LINES,
-                             (uint32_t)host_fake_log_count(&log_fake));
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)HOST_FAKE_LOG_LINES, (uint32_t)host_fake_log_count(&log_fake));
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)log_fake.dropped);
 }
 
-static void test_fake_log_at_out_of_range_is_null(void) {
+static void test_fake_log_at_out_of_range_is_null(void)
+{
     port_log_write(&log_contract, PORT_LOG_ERROR, "only line");
 
     TEST_ASSERT_NOT_NULL(host_fake_log_at(&log_fake, 0u));
@@ -280,7 +288,8 @@ static void test_fake_log_at_out_of_range_is_null(void) {
     TEST_ASSERT_NULL(host_fake_log_at(NULL, 0u));
 }
 
-static void test_all_fakes_expose_the_real_contract_types(void) {
+static void test_all_fakes_expose_the_real_contract_types(void)
+{
     port_time_t time_port = host_fake_time_port(&time_fake);
     port_gpio_t gpio_contract = host_fake_gpio_port(&fake);
     port_i2c_t i2c_contract = host_fake_i2c_port(&i2c_fake);
@@ -297,7 +306,8 @@ static void test_all_fakes_expose_the_real_contract_types(void) {
     TEST_ASSERT_EQUAL_UINT32(1u, (uint32_t)host_fake_log_count(&log_fake));
 }
 
-int main(void) {
+int main(void)
+{
     UNITY_BEGIN();
     RUN_TEST(test_fake_gpio_records_writes);
     RUN_TEST(test_fake_gpio_replays_levels);

@@ -1,0 +1,22 @@
+# D-13: the one ruff policy for the repository.
+#
+# This file carries `[tool.ruff]` only and deliberately has no `[project]`
+# table: a tool-config-only pyproject does not turn the repository into a uv
+# project, so `uv run scripts/...` keeps reading each script's PEP 723 header.
+#
+# D-06: the tool itself is delivered by the pinned `ruff-pre-commit` hook, never
+# by Homebrew or a global pip install. pre-commit runs from the repository root,
+# so the hook resolves this table without a `-c` argument.
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# SCons injects both globals into these scripts; importing them would break the
+# build, so the F821 finding is a false positive at exactly these two sites.
+"scripts/pio/*.py" = ["F821"]
+"homeworks/*/merge_firmware.py" = ["F821"]

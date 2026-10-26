@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Run the pinned clang-tidy hook and fail when a file was not analysed.
+
+`cpp-linter-hooks` treats a file with no compile command as a success. On the
+pinned clang-tidy 23.1.3 that is entirely silent: the process exits 0 and prints
+nothing, so a green hook would report a checked tree that was never analysed.
+Older builds print `Skipping <file>. Compile command not found.` and still exit
+0, and cpp-linter-hooks hides the output of a passing run either way.
+
+This wrapper closes both paths:
+
+* it reads the compilation database named by `--compile-commands` and fails
+  before running when a source argument has no command — deterministic, and
+  independent of any clang-tidy message; and
+* it calls the same `run_clang_tidy` entry point the hook uses — so the pinned
+  version resolution and the changed-lines filter are unchanged — and turns a
+  `Compile command not found` line into a failure as well.
+
+The hook config passes `--version=23.1.3` and `--compile-commands=tests`;
+this script forwards its arguments untouched.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+SKIP_MARKER = "Compile command not found"
+REMEDY = "pio run -d tests -e native -t compiledb"
+
+# The suffixes cpp-linter-hooks treats as a translation unit. The hook's
+# `files` pattern narrows this to `.c`; the wider set keeps the check honest if
+# that pattern is ever widened again.
+SOURCE_SUFFIXES = {
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cxx",
+    ".c++",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
+    ".inl",
+    ".ipp",
+    ".tcc",
+    ".tpp",
+}
+
+
+def _compile_commands_directory(argv: list[str]) -> str | None:
+    """Return the value of `--compile-commands`, or None when it is absent."""
+    for argument in argv:
+        if argument.startswith("--compile-commands="):
+            return argument.split("=", 1)[1]
+    return None
+
+
+def _source_arguments(argv: list[str]) -> list[str]:
+    """Return the trailing source-file arguments, in the order given."""
+    return [
+        argument
+        for argument in argv
+        if not argument.startswith("-")
+        and Path(argument).suffix.lower() in SOURCE_SUFFIXES
+    ]
+
+
+def _described_paths(entries: list, root: Path) -> set[Path]:
+    """Resolve database entries the way `scripts/clang-tidy-db` does.
+
+    A relative `file` is relative to its entry's own `directory`, never to the
+    repository root, and a relative `directory` is taken from the root.
+    """
+    described: set[Path] = set()
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("file"), str):
+            continue
+        source = Path(entry["file"])
+        if not source.is_absolute():
+            directory = entry.get("directory")
+            base = Path(directory) if isinstance(directory, str) and directory else root
+            if not base.is_absolute():
+                base = root / base
+            source = base / source
+        described.add(source.resolve())
+    return described
+
+
+def undescribed_sources(argv: list[str], root: Path | str | None = None) -> list[str]:
+    """Return source arguments the compilation database has no command for.
+
+    An absent or malformed database is left to the hook: `scripts/clang-tidy-db`
+    owns that failure, and clang-tidy itself reports it.
+    """
+    base = Path.cwd() if root is None else Path(root)
+    directory = _compile_commands_directory(argv)
+    if directory is None:
+        return []
+    path = Path(directory)
+    if not path.is_absolute():
+        path = base / path
+    database = path / "compile_commands.json"
+    if not database.is_file():
+        return []
+    try:
+        entries = json.loads(database.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(entries, list):
+        return []
+    described = _described_paths(entries, base)
+    return [
+        source
+        for source in _source_arguments(argv)
+        if Path(source).resolve() not in described
+    ]
+
+
+def main() -> int:
+    argv = sys.argv[1:]
+    missing = undescribed_sources(argv)
+    if missing:
+        print(
+            "FAIL clang-tidy: the compilation database has no command for:",
+            file=sys.stderr,
+        )
+        for source in missing:
+            print(f"  {source}", file=sys.stderr)
+        print(f"  regenerate the database with: {REMEDY}", file=sys.stderr)
+        return 1
+
+    from cpp_linter_hooks.clang_tidy import run_clang_tidy
+
+    retval, output = run_clang_tidy()
+    if SKIP_MARKER in output:
+        print(
+            "FAIL clang-tidy: clang-tidy skipped at least one file because the "
+            "compilation database has no command for it.",
+            file=sys.stderr,
+        )
+        if output.strip():
+            print(output, file=sys.stderr)
+        print(f"  regenerate the database with: {REMEDY}", file=sys.stderr)
+        return 1
+    if retval != 0:
+        # Mirror cpp-linter-hooks' own entry point: a failing run prints its
+        # diagnostics, a passing run stays quiet.
+        print(output)
+    return retval
+
+
+if __name__ == "__main__":
+    sys.exit(main())

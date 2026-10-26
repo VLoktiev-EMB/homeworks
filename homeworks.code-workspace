@@ -21,6 +21,22 @@
 			"path": "homeworks/1_3-police-flasher"
 		}
 	],
+	"settings": {
+		"clangd.path": "${env:HOME}/.local/bin/clangd-wrapper",
+		"clangd.arguments": [
+			"--background-index"
+		],
+		"C_Cpp.intelliSenseEngine": "disabled",
+		"C_Cpp.autocomplete": "disabled",
+		"C_Cpp.errorSquiggles": "disabled",
+		"editor.formatOnSave": true,
+		"[c]": {
+			"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+		},
+		"[cpp]": {
+			"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+		}
+	},
 	"extensions": {
 		"recommendations": [
 			"platformio.platformio-ide"

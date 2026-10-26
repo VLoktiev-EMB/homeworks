@@ -25,10 +25,7 @@ typedef enum pattern_mode {
 
 /* Wiring profile. `PATTERN_GPIO_SINGLE` drives two anti-parallel LEDs from one
    pin; `PATTERN_GPIO_THREE_LEDS` drives one LED per pin. */
-typedef enum pattern_gpio_profile {
-    PATTERN_GPIO_THREE_LEDS = 0,
-    PATTERN_GPIO_SINGLE = 1
-} pattern_gpio_profile_t;
+typedef enum pattern_gpio_profile { PATTERN_GPIO_THREE_LEDS = 0, PATTERN_GPIO_SINGLE = 1 } pattern_gpio_profile_t;
 
 /* One step of a pattern. `hold_ms` is how long this step stays on screen. */
 typedef struct pattern_frame {

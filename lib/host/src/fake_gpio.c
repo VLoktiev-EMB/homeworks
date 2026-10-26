@@ -2,7 +2,8 @@
 
 #include "host/fake_gpio.h"
 
-static port_status_t consume_forced_status(host_fake_gpio_t *fake) {
+static port_status_t consume_forced_status(host_fake_gpio_t *fake)
+{
     port_status_t status = fake->forced_status;
 
     if (status != PORT_OK) {
@@ -11,7 +12,8 @@ static port_status_t consume_forced_status(host_fake_gpio_t *fake) {
     return status;
 }
 
-static port_status_t host_fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t mode) {
+static port_status_t host_fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t mode)
+{
     host_fake_gpio_t *fake = (host_fake_gpio_t *)ctx;
     port_status_t forced;
 
@@ -27,7 +29,8 @@ static port_status_t host_fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t
     return PORT_OK;
 }
 
-static port_status_t host_fake_write(void *ctx, uint8_t pin, port_gpio_level_t level) {
+static port_status_t host_fake_write(void *ctx, uint8_t pin, port_gpio_level_t level)
+{
     host_fake_gpio_t *fake = (host_fake_gpio_t *)ctx;
     port_status_t forced;
 
@@ -44,7 +47,8 @@ static port_status_t host_fake_write(void *ctx, uint8_t pin, port_gpio_level_t l
     return PORT_OK;
 }
 
-static port_status_t host_fake_read(void *ctx, uint8_t pin, port_gpio_level_t *level) {
+static port_status_t host_fake_read(void *ctx, uint8_t pin, port_gpio_level_t *level)
+{
     host_fake_gpio_t *fake = (host_fake_gpio_t *)ctx;
     port_status_t forced;
 
@@ -60,7 +64,8 @@ static port_status_t host_fake_read(void *ctx, uint8_t pin, port_gpio_level_t *l
     return PORT_OK;
 }
 
-void host_fake_gpio_reset(host_fake_gpio_t *fake) {
+void host_fake_gpio_reset(host_fake_gpio_t *fake)
+{
     size_t index;
 
     if (fake == NULL) {
@@ -76,14 +81,16 @@ void host_fake_gpio_reset(host_fake_gpio_t *fake) {
     fake->reads = 0;
 }
 
-void host_fake_gpio_fail_next(host_fake_gpio_t *fake, port_status_t status) {
+void host_fake_gpio_fail_next(host_fake_gpio_t *fake, port_status_t status)
+{
     if (fake == NULL) {
         return;
     }
     fake->forced_status = status;
 }
 
-port_gpio_t host_fake_gpio_port(host_fake_gpio_t *fake) {
+port_gpio_t host_fake_gpio_port(host_fake_gpio_t *fake)
+{
     port_gpio_t port = {host_fake_set_mode, host_fake_write, host_fake_read, fake};
 
     return port;

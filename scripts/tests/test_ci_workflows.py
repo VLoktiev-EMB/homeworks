@@ -1,4 +1,8 @@
-"""Prove the LFS-pointer guard's behaviour and the two workflow contracts.
+"""Prove the LFS-pointer guard's behaviour and the workflow contracts.
+
+Besides the docs and generated-views commands, the workflow trigger keys are
+asserted: yamllint's `truthy` policy relaxes KEY checking, so every workflow
+must keep spelling its trigger as the text `on:`.
 
 The guard is behaviour, not text: `check_lfs_pointers.sh` is executed against a
 temporary directory so a clean tree, an empty file, a real pointer, a missing
@@ -23,6 +27,7 @@ GUARD = REPO_ROOT / "scripts" / "ci" / "check_lfs_pointers.sh"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 GENERATED_VIEWS = WORKFLOWS / "generated-views.yml"
 DOCS = WORKFLOWS / "docs.yml"
+YAMLLINT_POLICY = REPO_ROOT / ".yamllint.yaml"
 
 POINTER = "version https://git-lfs.github.com/spec/v1\noid sha256:" + "0" * 64 + "\nsize 42\n"
 TIMEOUT = 30
@@ -92,6 +97,47 @@ class WorkflowTextTests(unittest.TestCase):
     def test_docs_runs_the_lfs_guard_on_the_site_directory(self) -> None:
         text = DOCS.read_text(encoding="utf-8")
         self.assertIn("bash scripts/ci/check_lfs_pointers.sh site", text)
+
+
+class WorkflowTriggerKeyTests(unittest.TestCase):
+    """The YAML policy must never rewrite a workflow's trigger key (D-14).
+
+    yamllint parses the bare `on:` key as a boolean under YAML 1.1, so the four
+    workflows produced four `truthy` findings. They are keys, not values, so
+    `.yamllint.yaml` disables key checking instead of normalising a scalar.
+    These assertions are the durable guard against a later edit that
+    "simplifies" a trigger key and breaks the workflow schema; whether a
+    workflow file needed an unrelated line-length fix is recorded in the plan
+    summary, not asserted here.
+    """
+
+    def workflows(self) -> list[Path]:
+        return sorted(WORKFLOWS.glob("*.yml"))
+
+    def test_all_four_workflows_declare_a_textual_trigger_key(self) -> None:
+        files = self.workflows()
+        self.assertEqual(4, len(files), [path.name for path in files])
+        for path in files:
+            lines = path.read_text(encoding="utf-8").splitlines()
+            with self.subTest(workflow=path.name):
+                self.assertIn("on:", lines)
+
+    def test_no_workflow_spells_a_trigger_as_a_boolean_key(self) -> None:
+        for path in self.workflows():
+            with self.subTest(workflow=path.name):
+                for number, line in enumerate(
+                    path.read_text(encoding="utf-8").splitlines(), start=1
+                ):
+                    self.assertNotIn(
+                        line,
+                        ("true:", "false:"),
+                        f"{path.name}:{number} spells a trigger as a boolean key",
+                    )
+
+    def test_the_policy_relaxes_truthy_keys_and_keeps_boolean_values(self) -> None:
+        text = YAMLLINT_POLICY.read_text(encoding="utf-8")
+        self.assertIn("check-keys: false", text)
+        self.assertIn("allowed-values: ['true', 'false']", text)
 
 
 if __name__ == "__main__":

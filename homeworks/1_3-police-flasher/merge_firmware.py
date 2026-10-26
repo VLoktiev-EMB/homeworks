@@ -15,7 +15,7 @@ Import("env")
 
 def _quote(value):
     """Quote one argument so a build path containing spaces stays atomic."""
-    return '"%s"' % value
+    return f'"{value}"'
 
 
 def merge_firmware(source, target, env):

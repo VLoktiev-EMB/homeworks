@@ -14,7 +14,7 @@ informed: []
 handle. Three commits on `main` (`57ff7ba`, `e2dd499`, `69c2434`) nevertheless carry the
 maintainer's real name as the author:
 
-```
+```text
 Author:    <the public account's profile display name>
 Committer: GitHub
 Email:     a handle-based GitHub noreply address

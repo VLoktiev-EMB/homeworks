@@ -33,11 +33,9 @@ extern "C" {
 
    Neither function allocates, consults the locale or uses stdio formatting. */
 
-bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out_size,
-                       size_t *out_length);
+bool common_hex_encode(const uint8_t *data, size_t length, char *out, size_t out_size, size_t *out_length);
 
-bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out_size,
-                       size_t *out_length);
+bool common_hex_decode(const char *text, size_t length, uint8_t *out, size_t out_size, size_t *out_length);
 
 #ifdef __cplusplus
 }

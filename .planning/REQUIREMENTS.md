@@ -125,16 +125,16 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Tooling and Quality
 
-- [ ] **TOOL-01**: clang-format 23.1.3 is configured as a documented ESP-IDF
+- [x] **TOOL-01**: clang-format 23.1.3 is configured as a documented ESP-IDF
       approximation (4 spaces, 120 columns, function brace on a new line); clang-tidy
       runs bugprone, cert, performance, and portability checks on host code.
-- [ ] **TOOL-02**: esp-clangd serves the workspace through `scripts/clangd-wrapper.sh`
+- [x] **TOOL-02**: esp-clangd serves the workspace through `scripts/clangd-wrapper.sh`
       with per-project `.clangd` files, `compiledb`-generated databases, and explicit
       absolute `--query-driver` globs; cpptools IntelliSense is disabled.
-- [ ] **TOOL-03**: Checks are layered: fast hooks (format, markdownlint, yamllint, ruff,
+- [x] **TOOL-03**: Checks are layered: fast hooks (format, markdownlint, yamllint, ruff,
       gitleaks) in pre-commit; clang-tidy in pre-push; full build, tests, schema, docs,
       architecture, and simulation checks in CI.
-- [ ] **TOOL-04**: `docs/standards/vscode.md` onboards a VS Code beginner: extensions,
+- [x] **TOOL-04**: `docs/standards/vscode.md` onboards a VS Code beginner: extensions,
       tasks, format-on-save, Problems panel, clangd, and a no-hardware simulation path.
 - [ ] **TOOL-05**: CI has a fast `meta` job (schema, `--check` drift, lint, gitleaks,
       architecture check) and a `changes` job that computes the affected matrix.
@@ -322,10 +322,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIM-02 | Phase 7 | Pending |
 | SIM-03 | Phase 7 | Pending |
 | SIM-04 | Phase 8 | Pending |
-| TOOL-01 | Phase 6 | Pending |
-| TOOL-02 | Phase 6 | Pending |
-| TOOL-03 | Phase 6 | Pending |
-| TOOL-04 | Phase 6 | Pending |
+| TOOL-01 | Phase 6 | Complete |
+| TOOL-02 | Phase 6 | Complete |
+| TOOL-03 | Phase 6 | Complete |
+| TOOL-04 | Phase 6 | Complete |
 | TOOL-05 | Phase 8 | Pending |
 | TOOL-06 | Phase 8 | Pending |
 | TOOL-07 | Phase 1 | Complete |

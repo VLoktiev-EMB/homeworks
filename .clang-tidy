@@ -1,0 +1,56 @@
+# clang-tidy policy for the host-compiled shared libraries.
+#
+# D-07a: warnings-first. `WarningsAsErrors` stays empty, so a finding is reported
+# and fails the hook through the hook's own non-zero exit rather than through a
+# compiler-style promotion. The check families are the four TOOL-01 names plus
+# readability and clang-analyzer, which the measured backlog already carries.
+#
+# A `.clang-tidy` file is mandatory, not optional: clang-tidy 22 and newer enable
+# no checks at all without a `Checks` key.
+#
+# The disabled rules are policy, not suppressed defects:
+#   - `portability-avoid-pragma-once` — the repository uses `#pragma once`; the
+#     alternative is a mechanical rewrite of every header, out of this plan.
+#   - `readability-uppercase-literal-suffix` — the tree spells unsigned suffixes
+#     lowercase (`0u`, `1u`, `0x0Fu`) as a deliberate convention; the rule would
+#     rewrite 65 literals in seven files without changing behaviour.
+#   - `readability-math-missing-parentheses` — `length * 2u + 1u` is the
+#     readable spelling; the rule would add noise, not clarity.
+#   - `readability-implicit-bool-conversion`, `readability-trailing-comma` —
+#     style preferences on correct code, measured on this tree before disabling.
+#   - `bugprone-easily-swappable-parameters`,
+#     `bugprone-narrowing-conversions`, `cert-err33-c`,
+#     `readability-magic-numbers`, `readability-identifier-length`, and
+#     `readability-function-cognitive-complexity` — noise on the shared
+#     library's small C surface.
+#
+# The remaining `bugprone-signed-bitwise` findings are real and are fixed in the
+# sources rather than disabled.
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  clang-analyzer-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -cert-err33-c,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-uppercase-literal-suffix,
+  -readability-math-missing-parentheses,
+  -readability-implicit-bool-conversion,
+  -readability-trailing-comma,
+  -portability-avoid-pragma-once
+WarningsAsErrors: ""
+# Unanchored on purpose. clang-tidy matches this against the header's
+# `FileEntry` name, which is absolute when the header is reached through an
+# absolute include directory — and `tests/compile_commands.json` passes
+# `-I<repo>/lib/common/include`. An anchored `^(lib|homeworks)/` would discard
+# every diagnostic that originates in a header; `(^|/)` matches both the
+# repository-relative form and the absolute form clang actually emits.
+HeaderFilterRegex: "(^|/)(lib|homeworks)/.*"
+FormatStyle: file
