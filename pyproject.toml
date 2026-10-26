@@ -16,7 +16,6 @@ target-version = "py313"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
-# SCons injects both globals into these scripts; importing them would break the
-# build, so the F821 finding is a false positive at exactly these two sites.
+# SCons injects `env` into these scripts; importing it would break the build, so
+# the F821 finding is a false positive at this one site.
 "scripts/pio/*.py" = ["F821"]
-"homeworks/*/merge_firmware.py" = ["F821"]
