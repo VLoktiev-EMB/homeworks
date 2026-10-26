@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": ".agents/skills/simulate/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/simulate/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "4a377404d264cf930acc24e3b365674006125eabd149497af57aa55a67dd7506",
+      "bytes": 319
+    },
+    {
+      "path": ".agents/skills/simulate/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/simulate/LESSONS.md",
+      "mode": "whole",
+      "sha256": "32020689a4dbed05e5235026e955a701712a8a7fe07cfaa0157b3ac86ac150e2",
+      "bytes": 360
+    },
+    {
+      "path": ".agents/skills/simulate/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/simulate/SKILL.md",
+      "mode": "whole",
+      "sha256": "7e1e94e48bf6f328d0e4dc277f76e20a10df48a93c406282679d7f741b27f859",
+      "bytes": 1506
+    }
+  ]
+}
