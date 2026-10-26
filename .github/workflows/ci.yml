@@ -32,8 +32,37 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-          # D-3/D-14: both the diff base and a full-history scan need every ref.
+          # D-3/D-14: both the diff base and the full-history scan need every ref.
           fetch-depth: 0
+      # D-14/Pitfall 3: the pre-commit gitleaks hook reads the staged index, which is empty
+      # on a clean CI checkout, so the history scan is its own step. It runs before
+      # `pre-commit install-hooks` and before any hook from the contributor's
+      # `.pre-commit-config.yaml`, so a pull request cannot supply a hook definition that
+      # runs first or interferes with the scan (T-8-20).
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          # Published in gitleaks_8.30.1_checksums.txt and confirmed against
+          # the GitHub release-asset digest for the same upload.
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          # The release URL is assembled in three parts so the YAML line stays
+          # readable; the resulting download is byte-identical to the one-line
+          # spelling. The checksum check below still fails closed.
+          release="https://github.com/gitleaks/gitleaks/releases/download"
+          release="${release}/v${GITLEAKS_VERSION}"
+          curl --proto '=https' --tlsv1.2 -sSfL \
+            "${release}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o "$archive"
+          # Fail closed: a substituted or truncated artifact stops the job
+          # before the binary is unpacked or executed.
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+          install -m 0755 "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
+      - name: Scan the full history
+        run: gitleaks git --redact --verbose --log-opts="--all"
       # D-16: the title is contributor-controlled, so it enters through `env:` and is quoted
       # in the shell. The regex is a literal, never assembled from the value.
       - name: Validate the pull-request title
@@ -64,6 +93,37 @@ jobs:
       # view drift, architecture rule, format and lint — check-only, never a repair.
       - name: Run the hook surface
         run: pre-commit run --all-files --show-diff-on-failure
+      # D-11: the diagram lint needs no token and spends no simulation quota, so it runs on
+      # every pull request. The v0.28.1 release publishes no checksum file, so
+      # `WOKWI_CLI_SHA256` is an observed value recorded here beside the pin, following the
+      # `GITLEAKS_SHA256` precedent.
+      - name: Install wokwi-cli
+        env:
+          WOKWI_CLI_VERSION: 0.28.1
+          WOKWI_CLI_SHA256: 869f194ee473257c6112ed58d786376527769020056320b0a49a37d9e7d3bdd7
+        run: |
+          set -euo pipefail
+          asset="$RUNNER_TEMP/wokwi-cli-linuxstatic-x64"
+          release="https://github.com/wokwi/wokwi-cli/releases/download"
+          curl --proto '=https' --tlsv1.2 -sSfL \
+            "${release}/v${WOKWI_CLI_VERSION}/wokwi-cli-linuxstatic-x64" \
+            -o "$asset"
+          # Fail closed: a substituted or truncated artifact stops the job
+          # before the binary is installed or executed.
+          echo "${WOKWI_CLI_SHA256}  ${asset}" | sha256sum -c -
+          install -m 0755 "$asset" /usr/local/bin/wokwi-cli
+      # An unmatched glob stays literal, so `-e` is the skip test and `found` records that at
+      # least one diagram existed; a repository with no diagram still reports a green run.
+      - name: Lint every diagram
+        run: |
+          set -euo pipefail
+          found=0
+          for diagram in homeworks/*/assets/diagram.json; do
+            [ -e "$diagram" ] || continue
+            found=1
+            wokwi-cli lint --offline "$diagram"
+          done
+          [ "$found" -eq 1 ] || echo "no diagrams to lint"
 
   changes:
     name: changes

@@ -141,6 +141,44 @@ class WorkflowTextTests(unittest.TestCase):
         self.assertNotIn(": write", text)
 
 
+class MetaJobSurfaceTests(unittest.TestCase):
+    """The security-critical ordering and the pinned tools inside the `meta` job."""
+
+    def setUp(self) -> None:
+        self.text = CI.read_text(encoding="utf-8")
+
+    def meta_job(self) -> str:
+        """Return only the `meta` job, so a match cannot come from another job."""
+        start = self.text.index("\n  meta:\n")
+        end = self.text.index("\n  changes:\n", start)
+        return self.text[start:end]
+
+    def test_meta_scans_history_before_running_hooks(self) -> None:
+        meta = self.meta_job()
+        # `rindex` reads the executed command, not the comment above it: the ordering
+        # comment names `pre-commit install-hooks` before the step itself exists.
+        scan = meta.rindex("gitleaks git")
+        hooks = meta.rindex("pre-commit install-hooks")
+        self.assertLess(scan, hooks)
+
+    def test_meta_fetches_the_full_history(self) -> None:
+        self.assertIn("fetch-depth: 0", self.meta_job())
+
+    def test_meta_carries_the_full_history_scan(self) -> None:
+        self.assertIn('gitleaks git --redact --verbose --log-opts="--all"', self.text)
+
+    def test_meta_lints_every_diagram(self) -> None:
+        meta = self.meta_job()
+        self.assertIn("wokwi-cli lint --offline", meta)
+        self.assertIn("homeworks/*/assets/diagram.json", meta)
+
+    def test_meta_pins_the_scanner_and_linter_versions(self) -> None:
+        self.assertIn("WOKWI_CLI_SHA256", self.text)
+        for pin in ("8.30.1", "551f6fc8", "0.28.1", "869f194e"):
+            with self.subTest(pin=pin):
+                self.assertIn(pin, self.meta_job())
+
+
 class WorkflowTriggerKeyTests(unittest.TestCase):
     """The YAML policy must never rewrite a workflow's trigger key (D-14).
 
