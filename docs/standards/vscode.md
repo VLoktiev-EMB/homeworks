@@ -109,8 +109,11 @@ When clangd reports a problem, read the diagnostic's warning name:
 To see the same analysis without the editor, run the wrapper directly:
 
 ```bash
-"$HOME/.local/bin/clangd-wrapper" --check homeworks/1_3-police-flasher/src/main.cpp
+"$HOME/.local/bin/clangd-wrapper" --check=homeworks/1_3-police-flasher/src/main.cpp
 ```
+
+esp-clangd declares the flag as `--check[=<string>]`, so the value is attached with `=`; a
+detached path is passed as a stray positional argument and clangd rejects it.
 
 Expect `All checks completed, 0 errors` and exit code 0.
 
