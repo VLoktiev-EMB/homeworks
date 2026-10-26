@@ -356,7 +356,19 @@ Plans:
   3. Simulation runs only for changed projects after the spike, with explicit timeouts and artifact upload, and is never a required check for fork pull requests.
   4. Nightly runs the full build and unit-test matrix without simulation.
 
-**Plans**: TBD
+**Plans:** 4/4 plans executed
+
+**Wave 1**
+- [x] 08-01-PLAN.md — `ci.yml` tracer: `meta`, `changes`, `build` and the literal `gate`; retire the drift workflow (tracer)
+
+**Wave 2**
+- [x] 08-02-PLAN.md — `nightly.yml` full matrix plus full-history scan; retire `homework.yml` and `security.yml`
+
+**Wave 3**
+- [x] 08-03-PLAN.md — `python-tests`, `static-analysis`, opt-in `simulate` with evidence upload; gate contract tests
+
+**Wave 4**
+- [x] 08-04-PLAN.md — `AGENTS.md`, pull-request template, decision row, yamllint comment
 
 ### Phase 9: Agent Workflow and Skills
 
@@ -419,7 +431,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
-| 8. Fast CI | 0/TBD | Not started | - |
+| 8. Fast CI | 4/4 | In Progress | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
