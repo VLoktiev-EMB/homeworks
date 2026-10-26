@@ -311,10 +311,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Goal:** clangd resolves every shared-library source under `lib/` with the correct compile command, so IntelliSense works in the `lib` folder of the multi-root workspace as well as inside a homework project. A generated root `compile_commands.json` covers `lib/arduino`, `lib/espidf`, `lib/common`, `lib/port` and `lib/host` from their representative build contexts; the root `.clangd` carries the proven esp-clangd settings; a coverage test fails when a `lib/**/*.c` source has no entry.
 **Requirements**: TOOL-02 (follow-up), TOOL-04 (follow-up)
 **Depends on:** Phase 6
-**Plans:** 1 plan
+**Plans:** 1/1 plans executed
 
 Plans:
-- [ ] 06.1-01-PLAN.md — Generate the root compile database from three source databases, add the root `.clangd`, let the wrapper query the host compiler, and machine-check the coverage and the guide
+- [x] 06.1-01-PLAN.md — Generate the root compile database from three source databases, add the root `.clangd`, let the wrapper query the host compiler, and machine-check the coverage and the guide
 
 ### Phase 7: Simulation Spike
 
