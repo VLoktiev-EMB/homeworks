@@ -1258,6 +1258,7 @@ class HookLayeringTests(unittest.TestCase):
             "check-architecture",
             "check-metadata",
             "gen-views-check",
+            "gen-skills-check",
         ):
             with self.subTest(hook=hook_id):
                 block = _hook_block(text, hook_id)
@@ -1342,6 +1343,36 @@ class HookLayeringTests(unittest.TestCase):
             with self.subTest(flag=flag):
                 for invocation in invocations:
                     self.assertNotIn(flag, invocation)
+
+
+class MarkdownlintSurfaceTests(unittest.TestCase):
+    """Pitfall 4: authored skill prose is linted, generated Markdown is not."""
+
+    def exclude(self) -> str:
+        block = _hook_block(
+            PRECOMMIT_CONFIG.read_text(encoding="utf-8"), "markdownlint-cli2"
+        )
+        self.assertNotEqual("", block, "the markdownlint-cli2 hook is missing")
+        pattern = _hook_field(block, "exclude")
+        self.assertNotEqual("", pattern)
+        return pattern
+
+    def test_authored_skill_prose_is_linted(self) -> None:
+        self.assertIsNone(
+            re.search(self.exclude(), ".claude/skills/simulate/SKILL.md"),
+            "authored canonical skill prose must reach markdownlint",
+        )
+
+    def test_the_generated_mirror_is_not_linted(self) -> None:
+        self.assertIsNotNone(
+            re.search(self.exclude(), ".agents/skills/simulate/SKILL.md"),
+            "the generated skills mirror must not be linted",
+        )
+
+    def test_other_generated_and_planning_markdown_is_not_linted(self) -> None:
+        for path in (".claude/CLAUDE.md", ".planning/phases/x/PLAN.md"):
+            with self.subTest(path=path):
+                self.assertIsNotNone(re.search(self.exclude(), path))
 
 
 VSCODE_GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
