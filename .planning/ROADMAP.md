@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 8/8 plans executed
+**Plans:** 8/8 plans executed, 1 gap-closure plan
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -406,6 +406,9 @@ Plans:
 
 **Wave 7**
 - [x] 09-08-PLAN.md — the D-22 dry run and the phase evidence transcript
+
+**Gap closure**
+- [ ] 09-09-PLAN.md — close CR-02 (declared baud), CR-01 (scoped capture exception) and WR-01 (capture snippet) in `hw-flash`
 
 ### Phase 10: Report and Evidence System
 
