@@ -270,7 +270,8 @@ artifact — code, evidence, and report — that can be understood and verified 
 | esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | ✓ Phase 6 — ADR-0013 multi-root contract; the headless check is `--check=<file>` because esp-clangd declares `--check[=<string>]` |
 | Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | ✓ Phase 6 — pre-commit and pre-push layers live; the CI layer is Phase 8 |
 | clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | ✓ Phase 6 — ADR-0012; clang-format 23.1.3 dry-run clean over 60 tracked C/C++ files |
-| A documented command is regression-guarded | A guide command the tool rejects is worse than no command; only a positive, negative and non-vacuity test keep the live form honest | ✓ Phase 6 — `ClangdCheckCommandTests`; historical records left byte-identical |
+| A documented command is regression-guarded | A guide command the tool rejects is worse than no command; a guard keeps the live form honest | ✓ Phase 6 — historical records left byte-identical; the prose guard is replaced by a behavioral one in the test-prune follow-up |
+| One generated root compile database serves the shared libraries | clangd resolves a file from the nearest ancestor database; the per-project databases are siblings of `lib/`, so the shared sources had none | ✓ Phase 06.1 — `scripts/gen_clangd_db.py` merges the native, Arduino and ESP-IDF databases into one untracked root `compile_commands.json`; the root `.clangd` carries the proven keys; `templates/**/src/*` remain out of scope |
 | 10-section report with BOM, calculations, safety, and industry notes | Academic completeness plus engineering rigor | — Pending |
 | `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | ✓ Phase 4 — schema-validated contract; `task.md` carries provenance frontmatter (ADR-0009) |
 | JSON Schema 2020-12 as the single metadata contract | One declarative field set read by editors, the checker, the scaffold and Phase 5 generators; anchored patterns instead of `format` | ✓ Phase 4 — `additionalProperties: false` at every level; unknown keys rejected |
@@ -327,4 +328,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-26 after Phase 6*
+*Last updated: 2026-10-26 after Phase 06.1*

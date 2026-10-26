@@ -23,7 +23,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 06.1 — Shared-library IntelliSense compile database
+**Current focus:** Phase 07 — Simulation Spike
 
 ## Current Position
 
@@ -91,6 +91,11 @@ Recent decisions affecting current work:
 - Phase 6: a documented command is regression-guarded by a positive, negative and non-vacuity test (`ClangdCheckCommandTests`), so a guide that drifts back to a rejected invocation fails the suite instead of shipping.
 - Phase 6: the local quality layers are live (pre-commit fast hooks, clang-tidy on pre-push with a compile-database freshness guard); the CI layer stays Phase 8 (TOOL-05, TOOL-06).
 - Phase 6: gap closure G-06-1 was a one-command documentation defect; the re-verification passed 56/56 must-haves with the covered-input digest recomputed by the CLI.
+- Phase 06.1: clangd discovers compile databases upward only, so shared sources under `lib/` had none — the per-project databases are siblings. One generated root `compile_commands.json` merges the native, Arduino and ESP-IDF databases and stays untracked.
+- Phase 06.1: the root `.clangd` names no `CompilationDatabase` on purpose, so each project's own fragment and the nearer `tests/` database keep precedence.
+- Phase 06.1: `lib/common` and `lib/port` are compiled in three environments; the native context is the deliberate representative choice, not a wrong command.
+- Phase 06.1: the wrapper's bounded allowlist gained `/usr/bin/gcc`, `/usr/bin/cc` and `/usr/bin/clang` because esp-clangd ships no resource headers; PATH is never consulted.
+- Phase 06.1: both templates lack a compile database of their own and stay out of scope; the residual is recorded as a deferred follow-up.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -170,6 +175,8 @@ Recent decisions affecting current work:
 - **[Phase 5, resolved]** The deploy path is no longer unverified: PR #12 merged as `0384ed7`, the `docs` workflow's `build and deploy` job succeeded, and the live Pages site was checked page by page.
 - **[Phase 6, open findings]** IN-01..IN-05 are info-level review observations recorded in `06-REVIEW-DISPOSITION.md`; none has a failing test or a reproducible defect against the phase goal. The CI layer of TOOL-03 is Phase 8 scope (TOOL-05, TOOL-06).
 - **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
+- **[Phase 06.1, deferred]** `templates/**/src/*` have no compile database of their own, so both template entry points still show clangd errors. Recorded as a deferred follow-up in `06.1-UAT.md`; out of scope for the phase goal.
+- **[Phase 06.1, queued]** A pass over `scripts/tests/test_tooling_config.py` removes 12 prose/doc-sync tests and replaces the G-06-1 text guard with one behavioral test that runs the guide's documented command. Queued after the phase merge.
 
 ### Quick Tasks Completed
 
@@ -197,6 +204,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T12:25:42.139Z
+Last session: 2026-10-26T13:20:00.000Z
 Stopped at: Phase 06.1 complete, ready to plan Phase 7
 Resume file: None
