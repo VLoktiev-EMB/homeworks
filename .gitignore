@@ -27,6 +27,15 @@ homeworks/*/sdkconfig.*
 # Order-sensitive: re-includes the authored fragment after the broad pattern (P7).
 !homeworks/*/sdkconfig.defaults
 
+# The ESP-IDF build writes the same generated files into the template tree when
+# its source database is generated. Scoped exactly like the `homeworks/*/` block
+# above: no repository-wide filename is banned.
+templates/homework-*/CMakeLists.txt
+templates/homework-*/src/CMakeLists.txt
+templates/homework-*/sdkconfig.*
+# Order-sensitive: re-includes the authored fragment after the broad pattern (P7).
+!templates/homework-*/sdkconfig.defaults
+
 # Generated
 compile_commands.json
 site/

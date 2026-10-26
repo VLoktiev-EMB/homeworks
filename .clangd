@@ -1,0 +1,20 @@
+# Shared language-server defaults for every library source and for tests.
+# Each project keeps its own fragment; this one supplies the keys the shared
+# tree needs and deliberately names no database directory, so the nearest
+# database always wins.
+CompileFlags:
+  # Required: the server ships no resource headers, and a queried driver's
+  # builtin headers are excluded by default.
+  BuiltinHeaders: QueryDriver
+  Remove:
+    - -mlongcalls
+    - -mtext-section-literals
+    - -mdisable-hardware-atomics
+    - -fno-tree-switch-conversion
+    - -fno-shrink-wrap
+    - -fstrict-volatile-bitfields
+    - -fmacro-prefix-map=*
+Diagnostics:
+  Suppress:
+    - unknown-argument
+    - drv_unknown_argument
