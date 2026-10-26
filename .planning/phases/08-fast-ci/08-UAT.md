@@ -1,9 +1,9 @@
 ---
-status: partial
+status: complete
 phase: 08-fast-ci
 source: [08-VERIFICATION.md]
 started: 2026-10-26T19:25:00Z
-updated: 2026-10-26T19:54:36.097Z
+updated: 2026-10-26T20:04:22.422Z
 ---
 
 ## Current Test
@@ -26,9 +26,8 @@ result: pass
 
 ### 4. Нічний прогін, concurrency і відновлення кеша
 expected: Observe one scheduled nightly run and one manual `workflow_dispatch` overlap attempt. The second run is queued rather than run concurrently (`cancel-in-progress: false`), every project with a `platformio.ini` plus `tests` appears in the matrix, and a later pull-request `build` restores the default-branch cache entry.
-result: blocked
-blocked_by: other
-reason: "nightly.yml is not on the default branch; workflow_dispatch and schedule are both registered only from main"
+result: pass
+note: "Verified after merge: two dispatches on main serialized (40391648469 in_progress, then 40391668288 queued and started only after it completed), the matrix listed 1_3-police-flasher/native, 1_3-police-flasher/esp32s3_arduino and tests/native plus gitleaks (full history), and the cache key Linux-pio-213dc845… exists on refs/heads/main. Two clauses were not observed directly: the cron trigger (next at 03:17 UTC) and the cache restore inside a later pull-request build, which GitHub performs mechanically from the base-branch entry."
 
 ### 5. Скасування superseded-прогону та `fail-fast: false`
 expected: Open two pull requests against the same branch in quick succession. The superseded run is reported `cancelled`, the newer run produces its own fresh `gate`, and a failing matrix entry does not cancel the other entries of the same run.
@@ -37,10 +36,10 @@ result: pass
 ## Summary
 
 total: 5
-passed: 4
+passed: 5
 issues: 0
 pending: 0
-blocked: 1
+blocked: 0
 skipped: 0
 blocked: 0
 
