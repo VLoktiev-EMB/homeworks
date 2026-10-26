@@ -286,7 +286,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
 
-**Plans:** 5/5 plans executed
+**Plans:** 5/5 plans executed; 1 gap-closure plan pending
 
 **Wave 1**
 - [x] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
@@ -300,6 +300,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 4** *(blocked on Wave 3)*
 - [x] 06-05-PLAN.md — `docs/standards/vscode.md`, `Standards` nav, ADR 0012/0013, `AGENTS.md` quality section (tracer: page to built site)
+
+**Gap closure** *(from the 2026-10-26 UAT: G-06-1)*
+
+**Wave 1**
+- [ ] 06-06-PLAN.md — G-06-1: the attached esp-clangd check form in the guide and both live manual-test contracts, plus a non-vacuous regression guard
 
 ### Phase 7: Simulation Spike
 
