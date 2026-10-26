@@ -1346,6 +1346,13 @@ class HookLayeringTests(unittest.TestCase):
 
 VSCODE_GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"
 
+# The guide's command checks this project, and clangd needs its database. The
+# database is a gitignored build artifact, so a fresh clone or a CI runner does
+# not carry one until the guide's compiledb command has been run.
+HOMEWORK_DATABASE = (
+    REPO_ROOT / "homeworks" / "1_3-police-flasher" / "compile_commands.json"
+)
+
 # The attached `--check=<source>` form. The flag is followed by a non-whitespace
 # run ending in a C or C++ source path; the whitespace requirement rules out a
 # detached path, which esp-clangd would reject as a stray positional argument.
@@ -1369,6 +1376,13 @@ class ClangdGuideCommandTests(unittest.TestCase):
             invocations,
             "docs/standards/vscode.md no longer documents a --check= invocation",
         )
+
+        if not HOMEWORK_DATABASE.is_file():
+            self.skipTest(
+                "homeworks/1_3-police-flasher/compile_commands.json is absent; "
+                "generate it with `pio run -d homeworks/1_3-police-flasher "
+                "-t compiledb`"
+            )
 
         bash = shutil.which("bash") or "/bin/bash"
         multiple = len(invocations) > 1
