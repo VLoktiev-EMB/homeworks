@@ -1094,5 +1094,48 @@ class RulebookAndGuideTests(unittest.TestCase):
                 self.assertNotIn(command, text)
 
 
+# G-06-1: esp-clangd 21.1.3 declares `--check[=<string>]`, so the value must be
+# attached with `=`. `scripts/clangd-wrapper.sh` forwards its arguments
+# verbatim, so a detached path arrives as a stray positional argument and the
+# server rejects it. The guide is the whole contract, so it carries the guard.
+CHECK_COMMAND = "--check=homeworks/1_3-police-flasher/src/main.cpp"
+
+# The flag, then whitespace, then a source path. The negative lookahead after
+# the whitespace rules out `--check --version`, and the whitespace requirement
+# itself rules out the attached `--check=<path>` form.
+DETACHED_CHECK_PATTERN = re.compile(r"--check\s+(?!-)\S+\.(?:cpp|c)\b")
+
+# The exact broken invocation recorded in 06-UAT.md for G-06-1. It is the
+# recorded defect and the fixture that proves the detector is non-vacuous;
+# never copy it into authored Markdown.
+RECORDED_DEFECT_LINE = (
+    '"$HOME/.local/bin/clangd-wrapper" '
+    "--check homeworks/1_3-police-flasher/src/main.cpp"
+)
+
+
+class ClangdCheckCommandTests(unittest.TestCase):
+    """G-06-1: the guide documents the working headless check command.
+
+    esp-clangd declares the flag with an optional attached value and the
+    wrapper forwards arguments verbatim, so a detached source path is a stray
+    positional argument. The positive and negative cases pin the guide, and
+    the third case feeds the recorded defect through the same pattern so the
+    detector cannot be vacuous.
+    """
+
+    def test_the_guide_documents_the_attached_invocation(self) -> None:
+        self.assertIn(CHECK_COMMAND, GUIDE.read_text(encoding="utf-8"))
+
+    def test_the_guide_carries_no_detached_source_path(self) -> None:
+        self.assertIsNone(
+            DETACHED_CHECK_PATTERN.search(GUIDE.read_text(encoding="utf-8")),
+            "the guide must not document a detached --check source path",
+        )
+
+    def test_the_detector_matches_the_recorded_defect(self) -> None:
+        self.assertIsNotNone(DETACHED_CHECK_PATTERN.search(RECORDED_DEFECT_LINE))
+
+
 if __name__ == "__main__":
     unittest.main()
