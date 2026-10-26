@@ -1,385 +1,286 @@
 ---
 phase: 09-agent-workflow-and-skills
-reviewed: 2026-10-26T23:13:39Z
+reviewed: 2026-10-26T23:38:16Z
 depth: standard
-files_reviewed: 13
+files_reviewed: 14
 files_reviewed_list:
-  - .claude/skills/_shared/guardrails.md
+  - scripts/serial_capture.py
+  - scripts/tests/test_serial_capture.py
+  - scripts/affected.py
+  - scripts/tests/test_affected.py
   - .claude/skills/hw-flash/SKILL.md
   - .claude/skills/hw-flash/CHANGELOG.md
   - .claude/skills/hw-flash/LESSONS.md
-  - .agents/skills/_shared/guardrails.md
+  - .claude/skills/_shared/guardrails.md
+  - AGENTS.md
   - .agents/skills/hw-flash/SKILL.md
   - .agents/skills/hw-flash/CHANGELOG.md
   - .agents/skills/hw-flash/LESSONS.md
-  - templates/views/shared-ini.ini.tmpl
-  - platformio.shared.ini
-  - generated.manifest
+  - .agents/skills/_shared/guardrails.md
   - generated.skills.manifest
-  - scripts/tests/test_gen_views.py
 findings:
-  critical: 2
-  warning: 6
-  info: 2
-  total: 10
+  critical: 1
+  warning: 3
+  info: 5
+  total: 9
 status: issues_found
 ---
 
 # Phase 09: Code Review Report
 
-**Reviewed:** 2026-10-26T23:13:39Z
+**Reviewed:** 2026-10-26T23:38:16Z
 **Depth:** standard
-**Files Reviewed:** 13
+**Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-Incremental review of the gap-closure change set at base `88ce29f`: the scoped capture
-exception in the shared guardrails, the `hw-flash` baud resolution and capture snippet, the
-shared-ini template baud, and the regenerated projections. The `.agents/**` files are
-generated mirrors. They were compared against their canonical sources and against the
-generator, not reviewed as independent files.
+Incremental review of the 09-10 gap-closure change set at base `07317f1`: the new
+`scripts/serial_capture.py` PTY helper and its suite, the `hw-flash` rewrite that points at
+it, the restored guardrails prohibition, the two `affected.py` entries, `AGENTS.md`, and the
+regenerated mirror and manifest. Earlier findings CR-01, CR-02, WR-01..WR-09 and IN-01..IN-05
+are already recorded; this report continues at CR-03 / WR-10 / IN-06 and reuses no ID.
 
-What holds:
+What holds, checked rather than assumed:
 
-- `uv run scripts/gen_views.py --all --check` and `uv run scripts/gen_skills.py --check`
-  both pass. The canonical files and the `.agents` mirrors are byte-identical after the
-  generator's documented frontmatter/banner transformation, so there is no mirror drift.
-- The `generated.manifest` digest and byte count for `platformio.shared.ini` match the file
-  (`b076e5…`, 1379 bytes). The four changed `generated.skills.manifest` entries match their
-  `.agents` files. `scripts/tests/test_gen_views.py` gains
-  `test_both_esp_sections_declare_the_monitor_baud`; the full module (50 tests) passes and
-  leaves the worktree clean.
-- `templates/views/shared-ini.ini.tmpl` and the regenerated `platformio.shared.ini` add
-  `monitor_speed = 115200` to both ESP base sections. The real homework resolves it:
-  `pio project config -d homeworks/1_3-police-flasher --json-output` emits
-  `["monitor_speed", 115200]` under `env:esp32s3_arduino`, and PlatformIO's
-  `apply_project_monitor_options` confirms the monitor inherits it when `-b` is absent.
-  The prior CR-02 (baud) is genuinely closed.
-- The capture exception now has one owner in the shared guardrails, and `hw-flash`
-  references it instead of restating it. The prior CR-01 (policy conflict) and WR-01
-  (`-e`, `OSError`, return-code check, scan, write) are addressed in form.
+- `uv run scripts/gen_skills.py --check` reports every `.agents/**` file and
+  `generated.skills.manifest` as `UNCHANGED`. A direct byte comparison confirms the mirror is
+  exactly the documented transform (generated banner plus the invocation line replacing
+  `disable-model-invocation`) of the canonical tree, and every manifest `sha256` and `bytes`
+  value matches its file.
+- `python3 -m unittest scripts.tests.test_affected` is `OK` (26 tests) on this host.
+  `scripts/serial_capture.py` maps to no build impact on the real repository; a change to
+  `scripts/tests/test_serial_capture.py` (or to `scripts/affected.py` itself) widens, which is
+  the documented fail-safe.
+- The PTY fix is genuinely correct against the installed PlatformIO 6.2.0:
+  `platformio/compat.py:37-39` gates on `sys.stdout.isatty()` and
+  `platformio/device/monitor/terminal.py:60-61` skips `print_terminal_settings` when
+  `--quiet` is set, so the prior CR-01 and WR-06 are closed.
+- `python3 -m unittest scripts.tests.test_serial_capture` passes its 17 non-PTY tests. The 7
+  PTY-dependent tests fail in this reviewer's sandbox with `OSError: out of pty devices`, the
+  limitation `09-10-PLAN.md:64` records; this is an environment result, not a repository
+  defect, and it is not counted as a finding.
+- The credential and atomic-write suites pass, including all six CR-02 fixtures, the
+  symlink refusals, replace-not-append, and the concurrency case.
 
 What does not hold:
 
-- The capture cannot run at all under the snippet's `stdout=PIPE`. PlatformIO's monitor
-  refuses a non-TTY stdout, so every run reports `capture unavailable`. This is a blocker
-  (CR-01).
-- The credential-shape scan that the only permitted write depends on misses ordinary
-  assignment forms (`secret = …`, JSON `{"token": …}`), so the write it gates can still
-  persist a credential. This is a blocker (CR-02).
-- The write path, the symlink discipline, and the outcome table still contradict the rules
-  stated around them (WR-01 through WR-03).
+- `hw-flash` never wires the user-resolved baud into the helper it now invokes, so the
+  absent-`monitor_speed` branch either drops the baud (monitor falls back to the forbidden
+  9600) or passes a flag the helper does not accept (CR-03).
+- The helper's CLI admits non-finite `--seconds`, and its read loop has no failure path that
+  reaps the child (WR-10, WR-11).
+- The credential scan still misses plausible assignment forms the policy's general clause
+  names (WR-12).
 
-The open prior findings WR-02 through IN-05 remain tracked in `09-REVIEW-DISPOSITION.md`
-and are out of this incremental scope.
+Security register delta for this slice: T-09-34 (PTY/early exit) and T-09-36 (write path) are
+closed; T-09-33 (credential scan) remains partially open at WR-12; T-09-35 (CLI validation)
+at WR-10 and IN-09; T-09-37 (bounded read loop) at WR-11; the baud control behind T-09-31 is
+reopened by CR-03. If a new ID is minted for the baud wiring it continues at T-09-38.
 
 ## Critical Issues
 
-### CR-01: The capture snippet pipes stdout, so `pio device monitor` always exits before the bound
+### CR-03: `hw-flash` never passes the user-resolved baud to the capture helper
 
-**File:** `.claude/skills/hw-flash/SKILL.md:119` (mirror `.agents/skills/hw-flash/SKILL.md:120`);
-command at `.claude/skills/hw-flash/SKILL.md:98-106`
+**File:** `.claude/skills/hw-flash/SKILL.md:67`, `:108`, `:118`, `:143-145` (mirror
+`.agents/skills/hw-flash/SKILL.md:68`, `:109`, `:119`, `:144-146`); helper at
+`scripts/serial_capture.py:288` and `:274-277`
 
-**Issue:** The only executable capture example starts the monitor with
-`subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)`. PlatformIO 6.2.0
-gates the monitor on an interactive stdout: `platformio/compat.py:37-39` defines
-`is_terminal()` as `sys.stdout.isatty()`, and
-`platformio/device/monitor/terminal.py:new_terminal()` raises `UserSideException` when it
-is false. A pipe is not a TTY, so the child exits immediately with:
+**Issue:** The skill's only executable capture command is
+`uv run scripts/serial_capture.py --id <id> [--env <env>] [--seconds 20]`. The helper's baud
+flag is `--baud` (`serial_capture.py:288`), which appends `-b <n>` to the monitor
+(`:276-277`). Neither the consent-gate example nor the capture command includes `--baud`,
+while the prose still says "Pass `-b <n>` only for the user-named value accepted after an
+absent setting" (`SKILL.md:143-145`). `-b` is not a helper flag. An agent that follows the
+prose appends `-b <n>` and argparse exits 2 with no capture; an agent that follows the
+command drops the baud entirely. In the absent-`monitor_speed` branch the monitor then
+inherits PlatformIO's 9600 fallback, which the same file forbids ("Never run the monitor on
+PlatformIO's built-in 9600"), while the gate announced `Baud: <n>`. A 115200 device sampled at
+9600 commonly yields framing-error bytes rather than zero bytes, so the run can report
+"capture succeeded" with a corrupt log. The removed snippet wired `user_baud` into the child
+(`if user_baud is not None: argv += ["-b", str(user_baud)]`), so this is a regression
+introduced by the rewrite. It also breaks the consent rule that the announced capture is the
+executed capture.
 
-```text
-UserSideException: `pio device monitor` requires an interactive terminal on stdin and cannot
-run with piped or redirected input. If you're scripting device I/O, talk to the serial port
-directly instead (e.g., with pyserial) rather than through `pio device monitor`.
-```
-
-This was reproduced against the repository's only homework:
-`pio device monitor -d homeworks/1_3-police-flasher --raw -p /dev/null` with captured
-stdout returned exit 1 and printed that exception. The snippet's
-`if not timed_out and proc.returncode != 0` branch therefore raises `CaptureFailed` on
-every run. The outcome table's "Upload succeeded, capture succeeded" state is unreachable;
-every flash reports `capture unavailable`. The upload result stays correct, so this is not
-data loss, but the capture leg — the reason the skill exists — never works. The CHANGELOG
-claim that the snippet "implements every rule stated around it" is false for this reason
-alone. The same failure applies to the bare command when the agent's tool captures stdout.
-
-**Fix:** Do not use `pio device monitor` for a scripted capture. PlatformIO's own error
-message recommends pyserial; that path also removes the TTY and banner problems:
-
-```python
-import serial, time
-
-# Resolve the port with `pio device list --json-output` (or monitor_port).
-with serial.Serial(port, baud, timeout=0.5) as ser:
-    deadline = time.monotonic() + 20
-    chunks = []
-    while time.monotonic() < deadline:
-        chunks.append(ser.read(4096))
-out = b"".join(chunks)
-```
-
-If the monitor must be kept, allocate a PTY for the child's stdout and stdin, put the slave
-in raw mode so the captured bytes are not rewritten, and read from the master:
-
-```python
-import os, pty, select, subprocess, time, tty
-
-master_fd, slave_fd = pty.openpty()
-tty.setraw(slave_fd)                 # preserve the device bytes
-try:
-    proc = subprocess.Popen(
-        argv, stdin=slave_fd, stdout=slave_fd, stderr=subprocess.PIPE
-    )
-finally:
-    os.close(slave_fd)
-
-chunks, deadline = [], time.monotonic() + 20
-while time.monotonic() < deadline:
-    ready, _, _ = select.select([master_fd], [], [], deadline - time.monotonic())
-    if not ready:
-        break
-    try:
-        chunk = os.read(master_fd, 4096)
-    except OSError:                  # EIO on child exit
-        break
-    if not chunk:
-        break
-    chunks.append(chunk)
-proc.kill()
-_, err = proc.communicate()
-os.close(master_fd)
-out = b"".join(chunks)
-```
-
-Add a real dry-run or test that exercises this path; no test in the repository ever starts
-`pio device monitor`, which is why this regression shipped.
-
-### CR-02: The credential-shape scan misses ordinary assignment forms, so the gated write can persist a credential
-
-**File:** `.claude/skills/hw-flash/SKILL.md:135` (mirror
-`.agents/skills/hw-flash/SKILL.md:136`); rule at
-`.claude/skills/_shared/guardrails.md:54-61`
-
-**Issue:** The guardrails' only permitted capture write is conditioned on a scan that
-"finds no match for a token, secret, password, or API-key assignment". The implementation
-is:
-
-```python
-CREDENTIAL = re.compile(rb"(?i)(token|secret|password|api[_-]?key)[=:]\s*\S+")
-```
-
-The separator must immediately follow the keyword, and no quoting is allowed. The
-following ordinary device-output forms do not match, verified by running the regex:
+**Fix:** Put the helper flag in both announced commands and in the prose:
 
 ```text
-secret = hunter2                 MISS   (space before `=`)
-PASSWORD = hunter2              MISS
-{"token": "abc123"}             MISS   (quote before `:`)
-{"apiKey": "abc123"}            MISS
-password abc123                 MISS   (space-separated)
-Authorization: Bearer eyJ...    MISS
+Capture: uv run scripts/serial_capture.py --id <id> [--env <env>] [--baud <n>] --seconds 20
 ```
 
-`secret = hunter2` and `{"token": "abc123"}` are exactly the "token, secret, password, or
-API-key assignment" shapes the rule names. Because the scan returns no match, the snippet
-writes the bytes to `.skill-state/logs/<id>.log`, which violates the same file's
-`[MUST]` "Never echo a token, and never write a credential" (`.claude/skills/_shared/guardrails.md:52-53`).
-The prior review's suggested snippet carried this same regex; the gap closure inherited
-the defect rather than closing it.
-
-**Fix:** Allow optional whitespace and quotes around the separator and cover the common
-authorization form:
-
-```python
-CREDENTIAL = re.compile(
-    rb"(?i)"
-    rb"(?:token|secret|passw(?:or)?d|api[ _-]?key|auth(?:orization)?)"
-    rb"[\"']?\s*[=:]\s*[\"']?\S+"
-)
+```markdown
+- Include `--baud <n>` only for the user-named value accepted after an absent
+  `monitor_speed`; the helper appends `-b <n>` to the monitor. Include `--env <env>`
+  only when `needs_e_flag` is true.
 ```
 
-This still misses a bare space-separated value (`password hunter2`). If the project wants
-fail-closed behaviour on that shape too, add an explicit `\s+\S{8,}` alternative and accept
-the occasional false positive; on a match the rule already requires writing nothing and
-reporting `capture unavailable`.
+Update "Nothing else in the commands is conditional" to name `--env` and `--baud`, add a
+`_build_command` test that asserts the `-b` argv, and regenerate the mirror with
+`uv run scripts/gen_skills.py`.
 
 ## Warnings
 
-### WR-01: The log path is cwd-relative, contradicting the guardrails' scoped path
+### WR-10: `--seconds` accepts NaN and infinity, which crash the CLI with a traceback
 
-**File:** `.claude/skills/hw-flash/SKILL.md:139` and `:165-166` (mirror `:140`, `:166-167`)
+**File:** `scripts/serial_capture.py:310-311` and `:143-153`
 
-**Issue:** The snippet calls
-`write_log_atomically(out, f".skill-state/logs/{hw_id}.log")`, and the helper resolves it
-with `Path(log_path)` (line 185) against the process working directory. The rule three
-paragraphs later says "Resolve the path under the repository root and confirm
-`.skill-state/` is the untracked directory the `.gitignore` rule covers". If the agent runs
-the snippet from any directory other than the repository root, the bytes land in a new
-`.skill-state/logs/` there — outside the ignored tree and outside the exception's only
-permitted path — which the guardrails explicitly forbid ("No other skill, path, or file
-inherits the exception"). The directory may then be committed or scanned as repository
-content.
+**Issue:** `if args.seconds <= 0` is false for `float("nan")` and `float("inf")`. The deadline
+is then non-finite and `select.select([master], [], [], remaining)` raises
+`ValueError: Invalid value NaN (not a number)` or
+`OverflowError: timestamp out of range for platform time_t` (both reproduced on this host).
+Neither exception is `CaptureFailed` or `CheckError`, so `main` does not catch it: the process
+exits with a traceback and Python's exit 1, not the documented usage exit 2, and the child
+started at `:131` is never killed or reaped because only the deadline/EOF branches call
+`_terminate`. A huge finite value (for example `1e18`) overflows the same way.
 
-**Fix:** Derive the absolute path once and refuse any escape:
+**Fix:**
 
 ```python
-repo_root = Path(
-    subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
+import math
+...
+if not math.isfinite(args.seconds) or args.seconds <= 0:
+    raise CheckError("--seconds must be a positive finite number")
+```
+
+Consider a sane upper bound as well.
+
+### WR-11: An exception in the read loop leaves `pio device monitor` running
+
+**File:** `scripts/serial_capture.py:122-166`
+
+**Issue:** `_terminate` runs only on the deadline (`:146-149`), the not-ready branch
+(`:150-153`), and the EOF/EIO refusal (`:154-163`). Any other exception after `Popen` —
+`KeyboardInterrupt` during the 20-second wait, the `ValueError`/`OverflowError` from WR-10, or
+`MemoryError` — propagates while the `finally` at `:165-166` closes only the master fd. The
+child is neither killed nor waited. It may keep the serial port open until it notices the
+hung-up slave, so the next flash can fail with a busy port, and the un-reaped `Popen` emits a
+ResourceWarning.
+
+**Fix:** Reap in the `finally`:
+
+```python
+finally:
+    if process.poll() is None:
+        process.kill()
+    process.wait()
+    os.close(master)
+```
+
+Keep the early-return `_terminate` calls or replace them with this single path.
+
+### WR-12: The credential scan still misses ordinary password assignments
+
+**File:** `scripts/serial_capture.py:82-88` and `:97-103`; policy at
+`.claude/skills/_shared/guardrails.md:56-64` (mirror `:57-65`)
+
+**Issue:** The guardrails say the scan "finds no match for a token, secret, password, or
+API-key assignment", but the long-form alternative requires the whitespace run to be followed
+immediately by six-plus non-space characters, and the leading `(?<![a-z0-9])` rejects a
+keyword preceded by a letter. Verified misses:
+
+```text
+password is hunter2      MISS
+userpassword = hunter2   MISS   (keyword preceded by `r`)
+passphrase = hunter2     MISS   (not in the keyword set)
+pwd = hunter2            MISS
+```
+
+`password is hunter2` and `userpassword = hunter2` are assignments in the policy's own sense,
+and the same class of miss was CR-02. A false match is safe because it writes nothing, so the
+fail-closed choice is to catch these.
+
+**Fix:** Drop the leading lookbehind, add `pass(?:word|wd|phrase)`, and allow a copula in the
+long-form branch:
+
+```python
+_KEYWORDS = rb"(?:authorization|auth|token|secret|pass(?:word|wd|phrase)|api[ _-]?key)"
+CREDENTIAL = re.compile(
+    _KEYWORDS + rb"(?:[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})",
+    re.IGNORECASE,
 )
-log_path = repo_root / ".skill-state" / "logs" / f"{hw_id}.log"
-if not log_path.resolve().is_relative_to(repo_root):
-    raise CaptureFailed("log path escapes the repository root")
-write_log_atomically(out, log_path)
 ```
 
-Also run `git check-ignore -q .skill-state/logs/<id>.log` before the write if the
-"confirm the `.gitignore` rule covers it" sentence is meant to be executable.
-
-### WR-02: The symlink discipline claims a race-free guarantee the helper does not implement
-
-**File:** `.claude/skills/hw-flash/SKILL.md:167-170` and `:186-197` (mirror `:168-171`,
-`:187-198`)
-
-**Issue:** The rule says to `lstat` every component and "never follow a path that is
-swapped after it". The helper performs path-based `Path.is_symlink()` checks, then
-`mkdir(exist_ok=True)`, `tempfile.mkstemp(dir=str(target.parent))`, and `os.replace` — all
-by path. A component swapped for a symlink between the check and `mkstemp` is followed, and
-`mkdir(exist_ok=True)` accepts a symlink that resolves to a directory. The atomic
-`os.replace` protects against a torn file, not against a swapped parent. This is a
-time-of-check/time-of-use gap against a local attacker with write access to the repository.
-The claim in the prose overstates the implementation.
-
-**Fix:** Use directory file descriptors with `O_NOFOLLOW | O_DIRECTORY` and `dir_fd`
-relative operations, so the checked component is the one used:
-
-```python
-import os, tempfile
-
-flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
-root_fd = os.open(repo_root, flags)
-state_fd = os.open(".skill-state", flags, dir_fd=root_fd)
-logs_fd = os.open("logs", flags, dir_fd=state_fd)
-fd, temporary = tempfile.mkstemp(dir=".", prefix=".capture-", dir_fd=logs_fd)
-with os.fdopen(fd, "wb") as handle:
-    handle.write(out)
-    handle.flush()
-    os.fsync(handle.fileno())
-os.replace(temporary, f"{hw_id}.log", src_dir_fd=logs_fd, dst_dir_fd=logs_fd)
-```
-
-If the project accepts the residual race, delete the "never follow a path that is swapped
-after it" sentence rather than promising it.
-
-### WR-03: The outcome table contradicts the rule that reaching the 20-second bound is a success
-
-**File:** `.claude/skills/hw-flash/SKILL.md:142-147` and `:225` (mirror `:143-148`, `:226`)
-
-**Issue:** Lines 143-144 say "Reaching the 20-second bound is the designed end of the
-capture, not a failure: the bytes collected up to it are the log." The outcome table's
-fourth row says "Upload succeeded, capture failed or timed out → Report `capture
-unavailable`". An agent following the table reports `capture unavailable` for a normal
-20-second bound and discards a valid log; an agent following the prose may report success
-for the same run. The skill also never defines a "timed out" failure distinct from the
-designed bound.
-
-**Fix:** Remove "or timed out" from the failure row and add one sentence defining success:
-
-```markdown
-| Upload succeeded, capture failed | Report `capture unavailable`; the upload exit code stays the flash result. |
-
-A capture that reaches the 20-second bound is a success and writes the collected bytes.
-Only a start failure, a pre-bound non-zero exit, a credential match, or a refused write is
-`capture unavailable`.
-```
-
-### WR-04: The consent-gate example omits `-e <env>`, so it is not the exact command the rule requires
-
-**File:** `.claude/skills/hw-flash/SKILL.md:63` (mirror `:64`), rule at `:33-34` and `:88`
-
-**Issue:** The gate example prints `Upload: pio run -d homeworks/<id> -t upload`, while the
-environment rule says to add `-e <env>` to both the upload and the monitor command when
-`needs_e_flag` is true, and the shared guardrails require the exact command to be shown
-before an upload. An agent copying the example announces a command that differs from the
-one it is about to run, and the confirmation then does not cover the actual invocation.
-
-**Fix:** Show the conditional flag in the example, for example
-`Upload: pio run -d homeworks/<id> [-e <env>] -t upload`, with a line stating that `-e` is
-included only when `needs_e_flag` is true.
-
-### WR-05: The general credential prohibition no longer covers logs outside the exception
-
-**File:** `.claude/skills/_shared/guardrails.md:52-53` (mirror `:53-54`), exception at
-`:54-61`
-
-**Issue:** The original rule read "never write a credential to the state file or a log".
-The edit drops "or a log" and leaves the general `[MUST]` covering only the state file.
-The exception that follows covers only `hw-flash`, and its "No other skill, path, or file
-inherits the exception" implies the prohibition, but the explicit general rule is now
-weaker. A future skill that writes a diagnostic log is no longer plainly forbidden from
-writing a credential to it.
-
-**Fix:** Restore the general clause and let the exception scope itself:
-
-```markdown
-- **[MUST]** **[ENFORCED: review]** Never echo a token, and never write a
-  credential to the state file or any log, except under the scoped capture
-  exception below.
-```
-
-### WR-06: The capture command omits `--quiet`, so PlatformIO's banner is captured into the log
-
-**File:** `.claude/skills/hw-flash/SKILL.md:100-102` and `:112` (mirror `:101-103`, `:113`)
-
-**Issue:** After the TTY defect in CR-01 is fixed, `pio device monitor` prints its four-line
-terminal banner (`--- Terminal on …`, filters, details URL, quit/menu keys) to stdout via
-`print_terminal_settings()`. The snippet forwards that stdout into `out` and writes it to
-the log, so the "single bounded serial capture" begins with PlatformIO diagnostics rather
-than the raw device stream. `--raw` disables the device encoding/transformations; it does
-not suppress this banner. The log is then not the exact bytes the credential scan and the
-"evidence of bytes" rule describe.
-
-**Fix:** Add `--quiet` to the monitor argv (it suppresses the banner while leaving errors on
-stderr), and keep the banner out of the credential scan and the log.
+This keeps all six existing fixtures and `secret is` unmatched (verified) while adding the
+two misses above. Add the new shapes to `REVIEW_SHAPES` and widen the guardrails sentence in
+the same change.
 
 ## Info
 
-### IN-01: The snippet is not runnable as written
+### IN-06: The suite does not exercise the helper's argv or the CLI result contract
 
-**File:** `.claude/skills/hw-flash/SKILL.md:108-140` and `:177-202` (mirror `:109-141`,
-`:178-203`)
+**File:** `scripts/tests/test_serial_capture.py:292-319` (CLI), `:230-251` (concurrency),
+`:254-289` (store)
 
-**Issue:** `CaptureFailed` is raised at lines 121, 132, 137, and 188 but is never defined.
-`env`, `needs_e_flag`, `user_baud`, and `hw_id` are caller inputs with no shown binding.
-`err` is assigned at lines 125 and 129 and never used. The prose says to validate
-`user_baud` as a positive integer, but the snippet converts it with `str()` without
-validation. The skill says the snippet "implements every rule stated around it", which is
-not true for these items.
+**Issue:** `CliUsageTests` covers only the three usage errors. Nothing exercises `main`'s
+`--json` `CAPTURED`/`REFUSED` payload, the exit-1 refusal path, or `_build_command`'s
+`--env`/`--baud` argv, which is exactly where CR-03 lives. The concurrency test asserts only
+the final file and the absence of a `.capture-*` file; it never reads while writers run, so
+the must-have's "no reader observes a torn log" (`09-10-PLAN.md:38`) is unproven. The
+credential test asserts the log is absent but not that `.skill-state/` was never created, and
+nothing asserts the `0o600` mode the skill promises (`SKILL.md:155-157`). Finally, the
+success-path tests use 0.4-0.5 second bounds (`:63`, `:267`, `:277`, `:286`); a scheduling
+delay on a loaded runner makes the capture return empty and fails the test.
 
-**Fix:** Add `class CaptureFailed(Exception): pass`, validate `user_baud = int(user_baud)`
-and reject `<= 0`, and either use `err` for diagnostics or name it `_err` to show it is
-deliberately discarded.
+**Fix:** Add a `_build_command` test for `--env`/`--baud`, a CLI `--json` success and refusal
+test driven through `sys.executable -c` children, a concurrent reader, a
+`stat.S_IMODE(...) == 0o600` assertion, an assertion that `.skill-state` is absent after a
+match, and use a 1-2 second bound on the success-path tests.
 
-### IN-02: `pio project config` emits `monitor_speed` with two different types, and the skill does not normalize
+### IN-07: `write_log_atomically` does not enforce the scan that gates it
 
-**File:** `.claude/skills/hw-flash/SKILL.md:35-43` (mirror `:36-44`)
+**File:** `scripts/serial_capture.py:202-247`; caller at `:250-260`
 
-**Issue:** On the real homework, `pio project config -d homeworks/1_3-police-flasher
---json-output` emits `["monitor_speed", 115200]` (integer) under `env:esp32s3_arduino` but
-`["monitor_speed", "115200"]` (string) under the base section `esp32s3_arduino`. The skill
-says only "read its `monitor_speed` option". An agent that compares the value to the string
-`"115200"` will misclassify the env value as absent and stop for a user-supplied baud even
-though the project declares one (this exact mismatch is recorded in
-`09-09-SUMMARY.md`).
+**Issue:** The guardrails' only permitted write is conditioned on a credential scan, but the
+scan lives in `capture_and_store`. `write_log_atomically` accepts any bytes from any caller
+(the tests call it directly). The invariant holds today only because the sole shipped caller
+scans first; a future caller, or a refactor that reorders the two statements, writes a
+credential with no test failing.
 
-**Fix:** State the normalization explicitly, for example
-`baud = int(str(value)); if baud <= 0: stop`.
+**Fix:** Put the guard inside the write (`if find_credential(data): raise CaptureFailed(...)`)
+or make the function private and expose only `capture_and_store`.
+
+### IN-08: The zero-byte refusal lives one layer above the function the plan names
+
+**File:** `scripts/serial_capture.py:143-153` and `:254-256`; contract at
+`.planning/phases/09-agent-workflow-and-skills/09-10-PLAN.md:35`
+
+**Issue:** The must-have says "`capture_pty` raises `CaptureFailed` ... when ... it reaches
+the bound with zero bytes", but `capture_pty` returns `b""` at the deadline, and
+`test_capture_stops_at_the_deadline` (`:110-119`) asserts that return. The refusal is in
+`capture_and_store`. The shipped CLI is correct, but the stated function-level contract is
+wrong, and a direct `capture_pty` caller sees an empty success.
+
+**Fix:** Either raise in `capture_pty` when `chunks` is empty at the deadline (and update the
+test), or correct the must-have to name `capture_and_store`.
+
+### IN-09: The new validators admit a trailing newline and a leading-hyphen environment
+
+**File:** `scripts/serial_capture.py:90`, `:204`, `:301-307`
+
+**Issue:** `HOMEWORK_ID` and `ENVIRONMENT` are anchored with `$`, which in Python `re`
+matches before a final newline: `HOMEWORK_ID.match("1_3-x\n")` and
+`ENVIRONMENT.match("arduino\n")` are both true (verified). The id then names
+`.skill-state/logs/1_3-x\n.log` and the environment is passed as `-e "arduino\n"`.
+`ENVIRONMENT` also allows a leading `-` (`--env --help`, `--env -e`), which is passed as the
+value of `-e`. No traversal or shell injection results (argv is a list and `/` is excluded),
+but the validators do not implement the canonical `^...$` shape the rulebook states.
+
+**Fix:** Use `.fullmatch()` (or `\Z`) for both, and require the environment to start with an
+alphanumeric or underscore: `^[A-Za-z0-9_][A-Za-z0-9_-]*$`.
+
+### IN-10: Two `NO_BUILD_IMPACT` rules have no test entry
+
+**File:** `scripts/tests/test_affected.py:236-252`
+
+**Issue:** `NO_BUILD_IMPACT` contains `.skill-state/` (`scripts/affected.py:117`) and the
+directory spellings `.claude/`/`.agents/`; `NO_BUILD_IMPACT_PATHS` covers `.claude/skills/...`
+and `.agents/skills/...` by prefix but never `.skill-state/` at all. A future edit that drops
+the `.skill-state/` entry would not fail a test.
+
+**Fix:** Add `".skill-state/logs/1_3-alpha.log"` to the tuple.
 
 ---
 
-_Reviewed: 2026-10-26T23:13:39Z_
+_Reviewed: 2026-10-26T23:38:16Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
