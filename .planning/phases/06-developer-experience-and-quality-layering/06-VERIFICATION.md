@@ -106,7 +106,7 @@ deferred:
     evidence: "Phase 8 goal: 'Pull requests are gated by a fast, changed-only CI pipeline with one required check'; Phase 6 context explicitly defers CI wiring, the CI matrix, and PR-time checks to Phase 8 (TOOL-05, TOOL-06, SIM-04)."
 behavior_unverified_items:
   - truth: "esp-clangd resolves ESP32-S3 includes through per-project .clangd files and explicit absolute --query-driver globs (roadmap SC3)"
-    test: "Generate the database with `pio run -d homeworks/1_3-police-flasher -t compiledb`, then run `\"$HOME/.local/bin/clangd-wrapper\" --check homeworks/1_3-police-flasher/src/main.cpp`."
+    test: "Generate the database with `pio run -d homeworks/1_3-police-flasher -t compiledb`, then run `\"$HOME/.local/bin/clangd-wrapper\" --check=homeworks/1_3-police-flasher/src/main.cpp`."
     expected: "`All checks completed, 0 errors`, exit 0, with no unresolved stdbool.h/stdint.h."
     why_human: "Needs a live esp-clangd installation and a generated compilation database. The suite injects a fake $ESP_CLANGD and therefore proves resolution order and argument forwarding, not real include resolution."
 human_verification:
@@ -343,7 +343,7 @@ implementation files.
 #### 1. Live ESP32-S3 include resolution
 
 **Test:** Generate the database with `pio run -d homeworks/1_3-police-flasher -t compiledb`,
-then run `"$HOME/.local/bin/clangd-wrapper" --check homeworks/1_3-police-flasher/src/main.cpp`.
+then run `"$HOME/.local/bin/clangd-wrapper" --check=homeworks/1_3-police-flasher/src/main.cpp`.
 **Expected:** `All checks completed, 0 errors`, exit 0, with no unresolved `stdbool.h`/`stdint.h`.
 **Why human:** Needs a live esp-clangd installation and a real database; the suite fakes
 `$ESP_CLANGD`.
