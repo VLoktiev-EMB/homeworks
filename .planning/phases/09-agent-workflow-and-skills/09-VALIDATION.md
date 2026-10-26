@@ -3,9 +3,9 @@ phase: "9"
 slug: "agent-workflow-and-skills"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-10-26"
 ---
 
@@ -45,26 +45,26 @@ The CI `python-tests` job runs exactly `python -m unittest discover scripts/test
 
 ## Per-Task Verification Map
 
-Task IDs are assigned by the plans; this table is the requirement-level contract they must
-instantiate.
+The plans assign no task-level IDs; each row is keyed by the plan and requirement whose
+evidence it audits.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | 1 | FLOW-01 | — | Seven skill directories at v0.1 with changelog and lessons | manual/review (D-18) | — | ❌ review only | ⬜ pending |
-| TBD | TBD | 1 | FLOW-01 | — | Mirror matches the canonical tree | smoke | `uv run scripts/gen_skills.py --check` | ❌ after the tree exists | ⬜ pending |
-| TBD | TBD | 1 | FLOW-02 | — | Guided and one-shot intake covers all eight topics | manual dry run (D-22) | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | FLOW-03 | — | Guided block loop pauses with the exact menu and deepens on request | manual dry run | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | FLOW-04 | — | Checkpoints after intake, code, report; guardrails always apply | manual dry run + JSON inspection | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | FLOW-05 | — | Conflicts and ambiguity produce a recorded recommendation | manual dry run + JSON inspection | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | FLOW-06 | — | A failing build is repaired at most twice, then escalated | manual dry run against a broken fixture | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | FLOW-07 | — | `hw-flash` stops at confirmation; four stubs carry `metadata.status: stub` | manual dry run + review | — | ❌ transcript | ⬜ pending |
-| TBD | TBD | 1 | — | — | Frontmatter transform strips Claude-only keys, keeps the body, injects the banner | unit | `python3 -m unittest scripts.tests.test_gen_skills -v` | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | Unknown frontmatter key exits 2 | unit | same | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | `--check` reports MODIFIED/DELETED/ORPHAN and writes nothing | unit | same | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | Two generator runs are byte-identical | unit | same | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | Manifest entries are sorted, digest-correct, never list the manifest | unit | same | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | `_shared/` is mirrored as files, not as a skill | unit | same | ❌ Wave 0 | ⬜ pending |
-| TBD | TBD | 1 | — | — | Symlink at any component is refused with exit 2 | unit | same | ❌ Wave 0 | ⬜ pending |
+| 09-01 | 09-01 | 1 | FLOW-01 | — | Seven skill directories at v0.1 with changelog and lessons | manual/review (D-18) | — | ✅ `09-DRY-RUN.md` | ⬜ manual-only |
+| 09-01 | 09-01 | 1 | FLOW-01 | — | Mirror matches the canonical tree | smoke | `uv run scripts/gen_skills.py --check` | ✅ | ✅ green |
+| 09-03 | 09-03 | 3 | FLOW-02 | — | Guided and one-shot intake covers all eight topics | manual dry run (D-22) | — | ✅ `09-DRY-RUN.md` Legs 1, 3 | ⬜ manual-only |
+| 09-03 | 09-03 | 3 | FLOW-03 | — | Guided block loop pauses with the exact menu and deepens on request | manual dry run | — | ✅ `09-DRY-RUN.md` Leg 2 | ⬜ manual-only |
+| 09-03 | 09-03 | 3 | FLOW-04 | — | Checkpoints after intake, code, report; guardrails always apply | manual dry run + JSON inspection | — | ✅ `09-DRY-RUN.md` Legs 1–3 | ⬜ manual-only |
+| 09-03 | 09-03 | 3 | FLOW-05 | — | Conflicts and ambiguity produce a recorded recommendation | manual dry run + JSON inspection | — | ✅ `09-DRY-RUN.md` Leg 3 | ⬜ manual-only |
+| 09-04 | 09-04 | 4 | FLOW-06 | — | A failing build is repaired at most twice, then escalated | manual dry run against a broken fixture | — | ✅ `09-DRY-RUN.md` Legs 4–5 | ⬜ manual-only |
+| 09-05 | 09-05 | 5 | FLOW-07 | T-09-30 | `hw-flash` stops at confirmation and resolves the baud before the monitor | manual + unit | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests -v` | ✅ | ✅ green (automated part) |
+| 09-01 | 09-01 | 1 | — | — | Frontmatter transform strips Claude-only keys, keeps the body, injects the banner | unit | `python3 -m unittest scripts.tests.test_gen_skills -v` | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | Unknown frontmatter key exits 2 | unit | same | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | `--check` reports MODIFIED/DELETED/ORPHAN and writes nothing | unit | same | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | Two generator runs are byte-identical | unit | same | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | Manifest entries are sorted, digest-correct, never list the manifest | unit | same | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | `_shared/` is mirrored as files, not as a skill | unit | same | ✅ | ✅ green |
+| 09-01 | 09-01 | 1 | — | — | Symlink at any component is refused with exit 2 | unit | same | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -77,12 +77,12 @@ locked decision.
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/tests/test_gen_skills.py` — the generator suite described above.
-- [ ] `scripts/tests/temp_root.py` — add `write_skills_root(base)`, a stdlib-only builder
+- [x] `scripts/tests/test_gen_skills.py` — the generator suite described above.
+- [x] `scripts/tests/temp_root.py` — add `write_skills_root(base)`, a stdlib-only builder
       that writes a small canonical skill tree (two skills, one `_shared` file, one
       reference, one stub) so the tests never depend on the authored skills.
-- [ ] No framework install: the suite is stdlib-only.
-- [ ] The real-tree smoke test (`gen_skills.py --check`) cannot exist until Wave 1 writes
+- [x] No framework install: the suite is stdlib-only.
+- [x] The real-tree smoke test (`gen_skills.py --check`) cannot exist until Wave 1 writes
       the canonical tree; order the plans accordingly.
 
 ---
@@ -103,11 +103,21 @@ locked decision.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [ ] `nyquist_compliant: true` set in frontmatter — not set: FLOW-02…FLOW-06 are
+      manual-only by design (D-22 dry-run transcript), so the phase is VALIDATED (PARTIAL)
 
-**Approval:** pending
+**Approval:** validated (partial) — audit run 2026-10-27; nine automated rows green, six
+manual-only rows carried with their dry-run evidence.
+
+## Validation Audit 2026-10-26
+
+| Metric | Count |
+|---|---|
+| Gaps found | 5 |
+| Resolved | 0 |
+| Escalated | 5 |
