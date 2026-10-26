@@ -66,6 +66,30 @@
       "bytes": 6238
     },
     {
+      "path": ".agents/skills/hw-flash/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-flash/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "e399168c55168d84863f6479b32027185f7d6ba2a6ac8579a1dac1208fba42f1",
+      "bytes": 878
+    },
+    {
+      "path": ".agents/skills/hw-flash/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-flash/LESSONS.md",
+      "mode": "whole",
+      "sha256": "b9dad4e714808fdf929f0597702157a3fd297d9878a7830719eabbc703fbf15f",
+      "bytes": 431
+    },
+    {
+      "path": ".agents/skills/hw-flash/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-flash/SKILL.md",
+      "mode": "whole",
+      "sha256": "14cdbd8a32cfaea31c5575024f1a8ed23dab4e95315a3bb3be7be110a8dfee23",
+      "bytes": 7283
+    },
+    {
       "path": ".agents/skills/hw-report/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/hw-report/CHANGELOG.md",
