@@ -78,6 +78,10 @@ Thumbs.db
 # Personal Claude Code overrides (machine-specific, never committed)
 .claude/settings.local.json
 
+# Per-homework skill checkpoints (D-13). Untracked by design: machine-specific,
+# deletable, and never a repository artifact.
+.skill-state/
+
 # Video (linked, never committed — D-21)
 *.mp4
 *.mov
@@ -263,6 +267,9 @@ MANIFEST
 # D-17: `generated.manifest` is the committed ownership ledger for the
 # generated views. The blanket PyInstaller rule above would otherwise hide it.
 !generated.manifest
+# Phase 9: `generated.skills.manifest` is the committed ownership ledger for the
+# generated `.agents/skills/` mirror. The same blanket rule would hide it.
+!generated.skills.manifest
 *.spec
 
 # Installer logs
