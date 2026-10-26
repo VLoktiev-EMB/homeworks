@@ -14,7 +14,7 @@
 # - `truthy.check-keys` stays off because GitHub Actions declares its trigger as
 #   the bare key `on:`, which YAML 1.1 resolves to a boolean. That is a KEY, so
 #   normalising a scalar cannot repair it, and rewriting it would break the
-#   workflow schema. The key check is the only safe fix; the four workflows are
+#   workflow schema. The key check is the only safe fix; the workflows are
 #   asserted to keep the textual `on:` in `test_ci_workflows`.
 extends: default
 rules:

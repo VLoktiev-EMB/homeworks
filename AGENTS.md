@@ -20,8 +20,9 @@ Run from the repository root, in this order, before opening a pull request.
 |------|---------|---------|
 | 1 | `pio run -d <project>` | Build the affected PlatformIO environment from its own project directory. |
 | 2 | `pio test -d tests -e native` | Run the shared-library Unity suite from the top-level `tests/` project, without a target toolchain. |
-| 3 | `pre-commit run --all-files` | Run the local gate: hygiene, large files, secrets, the dependency rule, and the metadata contract. |
+| 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, the dependency rule, and the metadata contract — and the exact command the CI `meta` job runs. |
 | 4 | `uv run scripts/check_metadata.py` | Validate homework metadata and task provenance against `schema/homework.schema.json`. |
+| 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs as `python -m unittest discover scripts/tests`. |
 
 ## Repository layout
 
@@ -29,7 +30,10 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
 `.pre-commit-config.yaml`, `generated.manifest`, and the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
-- `.github/workflows/security.yml` — the full-history secret scan.
+- `.github/workflows/ci.yml` — the pull-request gate: `meta`, `changes`, `build`,
+  `python-tests`, `static-analysis`, `simulate` and `gate`.
+- `.github/workflows/nightly.yml` — the scheduled full build and native-test matrix plus the
+  full-history secret scan.
 - `docs/` — the authored documentation tree: the `decisions/` and `standards/` documents,
   which GitHub renders directly in the repository view.
 - `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
@@ -45,16 +49,20 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
 
 The generated paths — the table region in `README.md`, `homeworks.code-workspace` and
 `platformio.shared.ini` — are committed and registered in `generated.manifest`. The
-`gen-views-check` pre-commit hook and the `generated-views` pull-request workflow both run
-`scripts/gen_views.py --all --check` and fail on drift; the fix is
-`uv run scripts/gen_views.py --all`, never a hand edit. `site/` and `.pio/` are build output
-and stay ignored.
+`gen-views-check` pre-commit hook runs `scripts/gen_views.py --all --check` and fails on
+drift; the `--check` now runs inside `meta`'s `pre-commit run --all-files` rather than in a
+separate workflow. The fix is `uv run scripts/gen_views.py --all`, never a hand edit. `site/`
+and `.pio/` are build output and stay ignored.
 
 `scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
 `platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
 explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `templates/views/`,
 `boards/` and the generated view files) selects nothing, and any unrecognised path widens to
 every project.
+
+`ci.yml`'s `changes` job consumes its `{build, simulate}` payload as the build and simulation
+matrix, and `nightly.yml` feeds the mapper the `platformio.shared.ini` path so the mapper's
+own widen-all rule produces the full matrix.
 
 The GitHub Pages source is set to `None` by the maintainer; the repository publishes no
 site, and the authored documents render in the repository view.
@@ -143,6 +151,9 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: review]** Open every pull request through the single default
   template at `.github/pull_request_template.md`; it carries the Definition of Done rather
   than a type chooser.
+- **[MUST]** **[ENFORCED: CI]** The single required status check is the literal `gate` job,
+  which aggregates every pull-request job. Renaming it requires the ruleset change in the
+  same pull request.
 - **[MUST]** **[ENFORCED: review]** Create the `hw/<id>` tag only through
   `scripts/tag_homework.sh <id>`, after the homework pull request is merged. Never create a
   tag by hand and never move a published tag; a forced update is forbidden.
@@ -150,8 +161,9 @@ Good:  feat(1_3): add police flasher state machine
 ### Secrets
 
 - **[MUST]** **[ENFORCED: pre-commit]** gitleaks must pass. The local hook scans staged
-  changes, and `.github/workflows/security.yml` scans the full history on every pull
-  request. A red secret scan blocks the change.
+  changes, `ci.yml`'s `meta` job scans the full history on every pull request, and
+  `nightly.yml`'s `secrets` job repeats the scan on the default branch every night,
+  replacing the retired secret-scan workflow. A red secret scan blocks the change.
 - **[MUST]** **[ENFORCED: review]** A real secret triggers, in this order: rotate the
   credential first, assess exposure, remove it with a forward fix, and document the
   incident. Never rewrite history to remove it — rotation is the only real mitigation once
@@ -176,16 +188,29 @@ Good:  feat(1_3): add police flasher state machine
   under `lib/common/src` and `lib/host/src`, and never runs at pre-commit. A header is analysed
   through a translation unit that includes it, never as a file of its own: a bare header has no
   compile command, so a header-only change is not analysed locally, and `lib/port` is covered
-  only where a unit includes it. Native test translation units are out of scope until Phase 8
-  CI owns a database for them.
+  only where a unit includes it. Native test translation units remain deferred per ADR-0013,
+  because this phase deliberately does not close that gap (D-17).
 - **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent, older than
   a configuration input or a described source, or missing a `.c` file under the analysed trees,
   `scripts/clang-tidy-db` fails and prints `pio run -d tests -e native -t compiledb`. The
   clang-tidy hook fails rather than reporting success when clang-tidy skips a file for want of a
   compile command. Regenerating the database is a developer action; no hook generates it.
+- **[MUST]** **[ENFORCED: CI]** `ci.yml`'s `meta` job runs the whole `pre-commit` hook surface
+  with `--all-files`, and the `static-analysis` job generates the native compile database and
+  runs the `pre-push` stage, so clang-tidy analyses the host translation units on every pull
+  request while the native test translation units stay the recorded ADR-0013 gap.
 - **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
   not from ad-hoc settings. The committed editor contract is emitted by the generator and
   mirrored into `.vscode/settings.json`, and a drift test keeps the two equal.
+
+### Simulation
+
+- **[SHOULD]** **[ENFORCED: CI]** Simulation runs only when a pull request changes a project,
+  a maintainer applies the `simulate` label, and the head repository equals the base
+  repository. The job caps a run at a 15-second timeout and keeps its evidence for 7 days.
+  These conditions describe when simulation *may* run; they are not a merge precondition.
+- **[MUST]** **[ENFORCED: CI]** A fork pull request never receives the simulation token, and
+  simulation is never a required check for it.
 
 ### Assets and generated files
 
@@ -239,7 +264,8 @@ Good:  feat(1_3): add police flasher state machine
 | Record a decision | a row in `docs/decisions/README.md`; link an ADR only when argumentation is needed |
 | Create a homework | `scripts/new_homework <id> --template <name>` — the only supported path |
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
-| Inspect or extend the secret gate | `.pre-commit-config.yaml` and `.github/workflows/security.yml` |
+| Inspect or extend the secret gate | `.pre-commit-config.yaml`, `.github/workflows/ci.yml` and `.github/workflows/nightly.yml` |
+| Investigate a red required check | `.github/workflows/ci.yml` — the `gate` job |
 | Choose a branch name | this file, "Git, branches, and history" |
 | Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
 | Report structure and formatting rationale | `docs/standards/` (planned, Phase 10) |
