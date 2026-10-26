@@ -146,12 +146,11 @@ plus the behavioral test; the database generation is environment provisioning on
 
 ## Issues Encountered
 
-- The behavioral test has a real environment dependency: it passes only when
-  `homeworks/1_3-police-flasher/compile_commands.json` exists and is current. In a fresh
-  clone or CI runner without a generated database it fails (18 include errors) rather than
-  skipping, because the plan limits skipping to an absent esp-clangd server. Phase 8 CI
-  must generate the database before running the suite, or this test must gain a database
-  precondition.
+- The behavioral test depends on `homeworks/1_3-police-flasher/compile_commands.json`, a
+  gitignored build artifact. When it is absent (fresh clone or CI runner), the test now
+  skips with a reason naming `pio run -d homeworks/1_3-police-flasher -t compiledb` instead
+  of failing on include errors. The esp-clangd-absent skip remains. Verified by pointing
+  the path at a missing file: 1 skip, 0 failures, 0 errors.
 
 ## User Setup Required
 
@@ -163,8 +162,8 @@ already documents.
 - The G-06-1 protection survives as an executed command rather than a prose assertion.
 - The remaining `EditorContractTests`, `ClangdWrapperTests`, and all shared helpers are
   intact.
-- Open concern for Phase 8: the behavioral test needs a generated compilation database in
-  CI.
+- Open note for Phase 8: the behavioral test skips with a named reason when the homework
+  compilation database is absent, so CI should generate it to exercise the real command.
 
 ---
 
