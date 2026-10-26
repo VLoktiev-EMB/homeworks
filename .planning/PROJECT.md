@@ -85,6 +85,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 - ✓ The AGPL boundary holds: no Velxio source, image layer or Fritzing part graphic is
   vendored into the MIT tree; `diagram.json` remains the wiring source of truth — Phase 7
   (SIM-03)
+- ✓ Pull requests run one gate: `ci.yml` fans `meta`, `changes`, `build`, `python-tests`,
+  `static-analysis` and the opt-in `simulate` in behind the single required `gate`; the
+  `main` ruleset requires exactly `gate` with 0 approvals and squash only; `nightly.yml`
+  proves the full build and native-test matrix once a day without simulation — Phase 8
+  (TOOL-05, TOOL-06, SIM-04)
 
 ### Active
 
@@ -149,10 +154,6 @@ artifact — code, evidence, and report — that can be understood and verified 
 - [ ] Testing is tiered: build always; unit tests for pure logic; simulation where
       supported; hardware-in-the-loop when hardware is available.
 - [ ] TDD is used for pure logic; hardware behavior is verified by simulation or HIL.
-- [ ] CI runs lint, metadata/docs checks, native tests, and builds of changed projects on
-      every pull request. Simulation enters CI only after the Phase 5 spike, only for
-      changed projects, and never as a required check for fork pull requests. Nightly
-      runs the full build and unit-test matrix; full simulation runs weekly if adopted.
 
 **Simulation and diagrams**
 
@@ -279,7 +280,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | ✓ Phase 2 — ADR-0007; all three environments resolve the symlinked libraries |
 | Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | ✓ Phase 5 — generated whole from a template, committed, drift-checked |
 | esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | ✓ Phase 6 — ADR-0013 multi-root contract; the headless check is `--check=<file>` because esp-clangd declares `--check[=<string>]` |
-| Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | ✓ Phase 6 — pre-commit and pre-push layers live; the CI layer is Phase 8 |
+| Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | ✓ Phase 8 — all three layers live; `meta` runs the pre-commit surface and `static-analysis` runs the pre-push stage |
 | clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | ✓ Phase 6 — ADR-0012; clang-format 23.1.3 dry-run clean over 60 tracked C/C++ files |
 | A documented command is regression-guarded | A guide command the tool rejects is worse than no command; a guard keeps the live form honest | ✓ Phase 6 — historical records left byte-identical; the prose guard is replaced by a behavioral one in the test-prune follow-up |
 | One generated root compile database serves the shared libraries | clangd resolves a file from the nearest ancestor database; the per-project databases are siblings of `lib/`, so the shared sources had none | ✓ Phase 06.1 — `scripts/gen_clangd_db.py` merges the native, Arduino and ESP-IDF databases into one untracked root `compile_commands.json`; the root `.clangd` carries the proven keys; `templates/**/src/*` remain out of scope |
@@ -319,6 +320,9 @@ artifact — code, evidence, and report — that can be understood and verified 
 | `--check` is a pure check, enforced at two points | A hook that repairs drift makes the gate meaningless; local feedback and a PR gate catch different trust boundaries | ✓ Phase 5, narrowed 2026-10-26 — the check-only pre-commit hook and the read-only PR job still guard the three core views; the Pages deploy is gone |
 | Vendor third-party site assets, never a CDN | `--strict` builds must not depend on the network, and a missing `extra_css` target produces no MkDocs warning at all | ✗ Superseded 2026-10-26 — no vendored site asset remains; the three core views still render from their reviewed templates |
 | Two critical code-review findings fixed before merge | A title could reach the published site as live HTML, and the generator followed symlinked inputs it otherwise refused | ✓ Phase 5 — `_escape_cell` escapes `&`/`<`/`>`; `read_regular_text` refuses symlinks; 20 lower findings recorded in the disposition ledger |
+| One required `gate` aggregates every pull-request job | A single required check keeps the ruleset stable while jobs change underneath, and the aggregate fails closed on a cancelled or failed dependency | ✓ Phase 8 — `gate` is the only required status check on `main` (0 approvals, squash only); `edited` and `labeled` are trigger types so a retitle or a `simulate` label re-runs the pipeline |
+| The nightly matrix never simulates | Free-tier simulation quota cannot sustain a nightly run; the metered path stays an opt-in pull-request label | ✓ Phase 8 — `nightly.yml` runs the full build and native matrix plus the full-history scan with `cancel-in-progress: false` and no simulation job |
+| The pull-request title must match `type(scope): summary` | Squash-merge makes the PR title the commit subject, so the title is history | ✓ Phase 8 — enforced in `meta`; the first live run failed on a non-conforming title, which is the guard working |
 
 ## Evolution
 
@@ -341,4 +345,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-26 after Phase 07*
+*Last updated: 2026-10-26 after Phase 08*

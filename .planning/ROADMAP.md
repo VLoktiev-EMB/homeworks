@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata (completed 2026-10-26)
 - [x] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding (completed 2026-10-26)
 - [x] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004 (completed 2026-10-26)
-- [ ] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation
+- [x] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation (completed 2026-10-26)
 - [ ] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented
 - [ ] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric
 - [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
@@ -356,7 +356,7 @@ Plans:
   3. Simulation runs only for changed projects after the spike, with explicit timeouts and artifact upload, and is never a required check for fork pull requests.
   4. Nightly runs the full build and unit-test matrix without simulation.
 
-**Plans:** 4/4 plans executed
+**Plans:** 4/4 plans complete
 
 **Wave 1**
 - [x] 08-01-PLAN.md — `ci.yml` tracer: `meta`, `changes`, `build` and the literal `gate`; retire the drift workflow (tracer)
@@ -431,7 +431,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
-| 8. Fast CI | 4/4 | In Progress | - |
+| 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
