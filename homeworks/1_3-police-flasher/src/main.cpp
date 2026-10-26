@@ -35,9 +35,9 @@ static port_gpio_t gpio;
 static port_time_t clock_port;
 static port_log_t logger;
 
-void setup(void) {
-    const pattern_controller_config_t config = {
-        LED_A_PIN, LED_B_PIN, LED_C_PIN, BUTTON_PIN, PATTERN_GPIO_SINGLE};
+void setup(void)
+{
+    const pattern_controller_config_t config = {LED_A_PIN, LED_B_PIN, LED_C_PIN, BUTTON_PIN, PATTERN_GPIO_SINGLE};
     port_status_t status;
 
     gpio = arduino_gpio_port();
@@ -52,6 +52,7 @@ void setup(void) {
     }
 }
 
-void loop(void) {
+void loop(void)
+{
     pattern_controller_tick(&controller);
 }

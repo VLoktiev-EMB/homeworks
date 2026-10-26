@@ -41,8 +41,7 @@ bool common_timer_expired(uint32_t now_ms, uint32_t deadline_ms);
 /* Debounce `raw_input` against `stable_ms`, reading time through `time`.
    Returns the current stable level. A NULL state returns false; a NULL time
    pointer or NULL now_ms callback returns the state's unchanged stable level. */
-bool common_debounce_update(common_debounce_t *state, const port_time_t *time,
-                            bool raw_input, uint32_t stable_ms);
+bool common_debounce_update(common_debounce_t *state, const port_time_t *time, bool raw_input, uint32_t stable_ms);
 
 #ifdef __cplusplus
 }

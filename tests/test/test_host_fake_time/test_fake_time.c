@@ -7,14 +7,16 @@
 
 static host_fake_time_t fake;
 
-void setUp(void) {
+void setUp(void)
+{
     /* Non-zero on purpose: the reset case proves it clears any value. */
     fake.now_ms = 0xDEADBEEFu;
 }
 
 void tearDown(void) {}
 
-static void test_fake_time_reset(void) {
+static void test_fake_time_reset(void)
+{
     port_time_t port;
 
     host_fake_time_reset(&fake);
@@ -23,7 +25,8 @@ static void test_fake_time_reset(void) {
     TEST_ASSERT_EQUAL_UINT32(0u, port_time_now_ms(&port));
 }
 
-static void test_fake_time_advance(void) {
+static void test_fake_time_advance(void)
+{
     port_time_t port;
 
     host_fake_time_reset(&fake);
@@ -36,7 +39,8 @@ static void test_fake_time_advance(void) {
     TEST_ASSERT_EQUAL_UINT32(1000u, port_time_now_ms(&port));
 }
 
-static void test_fake_time_wraps(void) {
+static void test_fake_time_wraps(void)
+{
     port_time_t port;
 
     host_fake_time_reset(&fake);
@@ -49,7 +53,8 @@ static void test_fake_time_wraps(void) {
     TEST_ASSERT_EQUAL_UINT32(0u, port_time_now_ms(&port));
 }
 
-static void test_two_fakes_are_independent(void) {
+static void test_two_fakes_are_independent(void)
+{
     host_fake_time_t first = {0u};
     host_fake_time_t second = {0u};
     port_time_t first_port;
@@ -68,7 +73,8 @@ static void test_two_fakes_are_independent(void) {
     TEST_ASSERT_EQUAL_UINT32(0u, port_time_now_ms(&second_port));
 }
 
-int main(void) {
+int main(void)
+{
     UNITY_BEGIN();
     RUN_TEST(test_fake_time_reset);
     RUN_TEST(test_fake_time_advance);

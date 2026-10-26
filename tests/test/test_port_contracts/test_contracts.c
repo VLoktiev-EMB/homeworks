@@ -20,14 +20,16 @@ typedef struct fake_pin {
     int seen_count;
 } fake_pin_t;
 
-static void record_ctx(fake_pin_t *state, void *ctx) {
+static void record_ctx(fake_pin_t *state, void *ctx)
+{
     if (state->seen_count < 3) {
         state->seen_ctx[state->seen_count] = ctx;
         state->seen_count++;
     }
 }
 
-static port_status_t fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t mode) {
+static port_status_t fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t mode)
+{
     fake_pin_t *state = ctx;
 
     if (state == NULL || pin >= 4u) {
@@ -38,7 +40,8 @@ static port_status_t fake_set_mode(void *ctx, uint8_t pin, port_gpio_mode_t mode
     return PORT_OK;
 }
 
-static port_status_t fake_write(void *ctx, uint8_t pin, port_gpio_level_t level) {
+static port_status_t fake_write(void *ctx, uint8_t pin, port_gpio_level_t level)
+{
     fake_pin_t *state = ctx;
 
     if (state == NULL || pin >= 4u) {
@@ -53,7 +56,8 @@ static port_status_t fake_write(void *ctx, uint8_t pin, port_gpio_level_t level)
     return PORT_OK;
 }
 
-static port_status_t fake_read(void *ctx, uint8_t pin, port_gpio_level_t *level) {
+static port_status_t fake_read(void *ctx, uint8_t pin, port_gpio_level_t *level)
+{
     fake_pin_t *state = ctx;
 
     if (state == NULL || level == NULL || pin >= 4u) {
@@ -76,8 +80,8 @@ typedef struct fake_i2c {
 
 #define FAKE_BUS_CAPACITY 32u
 
-static port_status_t fake_i2c_write(void *ctx, uint8_t address, const uint8_t *data,
-                                    size_t length) {
+static port_status_t fake_i2c_write(void *ctx, uint8_t address, const uint8_t *data, size_t length)
+{
     fake_i2c_t *bus = ctx;
     size_t i;
 
@@ -93,7 +97,8 @@ static port_status_t fake_i2c_write(void *ctx, uint8_t address, const uint8_t *d
     return PORT_OK;
 }
 
-static port_status_t fake_i2c_read(void *ctx, uint8_t address, uint8_t *data, size_t length) {
+static port_status_t fake_i2c_read(void *ctx, uint8_t address, uint8_t *data, size_t length)
+{
     fake_i2c_t *bus = ctx;
     size_t i;
 
@@ -108,8 +113,9 @@ static port_status_t fake_i2c_read(void *ctx, uint8_t address, uint8_t *data, si
     return PORT_OK;
 }
 
-static port_status_t fake_i2c_write_read(void *ctx, uint8_t address, const uint8_t *tx,
-                                         size_t tx_length, uint8_t *rx, size_t rx_length) {
+static port_status_t fake_i2c_write_read(void *ctx, uint8_t address, const uint8_t *tx, size_t tx_length, uint8_t *rx,
+                                         size_t rx_length)
+{
     fake_i2c_t *bus = ctx;
     size_t i;
 
@@ -140,8 +146,8 @@ typedef struct fake_spi {
     int transfers;
 } fake_spi_t;
 
-static port_status_t fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
-                                       size_t length) {
+static port_status_t fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_t *rx, size_t length)
+{
     fake_spi_t *spi = ctx;
     size_t i;
 
@@ -164,7 +170,8 @@ static port_status_t fake_spi_transfer(void *ctx, const uint8_t *tx, uint8_t *rx
     return PORT_OK;
 }
 
-static port_status_t fake_spi_write(void *ctx, const uint8_t *data, size_t length) {
+static port_status_t fake_spi_write(void *ctx, const uint8_t *data, size_t length)
+{
     fake_spi_t *spi = ctx;
     size_t i;
 
@@ -186,7 +193,8 @@ typedef struct fake_clock {
     int calls;
 } fake_clock_t;
 
-static uint32_t fake_clock_now_ms(void *ctx) {
+static uint32_t fake_clock_now_ms(void *ctx)
+{
     fake_clock_t *clock = ctx;
 
     clock->seen_ctx = ctx;
@@ -202,7 +210,8 @@ typedef struct captured_log {
     int count;
 } captured_log_t;
 
-static void capture_log(void *ctx, port_log_level_t level, const char *message) {
+static void capture_log(void *ctx, port_log_level_t level, const char *message)
+{
     captured_log_t *sink = ctx;
 
     if (sink == NULL || sink->count >= 8) {
@@ -218,9 +227,10 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-static void test_gpio_ctx_reaches_every_callback(void) {
+static void test_gpio_ctx_reaches_every_callback(void)
+{
     fake_pin_t state = {0};
-    const port_gpio_t gpio = { fake_set_mode, fake_write, fake_read, &state };
+    const port_gpio_t gpio = {fake_set_mode, fake_write, fake_read, &state};
     port_gpio_level_t level = PORT_GPIO_LOW;
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, gpio.set_mode(gpio.ctx, 1u, PORT_GPIO_OUTPUT));
@@ -233,9 +243,10 @@ static void test_gpio_ctx_reaches_every_callback(void) {
     TEST_ASSERT_EQUAL_PTR(&state, state.seen_ctx[2]);
 }
 
-static void test_gpio_write_then_read_round_trip(void) {
+static void test_gpio_write_then_read_round_trip(void)
+{
     fake_pin_t state = {0};
-    const port_gpio_t gpio = { fake_set_mode, fake_write, fake_read, &state };
+    const port_gpio_t gpio = {fake_set_mode, fake_write, fake_read, &state};
     port_gpio_level_t level = PORT_GPIO_LOW;
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, gpio.set_mode(gpio.ctx, 3u, PORT_GPIO_OUTPUT));
@@ -249,20 +260,21 @@ static void test_gpio_write_then_read_round_trip(void) {
     TEST_ASSERT_EQUAL_INT(2, state.writes);
 }
 
-static void test_gpio_invalid_level_is_rejected(void) {
+static void test_gpio_invalid_level_is_rejected(void)
+{
     fake_pin_t state = {0};
-    const port_gpio_t gpio = { fake_set_mode, fake_write, fake_read, &state };
+    const port_gpio_t gpio = {fake_set_mode, fake_write, fake_read, &state};
 
-    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG,
-                          gpio.write(gpio.ctx, 0u, (port_gpio_level_t)99));
+    TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, gpio.write(gpio.ctx, 0u, (port_gpio_level_t)99));
     TEST_ASSERT_EQUAL_INT(0, state.writes);
 }
 
-static void test_gpio_two_contexts_are_independent(void) {
+static void test_gpio_two_contexts_are_independent(void)
+{
     fake_pin_t first = {0};
     fake_pin_t second = {0};
-    const port_gpio_t gpio_a = { fake_set_mode, fake_write, fake_read, &first };
-    const port_gpio_t gpio_b = { fake_set_mode, fake_write, fake_read, &second };
+    const port_gpio_t gpio_a = {fake_set_mode, fake_write, fake_read, &first};
+    const port_gpio_t gpio_b = {fake_set_mode, fake_write, fake_read, &second};
     port_gpio_level_t level = PORT_GPIO_LOW;
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, gpio_a.write(gpio_a.ctx, 0u, PORT_GPIO_HIGH));
@@ -277,9 +289,10 @@ static void test_gpio_two_contexts_are_independent(void) {
     TEST_ASSERT_EQUAL_INT(1, second.writes);
 }
 
-static void test_i2c_write_then_read_loopback(void) {
+static void test_i2c_write_then_read_loopback(void)
+{
     fake_i2c_t bus = {0};
-    const port_i2c_t i2c = { fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus };
+    const port_i2c_t i2c = {fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus};
     const uint8_t payload[3] = {0x01u, 0x02u, 0x03u};
     uint8_t received[3] = {0};
 
@@ -292,9 +305,10 @@ static void test_i2c_write_then_read_loopback(void) {
     TEST_ASSERT_EQUAL_INT(2, bus.transactions);
 }
 
-static void test_i2c_combined_write_read_passes_both_lengths(void) {
+static void test_i2c_combined_write_read_passes_both_lengths(void)
+{
     fake_i2c_t bus = {0};
-    const port_i2c_t i2c = { fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus };
+    const port_i2c_t i2c = {fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus};
     const uint8_t tx[2] = {0xA5u, 0x5Au};
     uint8_t rx[2] = {0};
 
@@ -304,17 +318,19 @@ static void test_i2c_combined_write_read_passes_both_lengths(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(tx, rx, 2u);
 }
 
-static void test_i2c_null_buffer_is_rejected(void) {
+static void test_i2c_null_buffer_is_rejected(void)
+{
     fake_i2c_t bus = {0};
-    const port_i2c_t i2c = { fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus };
+    const port_i2c_t i2c = {fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &bus};
 
     TEST_ASSERT_EQUAL_INT(PORT_ERR_INVALID_ARG, i2c.write(i2c.ctx, 0x10u, NULL, 1u));
     TEST_ASSERT_EQUAL_INT(0, bus.transactions);
 }
 
-static void test_spi_transfer_copies_without_allocation(void) {
+static void test_spi_transfer_copies_without_allocation(void)
+{
     fake_spi_t state = {0};
-    const port_spi_t spi = { fake_spi_transfer, fake_spi_write, &state };
+    const port_spi_t spi = {fake_spi_transfer, fake_spi_write, &state};
     const uint8_t tx[3] = {0x11u, 0x22u, 0x33u};
     uint8_t rx[3] = {0};
 
@@ -324,9 +340,10 @@ static void test_spi_transfer_copies_without_allocation(void) {
     TEST_ASSERT_EQUAL_INT(1, state.transfers);
 }
 
-static void test_spi_write_records_the_transmitted_bytes(void) {
+static void test_spi_write_records_the_transmitted_bytes(void)
+{
     fake_spi_t state = {0};
-    const port_spi_t spi = { fake_spi_transfer, fake_spi_write, &state };
+    const port_spi_t spi = {fake_spi_transfer, fake_spi_write, &state};
     const uint8_t payload[2] = {0xDEu, 0xADu};
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, spi.write(spi.ctx, payload, 2u));
@@ -334,11 +351,12 @@ static void test_spi_write_records_the_transmitted_bytes(void) {
     TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)state.length);
 }
 
-static void test_bus_contracts_use_their_own_context(void) {
+static void test_bus_contracts_use_their_own_context(void)
+{
     fake_i2c_t i2c_state = {0};
     fake_spi_t spi_state = {0};
-    const port_i2c_t i2c = { fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &i2c_state };
-    const port_spi_t spi = { fake_spi_transfer, fake_spi_write, &spi_state };
+    const port_i2c_t i2c = {fake_i2c_write, fake_i2c_read, fake_i2c_write_read, &i2c_state};
+    const port_spi_t spi = {fake_spi_transfer, fake_spi_write, &spi_state};
     const uint8_t payload[1] = {0x7Eu};
 
     TEST_ASSERT_EQUAL_INT(PORT_OK, i2c.write(i2c.ctx, 0x08u, payload, 1u));
@@ -350,18 +368,20 @@ static void test_bus_contracts_use_their_own_context(void) {
     TEST_ASSERT_EQUAL_INT(1, spi_state.transfers);
 }
 
-static void test_time_ctx_reaches_callback(void) {
+static void test_time_ctx_reaches_callback(void)
+{
     fake_clock_t clock = {1234u, NULL, 0};
-    const port_time_t time = { fake_clock_now_ms, &clock };
+    const port_time_t time = {fake_clock_now_ms, &clock};
 
     TEST_ASSERT_EQUAL_UINT32(1234u, port_time_now_ms(&time));
     TEST_ASSERT_EQUAL_PTR(&clock, clock.seen_ctx);
     TEST_ASSERT_EQUAL_INT(1, clock.calls);
 }
 
-static void test_log_receives_level_and_message(void) {
+static void test_log_receives_level_and_message(void)
+{
     captured_log_t sink = {0};
-    const port_log_t log = { capture_log, &sink };
+    const port_log_t log = {capture_log, &sink};
 
     port_log_write(&log, PORT_LOG_ERROR, "error");
     port_log_write(&log, PORT_LOG_WARN, "warn");
@@ -379,8 +399,9 @@ static void test_log_receives_level_and_message(void) {
     TEST_ASSERT_EQUAL_STRING("debug", sink.text[3]);
 }
 
-static void test_log_null_sink_is_safe(void) {
-    const port_log_t empty = { NULL, NULL };
+static void test_log_null_sink_is_safe(void)
+{
+    const port_log_t empty = {NULL, NULL};
 
     port_log_write(&empty, PORT_LOG_INFO, "discarded");
     port_log_write(NULL, PORT_LOG_INFO, "discarded");
@@ -388,9 +409,10 @@ static void test_log_null_sink_is_safe(void) {
     TEST_ASSERT_TRUE(1);
 }
 
-static void test_log_ctx_reaches_the_callback(void) {
+static void test_log_ctx_reaches_the_callback(void)
+{
     captured_log_t sink = {0};
-    const port_log_t log = { capture_log, &sink };
+    const port_log_t log = {capture_log, &sink};
 
     port_log_write(&log, PORT_LOG_INFO, "ctx");
 
@@ -398,7 +420,8 @@ static void test_log_ctx_reaches_the_callback(void) {
     TEST_ASSERT_EQUAL_PTR(&sink, sink.seen_ctx);
 }
 
-static void test_status_values_are_stable(void) {
+static void test_status_values_are_stable(void)
+{
     TEST_ASSERT_EQUAL_INT(0, PORT_OK);
     TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_TIMEOUT);
     TEST_ASSERT_NOT_EQUAL(PORT_OK, PORT_ERR_IO);
@@ -412,7 +435,8 @@ static void test_status_values_are_stable(void) {
     TEST_ASSERT_NOT_EQUAL(PORT_ERR_INVALID_ARG, PORT_ERR_NOT_SUPPORTED);
 }
 
-int main(void) {
+int main(void)
+{
     UNITY_BEGIN();
     RUN_TEST(test_gpio_ctx_reaches_every_callback);
     RUN_TEST(test_gpio_write_then_read_round_trip);

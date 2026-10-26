@@ -1,6 +1,7 @@
 #include "common/crc.h"
 
-uint16_t common_crc16_update(uint16_t crc, const uint8_t *data, size_t length) {
+uint16_t common_crc16_update(uint16_t crc, const uint8_t *data, size_t length)
+{
     size_t index;
     int bit;
 
@@ -27,6 +28,7 @@ uint16_t common_crc16_update(uint16_t crc, const uint8_t *data, size_t length) {
     return crc;
 }
 
-uint16_t common_crc16(const uint8_t *data, size_t length) {
+uint16_t common_crc16(const uint8_t *data, size_t length)
+{
     return common_crc16_update(0xFFFFu, data, length);
 }

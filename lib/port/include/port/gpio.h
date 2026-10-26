@@ -13,17 +13,10 @@ extern "C" {
    Pull-down input and floating input are deliberately absent: an adapter that
    accepted them would have to invent a default, so a future need is an
    additive enum member rather than an implicit behaviour. */
-typedef enum port_gpio_mode {
-    PORT_GPIO_INPUT = 0,
-    PORT_GPIO_OUTPUT,
-    PORT_GPIO_INPUT_PULLUP
-} port_gpio_mode_t;
+typedef enum port_gpio_mode { PORT_GPIO_INPUT = 0, PORT_GPIO_OUTPUT, PORT_GPIO_INPUT_PULLUP } port_gpio_mode_t;
 
 /* Digital level. Explicit values keep the zero case unambiguous. */
-typedef enum port_gpio_level {
-    PORT_GPIO_LOW = 0,
-    PORT_GPIO_HIGH = 1
-} port_gpio_level_t;
+typedef enum port_gpio_level { PORT_GPIO_LOW = 0, PORT_GPIO_HIGH = 1 } port_gpio_level_t;
 
 /* Consumer-owned GPIO contract.
 

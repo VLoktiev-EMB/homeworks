@@ -10,22 +10,24 @@
 static uint8_t storage[STORAGE_CAPACITY];
 static common_ring_buffer_t rb;
 
-void setUp(void) {
+void setUp(void)
+{
     TEST_ASSERT_TRUE(common_ring_buffer_init(&rb, storage, STORAGE_CAPACITY));
 }
 
 void tearDown(void) {}
 
-static void test_ring_buffer_starts_empty(void) {
+static void test_ring_buffer_starts_empty(void)
+{
     uint8_t value = 0u;
 
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)common_ring_buffer_count(&rb));
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY,
-                              (uint32_t)common_ring_buffer_capacity(&rb));
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY, (uint32_t)common_ring_buffer_capacity(&rb));
     TEST_ASSERT_FALSE(common_ring_buffer_pop(&rb, &value));
 }
 
-static void test_ring_buffer_push_and_pop_order(void) {
+static void test_ring_buffer_push_and_pop_order(void)
+{
     uint8_t value = 0u;
 
     TEST_ASSERT_TRUE(common_ring_buffer_push(&rb, 10u));
@@ -39,28 +41,29 @@ static void test_ring_buffer_push_and_pop_order(void) {
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)common_ring_buffer_count(&rb));
 }
 
-static void test_ring_buffer_full_returns_false(void) {
+static void test_ring_buffer_full_returns_false(void)
+{
     uint32_t index;
 
     for (index = 0u; index < STORAGE_CAPACITY; index++) {
         TEST_ASSERT_TRUE(common_ring_buffer_push(&rb, (uint8_t)index));
     }
 
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY,
-                              (uint32_t)common_ring_buffer_count(&rb));
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY, (uint32_t)common_ring_buffer_count(&rb));
     TEST_ASSERT_FALSE(common_ring_buffer_push(&rb, 99u));
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY,
-                              (uint32_t)common_ring_buffer_count(&rb));
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)STORAGE_CAPACITY, (uint32_t)common_ring_buffer_count(&rb));
 }
 
-static void test_ring_buffer_empty_returns_false(void) {
+static void test_ring_buffer_empty_returns_false(void)
+{
     uint8_t value = 0u;
 
     TEST_ASSERT_FALSE(common_ring_buffer_pop(&rb, &value));
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)common_ring_buffer_count(&rb));
 }
 
-static void test_ring_buffer_wraps_without_allocation(void) {
+static void test_ring_buffer_wraps_without_allocation(void)
+{
     uint8_t value = 0u;
 
     /* Fill, drain two, then refill behind the tail so both indices wrap. */
@@ -90,7 +93,8 @@ static void test_ring_buffer_wraps_without_allocation(void) {
     TEST_ASSERT_FALSE(common_ring_buffer_pop(&rb, &value));
 }
 
-static void test_ring_buffer_init_rejects_zero_capacity(void) {
+static void test_ring_buffer_init_rejects_zero_capacity(void)
+{
     common_ring_buffer_t candidate = {0};
 
     TEST_ASSERT_FALSE(common_ring_buffer_init(&candidate, storage, 0u));
@@ -103,7 +107,8 @@ static void test_ring_buffer_init_rejects_zero_capacity(void) {
     TEST_ASSERT_FALSE(common_ring_buffer_init(NULL, storage, STORAGE_CAPACITY));
 }
 
-static void test_ring_buffer_zero_initialised_is_safe(void) {
+static void test_ring_buffer_zero_initialised_is_safe(void)
+{
     common_ring_buffer_t zero = {0};
     uint8_t value = 0xAAu;
 
@@ -125,7 +130,8 @@ static void test_ring_buffer_zero_initialised_is_safe(void) {
     common_ring_buffer_clear(NULL);
 }
 
-int main(void) {
+int main(void)
+{
     UNITY_BEGIN();
     RUN_TEST(test_ring_buffer_starts_empty);
     RUN_TEST(test_ring_buffer_push_and_pop_order);

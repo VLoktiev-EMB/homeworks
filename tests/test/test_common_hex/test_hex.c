@@ -13,7 +13,8 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-static void test_hex_encode_known_bytes(void) {
+static void test_hex_encode_known_bytes(void)
+{
     static const uint8_t input[] = {0x00u, 0x7Fu, 0xFFu};
     char out[7];
     size_t out_length = 99u;
@@ -24,7 +25,8 @@ static void test_hex_encode_known_bytes(void) {
     TEST_ASSERT_EQUAL_CHAR('\0', out[6]);
 }
 
-static void test_hex_round_trip(void) {
+static void test_hex_round_trip(void)
+{
     uint8_t source[256];
     uint8_t decoded[256];
     char encoded[513];
@@ -36,18 +38,17 @@ static void test_hex_round_trip(void) {
         source[index] = (uint8_t)index;
     }
 
-    TEST_ASSERT_TRUE(
-        common_hex_encode(source, sizeof(source), encoded, sizeof(encoded), &encoded_length));
+    TEST_ASSERT_TRUE(common_hex_encode(source, sizeof(source), encoded, sizeof(encoded), &encoded_length));
     TEST_ASSERT_EQUAL_UINT32(512u, (uint32_t)encoded_length);
     TEST_ASSERT_EQUAL_CHAR('\0', encoded[512]);
 
-    TEST_ASSERT_TRUE(common_hex_decode(encoded, encoded_length, decoded, sizeof(decoded),
-                                       &decoded_length));
+    TEST_ASSERT_TRUE(common_hex_decode(encoded, encoded_length, decoded, sizeof(decoded), &decoded_length));
     TEST_ASSERT_EQUAL_UINT32(256u, (uint32_t)decoded_length);
     TEST_ASSERT_EQUAL_MEMORY(source, decoded, sizeof(source));
 }
 
-static void test_hex_decode_accepts_uppercase(void) {
+static void test_hex_decode_accepts_uppercase(void)
+{
     uint8_t out[2] = {0u, 0u};
     size_t out_length = 0u;
 
@@ -57,7 +58,8 @@ static void test_hex_decode_accepts_uppercase(void) {
     TEST_ASSERT_EQUAL_UINT8(0xFFu, out[1]);
 }
 
-static void test_hex_decode_rejects_odd_length(void) {
+static void test_hex_decode_rejects_odd_length(void)
+{
     uint8_t out[2] = {CANARY_DECODE, CANARY_DECODE};
     size_t out_length = 99u;
 
@@ -66,7 +68,8 @@ static void test_hex_decode_rejects_odd_length(void) {
     TEST_ASSERT_EQUAL_UINT8(CANARY_DECODE, out[0]);
 }
 
-static void test_hex_decode_rejects_non_hex_character(void) {
+static void test_hex_decode_rejects_non_hex_character(void)
+{
     uint8_t out[2] = {CANARY_DECODE, CANARY_DECODE};
     size_t out_length = 99u;
 
@@ -79,7 +82,8 @@ static void test_hex_decode_rejects_non_hex_character(void) {
     TEST_ASSERT_EQUAL_UINT8(CANARY_DECODE, out[0]);
 }
 
-static void test_hex_encode_zero_length(void) {
+static void test_hex_encode_zero_length(void)
+{
     char out[1] = {CANARY_ENCODE};
     size_t out_length = 99u;
 
@@ -88,14 +92,16 @@ static void test_hex_encode_zero_length(void) {
     TEST_ASSERT_EQUAL_CHAR('\0', out[0]);
 }
 
-static void test_hex_decode_zero_length(void) {
+static void test_hex_decode_zero_length(void)
+{
     size_t out_length = 99u;
 
     TEST_ASSERT_TRUE(common_hex_decode(NULL, 0u, NULL, 0u, &out_length));
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)out_length);
 }
 
-static void test_hex_insufficient_capacity_writes_nothing(void) {
+static void test_hex_insufficient_capacity_writes_nothing(void)
+{
     static const uint8_t one_byte[] = {0xABu};
     char encoded[4];
     uint8_t decoded[4];
@@ -124,7 +130,8 @@ static void test_hex_insufficient_capacity_writes_nothing(void) {
     TEST_ASSERT_FALSE(common_hex_decode("a0", 2u, decoded, sizeof(decoded), NULL));
 }
 
-static void test_hex_enough_capacity_is_required(void) {
+static void test_hex_enough_capacity_is_required(void)
+{
     static const uint8_t one_byte[] = {0xFFu};
     char encoded[3];
     uint8_t decoded[1];
@@ -145,7 +152,8 @@ static void test_hex_enough_capacity_is_required(void) {
     TEST_ASSERT_EQUAL_UINT32(0u, (uint32_t)out_length);
 }
 
-int main(void) {
+int main(void)
+{
     UNITY_BEGIN();
     RUN_TEST(test_hex_encode_known_bytes);
     RUN_TEST(test_hex_round_trip);

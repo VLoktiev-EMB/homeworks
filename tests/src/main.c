@@ -6,7 +6,8 @@
 #include "port/status.h"
 #include "port/time.h"
 
-int main(void) {
+int main(void)
+{
     host_fake_time_t fake;
     port_time_t clock;
     common_debounce_t debounce = {0};
