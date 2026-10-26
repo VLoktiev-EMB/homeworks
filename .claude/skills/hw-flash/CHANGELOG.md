@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-11 (CR-03, IN-06)
+
+- Announced `[--baud <n>]` in both `hw-flash` capture commands, named `--baud` as the
+  helper option, and stated that the helper appends `-b <n>` to the monitor.
+- Named `[--env <env>]` and `[--baud <n>]` in the consent gate's conditional sentence, so
+  the announced capture is the executed capture.
+- Added `BuildCommandTests` for the forwarded `-e`/`-b` argv, `CliResultPayloadTests` for
+  the `CAPTURED`/`REFUSED` JSON payloads, and a concurrent-reader case that observes only
+  whole payloads.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-10 (CR-01, CR-02, WR-01..WR-06, IN-01, IN-02)
 
 - Replaced the piped `pio device monitor` snippet with `scripts/serial_capture.py`, which
