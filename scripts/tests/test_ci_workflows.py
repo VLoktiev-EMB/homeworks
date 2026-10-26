@@ -1,7 +1,8 @@
 """Prove the LFS-pointer guard's behaviour and the workflow contracts.
 
 `ci.yml` is the one pull-request workflow: a fast `meta` job, a `changes` job that
-computes the affected matrix, a `build` matrix, and the literal fan-in `gate`. The
+computes the affected matrix, a `build` matrix, and the literal fan-in `gate`.
+`nightly.yml` is the scheduled full-matrix run and the post-merge full-history scan. The
 generated-view drift check no longer has a workflow of its own — it lives in the
 `gen-views-check` pre-commit hook, and `meta` runs the whole reviewed hook surface.
 
@@ -30,6 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "ci" / "check_lfs_pointers.sh"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
+NIGHTLY = WORKFLOWS / "nightly.yml"
 PRECOMMIT = REPO_ROOT / ".pre-commit-config.yaml"
 YAMLLINT_POLICY = REPO_ROOT / ".yamllint.yaml"
 
@@ -60,6 +62,31 @@ def step_block(text: str, name: str) -> str:
         len(lines),
     )
     return "\n".join(lines[start:end])
+
+
+def job_ids(text: str) -> set[str]:
+    """Return the job ids declared directly under the top-level `jobs:` key.
+
+    A job id is a two-space-indented key; anything deeper belongs to a job's own body, and
+    a comment is never a job. Scanning stops at the first column-zero line after `jobs:`,
+    so a later top-level key cannot be mistaken for a job.
+    """
+    ids: set[str] = set()
+    in_jobs = False
+    for line in text.splitlines():
+        if line == "jobs:":
+            in_jobs = True
+            continue
+        if not in_jobs:
+            continue
+        if line and not line.startswith(" "):
+            break
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line.startswith("  ") and not line.startswith("    ") and stripped.endswith(":"):
+            ids.add(stripped.rstrip(":"))
+    return ids
 
 
 class LfsPointerGuardTests(unittest.TestCase):
@@ -140,6 +167,43 @@ class WorkflowTextTests(unittest.TestCase):
         self.assertIn("contents: read", text)
         self.assertNotIn(": write", text)
 
+    def test_nightly_computes_the_full_matrix(self) -> None:
+        # `platformio.shared.ini` is the mapper's own WIDEN_ALL entry, so the nightly matrix
+        # is the full project set without a curated list or a second flag.
+        text = NIGHTLY.read_text(encoding="utf-8")
+        self.assertIn("uv run scripts/affected.py --paths-from", text)
+        self.assertIn("platformio.shared.ini", text)
+
+    def test_nightly_serialises_its_runs(self) -> None:
+        # A manual dispatch must not overlap a scheduled run, and a scheduled run is never
+        # cancelled by a newer one.
+        text = NIGHTLY.read_text(encoding="utf-8")
+        self.assertIn("group: ${{ github.workflow }}", text)
+        self.assertIn("cancel-in-progress: false", text)
+
+    def test_nightly_declares_the_full_matrix_job_set(self) -> None:
+        self.assertEqual(
+            {"changes", "build", "secrets"},
+            job_ids(NIGHTLY.read_text(encoding="utf-8")),
+        )
+
+    def test_nightly_carries_the_full_history_scan(self) -> None:
+        # The post-merge scan the retired `security.yml` provided on `push: main`.
+        self.assertIn(
+            'gitleaks git --redact --verbose --log-opts="--all"',
+            NIGHTLY.read_text(encoding="utf-8"),
+        )
+
+    def test_nightly_declares_no_simulation(self) -> None:
+        # A prose comment may explain the absence; only executable YAML is checked. Dropping
+        # comment-only lines means a comment can neither satisfy nor trip the contract, so a
+        # later edit cannot quietly reintroduce a metered job.
+        lines = NIGHTLY.read_text(encoding="utf-8").splitlines()
+        body = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
+        for marker in ("wokwi", "WOKWI_CLI_TOKEN", "simulate"):
+            with self.subTest(marker=marker):
+                self.assertNotIn(marker, body)
+
 
 class MetaJobSurfaceTests(unittest.TestCase):
     """The security-critical ordering and the pinned tools inside the `meta` job."""
@@ -182,8 +246,8 @@ class MetaJobSurfaceTests(unittest.TestCase):
 class WorkflowTriggerKeyTests(unittest.TestCase):
     """The YAML policy must never rewrite a workflow's trigger key (D-14).
 
-    yamllint parses the bare `on:` key as a boolean under YAML 1.1, so the three
-    workflows produced three `truthy` findings. They are keys, not values, so
+    yamllint parses the bare `on:` key as a boolean under YAML 1.1, so every
+    workflow produced a `truthy` finding. They are keys, not values, so
     `.yamllint.yaml` disables key checking instead of normalising a scalar.
     These assertions are the durable guard against a later edit that
     "simplifies" a trigger key and breaks the workflow schema; whether a
@@ -194,9 +258,9 @@ class WorkflowTriggerKeyTests(unittest.TestCase):
     def workflows(self) -> list[Path]:
         return sorted(WORKFLOWS.glob("*.yml"))
 
-    def test_all_three_workflows_declare_a_textual_trigger_key(self) -> None:
+    def test_every_workflow_declares_a_textual_trigger_key(self) -> None:
         files = self.workflows()
-        self.assertEqual(3, len(files), [path.name for path in files])
+        self.assertEqual(2, len(files), [path.name for path in files])
         for path in files:
             lines = path.read_text(encoding="utf-8").splitlines()
             with self.subTest(workflow=path.name):
