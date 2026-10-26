@@ -60,6 +60,20 @@ artifact — code, evidence, and report — that can be understood and verified 
   Pages by an OIDC workflow after a warnings-as-errors build; the generated navigation and
   the vendored KaTeX 0.19.0 (checksum-pinned, no CDN) were verified on the live site —
   Phase 5 (META-08)
+- ✓ clang-format 23.1.3 as a documented ESP-IDF approximation (4 spaces, 120 columns,
+  function brace on a new line), plus clang-tidy (bugprone, cert, performance, portability),
+  markdownlint-cli2, yamllint, ruff and gitleaks, are pinned through pre-commit; the
+  tracked tree is byte-clean under the check-only clang-format hook — Phase 6 (TOOL-01)
+- ✓ esp-clangd serves the multi-root workspace through `scripts/clangd-wrapper.sh`, with
+  per-project `.clangd` files and explicit `--query-driver` toolchain globs; the headless
+  check is the attached form `--check=<file>`, because esp-clangd declares
+  `--check[=<string>]` — Phase 6 (TOOL-02)
+- ✓ Checks are layered locally: fast hooks in pre-commit (format, markdownlint, yamllint,
+  ruff, gitleaks) and clang-tidy in pre-push, with a compile-database freshness guard;
+  the CI layer remains Phase 8 — Phase 6 (TOOL-03)
+- ✓ `docs/standards/vscode.md` onboards a VS Code beginner from install to the
+  no-hardware check, and the committed editor contract matches `.vscode/settings.json` —
+  Phase 6 (TOOL-04)
 
 ### Active
 
@@ -114,19 +128,11 @@ artifact — code, evidence, and report — that can be understood and verified 
 
 **Quality**
 
-- [ ] clang-format 23.1.3 is configured as a documented ESP-IDF approximation (4 spaces,
-      120 columns, function brace on a new line), together with clang-tidy (bugprone,
-      cert, performance, portability), markdownlint, yamllint, ruff, and gitleaks.
-- [ ] esp-clangd (Espressif's LLVM fork) serves the workspace through
-      `scripts/clangd-wrapper.sh`, with per-project `.clangd` files and explicit
-      `--query-driver` toolchain globs.
 - [ ] `scripts/check_architecture.py` and a native compile gate enforce the dependency
       rule.
 - [ ] Reports include a measurement ledger labelling every value as measured,
       calculated, simulated, datasheet, or explicitly not measured, with instrument,
       method, uncertainty, and commit hash.
-- [ ] Checks are layered: fast hooks in pre-commit, clang-tidy in pre-push, full build and
-      tests in CI.
 - [ ] Unity tests run on the native environment; shared libraries have a dedicated
       `tests/` PlatformIO project.
 - [ ] Testing is tiered: build always; unit tests for pure logic; simulation where
@@ -261,9 +267,10 @@ artifact — code, evidence, and report — that can be understood and verified 
 | No universal HAL | Hardware abstractions leak; the course must teach framework APIs | ✓ Phase 3 — bus-level I2C/SPI contracts; framework bus adapters deferred (ADR-0008 D-08) |
 | Shared libraries via `lib_deps = <name>=symlink://...` | Replaces deprecated `lib_extra_dirs`; explicit dependency intent; validated locally | ✓ Phase 2 — ADR-0007; all three environments resolve the symlinked libraries |
 | Multi-root VS Code workspace | Per-project clangd and PlatformIO behavior; auxiliary folders available | ✓ Phase 5 — generated whole from a template, committed, drift-checked |
-| esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | — Pending |
-| Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | — Pending |
-| clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | — Pending |
+| esp-clangd + per-project `.clangd` + compiledb | Stock clangd does not understand `-mcpu=esp32s3` and Espressif ISA extensions | ✓ Phase 6 — ADR-0013 multi-root contract; the headless check is `--check=<file>` because esp-clangd declares `--check[=<string>]` |
+| Three-layer checks (pre-commit, pre-push, CI) | Fast local feedback with full verification in CI | ✓ Phase 6 — pre-commit and pre-push layers live; the CI layer is Phase 8 |
+| clang-format 120 + clang-tidy (ESP-IDF approximation) | Consistent quality without MISRA overhead; AStyle-based ESP-IDF style is approximated and documented | ✓ Phase 6 — ADR-0012; clang-format 23.1.3 dry-run clean over 60 tracked C/C++ files |
+| A documented command is regression-guarded | A guide command the tool rejects is worse than no command; only a positive, negative and non-vacuity test keep the live form honest | ✓ Phase 6 — `ClangdCheckCommandTests`; historical records left byte-identical |
 | 10-section report with BOM, calculations, safety, and industry notes | Academic completeness plus engineering rigor | — Pending |
 | `task.md` + `homework.yaml` + `README.md` separation | Separates assignment, metadata, and result | ✓ Phase 4 — schema-validated contract; `task.md` carries provenance frontmatter (ADR-0009) |
 | JSON Schema 2020-12 as the single metadata contract | One declarative field set read by editors, the checker, the scaffold and Phase 5 generators; anchored patterns instead of `format` | ✓ Phase 4 — `additionalProperties: false` at every level; unknown keys rejected |
@@ -320,4 +327,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-26 after Phase 5*
+*Last updated: 2026-10-26 after Phase 6*

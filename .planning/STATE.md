@@ -23,7 +23,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 06 — Developer Experience and Quality Layering
+**Current focus:** Phase 07 — Simulation Spike
 
 ## Current Position
 
@@ -85,6 +85,11 @@ Recent decisions affecting current work:
 - Phase 5: `scripts/affected.py` fails safe — `lib/**` fans out to every consumer and an unrecognised path widens to every project rather than being dropped.
 - Phase 5: code review found two critical defects, both fixed before merge — HTML in a `title` reached the published site as live markup, and the generator followed symlinked `homework.yaml`/template inputs it otherwise refused. 20 lower-severity findings stay open in `05-REVIEW-DISPOSITION.md`; WR-13 (no PR-time site build or Python suite) belongs to Phase 8.
 - Phase 5: the site is live at https://vloktiev-emb.github.io/homeworks/ (PR #12, `0384ed7`); the `build and deploy` run and the rendered pages were verified after merge.
+- Phase 6: clang-format 120 is a documented ESP-IDF approximation (ADR-0012); 23.1.3 is pinned through pre-commit and runs check-only, so the tracked tree is expected to conform rather than be reformatted.
+- Phase 6: esp-clangd serves the multi-root workspace through `scripts/clangd-wrapper.sh` (ADR-0013). Its `--check[=<string>]` declaration means the headless command must attach the value: `--check=<file>`; the detached form exits 1.
+- Phase 6: a documented command is regression-guarded by a positive, negative and non-vacuity test (`ClangdCheckCommandTests`), so a guide that drifts back to a rejected invocation fails the suite instead of shipping.
+- Phase 6: the local quality layers are live (pre-commit fast hooks, clang-tidy on pre-push with a compile-database freshness guard); the CI layer stays Phase 8 (TOOL-05, TOOL-06).
+- Phase 6: gap closure G-06-1 was a one-command documentation defect; the re-verification passed 56/56 must-haves with the covered-input digest recomputed by the CLI.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -162,6 +167,8 @@ Recent decisions affecting current work:
 - **[Phase 4.1, open warnings]** Review findings WR-02 (root-only `no-generated-files` pathspecs), WR-03 (metadata hook omits `platformio.shared.ini`), WR-05/06 and IN-01..03 are documentation/hook-accuracy items deferred to the next documentation pass.
 - **[Phase 5, open findings]** 20 of 24 code-review findings remain `open` in `05-REVIEW-DISPOSITION.md` (0 critical; the two criticals and WR-02/WR-03 were fixed before merge). None breaks a phase must-have. The ones worth naming: WR-01 (backslash not escaped in `_escape_cell`), WR-04 (absolute board positionals misclassified under a differently-spelled root), WR-10 (a project with `platformio.ini` but no `[env:]` contributes no matrix entry), WR-13 (PR-time site build and Python suite absent from CI — Phase 8).
 - **[Phase 5, resolved]** The deploy path is no longer unverified: PR #12 merged as `0384ed7`, the `docs` workflow's `build and deploy` job succeeded, and the live Pages site was checked page by page.
+- **[Phase 6, open findings]** IN-01..IN-05 are info-level review observations recorded in `06-REVIEW-DISPOSITION.md`; none has a failing test or a reproducible defect against the phase goal. The CI layer of TOOL-03 is Phase 8 scope (TOOL-05, TOOL-06).
+- **[Phase 6, environment note]** `pre-commit run --all-files` cannot run `end-of-file-fixer` against `.vscode/settings.json` under the command sandbox (`Operation not permitted`); the file is unchanged and the other 12 commit-stage hooks pass. Run the hook outside the sandbox when a full local gate is required.
 
 ### Quick Tasks Completed
 
@@ -188,6 +195,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-25T23:41:01.366Z
+Last session: 2026-10-26T12:25:42.139Z
 Stopped at: Phase 06 complete, ready to plan Phase 7
-Resume file: .planning/phases/06-developer-experience-and-quality-layering/06-CONTEXT.md
+Resume file: None
