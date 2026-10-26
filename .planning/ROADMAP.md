@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4.1: Ceremony Trim (INSERTED)** - Remove governance bureaucracy; keep four invariants and a short Definition of Done (completed 2026-10-25)
 - [x] **Phase 4.2: Tracer Homework 1.3 (INSERTED)** - Run homework 1.3 end to end manually and record the friction log (verification gaps open — see `.planning/phases/04.2-tracer-homework-1-3/04.2-VERIFICATION.md`) (completed 2026-10-25)
 - [x] **Phase 5: Generated Views and Documentation Site** - Index, workspace, shared ini, CI matrix, and MkDocs site generated from metadata (completed 2026-10-26)
-- [ ] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding
+- [x] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding (completed 2026-10-26)
 - [ ] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004
 - [ ] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation
 - [ ] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented
@@ -286,7 +286,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. pre-commit runs format, markdownlint, yamllint, ruff, and gitleaks; pre-push runs clang-tidy.
   5. `docs/standards/vscode.md` takes a VS Code beginner from install to format-on-save, Problems panel, clangd, and a no-hardware check.
 
-**Plans:** 6/6 plans executed; 1 gap-closure plan pending
+**Plans:** 6/6 plans complete; 1 gap-closure plan pending
 
 **Wave 1**
 - [x] 06-01-PLAN.md — Formatting contract: `.clang-format`, check-only hook, whole-tree reformat, `ClangFormatConfigTests` (tracer: one file end to end)
@@ -394,7 +394,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.1. Ceremony Trim | 7/7 | Complete    | 2026-10-25 |
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
-| 6. Developer Experience and Quality Layering | 6/6 | In Progress | - |
+| 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 0/TBD | Not started | - |
 | 8. Fast CI | 0/TBD | Not started | - |
 | 9. Agent Workflow and Skills | 0/TBD | Not started | - |
