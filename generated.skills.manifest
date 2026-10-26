@@ -34,6 +34,38 @@
       "bytes": 922
     },
     {
+      "path": ".agents/skills/hw-build/CHANGELOG.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-build/CHANGELOG.md",
+      "mode": "whole",
+      "sha256": "f6ca58d36df5a42bb8091338c9b03acc58099ac7da4e515c3d59abc6f2eb2e6e",
+      "bytes": 609
+    },
+    {
+      "path": ".agents/skills/hw-build/LESSONS.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-build/LESSONS.md",
+      "mode": "whole",
+      "sha256": "97ca24a07918370cf5fd539b0b46596a28a0489536bb756874ef526683d819b5",
+      "bytes": 661
+    },
+    {
+      "path": ".agents/skills/hw-build/SKILL.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-build/SKILL.md",
+      "mode": "whole",
+      "sha256": "779eb87edbc499804979bebd358724aaf7441a4f12262ed77b3153a7fea0ee0f",
+      "bytes": 3680
+    },
+    {
+      "path": ".agents/skills/hw-build/references/repair-loop.md",
+      "owner": "skills",
+      "source": ".claude/skills/hw-build/references/repair-loop.md",
+      "mode": "whole",
+      "sha256": "9ff1129521c73d74d34f4206ccbf522a6e7b4abdc9d615489422da3620c14a52",
+      "bytes": 6238
+    },
+    {
       "path": ".agents/skills/hw-report/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/hw-report/CHANGELOG.md",
