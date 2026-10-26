@@ -89,6 +89,57 @@ def job_ids(text: str) -> set[str]:
     return ids
 
 
+def job_block(text: str, job_id: str) -> str:
+    """Return the YAML of the job whose two-space-indented key is *job_id*.
+
+    The slice ends at the next two-space-indented job key, so a later job's `needs:` or
+    `if:` can never satisfy an assertion about this one.
+    """
+    lines = text.splitlines()
+    start = next(
+        (index for index, line in enumerate(lines) if line == f"  {job_id}:"),
+        None,
+    )
+    if start is None:
+        raise AssertionError(f"ci.yml carries no job named {job_id!r}")
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        line = lines[index]
+        stripped = line.strip()
+        if (
+            line.startswith("  ")
+            and not line.startswith("    ")
+            and stripped
+            and not stripped.startswith("#")
+            and stripped.endswith(":")
+        ):
+            end = index
+            break
+    return "\n".join(lines[start:end])
+
+
+def needs_ids(block: str) -> set[str]:
+    """Return the job ids a job's `needs:` names, in flow or block form."""
+    lines = block.splitlines()
+    start = next(
+        (index for index, line in enumerate(lines) if line.strip().startswith("needs:")),
+        None,
+    )
+    if start is None:
+        raise AssertionError("the job declares no `needs:` key")
+    inline = lines[start].split("needs:", 1)[1].strip()
+    if inline:
+        items = inline.strip("[]").split(",")
+        return {item.strip().strip("'\"") for item in items if item.strip()}
+    ids: set[str] = set()
+    for following in lines[start + 1 :]:
+        stripped = following.strip()
+        if not stripped.startswith("- "):
+            break
+        ids.add(stripped[2:].strip().strip("'\""))
+    return ids
+
+
 class LfsPointerGuardTests(unittest.TestCase):
     """The guard's exit status, not the workflow's spelling of it."""
 
@@ -300,6 +351,111 @@ class MetaJobSurfaceTests(unittest.TestCase):
         for pin in ("8.30.1", "551f6fc8", "0.28.1", "869f194e"):
             with self.subTest(pin=pin):
                 self.assertIn(pin, self.meta_job())
+
+
+class CiWorkflowContractTests(unittest.TestCase):
+    """The aggregation contract that keeps `gate` the one required check.
+
+    A dropped dependency, a renamed job or a widened result allowlist silently unblocks
+    merges; these assertions make each of those fail the local suite instead. The class is
+    stdlib-only (04/D-14): the workflow is read as plain text and parsed with string
+    assertions, never a YAML parser.
+    """
+
+    def setUp(self) -> None:
+        self.text = CI.read_text(encoding="utf-8")
+
+    def test_gate_is_a_literal_job_name(self) -> None:
+        # Pitfall 1: the ruleset matches a required check by display name, so both the job
+        # id and the display name must be the literal `gate`.
+        self.assertIn("\n  gate:\n", self.text)
+        self.assertIn("    name: gate\n", job_block(self.text, "gate"))
+
+    def test_gate_needs_every_pull_request_job(self) -> None:
+        # Derived from the file, so adding a job without adding it to `needs` fails here.
+        jobs = job_ids(self.text)
+        self.assertIn("gate", jobs)
+        self.assertEqual(jobs - {"gate"}, needs_ids(job_block(self.text, "gate")))
+
+    def test_gate_allows_only_success_and_skipped(self) -> None:
+        # Pitfall 2: the result vocabulary has no `timed_out`; only `success` and `skipped`
+        # may pass, and every other outcome must fail the one required check.
+        gate = job_block(self.text, "gate")
+        selector = gate.split("jq -r '", 1)[1].split("'", 1)[0]
+        self.assertIn('"success"', selector)
+        self.assertIn('"skipped"', selector)
+        for word in ("failure", "cancelled", "timed_out"):
+            with self.subTest(word=word):
+                self.assertNotIn(word, selector)
+
+    def test_gate_runs_under_not_cancelled(self) -> None:
+        # D-2: `always()` would also run after cancellation. Comment lines are dropped so
+        # the explanatory prose cannot satisfy or trip an assertion about executable YAML.
+        gate = job_block(self.text, "gate")
+        body = "\n".join(
+            line for line in gate.splitlines() if not line.lstrip().startswith("#")
+        )
+        self.assertIn("!cancelled()", body)
+        self.assertNotIn("always()", body)
+
+    def test_changes_reads_the_mapper_and_writes_both_outputs(self) -> None:
+        # D-3/Pitfall 5: the mapper's indented JSON must be compacted before it reaches
+        # `$GITHUB_OUTPUT`, and both matrices are written.
+        changes = job_block(self.text, "changes")
+        self.assertIn("uv run scripts/affected.py --base", changes)
+        self.assertIn("jq -c .build", changes)
+        self.assertIn("jq -c .simulate", changes)
+
+    def test_build_skips_an_empty_matrix_at_job_level(self) -> None:
+        # D-4/Pitfall 4: matrix expansion precedes step execution, so the guard must sit on
+        # the job, above `strategy:`.
+        build = job_block(self.text, "build")
+        guard = build.index("!= '[]'")
+        self.assertLess(guard, build.index("strategy:"))
+
+    def test_build_splits_native_from_target(self) -> None:
+        # D-6: the environment name, not the framework, selects the command; both values
+        # are quoted shell variables, never interpolated expressions (Pitfall 10).
+        build = job_block(self.text, "build")
+        self.assertIn('pio test -d "$PROJECT" -e "$ENV_NAME"', build)
+        self.assertIn('pio run -d "$PROJECT" -e "$ENV_NAME"', build)
+
+    def test_build_matrix_is_parallel_and_non_cancelling(self) -> None:
+        # D-7: one failing entry must not cancel its siblings and a fanout must not occupy
+        # every runner.
+        build = job_block(self.text, "build")
+        self.assertIn("fail-fast: false", build)
+        self.assertIn("max-parallel: 4", build)
+
+    def test_simulate_depends_on_policy_jobs(self) -> None:
+        # T-8-22: a pull request that already fails the policy gate must never spend a
+        # metered minute, so both dependency results are explicit terms.
+        simulate = job_block(self.text, "simulate")
+        self.assertEqual({"changes", "meta"}, needs_ids(simulate))
+        self.assertIn("needs.changes.result == 'success'", simulate)
+        self.assertIn("needs.meta.result == 'success'", simulate)
+
+    def test_only_simulate_receives_a_secret(self) -> None:
+        # T-8-11/Pitfall 11: a fork never reaches the token. The split point is the
+        # `simulate` job key; the `changes` job also has a six-space `simulate:` output and
+        # is deliberately not matched.
+        before, marker, _ = self.text.partition("\n  simulate:\n")
+        self.assertTrue(marker)
+        self.assertNotIn("secrets.", before)
+        self.assertIn("secrets.WOKWI_CLI_TOKEN", job_block(self.text, "simulate"))
+
+    def test_no_workflow_writes_simulation_status(self) -> None:
+        # D-12: only an executed, evidenced run may flip the metadata status, and that
+        # decision is reviewed outside CI. Comment lines are dropped so prose about the
+        # prohibition is not mistaken for a write.
+        for path in (CI, NIGHTLY):
+            lines = path.read_text(encoding="utf-8").splitlines()
+            body = "\n".join(
+                line for line in lines if not line.lstrip().startswith("#")
+            )
+            with self.subTest(workflow=path.name):
+                self.assertNotIn("simulation.status", body)
+                self.assertNotIn("simulation:", body)
 
 
 class WorkflowTriggerKeyTests(unittest.TestCase):
