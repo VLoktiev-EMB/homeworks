@@ -660,18 +660,35 @@ class HookLayeringTests(unittest.TestCase):
         )
 
     def test_every_fast_hook_keeps_the_pre_commit_stage(self) -> None:
+        """Every hook outside the push pair declares its fast stage explicitly.
+
+        `default_stages` alone cannot guarantee the layering: the pinned
+        `pre-commit-hooks` manifest declares `stages: [pre-commit, pre-push,
+        manual]` for three of its hooks, and a hook's own stages override the
+        default. Declaring the stage twice (RESEARCH Pattern 2) is what keeps
+        pre-push down to the two clang-tidy hooks.
+        """
         text = self.config()
         for hook_id in (
             "gitleaks",
             "trailing-whitespace",
+            "end-of-file-fixer",
+            "check-merge-conflict",
+            "check-added-large-files",
             "clang-format",
             "ruff-check",
             "markdownlint-cli2",
             "yamllint",
+            "no-generated-files",
+            "check-architecture",
+            "check-metadata",
+            "gen-views-check",
         ):
             with self.subTest(hook=hook_id):
-                self.assertNotEqual("", _hook_block(text, hook_id), hook_id)
-                self.assertNotIn("stages: [pre-push]", _hook_block(text, hook_id))
+                block = _hook_block(text, hook_id)
+                self.assertNotEqual("", block, hook_id)
+                self.assertIn("stages: [pre-commit]", block)
+                self.assertNotIn("stages: [pre-push]", block)
 
     def test_both_push_hooks_declare_the_pre_push_stage(self) -> None:
         text = self.config()
@@ -680,6 +697,7 @@ class HookLayeringTests(unittest.TestCase):
                 block = _hook_block(text, hook_id)
                 self.assertNotEqual("", block, hook_id)
                 self.assertIn("stages: [pre-push]", block)
+                self.assertNotIn("stages: [pre-commit]", block)
 
     def test_the_guard_precedes_the_clang_tidy_repository(self) -> None:
         text = self.config()
