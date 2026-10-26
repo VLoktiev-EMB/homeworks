@@ -65,9 +65,11 @@ output and stay ignored.
 
 `scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
 `platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
-explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `templates/views/`,
-`boards/` and the generated view files) selects nothing, and any unrecognised path widens to
-every project.
+explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
+`templates/views/`, `boards/`, `.skill-state/`, `generated.manifest`,
+`generated.skills.manifest`, `homeworks.code-workspace`, `scripts/gen_skills.py` and
+`scripts/serial_capture.py`) selects nothing, and any unrecognised path widens to every
+project.
 
 `ci.yml`'s `changes` job consumes its `{build, simulate}` payload as the build and simulation
 matrix, and `nightly.yml` feeds the mapper the `platformio.shared.ini` path so the mapper's

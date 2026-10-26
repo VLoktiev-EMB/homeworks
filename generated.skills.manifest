@@ -6,8 +6,8 @@
       "owner": "skills",
       "source": ".claude/skills/_shared/guardrails.md",
       "mode": "whole",
-      "sha256": "66b74d558cdf84d629ca3d0fd3da2fa5f2843031ea3eeb4a9c17ee59dfaaa244",
-      "bytes": 3525
+      "sha256": "441714a3d0b66ba7b84f67301063799a075d12d6141d99a28e252a03f4214b3e",
+      "bytes": 3788
     },
     {
       "path": ".agents/skills/course-index/CHANGELOG.md",
@@ -70,24 +70,24 @@
       "owner": "skills",
       "source": ".claude/skills/hw-flash/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "0721ba50e0be236279ade51d11f7efada673a316b7d697bc20f482b838d596a1",
-      "bytes": 1845
+      "sha256": "5fa846d395c3cc3ebb75450895467c7d1ffdaa5f47ad796eda0393652c8d335c",
+      "bytes": 2783
     },
     {
       "path": ".agents/skills/hw-flash/LESSONS.md",
       "owner": "skills",
       "source": ".claude/skills/hw-flash/LESSONS.md",
       "mode": "whole",
-      "sha256": "370d0bf5c73b73eb2f080f0af4d79091afc06ca3c620d1282881a3055e921c70",
-      "bytes": 1044
+      "sha256": "7e92839ca67037b6ddd5657a4915b67c54e90627276fd32fdb1ef2a25f8ae6fd",
+      "bytes": 1803
     },
     {
       "path": ".agents/skills/hw-flash/SKILL.md",
       "owner": "skills",
       "source": ".claude/skills/hw-flash/SKILL.md",
       "mode": "whole",
-      "sha256": "da0e442a3cdf60d3941a2962c2d095c2a8098b11ec2727ab3be8f469de34032b",
-      "bytes": 10479
+      "sha256": "9b76c643327bbe94a85909769d35d07c8721a13c90bdf1a29a4e9be71ca487e5",
+      "bytes": 9606
     },
     {
       "path": ".agents/skills/hw-report/CHANGELOG.md",

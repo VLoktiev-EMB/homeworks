@@ -1,5 +1,18 @@
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-10
+
+- A TTY-gated tool needs a pseudo-terminal, and the test must assert the child sees a TTY:
+  a pipe is not a terminal, so a capture built on `subprocess.PIPE` reports
+  `capture unavailable` on every run. The regression proof is the same child failing when
+  its stdio is a pipe.
+- A fail-closed scan must cover quoted, spaced, authorization and space-separated forms,
+  and it must accept false positives. A narrower regex silently persists exactly the
+  credential the rule forbids.
+- A prose path guarantee must match the directory-descriptor operations the helper actually
+  performs: `O_NOFOLLOW`, `dir_fd` and an exclusive temporary file are the promise, and a
+  path-based `lstat` loop is not the same thing.
+
 ## 2026-10-27 — gap-closure run, 09-09
 
 - A skill may claim to read a generated config value only when the generated source

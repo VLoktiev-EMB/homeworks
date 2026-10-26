@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-10 (CR-01, CR-02, WR-01..WR-06, IN-01, IN-02)
+
+- Replaced the piped `pio device monitor` snippet with `scripts/serial_capture.py`, which
+  allocates a pseudo-terminal, runs the monitor with `--raw --quiet`, reads the master for
+  the bound, scans the exact bytes, and writes only on a clean scan.
+- Widened the credential-shape scan to quoted, spaced, authorization and space-separated
+  forms, including the six-character floor that catches `password abc123`.
+- Restored the shared guardrails' general prohibition to cover the state file and any log
+  outside the one scoped capture exception, and named the fail-closed scan shapes there.
+- Announced the conditional `-e <env>` segment in the consent example and the upload
+  command, normalized `monitor_speed` with `int(str(value))`, and replaced the outcome
+  table's "timed out" wording with "capture failed".
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-09 (CR-01, CR-02, WR-01)
 
 - Added fail-closed baud resolution before the gate: read `monitor_speed` from
