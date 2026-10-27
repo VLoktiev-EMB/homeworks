@@ -3,18 +3,30 @@ phase: 09
 review: 09-REVIEW.md
 titles: json
 findings:
+  - id: WR-01
+    severity: warning
+    disposition: open
+    title: "The monitor's `-d` path ignores the resolved repository root"
+  - id: WR-02
+    severity: warning
+    disposition: open
+    title: "A failing `pio project config` is reported as port discovery and exits 1"
+  - id: IN-12
+    severity: info
+    disposition: open
+    title: "Test-module comments describe the old fixture composition"
+  - id: IN-13
+    severity: info
+    disposition: open
+    title: "Tab-separated and double-space compound keywords remain outside the scan"
+  - id: IN-14
+    severity: info
+    disposition: open
+    title: "The new docstring names a no-separator form the policy owner does not name and no test pins"
   - id: CR-01
     severity: critical
     disposition: fixed
     title: "Сканування не ловить складені ключові слова, розділені пробілом"
-  - id: WR-01
-    severity: warning
-    disposition: open
-    title: "`-d` для монітора ігнорує розв'язаний корінь репозиторію"
-  - id: WR-02
-    severity: warning
-    disposition: open
-    title: "Збій `pio project config` звітується як «port discovery failed» і має код 1 замість 2"
   - id: WR-03
     severity: warning
     disposition: open
@@ -30,7 +42,7 @@ findings:
   - id: IN-03
     severity: info
     disposition: open
-    title: "`HOMEWORK_ID`/`ENVIRONMENT` приймають хвіст `\n`"
+    title: "`HOMEWORK_ID`/`ENVIRONMENT` приймають хвіст ` `"
   - id: IN-04
     severity: info
     disposition: open
@@ -115,32 +127,27 @@ findings:
     severity: info
     disposition: open
     title: "The 128-character connector bound is not pinned by a test"
-  - id: IN-12
-    severity: info
-    disposition: open
-    title: "Test-module comments describe the old fixture composition"
-  - id: IN-13
-    severity: info
-    disposition: open
-    title: "A tab-separated compound keyword remains outside the scan"
-open: 19
-total: 30
-recorded: 2026-10-27T13:05:00.000Z
+open: 20
+total: 31
+recorded: 2026-10-27T13:13:20.909Z
 ---
 
 # Phase 09: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 09-17-PLAN.md — review re-run 2026-10-27 confirmed `SECRET KEY: hunter2`, `secret key = hunter2`, `Secret Key: hunter2` and `SECRET KEY = hunter2` match, every pinned benign negative still refuses, and `CredentialScanTests` is 12/12 green. |
 | WR-01 | warning | open | - |
 | WR-02 | warning | open | - |
-| WR-03 | warning | open | Partially closed by 09-18: the named sentence is gone and one locator remains, but WR-13 records the normative ambiguous-port half still restated at `hw-flash/SKILL.md:50-52` and `:188-189`. |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| IN-12 | info | open | - |
+| IN-13 | info | open | - |
+| IN-14 | info | open | - |
+| CR-01 | critical | fixed | 09-17-PLAN.md — review re-run 2026-10-27 confirmed `SECRET KEY: hunter2`, `secret key = hunter2`, `Secret Key: hunter2` and `SECRET KEY = hunter2` match, every pinned benign negative still refuses, and `CredentialScanTests` is 12/12 green. (not in the current review) |
+| WR-03 | warning | open | Partially closed by 09-18: the named sentence is gone and one locator remains, but WR-13 records the normative ambiguous-port half still restated at `hw-flash/SKILL.md:50-52` and `:188-189`. (not in the current review) |
+| IN-01 | info | open | - (not in the current review) |
+| IN-02 | info | open | - (not in the current review) |
+| IN-03 | info | open | - (not in the current review) |
+| IN-04 | info | open | - (not in the current review) |
+| IN-05 | info | open | - (not in the current review) |
 | CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. (not in the current review) |
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
 | WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. (not in the current review) |
@@ -157,11 +164,9 @@ recorded: 2026-10-27T13:05:00.000Z
 | IN-08 | info | open | - (not in the current review) |
 | IN-09 | info | open | - (not in the current review) |
 | IN-10 | info | open | - (not in the current review) |
-| WR-13 | warning | open | - |
-| WR-14 | warning | open | - |
-| IN-11 | info | open | - |
-| IN-12 | info | open | - |
-| IN-13 | info | open | - |
+| WR-13 | warning | open | - (not in the current review) |
+| WR-14 | warning | open | - (not in the current review) |
+| IN-11 | info | open | - (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
