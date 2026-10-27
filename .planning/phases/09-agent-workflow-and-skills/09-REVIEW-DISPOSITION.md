@@ -5,16 +5,72 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: fixed
-    title: "The 32-character connector ceiling still writes a credential assigned to a long identifier"
+    disposition: open
+    title: "Сканування не ловить складені ключові слова, розділені пробілом"
   - id: WR-01
     severity: warning
+    disposition: open
+    title: "`-d` для монітора ігнорує розв'язаний корінь репозиторію"
+  - id: WR-02
+    severity: warning
+    disposition: open
+    title: "Збій `pio project config` звітується як «port discovery failed» і має код 1 замість 2"
+  - id: WR-03
+    severity: warning
+    disposition: open
+    title: "Правило «один порт для upload і capture» продубльовано в guardrails і в скілі"
+  - id: IN-01
+    severity: info
+    disposition: open
+    title: "Порада «pass --port» не працює, коли кандидатів нуль"
+  - id: IN-02
+    severity: info
+    disposition: open
+    title: "`--json` не дає JSON на exit 2"
+  - id: IN-03
+    severity: info
+    disposition: open
+    title: "`HOMEWORK_ID`/`ENVIRONMENT` приймають хвіст `\n`"
+  - id: IN-04
+    severity: info
+    disposition: open
+    title: "Скіл не вимагає, щоб названий користувачем `--port` був серед знайдених кандидатів"
+  - id: IN-05
+    severity: info
+    disposition: open
+    title: "Явний `--baud` обходить перевірку вибору environment"
+  - id: CR-02
+    severity: critical
     disposition: fixed
-    title: "The promised `auth mode = WPA2` benign negative is not pinned by the suite"
+    title: "The credential-shape scan misses ordinary assignment forms, so the gated write can persist a credential"
   - id: CR-03
     severity: critical
     disposition: fixed
     title: "`hw-flash` never passes the user-resolved baud to the capture helper"
+  - id: WR-04
+    severity: warning
+    disposition: fixed
+    title: "The consent-gate example omits `-e <env>`, so it is not the exact command the rule requires"
+  - id: WR-05
+    severity: warning
+    disposition: fixed
+    title: "The general credential prohibition no longer covers logs outside the exception"
+  - id: WR-06
+    severity: warning
+    disposition: fixed
+    title: "The capture command omits `--quiet`, so PlatformIO's banner is captured into the log"
+  - id: WR-07
+    severity: warning
+    disposition: open
+    title: "`no-generated-files` does not cover the template-tree generated patterns"
+  - id: WR-08
+    severity: warning
+    disposition: open
+    title: "The uv cache override falls back to a fixed shared `/tmp` path"
+  - id: WR-09
+    severity: warning
+    disposition: fixed
+    title: "The no-build-impact paragraph in AGENTS.md omits the Phase 9 paths"
   - id: WR-10
     severity: warning
     disposition: fixed
@@ -47,74 +103,32 @@ findings:
     severity: info
     disposition: open
     title: "Two `NO_BUILD_IMPACT` rules have no test entry"
-  - id: CR-02
-    severity: critical
-    disposition: fixed
-    title: "The credential-shape scan misses ordinary assignment forms, so the gated write can persist a credential"
-  - id: WR-02
-    severity: warning
-    disposition: fixed
-    title: "The symlink discipline claims a race-free guarantee the helper does not implement"
-  - id: WR-03
-    severity: warning
-    disposition: fixed
-    title: "The outcome table contradicts the rule that reaching the 20-second bound is a success"
-  - id: WR-04
-    severity: warning
-    disposition: fixed
-    title: "The consent-gate example omits `-e <env>`, so it is not the exact command the rule requires"
-  - id: WR-05
-    severity: warning
-    disposition: fixed
-    title: "The general credential prohibition no longer covers logs outside the exception"
-  - id: WR-06
-    severity: warning
-    disposition: fixed
-    title: "The capture command omits `--quiet`, so PlatformIO's banner is captured into the log"
-  - id: IN-01
-    severity: info
-    disposition: fixed
-    title: "The snippet is not runnable as written"
-  - id: IN-02
-    severity: info
-    disposition: fixed
-    title: "`pio project config` emits `monitor_speed` with two different types, and the skill does not normalize"
-  - id: WR-07
-    severity: warning
-    disposition: open
-    title: "`no-generated-files` does not cover the template-tree generated patterns"
-  - id: WR-08
-    severity: warning
-    disposition: open
-    title: "The uv cache override falls back to a fixed shared `/tmp` path"
-  - id: WR-09
-    severity: warning
-    disposition: fixed
-    title: "The no-build-impact paragraph in AGENTS.md omits the Phase 9 paths"
-  - id: IN-03
-    severity: info
-    disposition: open
-    title: "The simulation phase reference is stale"
-  - id: IN-04
-    severity: info
-    disposition: open
-    title: "The generator tests do not cover the edge cases above"
-  - id: IN-05
-    severity: info
-    disposition: open
-    title: "The copula branch now refuses ordinary status lines, and the docstring overstates the negative coverage"
-open: 9
+open: 15
 total: 25
-recorded: 2026-10-27T10:13:00.086Z
+recorded: 2026-10-27T12:30:00.000Z
 ---
 
 # Phase 09: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 87ca910 |
-| WR-01 | warning | fixed | 27462fb |
+| CR-01 | critical | open | - |
+| WR-01 | warning | open | - |
+| WR-02 | warning | open | - |
+| WR-03 | warning | open | - |
+| IN-01 | info | open | - |
+| IN-02 | info | open | - |
+| IN-03 | info | open | - |
+| IN-04 | info | open | - |
+| IN-05 | info | open | - |
+| CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. (not in the current review) |
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
+| WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. (not in the current review) |
+| WR-05 | warning | fixed | 09-10-PLAN.md — closed by the `_shared/guardrails.md` "or any log" prohibition. (not in the current review) |
+| WR-06 | warning | fixed | 09-10-PLAN.md — closed by the `--raw --quiet` monitor argv. (not in the current review) |
+| WR-07 | warning | open | - (not in the current review) |
+| WR-08 | warning | open | - (not in the current review) |
+| WR-09 | warning | fixed | 09-10-PLAN.md — closed by the rewritten `AGENTS.md` no-build-impact paragraph. (not in the current review) |
 | WR-10 | warning | fixed | 09-13-PLAN.md — closed by the `math.isfinite` positive-finite-upper-bound validation before `resolve_root`, the monitor argv or `Popen`. (not in the current review) |
 | WR-11 | warning | fixed | 09-13-PLAN.md — closed by the reaping `finally` in `capture_pty`, which kills a live child and waits on every exception path. (not in the current review) |
 | WR-12 | warning | fixed | 09-12-PLAN.md — closed by the widened `find_credential` covering the copula, embedded keyword, `passphrase` and `pwd` forms. (not in the current review) |
@@ -123,20 +137,6 @@ recorded: 2026-10-27T10:13:00.086Z
 | IN-08 | info | open | - (not in the current review) |
 | IN-09 | info | open | - (not in the current review) |
 | IN-10 | info | open | - (not in the current review) |
-| CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. (not in the current review) |
-| WR-02 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` directory descriptors and the corrected `SKILL.md`. (not in the current review) |
-| WR-03 | warning | fixed | 09-10-PLAN.md — closed by the corrected `hw-flash` outcome table. (not in the current review) |
-| WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. (not in the current review) |
-| WR-05 | warning | fixed | 09-10-PLAN.md — closed by the `_shared/guardrails.md` "or any log" prohibition. (not in the current review) |
-| WR-06 | warning | fixed | 09-10-PLAN.md — closed by the `--raw --quiet` monitor argv. (not in the current review) |
-| IN-01 | info | fixed | 09-10-PLAN.md — closed by removing the snippet in favour of the helper. (not in the current review) |
-| IN-02 | info | fixed | 09-10-PLAN.md — closed by the `int(str(value))` normalization. (not in the current review) |
-| WR-07 | warning | open | - (not in the current review) |
-| WR-08 | warning | open | - (not in the current review) |
-| WR-09 | warning | fixed | 09-10-PLAN.md — closed by the rewritten `AGENTS.md` no-build-impact paragraph. (not in the current review) |
-| IN-03 | info | open | - (not in the current review) |
-| IN-04 | info | open | - (not in the current review) |
-| IN-05 | info | open | - (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
