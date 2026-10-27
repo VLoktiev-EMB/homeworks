@@ -14,6 +14,7 @@ jsonschema into the test import graph, and never PyYAML itself (Pitfall 9).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from scripts.metadata.paths import relative_path
@@ -53,6 +54,20 @@ REQUIRED_TABLES = (
     ("measurement ledger", "7. Results", "Measurement Ledger", LEDGER_HEADER),
     ("traceability matrix", "7. Results", "Traceability Matrix", TRACEABILITY_HEADER),
 )
+
+# D-15: the columns that may not be empty, by table label.
+REQUIRED_CELLS = {
+    "assumptions": ("Impact if wrong", "Validation"),
+    "electrical calculations": (
+        "Input provenance",
+        "Result",
+        "Uncertainty",
+        "Assumption effect",
+    ),
+}
+
+# D-15: a safety list item must open with a bold hazard name.
+SAFETY_BULLET = re.compile(r"^[-*+]\s")
 
 
 def _declared_path(metadata, homework_dir):
@@ -142,7 +157,7 @@ def _owned_range(lines, section, subsection):
 
 
 def _table_records(lines, sections, extracted, record):
-    """`RPT-201`: every required table carries its exact header literal.
+    """`RPT-201` ... `RPT-205`: header, row shape, required cells and safety.
 
     The table family runs after the heading-presence family but alongside the
     subsection family: the live 1.3 report is missing `### Next Steps` yet its
@@ -151,6 +166,7 @@ def _table_records(lines, sections, extracted, record):
     """
     records = []
     lookup = _section_lookup(sections)
+    owned = []
     for label, section_heading, subsection, expected in REQUIRED_TABLES:
         section = lookup.get(section_heading)
         if section is None:
@@ -184,8 +200,90 @@ def _table_records(lines, sections, extracted, record):
                 )
             )
             continue
+        if not table.rows and not waived:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-204",
+                    f'table "{label}" has no data rows and no not-applicable marker',
+                    table.header_line,
+                )
+            )
+        owned.append((label, table))
 
+    # RPT-202: every row of every table keeps its header's column count.
+    for table in extracted:
+        for row in table.rows:
+            if len(row.cells) == len(table.header):
+                continue
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-202",
+                    f"table row has {len(row.cells)} cells but its header has "
+                    f"{len(table.header)}",
+                    row.line,
+                )
+            )
+
+    # RPT-203: the D-15 required cells are non-empty.
+    for label, table in owned:
+        required = REQUIRED_CELLS.get(label)
+        if required is None:
+            continue
+        for row in table.rows:
+            for column in required:
+                index = table.header.index(column)
+                if index >= len(row.normalized) or row.normalized[index]:
+                    continue
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-203",
+                        f'table "{label}" row has an empty "{column}" cell',
+                        row.line,
+                    )
+                )
+
+    records.extend(_safety_records(lines, lookup, record))
     return records
+
+
+def _safety_records(lines, lookup, record):
+    """`RPT-205`: at least one hazard bullet, each opening `- **` (D-15)."""
+    section = lookup.get("5. Hardware and Wiring")
+    if section is None or _section_waived(lines, section):
+        return []
+    body = _subsection_range(section, "Safety Checklist")
+    if body is None:
+        return []  # RPT-104 reports the missing subsection
+    if _marker_in_range(lines, *body):
+        return []
+    start, end = body
+    bullets = [
+        (number, lines[number - 1].strip())
+        for number in range(start, end + 1)
+        if SAFETY_BULLET.match(lines[number - 1].strip())
+    ]
+    if not bullets:
+        return [
+            record(
+                "ERROR",
+                "RPT-205",
+                'the "Safety Checklist" must contain at least one hazard bullet',
+                start,
+            )
+        ]
+    return [
+        record(
+            "ERROR",
+            "RPT-205",
+            'safety bullet must begin "- **" and name a hazard',
+            number,
+        )
+        for number, stripped in bullets
+        if not stripped.startswith("- **")
+    ]
 
 
 def _subsection_records(lines, sections, record):

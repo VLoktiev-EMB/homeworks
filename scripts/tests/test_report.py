@@ -541,5 +541,136 @@ class PinMapTests(FixtureBase):
         self.assertIn('table "pin map" is absent', result.stdout)
 
 
+class CalculationsTests(FixtureBase):
+    """`RPT-202`/`RPT-203`/`RPT-204` on the calculations table and escaped pipes."""
+
+    def calculations_body(self, old, new):
+        return SECTION_BODIES["5. Hardware and Wiring"].replace(old, new)
+
+    def test_calculations_complete_row_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_calculations_empty_uncertainty_reports_rpt_203_naming_column(self):
+        body = self.calculations_body("| plus or minus 1.4 mA |", "|  |")
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-203]")
+        self.assertIn('empty "Uncertainty" cell', result.stdout)
+
+    def test_calculations_empty_assumption_effect_reports_rpt_203(self):
+        body = self.calculations_body("| A lower Vf raises the current. |", "|  |")
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-203]")
+        self.assertIn('empty "Assumption effect" cell', result.stdout)
+
+    def test_calculations_zero_data_rows_reports_rpt_204(self):
+        header_only = "\n".join(CALCULATIONS_TABLE.splitlines()[:2])
+        body = self.calculations_body(CALCULATIONS_TABLE, header_only)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-204]")
+        self.assertIn('table "electrical calculations" has no data rows', result.stdout)
+
+    def test_calculations_extra_cell_reports_rpt_202(self):
+        body = self.calculations_body(
+            "| A lower Vf raises the current. |",
+            "| A lower Vf raises the current. | extra |",
+        )
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-202]")
+        self.assertIn("cells but its header has 8", result.stdout)
+
+    def test_calculations_escaped_pipe_keeps_the_cell_count(self):
+        body = self.calculations_body("`I = 9.33 mA`", "`I = 9.33 \\| 9.4 mA`")
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        self.assert_accepted(self.run_fixture())
+
+
+class SafetyTests(FixtureBase):
+    """`RPT-205`: the safety checklist carries bold hazard bullets."""
+
+    def test_safety_bold_hazard_bullet_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_safety_plain_bullet_reports_rpt_205_with_its_line(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            SAFETY_LIST, "- Check continuity before applying power."
+        )
+        report = compliant_report(sections={"5. Hardware and Wiring": body})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-205]")
+        expected = report.splitlines().index("- Check continuity before applying power.") + 1
+        self.assertIn(f":{expected}: ERROR [RPT-205]", result.stdout)
+
+    def test_safety_empty_checklist_reports_rpt_205(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(SAFETY_LIST, "No hazards.")
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-205]")
+        self.assertIn("at least one hazard bullet", result.stdout)
+
+    def test_safety_section_level_marker_waives_the_checklist(self):
+        sections = {
+            "5. Hardware and Wiring": "_Not applicable — software-only assignment._",
+        }
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        self.assert_accepted(self.run_fixture())
+
+
+class BomTests(FixtureBase):
+    """`RPT-201`/`RPT-202`/`RPT-204` on the bill of materials, then `RPT-206`."""
+
+    def test_bom_compliant_table_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_bom_missing_column_reports_rpt_201(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            "| Ref | Part or value | Quantity | Package | Source or link | Notes |",
+            "| Ref | Part or value | Quantity | Package | Source or link |",
+        )
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-201]")
+        self.assertIn('table "bill of materials"', result.stdout)
+
+    def test_bom_extra_cell_reports_rpt_202(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            "| r1 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |",
+            "| r1 | 150 ohm resistor | 1 | axial | n/a | Series resistor. | extra |",
+        )
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-202]")
+        self.assertIn("cells but its header has 6", result.stdout)
+
+    def test_bom_zero_rows_reports_rpt_204(self):
+        header_only = "\n".join(BOM_TABLE.splitlines()[:2])
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(BOM_TABLE, header_only)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-204]")
+        self.assertIn('table "bill of materials" has no data rows', result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
