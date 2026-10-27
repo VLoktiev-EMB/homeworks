@@ -1,20 +1,39 @@
 ---
 name: schematic
-description: Automates clean Wokwi diagram layout, wire routing, and generates Mermaid circuit schematics.
+description: Use when designing, editing, or formatting Wokwi diagram.json schematics, generating Mermaid circuit flowcharts for READMEs or reports, or untangling overlapping wiring.
 metadata:
-  version: "1.0"
+  version: "1.1"
   status: active
 ---
 
 # Schematic
 
-Automate and format Wokwi `diagram.json` schematics and generate readable Mermaid circuit diagrams.
+Automate and format Wokwi `diagram.json` schematics and generate clean, readable Mermaid circuit diagrams.
 
-## Purpose
+## Overview
 
-1. Maintain human-readable, non-tangled wiring in `assets/diagram.json`.
-2. Generate embeddable Mermaid flowcharts for `README.md` and `report.md`.
-3. Validate circuits using `wokwi-cli lint --offline`.
+A schematic must be visually clear and verifiable. In this monorepo, circuits place the microcontroller centrally, inputs on the left, outputs on the right, and route connections along orthogonal Manhattan angles with right-angle bends to prevent overlapping and crossing lines.
+
+## When to Use
+
+- Designing or updating Wokwi `assets/diagram.json` for a homework.
+- Resolving cluttered, tangled, or diagonally crossing wires in the Wokwi editor.
+- Generating a GitHub-flavored Mermaid flowchart for `README.md` or `report.md`.
+- Linting circuit connections offline using `wokwi-cli`.
+
+### When NOT to Use
+
+- For simulating firmware execution (use `simulate`).
+- For PlatformIO building or flashing (use `hw-build` or `hw-flash`).
+
+## Quick Reference
+
+| Operation | Command |
+|---|---|
+| Format diagram & apply Manhattan routing | `uv run scripts/gen_schematic.py homeworks/<id> --format` |
+| Generate Mermaid diagram for Markdown | `uv run scripts/gen_schematic.py homeworks/<id> --mermaid` |
+| Check diagram formatting status | `uv run scripts/gen_schematic.py homeworks/<id> --check` |
+| Lint Wokwi circuit offline (no quota) | `wokwi-cli lint --offline homeworks/<id>/assets/diagram.json` |
 
 ## Layout Rules
 
@@ -29,28 +48,9 @@ When arranging components in Wokwi diagrams:
    - Ground (`GND`): `black`
    - Control / Signals: dedicated distinct colors (`green`, `blue`, `orange`, `purple`).
 
-## Tools & Commands
+## Common Mistakes & Red Flags
 
-### 1. Format Diagram Layout
-
-Reformat an existing `diagram.json` with clean coordinates and routing:
-
-```sh
-uv run scripts/gen_schematic.py homeworks/<id> --format
-```
-
-### 2. Generate Mermaid Flowchart
-
-Generate a GitHub-flavored Mermaid snippet to embed directly in Markdown:
-
-```sh
-uv run scripts/gen_schematic.py homeworks/<id> --mermaid
-```
-
-### 3. Lint the Diagram
-
-Verify syntax and pin validity offline:
-
-```sh
-wokwi-cli lint --offline homeworks/<id>/assets/diagram.json
-```
+- **Red Flag**: Empty bend arrays (`[]`) on connections that cross components, producing straight diagonal wires slicing through ICs. Always define Manhattan waypoints (e.g. `["h40", "v80"]`).
+- **Red Flag**: Stacking components vertically on top of each other with <50px spacing.
+- **Mistake**: Inverting LED anode (`A`) and cathode (`C`), causing reverse bias and unlit LEDs.
+- **Mistake**: Committing large binary screenshots of the simulator instead of embedding a Mermaid flowchart in Markdown.

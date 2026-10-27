@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-27 — updated to v1.1, SDO and writing-skills compliance
+
+- Updated description to trigger-first SDO format ("Use when...").
+- Added Overview, When to Use / When NOT to Use, Quick Reference, and Common Mistakes & Red Flags.
+- Added comprehensive unit tests in `scripts/tests/test_gen_schematic.py`.
+
 ## 2026-10-27 — promoted to v1.0, phase 10.1
 
 - Promoted `schematic` from stub to active skill.

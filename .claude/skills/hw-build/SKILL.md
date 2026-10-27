@@ -1,9 +1,9 @@
 ---
 name: hw-build
-description: Builds a homework's PlatformIO target and runs its native suite, repairing a failure at most twice before escalating with the evidence. Use after a code block, before writing the report, or when a build is red.
+description: Use when compiling a homework PlatformIO target, verifying buildability after code changes, running native logic tests, or diagnosing compiler and linker errors.
 disable-model-invocation: true
 metadata:
-  version: "0.1"
+  version: "0.2"
   status: active
 ---
 

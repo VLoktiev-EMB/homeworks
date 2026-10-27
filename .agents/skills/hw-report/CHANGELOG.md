@@ -1,16 +1,16 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
-## 2026-10-27 — phase 10
+## 2026-10-27 — promoted to v1.0, writing-skills and phase 10.1 lean contract
 
-- Pointed the stub at the published contract: `docs/standards/report.md` replaces
-  the "when Phase 10 publishes it" language, and the manual fallback now runs
-  `uv run scripts/check_report.py` before comparing against the worked example.
-  The description stays a stub and the skill is not promoted.
+- Promoted `hw-report` from stub to active skill.
+- Updated to reference the lean 10-section report contract established in Phase 10.1.
+- Added Quick Reference table of all 10 required sections, core contract rules, evidence labels, and red flags.
+- Trigger-first SDO description.
 
-## 2026-10-26 — initial stub, phase 9
+## 2026-10-27 — initial stub, phase 10
 
-- Added the `hw-report` stub contract during the phase 9 planning run: the skill
-  is a placeholder for assembling the report from the measured evidence, and it
-  names the template skeleton, the Phase 10 standards, and homework 1.3 as the
-  manual fallback.
+- Added the `hw-report` stub contract during the phase 10 report and evidence run:
+  the skill is a placeholder for assembling a report, and it names the report
+  standard, the machine gate, the template skeleton, and the worked example as
+  the manual fallback.

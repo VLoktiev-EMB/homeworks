@@ -14,8 +14,8 @@
       "owner": "skills",
       "source": ".claude/skills/course-index/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "d52fcce4a315c786fcf86cca3b40175b77caeee877d1b84f6c1e72879d9f46fa",
-      "bytes": 369
+      "sha256": "72d5a2d96849fbab096672fc1c3690e75bcd2869acbfaeb5e6ac07254ffa1807",
+      "bytes": 585
     },
     {
       "path": ".agents/skills/course-index/LESSONS.md",
@@ -30,8 +30,8 @@
       "owner": "skills",
       "source": ".claude/skills/course-index/SKILL.md",
       "mode": "whole",
-      "sha256": "2fe4002db20fbbdec2d8e3be88feecf07232f308060578034e204bae88934030",
-      "bytes": 922
+      "sha256": "51c3f427c4e8d360152a42f77b50d2ba0d0f1e78434663f7a1f4914493986603",
+      "bytes": 2599
     },
     {
       "path": ".agents/skills/hw-build/CHANGELOG.md",
@@ -54,8 +54,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-build/SKILL.md",
       "mode": "whole",
-      "sha256": "779eb87edbc499804979bebd358724aaf7441a4f12262ed77b3153a7fea0ee0f",
-      "bytes": 3680
+      "sha256": "f67329fbe4c86670e1a8415fc6d86916c8773eb7a99851c3e0ebab6c834b1cca",
+      "bytes": 3631
     },
     {
       "path": ".agents/skills/hw-build/references/repair-loop.md",
@@ -86,16 +86,16 @@
       "owner": "skills",
       "source": ".claude/skills/hw-flash/SKILL.md",
       "mode": "whole",
-      "sha256": "c35e37e9c9df2af021be1f84cdb8c0229f1968847bc95d5c8001e567278af082",
-      "bytes": 12495
+      "sha256": "845cc645a2be5a872ab034aaf8d450e9de3b0a3f536d7c9e90461358d7f4a3d6",
+      "bytes": 12441
     },
     {
       "path": ".agents/skills/hw-report/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/hw-report/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "3085c75fbfdbfa00de6fe4440e114b5d0e30dd7609ab995294c6ec1e59a79826",
-      "bytes": 714
+      "sha256": "700e0b91830a499f7f6bf9bc0df15c0902e8371ac17186d78336f0138065e111",
+      "bytes": 751
     },
     {
       "path": ".agents/skills/hw-report/LESSONS.md",
@@ -110,8 +110,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-report/SKILL.md",
       "mode": "whole",
-      "sha256": "0f4e45e7967af64491b069d48cd82ba3db6df731244ec333bdd5fed549ad1fab",
-      "bytes": 1386
+      "sha256": "f6c936632a09dacac219637130adea998a99a9c08deaea00fb4129268d7794d6",
+      "bytes": 4409
     },
     {
       "path": ".agents/skills/new-homework/CHANGELOG.md",
@@ -134,8 +134,8 @@
       "owner": "skills",
       "source": ".claude/skills/new-homework/SKILL.md",
       "mode": "whole",
-      "sha256": "a1c9ac76e9bf26cfcd48c16b6c04dbed983eb5fbbdc00139c635680cb16f5377",
-      "bytes": 8175
+      "sha256": "e9caaef186fb6160868ff826b218a45178dadaf24696e93f5029f01ef76b64a6",
+      "bytes": 8064
     },
     {
       "path": ".agents/skills/new-homework/references/question-bank.md",
@@ -158,8 +158,8 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "8d65711255fbfcc36273af90d606f8ace5362cbc0c579df4055cc08f52ca99fa",
-      "bytes": 671
+      "sha256": "20fd1c4732ff9646384de6d07a7ae9ed831351fea2f0308f52dae5a473f87a2a",
+      "bytes": 983
     },
     {
       "path": ".agents/skills/schematic/LESSONS.md",
@@ -174,16 +174,16 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/SKILL.md",
       "mode": "whole",
-      "sha256": "f758a4553d5dd04ac2dd0e04084520c7ca310cc5ed25e868725ff1ee544bb7ee",
-      "bytes": 1889
+      "sha256": "5831b2e0625cc015debd6c5800699b5db23a576f36d183ac4db5cdc6467e7404",
+      "bytes": 2991
     },
     {
       "path": ".agents/skills/simulate/CHANGELOG.md",
       "owner": "skills",
       "source": ".claude/skills/simulate/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "4a377404d264cf930acc24e3b365674006125eabd149497af57aa55a67dd7506",
-      "bytes": 319
+      "sha256": "7d3a9c58cd9ebb75e27256802203639be97d9b56a6f3fc923016a0c32689b90f",
+      "bytes": 635
     },
     {
       "path": ".agents/skills/simulate/LESSONS.md",
@@ -198,8 +198,8 @@
       "owner": "skills",
       "source": ".claude/skills/simulate/SKILL.md",
       "mode": "whole",
-      "sha256": "7e1e94e48bf6f328d0e4dc277f76e20a10df48a93c406282679d7f741b27f859",
-      "bytes": 1506
+      "sha256": "c3cd0255e0ec457c9858779e5797b5c9d3ac27f4e8a4d64314fd66ffdbe516a8",
+      "bytes": 2776
     }
   ]
 }

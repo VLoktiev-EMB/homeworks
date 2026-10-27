@@ -1,8 +1,8 @@
 ---
 name: hw-flash
-description: Uploads a built homework to its board after an explicit confirmation and captures a bounded serial log to an ignored path. Use after a green build, when the board is connected and the user wants the firmware on it.
+description: Use when firmware is successfully built, a physical target board is connected via USB, and you need to flash the microcontroller or capture serial monitor logs.
 metadata:
-  version: "0.1"
+  version: "0.2"
   status: active
 ---
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->

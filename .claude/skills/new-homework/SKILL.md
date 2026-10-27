@@ -1,9 +1,9 @@
 ---
 name: new-homework
-description: Scaffolds a new PlatformIO homework through the repository's only supported path, then guides the user block by block from intake to report. Use when starting a new assignment, creating a homeworks directory, or asking for the guided homework workflow.
+description: Use when starting a new homework assignment, scaffolding a fresh homework directory, or requesting the step-by-step guided homework workflow.
 disable-model-invocation: true
 metadata:
-  version: "0.2"
+  version: "0.3"
   status: active
 ---
 

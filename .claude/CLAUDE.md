@@ -15,13 +15,13 @@ are preserved verbatim; do not edit inside them.
 
 | Skill | Description | Path |
 |-------|-------------|------|
-| course-index | Placeholder stub for answering which homeworks exist and how to find one from the generated course index. Use only to look up the manual index-reading fallback until this skill is promoted. | `.claude/skills/course-index/SKILL.md` |
-| hw-build | Builds a homework's PlatformIO target and runs its native suite, repairing a failure at most twice before escalating with the evidence. Use after a code block, before writing the report, or when a build is red. | `.claude/skills/hw-build/SKILL.md` |
-| hw-flash | Uploads a built homework to its board after an explicit confirmation and captures a bounded serial log to an ignored path. Use after a green build, when the board is connected and the user wants the firmware on it. | `.claude/skills/hw-flash/SKILL.md` |
-| hw-report | Placeholder for assembling a homework report from the measured evidence. Use only to look up the manual report fallback until this skill is promoted. | `.claude/skills/hw-report/SKILL.md` |
-| new-homework | Scaffolds a new PlatformIO homework through the repository's only supported path, then guides the user block by block from intake to report. Use when starting a new assignment, creating a homeworks directory, or asking for the guided homework workflow. | `.claude/skills/new-homework/SKILL.md` |
-| schematic | Placeholder for editing the Wokwi project diagram until this skill is promoted. Use only to look up the manual diagram-editor and lint fallback. | `.claude/skills/schematic/SKILL.md` |
-| simulate | Placeholder for running the Wokwi scenario and recording its evidence. Use only to look up the manual simulation command until this skill is promoted. | `.claude/skills/simulate/SKILL.md` |
+| course-index | Use when searching for available homeworks, finding an assignment by ID, board, or framework, checking homework implementation status, or inspecting course metadata. | `.claude/skills/course-index/SKILL.md` |
+| hw-build | Use when compiling a homework PlatformIO target, verifying buildability after code changes, running native logic tests, or diagnosing compiler and linker errors. | `.claude/skills/hw-build/SKILL.md` |
+| hw-flash | Use when firmware is successfully built, a physical target board is connected via USB, and you need to flash the microcontroller or capture serial monitor logs. | `.claude/skills/hw-flash/SKILL.md` |
+| hw-report | Use when authoring, structuring, or updating a homework report (report.md), filling in the 10 standard sections, or preparing for report contract validation. | `.claude/skills/hw-report/SKILL.md` |
+| new-homework | Use when starting a new homework assignment, scaffolding a fresh homework directory, or requesting the step-by-step guided homework workflow. | `.claude/skills/new-homework/SKILL.md` |
+| schematic | Use when designing, editing, or formatting Wokwi diagram.json schematics, generating Mermaid circuit flowcharts for READMEs or reports, or untangling overlapping wiring. | `.claude/skills/schematic/SKILL.md` |
+| simulate | Use when running Wokwi simulation scenarios headlessly, verifying circuit behavior without physical hardware, linting diagrams offline, or capturing simulated test evidence. | `.claude/skills/simulate/SKILL.md` |
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->
