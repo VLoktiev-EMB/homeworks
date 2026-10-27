@@ -1,19 +1,59 @@
 ---
-phase: 10-report-and-evidence-system
+phase: 10
 review: 10-REVIEW.md
 titles: json
 findings:
-  - id: CR-01
+  - id: CR-04
     severity: critical
     disposition: open
+    title: "An embedded NUL or lone surrogate in `report.path` still crashes the checker with a `ValueError` traceback"
+  - id: CR-05
+    severity: critical
+    disposition: open
+    title: "The depth guard was not applied to `StrictBaseLoader`, so a hostile `task.md` still crashes `check_metadata.py`"
+  - id: CR-06
+    severity: critical
+    disposition: open
+    title: "A symlinked `homework.yaml` is followed, letting untrusted content read an arbitrary host file and echo its values"
+  - id: WR-11
+    severity: warning
+    disposition: open
+    title: "A content-controlled overlong path becomes exit 2 and echoes the absolute candidate path"
+  - id: WR-12
+    severity: warning
+    disposition: open
+    title: "`assets/diagram.json` is read through a symlinked parent directory"
+  - id: WR-13
+    severity: warning
+    disposition: open
+    title: "Containment is check-then-use; the final open is not anchored to the inspected inode"
+  - id: WR-14
+    severity: warning
+    disposition: open
+    title: "`test_hostile_inputs_are_deterministic` is vacuous for the defect it claims to cover, and the two reproduced crashes have no test"
+  - id: IN-10
+    severity: info
+    disposition: open
+    title: "`report.path: .` is refused for the wrong stated reason"
+  - id: IN-11
+    severity: info
+    disposition: open
+    title: "`StrictSafeLoader` rejects standard YAML merge keys"
+  - id: IN-12
+    severity: info
+    disposition: open
+    title: "Duplicated hostile fixtures and JSON-contract tests"
+  - id: CR-01
+    severity: critical
+    disposition: fixed
     title: "A deeply nested `homework.yaml` crashes the checker with a `RecursionError` traceback"
   - id: CR-02
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "`parse_diagram` raises `RecursionError` on deeply nested JSON, despite \"never raises\""
   - id: CR-03
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "`report.path` is trusted and read without containment, so the checker reads outside the repository"
   - id: WR-01
     severity: warning
@@ -69,7 +109,7 @@ findings:
     title: "The checker passes vacuously when `homeworks/` is absent"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Symlink handling is inconsistent for `homework.yaml` and for `homeworks/<id>`"
   - id: IN-05
     severity: info
@@ -91,38 +131,48 @@ findings:
     severity: info
     disposition: open
     title: "RPT-407/RPT-408 token matching is case-sensitive and negation-blind"
-open: 22
-total: 22
-recorded: 2026-10-27T15:40:00Z
+open: 27
+total: 34
+recorded: 2026-10-27T16:20:00.000Z
 ---
 
 # Phase 10: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | Block-until-fixed (2026-10-27): RecursionError escapes the YAML-only except; reproduced — rc=1, empty `--json` stdout, traceback. See `10-UAT.md` G-10-1. |
-| CR-02 | critical | open | Block-until-fixed (2026-10-27): RecursionError escapes the JSON-only except; reproduced — rc=1, empty `--json` stdout, traceback. See `10-UAT.md` G-10-1. |
-| CR-03 | critical | open | Block-until-fixed (2026-10-27): `report.path` uncontained; reproduced reading `/etc/passwd` and `../../../secret.md` outside the root. See `10-UAT.md` G-10-1. |
-| WR-01 | warning | open | 10-REVIEW.md |
-| WR-02 | warning | open | 10-REVIEW.md |
-| WR-03 | warning | open | 10-REVIEW.md |
-| WR-04 | warning | open | 10-REVIEW.md |
-| WR-05 | warning | open | 10-REVIEW.md |
-| WR-06 | warning | open | 10-REVIEW.md |
-| WR-07 | warning | open | 10-REVIEW.md |
-| WR-08 | warning | open | 10-REVIEW.md |
-| WR-09 | warning | open | 10-REVIEW.md |
-| WR-10 | warning | open | 10-REVIEW.md |
-| IN-01 | info | open | 10-REVIEW.md |
-| IN-02 | info | open | 10-REVIEW.md |
-| IN-03 | info | open | 10-REVIEW.md |
-| IN-04 | info | open | 10-REVIEW.md |
-| IN-05 | info | open | 10-REVIEW.md |
-| IN-06 | info | open | 10-REVIEW.md |
-| IN-07 | info | open | 10-REVIEW.md |
-| IN-08 | info | open | 10-REVIEW.md |
-| IN-09 | info | open | 10-REVIEW.md |
+| CR-04 | critical | open | 10-REVIEW.md |
+| CR-05 | critical | open | 10-REVIEW.md |
+| CR-06 | critical | open | 10-REVIEW.md |
+| WR-11 | warning | open | 10-REVIEW.md |
+| WR-12 | warning | open | 10-REVIEW.md |
+| WR-13 | warning | open | 10-REVIEW.md |
+| WR-14 | warning | open | 10-REVIEW.md |
+| IN-10 | info | open | 10-REVIEW.md |
+| IN-11 | info | open | 10-REVIEW.md |
+| IN-12 | info | open | 10-REVIEW.md |
+| CR-01 | critical | fixed | Closed by 10-09 (`3ca1f6c`); re-review confirmed the `compose_node` depth guard fires for flow and block style and is not alias- or merge-key-bypassable. (not in the current review) |
+| CR-02 | critical | fixed | Closed by 10-09 (`eb69d0d`); re-review confirmed `parse_diagram` catches `RecursionError` and emits RPT-207 with parseable JSON. (not in the current review) |
+| CR-03 | critical | fixed | Closed by 10-10 (`8b945e3`) for absolute, `..`, intermediate-symlink, final-symlink and absent cases; the residual escape paths are split out as CR-04, CR-06, WR-12 and WR-13. (not in the current review) |
+| WR-01 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-02 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-03 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-04 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-05 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-06 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-07 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-08 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-09 | warning | open | 10-REVIEW.md (not in the current review) |
+| WR-10 | warning | open | 10-REVIEW.md (not in the current review) |
+| IN-01 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-02 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-03 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-04 | info | deferred | Superseded: escalated to CR-06 (symlinked `homework.yaml` is followed and its values echoed). (not in the current review) |
+| IN-05 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-06 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-07 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-08 | info | open | 10-REVIEW.md (not in the current review) |
+| IN-09 | info | open | 10-REVIEW.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
-Set `deferred` by hand and put the reason in the Source cell; both are preserved.
-A `|` in the reason is kept as prose and escaped on the next run.
+Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
+Re-running the gate keeps every row it can. A row the current review no longer reports is kept and its Source cell flagged, so a finding does not leave this record silently.
