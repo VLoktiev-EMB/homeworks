@@ -2,9 +2,9 @@
 phase: "10"
 slug: "report-and-evidence-system"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-27"
 ---
 
@@ -44,18 +44,22 @@ row to a concrete `{phase}-{plan}-{task}` id once plans exist.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 10-01-01 | TBD | 1 | REPORT-01 | — | Heading parse skips fenced code | unit | `python3 -m unittest scripts.tests.test_report -k headings` | ❌ W0 | ⬜ pending |
-| 10-01-02 | TBD | 1 | REPORT-02 | T-10-01 | BOM `Ref` resolved lexically inside the homework dir | unit | `python3 -m unittest scripts.tests.test_report -k bom` | ❌ W0 | ⬜ pending |
-| 10-01-03 | TBD | 1 | REPORT-03 | — | N/A marker requires a reason | unit | `python3 -m unittest scripts.tests.test_report -k pin_map` | ❌ W0 | ⬜ pending |
-| 10-01-04 | TBD | 1 | REPORT-04 | — | Eight exact headers; four mandatory cells non-empty | unit | `python3 -m unittest scripts.tests.test_report -k calculations` | ❌ W0 | ⬜ pending |
-| 10-01-05 | TBD | 1 | REPORT-05 | — | Safety bullets begin `- **` with a named hazard | unit | `python3 -m unittest scripts.tests.test_report -k safety` | ❌ W0 | ⬜ pending |
-| 10-01-06 | TBD | 1 | REPORT-06 | T-10-02 | Ledger label enum; value prefixes; commit identity; duplicate-key YAML rejected | unit | `python3 -m unittest scripts.tests.test_report -k ledger` | ❌ W0 | ⬜ pending |
-| 10-01-07 | TBD | 1 | REPORT-07 | T-10-01 | Traceability artifacts resolve and never escape repo root | unit | `python3 -m unittest scripts.tests.test_report -k traceability` | ❌ W0 | ⬜ pending |
-| 10-01-08 | TBD | 1 | REPORT-08 | — | Status paragraphs present; `placeholder` exempt, `draft` rejects sentinels | unit | `python3 -m unittest scripts.tests.test_report -k status_claims` | ❌ W0 | ⬜ pending |
-| 10-02-01 | TBD | 2 | TOOL-08 | — | Rule registry non-vacuous; every id in the standard | unit | `python3 -m unittest scripts.tests.test_report -k rule_registry` | ❌ W0 | ⬜ pending |
-| 10-02-02 | TBD | 2 | Scaffold | — | Rendered `report.md` has no `{{`; file set matches | integration | `python3 -m unittest scripts.tests.test_new_homework -k report` | ✅ update | ⬜ pending |
-| 10-03-01 | TBD | 3 | Hook wiring | — | `check-report` check-only, `pass_filenames: false`, `files` coverage | unit | `python3 -m unittest scripts.tests.test_tooling_config -k report` | ✅ update | ⬜ pending |
-| 10-03-02 | TBD | 3 | Real tree | — | Checker exits 0 on the retrofitted repository | integration | `uv run scripts/check_report.py` | ❌ W0 | ⬜ pending |
+| 10-01-01 | 10-01 | 1 | REPORT-01 | — | Heading parse skips fenced code | unit | `python3 -m unittest scripts.tests.test_report -k headings` | ✅ | ✅ green |
+| 10-02-01 | 10-02 | 2 | REPORT-02 | T-10-01 | BOM `Ref` resolved lexically inside the homework dir | unit | `python3 -m unittest scripts.tests.test_report -k bom` | ✅ | ✅ green |
+| 10-02-02 | 10-02 | 2 | REPORT-03 | — | N/A marker requires a reason | unit | `python3 -m unittest scripts.tests.test_report -k pin_map` | ✅ | ✅ green |
+| 10-02-03 | 10-02 | 2 | REPORT-04 | — | Eight exact headers; four mandatory cells non-empty | unit | `python3 -m unittest scripts.tests.test_report -k calculations` | ✅ | ✅ green |
+| 10-02-04 | 10-02 | 2 | REPORT-05 | — | Safety bullets begin `- **` with a named hazard | unit | `python3 -m unittest scripts.tests.test_report -k safety` | ✅ | ✅ green |
+| 10-03-01 | 10-03 | 3 | REPORT-06 | T-10-02 | Ledger label enum; value prefixes; commit identity; duplicate-key YAML rejected | unit | `python3 -m unittest scripts.tests.test_report -k ledger` | ✅ | ✅ green |
+| 10-03-02 | 10-03 | 3 | REPORT-07 | T-10-01 | Traceability artifacts resolve and never escape repo root | unit | `python3 -m unittest scripts.tests.test_report -k traceability` | ✅ | ✅ green |
+| 10-04-01 | 10-04 | 4 | REPORT-08 | — | Status paragraphs present; `placeholder` exempt, `draft` rejects sentinels | unit | `python3 -m unittest scripts.tests.test_report -k status_claims` | ✅ | ✅ green |
+| 10-04-02 | 10-04 | 4 | Cross-file | — | In-text ids resolve; IEEE citations are bidirectional | unit | `python3 -m unittest scripts.tests.test_report -k cross_reference` | ✅ | ✅ green |
+| 10-04-03 | 10-04 | 4 | Identity | — | Identity and toolchain normalize against `homework.yaml` | unit | `python3 -m unittest scripts.tests.test_report -k identity` | ✅ | ✅ green |
+| 10-04-04 | 10-04 | 4 | Language | — | Cyrillic scan and sentinel scan | unit | `python3 -m unittest scripts.tests.test_report -k language` | ✅ | ✅ green |
+| 10-04-05 | 10-04 | 4 | Links | — | Relative links resolve through `resolve_artifact` | unit | `python3 -m unittest scripts.tests.test_report -k link` | ✅ | ✅ green |
+| 10-05-01 | 10-05 | 2 | Scaffold | — | Rendered `report.md` has no `{{`; file set matches | integration | `python3 -m unittest scripts.tests.test_new_homework -k report` | ✅ | ✅ green |
+| 10-06-01 | 10-06 | 5 | Real tree | — | Checker exits 0 on the retrofitted repository | integration | `uv run scripts/check_report.py` | ✅ | ✅ green |
+| 10-07-01 | 10-07 | 6 | TOOL-08 | — | Rule registry non-vacuous; every id in the standard | unit | `python3 -m unittest scripts.tests.test_report -k rule_registry` | ✅ | ✅ green |
+| 10-08-01 | 10-08 | 7 | Hook wiring | — | `check-report` check-only, `pass_filenames: false`, `files` coverage | unit | `python3 -m unittest scripts.tests.test_tooling_config -k report` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -63,11 +67,11 @@ row to a concrete `{phase}-{plan}-{task}` id once plans exist.
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/report/__init__.py` — package marker (one-line docstring, mirroring `scripts/metadata/__init__.py`)
-- [ ] `scripts/report/vocabulary.py`, `markdown.py`, `tables.py`, `contract.py` — stdlib-only
-- [ ] `scripts/check_report.py` — the only PyYAML-aware module (PEP 723 header)
-- [ ] `scripts/tests/test_report.py` — compliant fixture plus one negative fixture per rule, fence case, escaped-pipe case, wrapped-citation case, real-tree case
-- [ ] No framework install needed: `unittest` is in the standard library
+- [x] `scripts/report/__init__.py` — package marker (one-line docstring, mirroring `scripts/metadata/__init__.py`)
+- [x] `scripts/report/vocabulary.py`, `markdown.py`, `tables.py`, `contract.py` — stdlib-only
+- [x] `scripts/check_report.py` — the only PyYAML-aware module (PEP 723 header)
+- [x] `scripts/tests/test_report.py` — compliant fixture plus one negative fixture per rule, fence case, escaped-pipe case, wrapped-citation case, real-tree case
+- [x] No framework install needed: `unittest` is in the standard library
 
 **Minimum fixture set:** compliant report; one missing data row in each of the three tables
 named in success criterion 2; unknown ledger label; bare `observed`; `not measured` without
@@ -95,11 +99,19 @@ matrix; identity mismatch per compared field; ledger commit mismatch; Cyrillic c
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 40s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 40s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** validated (2026-10-27) — 16 covered task rows, 0 gaps, 3 human-review behaviors recorded as Manual-Only
+
+## Validation Audit 2026-10-27
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
