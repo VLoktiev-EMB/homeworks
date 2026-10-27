@@ -11,17 +11,20 @@ metadata:
 # Report (stub)
 
 > **Stub (v0.1).** This skill does not write `report.md`, transcribe assumptions,
-> or validate the measurement ledger. Until it is promoted, start from
-> `templates/report/report.md`, follow `docs/standards/` when Phase 10 publishes
-> it, and use `homeworks/1_3-police-flasher/report.md` as the worked example.
-> Phase 10 owns the report format and its validation; the current template
-> skeleton is a starting point, not a validated report contract, so the fallback
-> must not be presented as merge-ready.
+> or validate the measurement ledger. The contract is published: follow
+> `docs/standards/report.md`, and `uv run scripts/check_report.py` is its machine
+> gate. Start from `templates/report/report.md` and use
+> `homeworks/1_3-police-flasher/report.md` as the worked example. The checker
+> proves structure and referential integrity, not that a value was measured —
+> semantic truth stays a review duty. Promotion is a Phase 11 candidate, after
+> the pilot is the first real use with the standard in place.
 
 ## Manual fallback
 
 1. Start from the skeleton at `templates/report/report.md`.
-2. Follow the report standard under `docs/standards/` once Phase 10 publishes
-   it.
-3. Compare the result with the worked example at
+2. Follow `docs/standards/report.md`; its self-audit checklist is the
+   pre-pull-request gate alongside the machine rules.
+3. Run `uv run scripts/check_report.py` from the repository root until it
+   passes.
+4. Compare the result with the worked example at
    `homeworks/1_3-police-flasher/report.md`.

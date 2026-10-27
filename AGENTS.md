@@ -23,6 +23,7 @@ Run from the repository root, in this order, before opening a pull request.
 | 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, the dependency rule, and the metadata contract — and the exact command the CI `meta` job runs. |
 | 4 | `uv run scripts/check_metadata.py` | Validate homework metadata and task provenance against `schema/homework.schema.json`. |
 | 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs as `python -m unittest discover scripts/tests`. |
+| 6 | `uv run scripts/check_report.py` | Validate the report and evidence contract. |
 
 ## Repository layout
 
@@ -78,8 +79,6 @@ own widen-all rule produces the full matrix.
 The GitHub Pages source is set to `None` by the maintainer; the repository publishes no
 site, and the authored documents render in the repository view.
 
-Planned: report structure under `docs/standards/` (Phase 10).
-
 The live skills layout is `.claude/skills/<name>/SKILL.md` — the canonical authored tree —
 with `.agents/skills/` as its generated, committed mirror. `scripts/gen_skills.py` is the
 only writer of the mirror; `uv run scripts/gen_skills.py --check` and the
@@ -94,7 +93,9 @@ A homework is done when:
 1. `pio run` is green for its target environment.
 2. `pio test -e native` is green when the homework contains pure logic.
 3. `task.md`, `homework.yaml`, `README.md`, and `report.md` exist, and metadata validation passes.
-4. The report contains the sections that apply; the bill of materials, calculations, measurement ledger, and traceability matrix are guidance, not a merge gate.
+4. The report satisfies the checked contract in `docs/standards/report.md`, validated by
+   `uv run scripts/check_report.py`; prose quality and whether a value was measured stay
+   review duties.
 5. The pull request is merged and tagged `hw/<id>`.
 
 ## Rules
@@ -162,6 +163,18 @@ Good:  feat(1_3): add police flasher state machine
   `planned`; later statuses need the real value, and body `TODO`s are manual-review signals.
 - **[MUST]** **[ENFORCED: pre-commit]** The Unicode-name Cyrillic scan rejects Cyrillic
   text in an authored `task.md`; there is no per-path allowlist, so an exception edits text.
+
+### Reports and evidence
+
+- **[MUST]** **[ENFORCED: pre-commit]** A report satisfies the checked contract in
+  `docs/standards/report.md`; `uv run scripts/check_report.py` is the machine gate, and it
+  proves structure and referential integrity, never that a value was measured.
+- **[MUST]** **[ENFORCED: pre-commit]** Every ledger claim carries one label from the closed
+  vocabulary — `measured`, `calculated`, `simulated`, `datasheet`, `not measured`, or
+  `measured (observed)` — and a calculation is never relabelled as measured.
+- **[MUST]** **[ENFORCED: pre-commit]** The homework status and `report.status` form an
+  allowed pair; the ten-section skeleton is always present; and `report.status: placeholder`
+  is the only exemption from the content rules.
 
 ### Pull requests and tags
 
@@ -292,7 +305,7 @@ Good:  feat(1_3): add police flasher state machine
 | Investigate a red required check | `.github/workflows/ci.yml` — the `gate` job |
 | Choose a branch name | this file, "Git, branches, and history" |
 | Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
-| Report structure and formatting rationale | `docs/standards/` (planned, Phase 10) |
+| Report structure, evidence, and the self-audit checklist | `docs/standards/report.md` |
 | Reuse a versioned workflow skill | canonical `.claude/skills/`, generated mirror `.agents/skills/`; repair with `uv run scripts/gen_skills.py` |
 
 ## Precedence
