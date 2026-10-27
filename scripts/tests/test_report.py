@@ -75,6 +75,10 @@ CALCULATIONS_TABLE = (
 
 SAFETY_LIST = "- **3V3-to-ground short.** Check continuity before applying power."
 
+# D-37: the two section-7 claim paragraphs the metadata promises.
+NATIVE_PARAGRAPH = "**Native suite.** 38 of 38 cases pass in 1.429 s."
+SIMULATION_PARAGRAPH = "**Simulation.** The scenario was executed: all three runs exited 0."
+
 LEDGER_TABLE = (
     "| ID | Quantity | Value | Label | Instrument | Method | Uncertainty | "
     "Implementation commit |\n"
@@ -112,6 +116,11 @@ SECTION_BODIES = {
     "6. Methodology": "The method.",
     "7. Results": (
         "The results.\n\n"
+        "**Target build.** The target build passes.\n\n"
+        + NATIVE_PARAGRAPH
+        + "\n\n"
+        + SIMULATION_PARAGRAPH
+        + "\n\n"
         "### Measurement Ledger\n\n" + LEDGER_TABLE + "\n\n"
         "### Traceability Matrix\n\n" + TRACEABILITY_TABLE
     ),
@@ -139,6 +148,8 @@ def homework_yaml(
     status="in-progress",
     report_status="draft",
     with_report=True,
+    native=True,
+    simulation_status=None,
 ):
     """Assemble one `homework.yaml` payload, never with a `yaml` import."""
     lines = [
@@ -155,6 +166,23 @@ def homework_yaml(
         '  platformio: "6.2.0"',
         '  platform: "espressif32@8.0.0"',
     ]
+    if simulation_status is not None:
+        lines.extend(
+            [
+                "simulation:",
+                "  tool: wokwi",
+                "  diagram: assets/diagram.json",
+                f"  status: {simulation_status}",
+            ]
+        )
+    lines.extend(
+        [
+            "tests:",
+            "  framework: unity",
+            f"  native: {'true' if native else 'false'}",
+            "  coverage: false",
+        ]
+    )
     if with_report:
         lines.extend(["report:", "  path: report.md", f"  status: {report_status}"])
     return "\n".join(lines) + "\n"
@@ -393,7 +421,7 @@ class HeadingsTests(FixtureBase):
     def test_headings_section_seven_extra_subsection_passes(self):
         sections = {
             "7. Results": (
-                "The results.\n\n"
+                "The results.\n\n" + NATIVE_PARAGRAPH + "\n\n"
                 "### Measurement Ledger\n\n" + LEDGER_TABLE + "\n\n"
                 "### Interpreting the Forward-Voltage Row\n\nThe interpretation.\n\n"
                 "### Traceability Matrix\n\n" + TRACEABILITY_TABLE
@@ -773,6 +801,81 @@ class LinkTests(FixtureBase):
         self.write_homework()
         self.write_report(compliant_report(sections={"2. Objective": fence}))
         self.assert_accepted(self.run_fixture())
+
+
+class StatusClaimsTests(FixtureBase):
+    """`RPT-407`/`RPT-408`: section-7 claims agree with homework.yaml (D-37)."""
+
+    def results(self, old, new):
+        body = SECTION_BODIES["7. Results"].replace(old, new)
+        return compliant_report(sections={"7. Results": body})
+
+    def test_status_claims_live_report_passes(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-407", "RPT-408"})
+
+    def test_status_claims_compliant_fixture_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_status_claims_native_false_waives_rpt_407(self):
+        self.write_homework(homework_yaml(native=False))
+        self.write_report(self.results(NATIVE_PARAGRAPH + "\n\n", ""))
+        self.assert_accepted(self.run_fixture())
+
+    def test_status_claims_native_true_missing_paragraph_reports_rpt_407(self):
+        self.write_homework(homework_yaml(native=True))
+        self.write_report(self.results(NATIVE_PARAGRAPH + "\n\n", ""))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-407]")
+        self.assertIn("tests.native is true", result.stdout)
+
+    def test_status_claims_missing_simulation_paragraph_reports_rpt_408(self):
+        self.write_homework(homework_yaml(simulation_status="verified"))
+        self.write_report(self.results(SIMULATION_PARAGRAPH + "\n\n", ""))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-408]")
+        self.assertIn('beginning "**Simulation.**"', result.stdout)
+
+    def test_status_claims_verified_without_run_claim_reports_rpt_408(self):
+        self.write_homework(homework_yaml(simulation_status="verified"))
+        self.write_report(
+            self.results(
+                SIMULATION_PARAGRAPH,
+                "**Simulation.** The scenario is described in the methodology.",
+            )
+        )
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-408]")
+        self.assertIn("simulation.status is verified", result.stdout)
+
+    def test_status_claims_pending_with_run_claim_reports_rpt_408(self):
+        self.write_homework(homework_yaml(simulation_status="pending"))
+        self.write_report()
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-408]")
+        self.assertIn("simulation.status is pending", result.stdout)
+
+    def test_status_claims_pending_paragraph_naming_phase_passes(self):
+        self.write_homework(homework_yaml(simulation_status="pending"))
+        self.write_report(
+            self.results(
+                SIMULATION_PARAGRAPH,
+                "**Simulation.** Simulation execution is pending; Phase 11 owns the runs.",
+            )
+        )
+        self.assert_accepted(self.run_fixture())
+
+    def test_status_claims_no_simulation_and_native_false_is_silent(self):
+        self.write_homework(homework_yaml(native=False, simulation_status=None))
+        self.write_report(self.results(NATIVE_PARAGRAPH + "\n\n", ""))
+        result = self.run_fixture()
+        self.assert_accepted(result)
+        self.assertNotIn("[RPT-407]", result.stdout)
+        self.assertNotIn("[RPT-408]", result.stdout)
 
 
 class PinMapTests(FixtureBase):

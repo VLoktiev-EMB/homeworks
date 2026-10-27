@@ -299,4 +299,14 @@ RULES = {
         "replace the sentinel with the real content, or keep the report at "
         "`report.status: placeholder` until authoring starts",
     ),
+    "RPT-407": (
+        "tests.native is true but section 7 has no native-suite result paragraph",
+        'add a section-7 paragraph beginning "**Native suite.**" or '
+        '"**Native tests.**" with the suite result',
+    ),
+    "RPT-408": (
+        "the section-7 simulation paragraph is absent or disagrees with simulation.status",
+        'add a "**Simulation.**" paragraph that states an executed run when the '
+        "status is verified, and makes no run claim when it is pending",
+    ),
 }

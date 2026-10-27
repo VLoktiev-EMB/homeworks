@@ -1132,6 +1132,75 @@ def _sentinel_records(lines, record):
     return records
 
 
+def _status_claim_records(lines, sections, metadata, record):
+    """`RPT-407`/`RPT-408`: section-7 claims match homework.yaml (D-37).
+
+    Only presence and the two run-claim tokens are machine-checked; whether the
+    prose describes the run honestly stays a review duty (D-14, T-10-14).
+    """
+    section = next((item for item in sections if item.heading.text == "7. Results"), None)
+    if section is None:
+        return []
+    paragraphs = list(_paragraphs(lines, section.body_start, section.body_end))
+    records = []
+
+    # RPT-407: a native-suite result paragraph when the metadata promises one.
+    if _metadata_value(metadata, ("tests", "native")) is True and not any(
+        text.startswith(NATIVE_PREFIXES) for _, text in paragraphs
+    ):
+        records.append(
+            record(
+                "ERROR",
+                "RPT-407",
+                'section 7 must contain a "**Native suite.**" or "**Native tests.**" '
+                "paragraph because tests.native is true",
+            )
+        )
+
+    # RPT-408: a simulation paragraph, and its claim agrees with the status.
+    simulation = _metadata_value(metadata, ("simulation",))
+    if not isinstance(simulation, dict):
+        return records
+    paragraph = next(
+        ((number, text) for number, text in paragraphs if text.startswith(SIMULATION_PREFIX)),
+        None,
+    )
+    if paragraph is None:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'section 7 must contain a paragraph beginning "**Simulation.**" '
+                "because homework.yaml declares a simulation block",
+            )
+        )
+        return records
+    number, text = paragraph
+    claims_run = any(token in text for token in RUN_CLAIM_TOKENS)
+    status = simulation.get("status")
+    if status == "verified" and not claims_run:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'the simulation paragraph must state an executed-run outcome '
+                '("exited 0" or "scenario passed") because simulation.status is verified',
+                number,
+            )
+        )
+    elif status == "pending" and claims_run:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'the simulation paragraph claims an executed run ("exited 0" or '
+                '"scenario passed") although simulation.status is pending',
+                number,
+            )
+        )
+    return records
+
+
 def _subsection_records(lines, sections, record):
     """`RPT-104`: every required subsection exists within its parent section.
 
@@ -1330,6 +1399,7 @@ def validate_report(
     records.extend(_link_records(lines, homework_dir, repo_root, record))
     records.extend(_language_records(lines, record))
     records.extend(_sentinel_records(lines, record))
+    records.extend(_status_claim_records(lines, sections, metadata, record))
 
     if records:
         return records
