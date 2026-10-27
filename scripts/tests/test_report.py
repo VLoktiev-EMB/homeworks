@@ -26,6 +26,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.metadata.paths import relative_path
 from scripts.report import contract, markdown, tables
 from scripts.report.vocabulary import REPORT_HEADINGS, REPORT_MAX_BYTES, RULES
 
@@ -634,6 +635,77 @@ class ReportPathContainmentTests(FixtureBase):
         self.assertIn("absent", result.stdout)
         self.assertNotIn("[RPT-001]", result.stdout)
 
+    def test_null_byte_in_final_component_is_rpt_001_not_a_traceback(self):
+        self.write_homework(homework_yaml(report_path=r'"report\0.md"'))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("Traceback", combined(result))
+        json_result = self.run_fixture("--json")
+        self.assertEqual(1, json_result.returncode, combined(json_result))
+        records = json.loads(json_result.stdout)
+        self.assertTrue(records, json_result.stdout)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual(
+                    {"path", "status", "rule", "line", "reason"}, set(item)
+                )
+
+    def test_null_byte_in_parent_component_is_rpt_001_not_a_traceback(self):
+        self.write_homework(homework_yaml(report_path=r'"dir\0/report.md"'))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("Traceback", combined(result))
+        json_result = self.run_fixture("--json")
+        self.assertEqual(1, json_result.returncode, combined(json_result))
+        records = json.loads(json_result.stdout)
+        self.assertTrue(records, json_result.stdout)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual(
+                    {"path", "status", "rule", "line", "reason"}, set(item)
+                )
+
+    def test_lone_surrogate_is_rpt_001_not_a_traceback(self):
+        self.write_homework(homework_yaml(report_path=r'"report\ud800.md"'))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("Traceback", combined(result))
+        json_result = self.run_fixture("--json")
+        self.assertEqual(1, json_result.returncode, combined(json_result))
+        records = json.loads(json_result.stdout)
+        self.assertTrue(records, json_result.stdout)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual(
+                    {"path", "status", "rule", "line", "reason"}, set(item)
+                )
+
+    def test_overlong_component_is_rpt_001_not_exit_2(self):
+        self.write_homework(homework_yaml(report_path=("a" * 300) + "/report.md"))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertNotIn("Traceback", combined(result))
+        self.assertNotIn(str(self.root), result.stderr)
+        self.assertNotIn("File name too long", result.stderr)
+        json_result = self.run_fixture("--json")
+        self.assertEqual(1, json_result.returncode, combined(json_result))
+        records = json.loads(json_result.stdout)
+        self.assertTrue(records, json_result.stdout)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual(
+                    {"path", "status", "rule", "line", "reason"}, set(item)
+                )
+
+    def test_relative_path_handles_unrepresentable_path(self):
+        self.assertEqual("report\x00.md", relative_path(self.root, "report\x00.md"))
+        self.assertEqual("report\ud800.md", relative_path(self.root, "report\ud800.md"))
+
 
 class HostileMetadataTests(FixtureBase):
     """CR-01/T-10-28: a hostile `homework.yaml` is a record, not a traceback."""
@@ -729,6 +801,13 @@ class HostileDocumentContractTests(FixtureBase):
                 second = self.run_fixture(positional)
                 self.assertEqual(1, first.returncode, combined(first))
                 self.assertEqual(first.stdout, second.stdout)
+                self.assertNotIn("Traceback", combined(first))
+
+                json_first = self.run_fixture(positional, "--json")
+                json_second = self.run_fixture(positional, "--json")
+                self.assertEqual(1, json_first.returncode, combined(json_first))
+                self.assertEqual(json_first.stdout, json_second.stdout)
+                self.assert_content_error_result(json_first)
 
 
 class IdentityTests(FixtureBase):

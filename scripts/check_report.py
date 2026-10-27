@@ -81,12 +81,12 @@ def _relative_lexical(root, path):
     by its target: resolution would echo the target inside the root or degrade
     to a bare name when it escapes.
     """
-    root = Path(os.path.abspath(root))
-    candidate = Path(os.path.abspath(path))
     try:
-        return candidate.relative_to(root).as_posix()
-    except ValueError:
-        return candidate.name
+        root_path = Path(os.path.abspath(root))
+        candidate = Path(os.path.abspath(path))
+        return candidate.relative_to(root_path).as_posix()
+    except (ValueError, OSError):
+        return Path(str(path)).name
 
 
 def _lexical_record(root, path, status, rule, reason, line=0):
@@ -184,7 +184,8 @@ def _contained_report_path(directory, value):
     """Return `(candidate, None)`, or `(None, reason)` when *value* escapes.
 
     `report.path` is untrusted `homework.yaml` content, so the join is guarded
-    before any `stat`, `is_file` or read (T-10-30, T-10-31). An absolute value
+    before any `stat`, `is_file` or read (T-10-30, T-10-31, T-10-32). An absolute
+    value, unrepresentable characters (NUL, lone surrogates), overlong components,
     and any `..` component are refused: a `..` after a symlink component can
     leave the directory even when lexical normalization looks contained. The
     remaining path must stay lexically inside the homework directory, every
@@ -197,17 +198,30 @@ def _contained_report_path(directory, value):
     names the failure class and never echoes a host path (IN-02); an unresolved
     candidate is returned, so every later step sees the path that was inspected.
     """
-    path = Path(value)
+    if "\x00" in value:
+        return None, "report.path contains a null byte; an uncontained path is refused"
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return (
+            None,
+            "report.path contains a lone surrogate or unrepresentable character; "
+            "an uncontained path is refused",
+        )
+    try:
+        path = Path(value)
+    except (ValueError, OSError):
+        return None, "report.path cannot be parsed; an uncontained path is refused"
     if path.is_absolute():
         return None, "report.path is absolute; an uncontained path is refused"
     if ".." in path.parts:
         return None, "report.path contains a parent component; an uncontained path is refused"
     base = Path(os.path.abspath(directory))
     candidate = base / path
-    lexical = Path(os.path.abspath(candidate))
     try:
+        lexical = Path(os.path.abspath(candidate))
         relative = lexical.relative_to(base)
-    except ValueError:
+    except (ValueError, OSError):
         return None, "report.path escapes the homework directory; an uncontained path is refused"
     current = base
     for part in relative.parts[:-1]:
@@ -216,8 +230,12 @@ def _contained_report_path(directory, value):
             mode = os.lstat(current).st_mode
         except FileNotFoundError:
             return candidate, None
-        except OSError as exc:
-            raise CheckError(f"cannot inspect the declared report path: {exc}") from exc
+        except (OSError, ValueError):
+            return (
+                None,
+                "report.path component cannot be inspected; "
+                "an uncontained path is refused",
+            )
         if stat.S_ISLNK(mode):
             return (
                 None,
@@ -230,10 +248,10 @@ def _contained_report_path(directory, value):
                 "report.path has a parent component that is not a directory; "
                 "refusing it",
             )
-    resolved_base = Path(os.path.realpath(base))
     try:
+        resolved_base = Path(os.path.realpath(base))
         Path(os.path.realpath(candidate.parent)).relative_to(resolved_base)
-    except ValueError:
+    except (ValueError, OSError):
         return (
             None,
             "report.path resolves outside the homework directory; "

@@ -48,16 +48,18 @@ def resolve_root(explicit):
 
 
 def relative_path(root, path):
-    """Render *path* as a repository-relative POSIX path (T-04-08).
+    """Render *path* as a repository-relative POSIX path (T-04-08, T-10-32).
 
     A path outside the checked root is reduced to its final component so an
-    absolute root is never echoed into the report.
+    absolute root is never echoed into the report. An unrepresentable path
+    (embedded NUL or lone surrogate) returns its base name without raising
+    (CR-04).
     """
-    resolved = Path(path).resolve()
     try:
+        resolved = Path(path).resolve()
         return resolved.relative_to(Path(root).resolve()).as_posix()
-    except ValueError:
-        return Path(path).name
+    except (ValueError, OSError):
+        return Path(str(path)).name
 
 
 def derive_parts(homework_id):
