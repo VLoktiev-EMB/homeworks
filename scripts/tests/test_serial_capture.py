@@ -210,7 +210,11 @@ class CredentialScanTests(unittest.TestCase):
                 self.assertTrue(serial_capture.find_credential(sample))
 
     def test_an_ordinary_word_containing_a_keyword_does_not_match(self) -> None:
-        for sample in (b"the cpwd tool reports ready\r\n", b"author wrote nothing here\r\n"):
+        for sample in (
+            b"the cpwd tool reports ready\r\n",
+            b"author wrote nothing here\r\n",
+            b"auth mode = WPA2\r\n",
+        ):
             with self.subTest(sample=sample):
                 self.assertFalse(serial_capture.find_credential(sample))
 
