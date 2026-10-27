@@ -1,5 +1,13 @@
 # Lessons
 
+## 2026-10-27 — 3-tier schematic architecture (quick task)
+
+- A single schematic format cannot serve all purposes:
+  - Wokwi is ideal for interactive simulation and breadboard bench wiring, but awkward for academic reports.
+  - Mermaid is great for quick GitHub browser scanning, but lacks standard electronic circuit symbols.
+  - Schemdraw generates publication-quality IEEE/IEC vector schematics (SVG) in milliseconds with zero GUI dependencies.
+  - Combining all three provides the best engineering documentation experience without overhead.
+
 ## 2026-10-27 — promoted to v1.0, phase 10.1
 
 - Wokwi auto-routing without Manhattan instructions produces spaghetti wiring

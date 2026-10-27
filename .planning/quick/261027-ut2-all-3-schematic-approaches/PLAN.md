@@ -1,6 +1,6 @@
 ---
 task: 261027-ut2
-status: planned
+status: complete
 date: 2026-10-27
 slug: all-3-schematic-approaches
 ---

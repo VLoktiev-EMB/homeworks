@@ -130,7 +130,8 @@ would overstate the evidence.
 
 ## 5. Hardware and Wiring
 
-The circuit is the ESP32-S3-DevKitC-1 with seven physical parts. The diagram at
+The circuit is the ESP32-S3-DevKitC-1 with seven physical parts. The vector electrical schematic
+is available in [assets/schematic.svg](assets/schematic.svg). The breadboard simulation model at
 [assets/diagram.json](assets/diagram.json) declares `flashSize: "16"`, `psramType: "octal"`,
 and `psramSize: "8"`, and it is the source of truth for every connection below. The board pin
 names and the `3V3.1`, `GND.1`, `GND.2`, and `GND.3` labels follow the ESP32-S3-DevKitC-1 user

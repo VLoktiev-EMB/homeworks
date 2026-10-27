@@ -211,6 +211,7 @@ Recent decisions affecting current work:
 | 261025-vih | Fix the six residual findings from the Phase 04.2 verification | 2026-10-25 | 50d82ff | [261025-vih-fix-the-six-residual-findings-from-the-p](./quick/261025-vih-fix-the-six-residual-findings-from-the-p/) |
 | 3 | Ignore PlatformIO editor scaffolding and centralize IDE extensions | 2026-10-25 | 9b96a8f | — |
 | 261026-x78 | Make the ESP-IDF template and new-homework skill pure C; remove golden fixtures | 2026-10-27 | 72d2b30 | [261026-x78-make-the-esp-idf-homework-template-and-t](./quick/261026-x78-make-the-esp-idf-homework-template-and-t/) |
+| 261027-ut2 | Implement all 3 schematic approaches: Schemdraw vector SVG, Wokwi breadboard, Mermaid | 2026-10-27 | HEAD | [261027-ut2-all-3-schematic-approaches](./quick/261027-ut2-all-3-schematic-approaches/) |
 
 ### Roadmap Evolution
 
