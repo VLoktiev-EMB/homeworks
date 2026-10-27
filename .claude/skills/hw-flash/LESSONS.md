@@ -1,5 +1,13 @@
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-17, 09-18
+
+- A policy that enumerates credential shapes by name must enumerate every separator form the
+  scan admits. A word-only reading of "secret assignment" misses `SECRET KEY:`, so the
+  firmware line the rule forbids reaches the log.
+- A normative rule duplicated in a skill drifts from its owner. The shared file states it
+  once and every skill points at it; the operational steps stay in the skill.
+
 ## 2026-10-27 — gap-closure run, 09-15, 09-16
 
 - A serial monitor must open the port in the idle line state. Asserted DTR/RTS hold an
