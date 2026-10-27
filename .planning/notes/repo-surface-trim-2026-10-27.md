@@ -118,3 +118,31 @@ Restore a piece only when its cost becomes recurring again:
 recurring cost, keep engineering that protects the artifact. This note applies the
 principle to the surface built in Phases 5–10 and records where it now disagrees with
 that note's 2026-10-26 inventory.
+
+## Outcome — what was actually executed
+
+The maintainer reviewed the inventory and narrowed it before execution. The large
+"Delete — non-artifact surface" table above is the **analysis**, not the decision. The
+decision is:
+
+- **Kept:** every `.planning/` artifact; every generator and scaffold (`gen_views`,
+  `gen_skills`, `affected`, `new_homework`, `templates/`, `homeworks.code-workspace`);
+  every linter and static-analysis tool (`clang-format`, `clang-tidy`, `ruff`,
+  `yamllint`, `check_architecture`); every pre-commit hook and CI job.
+- **Removed** (quick task `261027-vxo`, commits `61c0100` and `0bf6120`):
+  - `scripts/ci/check_lfs_pointers.sh` — guarded the removed documentation site.
+  - `scripts/review_smoke_test.sh` — tested the reviewers, not the code.
+  - `scripts/tests/test_tooling_config.py` (1,537 lines) and
+    `scripts/tests/test_ci_workflows.py` (509 lines) — configuration-text assertions.
+  - 14 `.claude/skills/*/CHANGELOG.md` and `LESSONS.md` files, plus the prose pointers
+    to them; the `.agents/skills` mirror was regenerated (25 → 11 manifest entries).
+  - `templates/homework-espidf/.pio` and `.cache` — 33 MB of untracked build output.
+
+Measured result: 43 files changed, 3,080 deletions, **597 tracked files**, 397 stdlib
+tests OK (skipped=1), 73/73 native cases, 14/14 pre-commit hooks, `pio run` and both
+contract checkers green. The remaining 9.7 MB file
+`templates/homework-espidf/compile_commands.json` is untracked and was left for a
+separate decision.
+
+Do not read the table above as a mandate to delete the kept items. It records what was
+considered; this section records what was done.
