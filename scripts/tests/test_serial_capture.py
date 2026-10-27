@@ -80,6 +80,8 @@ REVIEW_SHAPES = (
     b"userpassword = hunter2",
     b"passphrase = hunter2",
     b"pwd = hunter2",
+    b"SECRET KEY: hunter2",
+    b"secret key = hunter2",
 )
 
 ORDINARY_PASSWORD_ASSIGNMENTS = (
@@ -99,6 +101,16 @@ IDENTIFIER_SUFFIXED_ASSIGNMENTS = (
     b"passwordHash: abcdef",
     b"SECRET_KEY = hunter2",
     b"secret_key_for_production_environment_2026 = hunter2",
+)
+
+# The CR-01 shapes the scan used to miss: a compound keyword written with one
+# space between its words, which the bare `secret` alternative could not reach.
+# The samples not already in REVIEW_SHAPES pin the case and separator variants
+# under their own failure name.
+SPACE_SEPARATED_COMPOUND_ASSIGNMENTS = (
+    b"secret key: hunter2",
+    b"SECRET KEY = hunter2",
+    b"Secret Key: hunter2",
 )
 
 
@@ -234,6 +246,11 @@ class CredentialScanTests(unittest.TestCase):
 
     def test_identifier_suffixed_assignments_match(self) -> None:
         for sample in IDENTIFIER_SUFFIXED_ASSIGNMENTS:
+            with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_space_separated_compound_assignments_match(self) -> None:
+        for sample in SPACE_SEPARATED_COMPOUND_ASSIGNMENTS:
             with self.subTest(sample=sample):
                 self.assertTrue(serial_capture.find_credential(sample))
 

@@ -128,8 +128,13 @@ USB_HWID = re.compile(r"USB VID:PID=([0-9A-Fa-f]{4}):([0-9A-Fa-f]{4})")
 # `passphrase` and `pwd` share one `pass(?:word|wd|phrase)|pwd` alternative.
 # The keyword may follow another word (`userpassword = hunter2`), so no leading
 # boundary is required, and the space-separated branch admits the `is` copula
-# (`password is hunter2`). In the assignment branch a keyword may instead be
-# followed by identifier characters (`secretKey`, `secret_key`, `passwordHash`),
+# (`password is hunter2`). A space-separated compound keyword may be written with
+# one space, underscore or hyphen between its words (`secret key`, `secret_key`,
+# `secret-key`), mirroring the `api[ _-]?key` alternative; the separator class is
+# a literal space, underscore or hyphen rather than a whitespace class, so a
+# compound keyword cannot span a line break. In the assignment branch a keyword
+# may instead be followed by identifier characters (`secretKey`, `secret_key`,
+# `passwordHash`),
 # so a `[\w.-]{0,128}` connector of at most 128 word, dot or hyphen characters is
 # admitted before the optional quote and separator; the space-separated branch
 # is unchanged. The six-character floor on that branch keeps ordinary words such
