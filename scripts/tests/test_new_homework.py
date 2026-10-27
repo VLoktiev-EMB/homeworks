@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,18 @@ from pathlib import Path
 
 from scripts.metadata.errors import CheckError
 from scripts.metadata.render import render
+from scripts.report.vocabulary import (
+    ASSUMPTIONS_HEADER,
+    BOM_HEADER,
+    CALCULATIONS_HEADER,
+    EVIDENCE_LABELS,
+    LEDGER_HEADER,
+    NOT_APPLICABLE,
+    PIN_MAP_HEADER,
+    REPORT_HEADINGS,
+    SECTION_ONE_HEADER,
+    TRACEABILITY_HEADER,
+)
 from scripts.tests import temp_root
 from scripts.tests.temp_root import snapshot_tree
 
@@ -357,6 +370,79 @@ class LiveTemplateParityTests(ScaffoldTestBase):
         result = self.scaffold(self.root, template="espidf")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assert_matches_live_template(self.root, "espidf")
+
+
+class TemplateParityTests(ScaffoldTestBase):
+    """D-23: the report template and the checker vocabulary cannot drift.
+
+    The template is never validated as a report (it carries placeholders);
+    instead every literal from `scripts/report/vocabulary.py` is projected onto
+    the template source, so removing one heading, table header, evidence label,
+    or the not-applicable marker fails a named test. Only the stdlib and the
+    vocabulary module are imported, so plain `python3` discovery runs it.
+    """
+
+    TEMPLATE = REPO_ROOT / "templates" / "report" / "report.md"
+
+    def template_text(self) -> str:
+        return self.TEMPLATE.read_text(encoding="utf-8")
+
+    def test_template_parity_headings(self) -> None:
+        text = self.template_text()
+        for heading in REPORT_HEADINGS:
+            with self.subTest(heading=heading):
+                self.assertIn(f"## {heading}", text)
+
+    def test_template_parity_table_headers(self) -> None:
+        text = self.template_text()
+        headers = (
+            SECTION_ONE_HEADER,
+            ASSUMPTIONS_HEADER,
+            BOM_HEADER,
+            PIN_MAP_HEADER,
+            CALCULATIONS_HEADER,
+            LEDGER_HEADER,
+            TRACEABILITY_HEADER,
+        )
+        for header in headers:
+            row = "| " + " | ".join(header) + " |"
+            with self.subTest(header=row):
+                self.assertIn(row, text)
+
+    def test_template_parity_evidence_labels(self) -> None:
+        text = self.template_text()
+        for label in sorted(EVIDENCE_LABELS):
+            with self.subTest(label=label):
+                self.assertIn(label, text)
+
+    def test_template_parity_not_applicable_marker(self) -> None:
+        self.assertIn(NOT_APPLICABLE, self.template_text())
+
+    def test_template_parity_placeholder_vocabulary(self) -> None:
+        text = self.template_text()
+        tokens = set(re.findall(r"\{\{([^{}]*)\}\}", text))
+        self.assertEqual(
+            {
+                "homework_id",
+                "title",
+                "board",
+                "framework",
+                "platformio_version",
+                "platform_version",
+            },
+            tokens,
+        )
+        self.assertNotIn("${", text)
+
+    def test_template_parity_scaffolded_report_is_a_valid_placeholder(self) -> None:
+        result = self.scaffold(self.root)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        checked = run_report_checker("--dir", str(self.root))
+        self.assertEqual(0, checked.returncode, checked.stdout + checked.stderr)
+        self.assertIn(
+            "report content checks are waived by report.status: placeholder",
+            checked.stdout,
+        )
 
 
 class IdempotencyTests(ScaffoldTestBase):
