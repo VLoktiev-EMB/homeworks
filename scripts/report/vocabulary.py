@@ -188,4 +188,15 @@ RULES = {
         "the safety checklist is empty or a bullet lacks the bold hazard prefix",
         "write at least one `- **Hazard.** <consequence and check>` bullet",
     ),
+    "RPT-206": (
+        "a bill-of-materials `Ref` is not a part id in `assets/diagram.json`",
+        "use the diagram part id as the BOM reference, or add the part to the "
+        "diagram",
+    ),
+    "RPT-207": (
+        "the bill of materials applies but `assets/diagram.json` is absent or "
+        "malformed",
+        "restore a readable `assets/diagram.json` with a `parts` list, or mark "
+        "the bill of materials not applicable",
+    ),
 }

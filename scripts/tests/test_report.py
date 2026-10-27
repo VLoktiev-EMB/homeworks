@@ -146,6 +146,17 @@ def homework_yaml(
     return "\n".join(lines) + "\n"
 
 
+def default_diagram(parts=("esp", "r1")):
+    """Return a diagram payload whose part ids cover the fixture BOM refs."""
+    return json.dumps(
+        {
+            "version": 1,
+            "parts": [{"id": part} for part in parts],
+            "connections": [],
+        }
+    )
+
+
 def run_report_checker(*args: str, cwd: Path = REPO_ROOT) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["uv", "run", str(SCRIPT), *args],
@@ -191,13 +202,24 @@ class FixtureBase(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
-    def write_report(self, text=None, homework_id=None):
+    def write_diagram(self, text=None, homework_id=None):
+        homework_id = homework_id or self.homework_id
+        path = self.root / "homeworks" / homework_id / "assets" / "diagram.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if text is None:
+            text = default_diagram()
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def write_report(self, text=None, homework_id=None, with_diagram=True):
         homework_id = homework_id or self.homework_id
         path = self.root / "homeworks" / homework_id / "report.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         if text is None:
             text = compliant_report()
         path.write_text(text, encoding="utf-8")
+        if with_diagram:
+            self.write_diagram(homework_id=homework_id)
         return path
 
     def run_fixture(self, *args):
@@ -670,6 +692,61 @@ class BomTests(FixtureBase):
         result = self.run_fixture()
         self.assert_rejected(result, "[RPT-204]")
         self.assertIn('table "bill of materials" has no data rows', result.stdout)
+
+    def test_bom_ref_absent_from_diagram_reports_rpt_206(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            "| r1 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |",
+            "| r99 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |",
+        )
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-206]")
+        self.assertIn('BOM Ref "r99"', result.stdout)
+
+    def test_bom_extra_diagram_part_is_allowed(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram(default_diagram(parts=("esp", "r1", "virtual")))
+        self.assert_accepted(self.run_fixture())
+
+    def test_bom_malformed_json_reports_rpt_207_at_exit_one(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram('{"parts": [')
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-207]")
+        self.assertIn("not valid JSON", result.stdout)
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_bom_missing_diagram_reports_rpt_207_at_exit_one(self):
+        self.write_homework()
+        self.write_report(with_diagram=False)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-207]")
+        self.assertIn("assets/diagram.json", result.stdout)
+        self.assertIn("file is absent", result.stdout)
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_bom_not_applicable_marker_waives_the_diagram(self):
+        sections = {
+            "5. Hardware and Wiring": "_Not applicable — software-only assignment._",
+        }
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections), with_diagram=False)
+        self.assert_accepted(self.run_fixture())
+
+    def test_bom_subsection_marker_waives_the_diagram(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            BOM_TABLE,
+            "_Not applicable — the parts are integrated on the board._",
+        )
+        self.write_homework()
+        self.write_report(
+            compliant_report(sections={"5. Hardware and Wiring": body}),
+            with_diagram=False,
+        )
+        self.assert_accepted(self.run_fixture())
 
 
 if __name__ == "__main__":

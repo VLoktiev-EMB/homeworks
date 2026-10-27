@@ -14,7 +14,9 @@ jsonschema into the test import graph, and never PyYAML itself (Pitfall 9).
 
 from __future__ import annotations
 
+import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.metadata.paths import relative_path
@@ -68,6 +70,35 @@ REQUIRED_CELLS = {
 
 # D-15: a safety list item must open with a bold hazard name.
 SAFETY_BULLET = re.compile(r"^[-*+]\s")
+
+
+@dataclass(frozen=True)
+class Diagram:
+    """The diagram part ids, or the reason they could not be read.
+
+    `parse_diagram` never raises (T-10-27): a pull request can replace the
+    diagram with malformed or hostile JSON, and the contract reports that as a
+    content error instead of a traceback.
+    """
+
+    parts: tuple[str, ...] | None = None
+    error: str | None = None
+
+
+def parse_diagram(text):
+    """Turn the diagram payload into its part ids; never raises (T-10-27)."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return Diagram(error=f"assets/diagram.json is not valid JSON: {exc}")
+    if not isinstance(payload, dict) or not isinstance(payload.get("parts"), list):
+        return Diagram(error="assets/diagram.json is not an object with a `parts` list")
+    parts = tuple(
+        part["id"]
+        for part in payload["parts"]
+        if isinstance(part, dict) and isinstance(part.get("id"), str)
+    )
+    return Diagram(parts=parts)
 
 
 def _declared_path(metadata, homework_dir):
@@ -156,8 +187,8 @@ def _owned_range(lines, section, subsection):
     return start, end, waived
 
 
-def _table_records(lines, sections, extracted, record):
-    """`RPT-201` ... `RPT-205`: header, row shape, required cells and safety.
+def _table_records(lines, sections, extracted, diagram, record):
+    """`RPT-201` ... `RPT-207`: header, row shape, cells, safety and BOM.
 
     The table family runs after the heading-presence family but alongside the
     subsection family: the live 1.3 report is missing `### Next Steps` yet its
@@ -209,7 +240,7 @@ def _table_records(lines, sections, extracted, record):
                     table.header_line,
                 )
             )
-        owned.append((label, table))
+        owned.append((label, table, waived))
 
     # RPT-202: every row of every table keeps its header's column count.
     for table in extracted:
@@ -227,7 +258,7 @@ def _table_records(lines, sections, extracted, record):
             )
 
     # RPT-203: the D-15 required cells are non-empty.
-    for label, table in owned:
+    for label, table, _ in owned:
         required = REQUIRED_CELLS.get(label)
         if required is None:
             continue
@@ -246,6 +277,7 @@ def _table_records(lines, sections, extracted, record):
                 )
 
     records.extend(_safety_records(lines, lookup, record))
+    records.extend(_bom_records(lines, lookup, owned, diagram, record))
     return records
 
 
@@ -283,6 +315,48 @@ def _safety_records(lines, lookup, record):
         )
         for number, stripped in bullets
         if not stripped.startswith("- **")
+    ]
+
+
+def _bom_records(lines, lookup, owned, diagram, record):
+    """`RPT-206`/`RPT-207`: BOM refs resolve to diagram part ids (D-12)."""
+    section = lookup.get("5. Hardware and Wiring")
+    if section is None or _section_waived(lines, section):
+        return []
+    bom = next((table for label, table, _ in owned if label == "bill of materials"), None)
+    waived = next(
+        (waived for label, _, waived in owned if label == "bill of materials"),
+        None,
+    )
+    if waived is None:
+        # The BOM subsection was absent or mis-headered and `owned` therefore
+        # does not carry it. A marker in that subsection is still a waiver.
+        body = _subsection_range(section, "Bill of Materials")
+        waived = body is not None and _marker_in_range(lines, *body)
+    if waived:
+        return []
+    if diagram is None:
+        return [
+            record(
+                "ERROR",
+                "RPT-207",
+                "the bill of materials applies but assets/diagram.json was not read",
+            )
+        ]
+    if diagram.error is not None:
+        return [record("ERROR", "RPT-207", f"the bill of materials applies but {diagram.error}")]
+    if bom is None:
+        return []  # RPT-201 already reports the absent or mis-headered table
+    known = set(diagram.parts or ())
+    return [
+        record(
+            "ERROR",
+            "RPT-206",
+            f'BOM Ref "{row.normalized[0]}" is not a part id in assets/diagram.json',
+            row.line,
+        )
+        for row in bom.rows
+        if row.normalized and row.normalized[0] not in known
     ]
 
 
@@ -375,12 +449,21 @@ def _required_paragraph_records(lines, sections, record):
     return records
 
 
-def validate_report(text, metadata, *, homework_dir=None, repo_root=None, path=None):
+def validate_report(
+    text,
+    metadata,
+    *,
+    homework_dir=None,
+    repo_root=None,
+    path=None,
+    diagram=None,
+):
     """Validate one report document and return its records.
 
-    The caller owns discovery, the size gate and the lifecycle checks; this
-    function owns the document structure. An empty document is an `ERROR`
-    (`RPT-002`) and never a pass.
+    The caller owns discovery, the size gate, the lifecycle checks and the
+    diagram read; this function owns the document structure. `diagram` is a
+    `Diagram` built by `parse_diagram`, or `None` when the caller did not read
+    one. An empty document is an `ERROR` (`RPT-002`) and never a pass.
     """
     report_path = Path(path) if path is not None else _declared_path(metadata, homework_dir)
     display = _display(report_path, repo_root)
@@ -465,7 +548,7 @@ def validate_report(text, metadata, *, homework_dir=None, repo_root=None, path=N
     records.extend(_subsection_records(lines, sections, record))
     records.extend(_not_applicable_records(lines, sections, record))
     records.extend(_required_paragraph_records(lines, sections, record))
-    records.extend(_table_records(lines, sections, rows, record))
+    records.extend(_table_records(lines, sections, rows, diagram, record))
 
     if records:
         return records
