@@ -100,6 +100,10 @@ DEFS_REQUIRED = {
 OPTIONAL_BLOCKS = ("simulation", "tests", "report")
 ASSETS_CHUNK = "assets:\n  - assets/wiring.png\n"
 
+# CR-01: ~2 KB of valid YAML syntax with 1,000 nested flow sequences. It sits
+# inside the 64 KiB input bound, so only a nesting bound turns it into a record.
+DEEP_YAML = "title: " + "[" * 1000 + "]" * 1000 + "\n"
+
 # The scaffolded skeleton (D-39). `TODO` is literal and legal only while the
 # homework is `status: planned`; no timestamp is ever rendered (Pitfall P10).
 TASK_TEMPLATE = (
@@ -886,6 +890,17 @@ class PayloadTests(FixtureBase):
         text = document(optional=False) + "# " + ("x" * (64 * 1024)) + "\n"
         self.write_homework(text)
         self.assert_rejected(self.run_fixture(), "larger than 65536 bytes")
+
+
+class HostileNestingTests(FixtureBase):
+    """CR-01/T-10-28: the shared loader bounds nesting for every caller."""
+
+    def test_deeply_nested_metadata_is_an_error_record_not_a_traceback(self):
+        self.write_homework(text=DEEP_YAML)
+        result = self.run_fixture()
+        self.assertIn(": ERROR — ", result.stdout, combined(result))
+        self.assertIn("nesting depth", result.stdout, combined(result))
+        self.assertNotIn("Traceback", combined(result))
 
 
 class ToolchainTests(FixtureBase):

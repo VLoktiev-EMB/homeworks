@@ -339,8 +339,8 @@ class Diagram:
     """The diagram part ids, or the reason they could not be read.
 
     `parse_diagram` never raises (T-10-27): a pull request can replace the
-    diagram with malformed or hostile JSON, and the contract reports that as a
-    content error instead of a traceback.
+    diagram with malformed or hostile JSON — deeply nested arrays included —
+    and the contract reports that as a content error instead of a traceback.
     """
 
     parts: tuple[str, ...] | None = None
@@ -348,10 +348,16 @@ class Diagram:
 
 
 def parse_diagram(text):
-    """Turn the diagram payload into its part ids; never raises (T-10-27)."""
+    """Turn the diagram payload into its part ids; never raises (T-10-27).
+
+    Malformed and deeply nested JSON are both content errors: `JSONDecodeError`
+    is a `ValueError` subclass, and the `RecursionError` clause honours this
+    function's never-raises posture when the decoder exhausts the stack before
+    it can diagnose the document (T-10-29).
+    """
     try:
         payload = json.loads(text)
-    except json.JSONDecodeError as exc:
+    except (ValueError, RecursionError) as exc:
         return Diagram(error=f"assets/diagram.json is not valid JSON: {exc}")
     if not isinstance(payload, dict) or not isinstance(payload.get("parts"), list):
         return Diagram(error="assets/diagram.json is not an object with a `parts` list")

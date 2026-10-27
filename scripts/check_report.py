@@ -131,7 +131,10 @@ def _read_metadata(root, homework):
 
     try:
         metadata = yaml.load(text, Loader=StrictSafeLoader)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError) as exc:
+        # The loader's depth guard raises `yaml.YAMLError` in normal operation;
+        # the `RecursionError` clause is defence in depth, so a future loader
+        # replacement cannot reintroduce a traceback (T-10-28).
         return None, [
             _record(root, homework, "ERROR", "RPT-001", f"homework.yaml is not valid YAML: {exc}")
         ]

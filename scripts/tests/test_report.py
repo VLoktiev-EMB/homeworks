@@ -81,6 +81,15 @@ SAFETY_LIST = "- **3V3-to-ground short.** Check continuity before applying power
 NATIVE_PARAGRAPH = "**Native suite.** 38 of 38 cases pass in 1.429 s."
 SIMULATION_PARAGRAPH = "**Simulation.** The scenario was executed: all three runs exited 0."
 
+# CR-01: ~2 KB of valid YAML syntax that exhausts a recursive composer with
+# 1,000 nested flow sequences. It sits inside every declared size gate, so only
+# a nesting bound can turn it into a content record (T-10-28).
+DEEP_YAML = "title: " + "[" * 1000 + "]" * 1000 + "\n"
+
+# CR-02: 200,000 bytes of `[` — inside the 1 MiB report bound, but deep enough
+# to exhaust `json.loads` before it can report malformed JSON (T-10-29).
+DEEP_DIAGRAM = "[" * 100_000
+
 LEDGER_TABLE = (
     "| ID | Quantity | Value | Label | Instrument | Method | Uncertainty | "
     "Implementation commit |\n"
@@ -528,6 +537,29 @@ class LifecycleTests(FixtureBase):
             if ": ERROR " in line or ": OK — " in line
         ]
         self.assertEqual(len(text_records), len(json.loads(json_result.stdout)))
+
+
+class HostileMetadataTests(FixtureBase):
+    """CR-01/T-10-28: a hostile `homework.yaml` is a record, not a traceback."""
+
+    def test_deeply_nested_metadata_is_rpt_001_not_a_traceback(self):
+        self.write_homework(DEEP_YAML)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_deeply_nested_metadata_keeps_the_json_contract(self):
+        self.write_homework(DEEP_YAML)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        records = json.loads(result.stdout)
+        self.assertTrue(records, result.stdout)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual(
+                    {"path", "status", "rule", "line", "reason"}, set(item)
+                )
 
 
 class IdentityTests(FixtureBase):
@@ -1152,6 +1184,33 @@ class BomTests(FixtureBase):
             with_diagram=False,
         )
         self.assert_accepted(self.run_fixture())
+
+
+class HostileDiagramTests(FixtureBase):
+    """CR-02/T-10-29: a deeply nested diagram is RPT-207, never a traceback."""
+
+    def test_parse_diagram_never_raises_on_deep_json(self):
+        diagram = contract.parse_diagram(DEEP_DIAGRAM)
+        self.assertIsNone(diagram.parts)
+        self.assertTrue(diagram.error)
+
+    def test_deeply_nested_diagram_is_rpt_207_not_a_traceback(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram(DEEP_DIAGRAM)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-207]")
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_deeply_nested_diagram_keeps_the_json_contract(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram(DEEP_DIAGRAM)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        records = json.loads(result.stdout)
+        self.assertTrue(records, result.stdout)
+        self.assertIn("RPT-207", {item["rule"] for item in records})
 
 
 class LedgerTests(FixtureBase):
