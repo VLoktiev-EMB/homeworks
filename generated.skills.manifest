@@ -94,8 +94,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-report/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "2794ef99c60612d5eff5a488c48aeb0a8f59448848f0e093c090d04b8cc880be",
-      "bytes": 383
+      "sha256": "3085c75fbfdbfa00de6fe4440e114b5d0e30dd7609ab995294c6ec1e59a79826",
+      "bytes": 714
     },
     {
       "path": ".agents/skills/hw-report/LESSONS.md",
@@ -110,8 +110,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-report/SKILL.md",
       "mode": "whole",
-      "sha256": "e4fbd31d07ac58d3ae6ae55e6ba4530785eea0ca37a73ec848bbc7edffa34678",
-      "bytes": 1179
+      "sha256": "0f4e45e7967af64491b069d48cd82ba3db6df731244ec333bdd5fed549ad1fab",
+      "bytes": 1386
     },
     {
       "path": ".agents/skills/new-homework/CHANGELOG.md",

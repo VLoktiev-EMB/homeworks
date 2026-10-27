@@ -177,6 +177,36 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      # D-05: the report contract needs a local enforcement point, and `meta`
+      # runs the whole hook surface, so CI needs no new job. This hook is
+      # CHECK-ONLY: it never regenerates, rewrites, or stages a file, so it
+      # cannot repair the defect it is meant to catch. When it fails, edit the
+      # report yourself and re-run it.
+      #
+      # The isolated hook environment carries only PyYAML: the checker is
+      # stdlib-only and reads `homework.yaml` through the strict loader. If this
+      # hook ever exits with `ModuleNotFoundError: jsonschema`, the import
+      # boundary regressed: fix the boundary rather than adding jsonschema here.
+      #
+      # `files` names every input the contract reads — each homework's report,
+      # metadata, and diagram; the report template; both standards; the checker
+      # and its helpers — because a change to any of them can change the result
+      # without touching a report. `pass_filenames` is false: the command scans
+      # the tree and a per-file argument would narrow it.
+      - id: check-report
+        name: report and evidence contract
+        language: python
+        additional_dependencies: ["PyYAML==6.0.3"]
+        entry: python scripts/check_report.py
+        # Folded, with `(?x)` so the line breaks stay outside the pattern: YAML
+        # folding would otherwise join the alternatives with a space.
+        files: >-
+          (?x)^(homeworks/.*/(report\.md|homework\.yaml|assets/diagram\.json)$
+          |templates/report/|docs/standards/(report|electrical-calculations)\.md$
+          |scripts/check_report\.py$|scripts/report/)
+        pass_filenames: false
+        stages: [pre-commit]
+
       # D-21: the drift contract needs a local enforcement point, not only the
       # `generated-views` pull-request workflow. This hook is CHECK-ONLY: it
       # never regenerates and never stages a file, so it cannot repair the
