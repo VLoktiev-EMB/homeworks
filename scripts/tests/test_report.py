@@ -25,8 +25,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.report import contract, markdown
-from scripts.report.vocabulary import REPORT_HEADINGS
+from scripts.report import contract, markdown, tables
+from scripts.report.vocabulary import REPORT_HEADINGS, REPORT_MAX_BYTES, RULES
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check_report.py"
@@ -1514,6 +1514,346 @@ class RealTreeTests(unittest.TestCase):
         self.assertEqual(0, first.returncode, combined(first))
         self.assertEqual(first.stdout, second.stdout)
         self.assertEqual(first.stderr, second.stderr)
+
+
+# ---------------------------------------------------------------------------
+# Plan 10-07: one violating fixture factory per registered rule. `RULE_FIXTURES`
+# is exhaustive by construction, so a rule added to `RULES` without a factory
+# fails `test_rule_registry_every_id_has_a_violating_fixture`, and a rule added
+# without a remediation row fails the standard-table set equality. Neither test
+# reads the standard's prose: the id set and row uniqueness are the only
+# documentation-text assertions, because prose/doc-sync checks were pruned in
+# `261026-ky7` (Open Question 3).
+
+_MISSING_DIAGRAM = object()
+
+
+def _write_rule_fixture(
+    root,
+    *,
+    homework=None,
+    report=None,
+    with_report=True,
+    diagram=_MISSING_DIAGRAM,
+):
+    """Write one homework directory; every rule fixture overrides one input.
+
+    The default is the compliant fixture: a draft report, a readable diagram and
+    the `platformio.ini` artifact its traceability row names. A rule fixture
+    therefore differs from a passing document in exactly one place.
+    """
+    directory = root / "homeworks" / "1_3-good"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "homework.yaml").write_text(
+        homework if homework is not None else homework_yaml(), encoding="utf-8"
+    )
+    if with_report:
+        (directory / "report.md").write_text(
+            report if report is not None else compliant_report(), encoding="utf-8"
+        )
+    (directory / "platformio.ini").write_text("placeholder\n", encoding="utf-8")
+    payload = default_diagram() if diagram is _MISSING_DIAGRAM else diagram
+    if payload is not None:
+        target = directory / "assets" / "diagram.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(payload, encoding="utf-8")
+    return directory
+
+
+def _mutated_section(name, old, new):
+    """Return a compliant report with one literal replaced in one section."""
+    return compliant_report(sections={name: SECTION_BODIES[name].replace(old, new)})
+
+
+def _mutated_results(*replacements):
+    """Return a compliant report with replacements applied to section 7."""
+    body = SECTION_BODIES["7. Results"]
+    for old, new in replacements:
+        body = body.replace(old, new)
+    return compliant_report(sections={"7. Results": body})
+
+
+def _header_only(table):
+    """Return a table's header and separator rows, so it has no data rows."""
+    return "\n".join(table.splitlines()[:2])
+
+
+def _swapped_order():
+    """Swap `3. Assumptions` and `4. Theory` to violate ascending order."""
+    order = list(REPORT_HEADINGS)
+    order[2], order[3] = order[3], order[2]
+    return order
+
+
+def _duplicated_order():
+    """Repeat `2. Objective` so the heading appears twice."""
+    order = list(REPORT_HEADINGS)
+    order.insert(2, "2. Objective")
+    return order
+
+
+RULE_FIXTURES = {
+    # Lifecycle family: `check_report.py` owns these before the document rules.
+    "RPT-001": lambda root: _write_rule_fixture(
+        root, homework=homework_yaml(with_report=False), with_report=False
+    ),
+    "RPT-002": lambda root: _write_rule_fixture(root, with_report=False),
+    "RPT-003": lambda root: _write_rule_fixture(
+        root, homework=homework_yaml(status="in-progress", report_status="placeholder")
+    ),
+    "RPT-004": lambda root: _write_rule_fixture(root, report="x" * (REPORT_MAX_BYTES + 1)),
+    # Structure family.
+    "RPT-101": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            order=[title for title in REPORT_HEADINGS if title != "4. Theory"]
+        ),
+    ),
+    "RPT-102": lambda root: _write_rule_fixture(
+        root, report=compliant_report(order=_swapped_order())
+    ),
+    "RPT-103": lambda root: _write_rule_fixture(
+        root, report=compliant_report(order=_duplicated_order())
+    ),
+    "RPT-104": lambda root: _write_rule_fixture(
+        root, report=compliant_report(sections={"4. Theory": "The theory [1]."})
+    ),
+    "RPT-105": lambda root: _write_rule_fixture(
+        root, report=compliant_report(sections={"3. Assumptions": "_Not applicable._"})
+    ),
+    "RPT-106": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"2. Objective": "_Not applicable — no objective._"}
+        ),
+    ),
+    "RPT-107": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"8. Analysis": "The analysis without the required note."}
+        ),
+    ),
+    "RPT-108": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"9. Conclusions": "### Next Steps\n\n- Tag the pilot."}
+        ),
+    ),
+    # Table family.
+    "RPT-201": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring",
+            "| Signal | Pin | Connects to | Notes |",
+            "| Signal | ESP32-S3 pin | Connects to | Notes |",
+        ),
+    ),
+    "RPT-202": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring",
+            "| A lower Vf raises the current. |",
+            "| A lower Vf raises the current. | extra |",
+        ),
+    ),
+    "RPT-203": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring", "| plus or minus 1.4 mA |", "|  |"
+        ),
+    ),
+    "RPT-204": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring",
+            CALCULATIONS_TABLE,
+            _header_only(CALCULATIONS_TABLE),
+        ),
+    ),
+    "RPT-205": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring",
+            SAFETY_LIST,
+            "- Check continuity before applying power.",
+        ),
+    ),
+    "RPT-206": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "5. Hardware and Wiring",
+            "| r1 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |",
+            "| r99 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |",
+        ),
+    ),
+    "RPT-207": lambda root: _write_rule_fixture(root, diagram=None),
+    # Evidence family.
+    "RPT-301": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results(
+            ("| not measured | multimeter |", "| observed | multimeter |")
+        ),
+    ),
+    "RPT-303": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results(("not measured: bench offline", "bench offline")),
+    ),
+    "RPT-304": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results(
+            (
+                "| not applicable: no reading | `9e1238d` |",
+                "| not applicable: no reading | `abcdef0` |",
+            )
+        ),
+    ),
+    "RPT-305": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results(
+            ("| not measured | multimeter |", "| calculated | multimeter |"),
+            ("| DC volts across the rail |", "| computed from the formula |"),
+        ),
+    ),
+    "RPT-306": lambda root: _write_rule_fixture(
+        root, report=_mutated_results(("| verified |", "| done |"))
+    ),
+    "RPT-307": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results(("`platformio.ini`", "`lib/missing.c`")),
+    ),
+    "RPT-308": lambda root: _write_rule_fixture(
+        root, report=_mutated_results(("| T-02 |", "| T-01 |"))
+    ),
+    "RPT-309": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"2. Objective": "The objective refers to C-99."}
+        ),
+    ),
+    "RPT-310": lambda root: _write_rule_fixture(
+        root, report=_mutated_results(("REPORT-05, ", ""))
+    ),
+    "RPT-311": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(sections={"2. Objective": "The objective cites [7]."}),
+    ),
+    "RPT-312": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"10. References": "[1] A reference.\n\n[6] An uncited reference."}
+        ),
+    ),
+    # Document-integrity family.
+    "RPT-401": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report().replace("# Good homework", "# Another title", 1),
+    ),
+    "RPT-402": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "1. Title and Metadata", "`1_3-good`", "`1_3-other`"
+        ),
+    ),
+    "RPT-403": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_section(
+            "1. Title and Metadata",
+            "| Framework | Arduino |",
+            "| Framework | ESP-IDF |",
+        ),
+    ),
+    "RPT-404": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"2. Objective": "See [the diagram](assets/missing.json)."}
+        ),
+    ),
+    "RPT-405": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"2. Objective": "The objective contains тест."}
+        ),
+    ),
+    "RPT-406": lambda root: _write_rule_fixture(
+        root,
+        report=compliant_report(
+            sections={"2. Objective": "TODO: finish the objective."}
+        ),
+    ),
+    "RPT-407": lambda root: _write_rule_fixture(
+        root,
+        report=_mutated_results((NATIVE_PARAGRAPH + "\n\n", "")),
+    ),
+    "RPT-408": lambda root: _write_rule_fixture(
+        root, homework=homework_yaml(simulation_status="pending")
+    ),
+}
+
+
+class RuleRegistryTests(unittest.TestCase):
+    """The rule registry, its remediation table, and its non-vacuity fixtures.
+
+    The only documentation-text assertion in the repository is the id set of the
+    `## Rule reference` table; prose is never compared (`261026-ky7`, Open
+    Question 3). A rule added without a remediation row fails here.
+    """
+
+    def test_rule_registry_ids_match_the_rule_shape(self):
+        pattern = re.compile(r"^RPT-[0-9]{3}$")
+        for rule_id in RULES:
+            with self.subTest(rule=rule_id):
+                self.assertRegex(rule_id, pattern)
+
+    def test_rule_registry_ids_are_unique(self):
+        self.assertEqual(len(RULES), len(set(RULES)))
+
+    def test_rule_registry_every_id_has_a_summary_and_a_remediation(self):
+        for rule_id, (summary, remediation) in RULES.items():
+            with self.subTest(rule=rule_id):
+                self.assertTrue(summary.strip(), rule_id)
+                self.assertTrue(remediation.strip(), rule_id)
+
+    def assert_rule_reference(self, ids, rules=None):
+        """The one assertion: no duplicate row and the exact registered set."""
+        rules = RULES if rules is None else rules
+        self.assertEqual(len(ids), len(set(ids)), "the rule reference has a duplicate row")
+        self.assertEqual(set(rules), set(ids))
+
+    def rule_reference_ids(self):
+        text = (REPO_ROOT / "docs" / "standards" / "report.md").read_text(encoding="utf-8")
+        found = [
+            table
+            for table in tables.extract_tables(text)
+            if table.header == ("Rule", "Meaning", "Fix")
+        ]
+        self.assertEqual(1, len(found), "expected exactly one Rule | Meaning | Fix table")
+        return [tables.normalize_cell(row.cells[0]) for row in found[0].rows]
+
+    def test_rule_registry_standard_rule_table_matches_the_registry(self):
+        self.assert_rule_reference(self.rule_reference_ids())
+
+    def test_rule_registry_zero_rule_rows_fail_set_equality(self):
+        with self.assertRaises(AssertionError):
+            self.assert_rule_reference([])
+
+    def test_rule_registry_duplicate_rule_row_fails_uniqueness(self):
+        ids = self.rule_reference_ids()
+        with self.assertRaises(AssertionError):
+            self.assert_rule_reference(ids + [ids[0]])
+
+    def test_rule_registry_single_row_for_a_single_rule_passes(self):
+        self.assert_rule_reference(["RPT-001"], rules={"RPT-001": RULES["RPT-001"]})
+
+    def test_rule_registry_every_id_has_a_violating_fixture(self):
+        self.assertEqual(set(RULES), set(RULE_FIXTURES))
+        for rule_id, factory in RULE_FIXTURES.items():
+            with self.subTest(rule=rule_id):
+                with tempfile.TemporaryDirectory(prefix="report-rule-") as tmp:
+                    factory(Path(tmp))
+                    result = run_report_checker("--dir", tmp, "--json")
+                    self.assertEqual(1, result.returncode, combined(result))
+                    fired = {item["rule"] for item in json.loads(result.stdout)}
+                    self.assertIn(rule_id, fired, f"{rule_id} did not fire")
 
 
 if __name__ == "__main__":
