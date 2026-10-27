@@ -203,7 +203,7 @@ class SchematicSvgTests(unittest.TestCase):
             self.assertTrue(svg_file.is_file())
             content = svg_file.read_text(encoding="utf-8")
             self.assertTrue(content.startswith("<svg"))
-            self.assertTrue(content.endswith("</svg>"))
+            self.assertTrue(content.strip().endswith("</svg>"))
             self.assertIn("ESP32-S3", content)
             self.assertIn("GPIO4", content)
             self.assertIn("GPIO6", content)
@@ -224,7 +224,7 @@ class SchematicSvgTests(unittest.TestCase):
             self.assertTrue(svg_path.is_file())
             content = svg_path.read_text(encoding="utf-8")
             self.assertTrue(content.startswith("<svg"))
-            self.assertTrue(content.endswith("</svg>"))
+            self.assertTrue(content.strip().endswith("</svg>"))
 
 
 class SchematicCliTests(unittest.TestCase):

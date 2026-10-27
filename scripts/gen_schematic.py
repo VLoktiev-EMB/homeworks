@@ -19,45 +19,28 @@ import argparse
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 
 def generate_mermaid_from_diagram(diagram: dict) -> str:
-    """Generate a GitHub-flavored Mermaid flowchart from diagram parts and connections."""
+    """Generate a GitHub-flavored Mermaid flowchart from diagram parts and connections.
+
+    Produces a clean, unidirectional left-to-right (LR) signal flow:
+    - Resolves intermediate breadboard row nets so components connect directly.
+    - Redirects Ground returns to terminal GND nodes rather than looping backward into MCU.
+    - Redirects Power rails (3.3V/5V) to dedicated source nodes rather than cutting across MCU.
+    - Excludes debug serial monitor connections.
+    """
     parts = {p["id"]: p for p in diagram.get("parts", [])}
     connections = diagram.get("connections", [])
 
-    lines = ["```mermaid", "flowchart LR"]
-
-    # Board subgraph
     board_part = next((p for p in parts.values() if "board" in p.get("type", "")), None)
-    if board_part:
-        b_id = board_part["id"]
-        lines.append(f'    subgraph Board["{board_part.get("type", "Board")}"]')
-        lines.append(f"        {b_id}[{b_id}]")
-        lines.append("    end")
+    b_id = board_part["id"] if board_part else None
 
-    # Parts
-    for pid, part in parts.items():
-        ptype = part.get("type", "")
-        if "board" in ptype or "breadboard" in ptype:
-            continue
-        attrs = part.get("attrs", {})
-        label = pid
-        if ptype == "wokwi-resistor":
-            val = attrs.get("value", "R")
-            label = f"{pid} [{val}Ω]"
-        elif ptype == "wokwi-led":
-            col = attrs.get("color", "LED")
-            label = f"{pid} [LED {col}]"
-        elif ptype == "wokwi-pushbutton":
-            btn_lbl = attrs.get("label", "Button")
-            label = f"{pid} [{btn_lbl}]"
-        lines.append(f'    {pid}("{label}")')
+    bb_nets: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+    resolved_edges: list[tuple[str, str, str]] = []
 
-    lines.append("")
-
-    # Connections
     for conn in connections:
         if len(conn) < 2:
             continue
@@ -68,12 +51,92 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         src_part, _, src_pin = src.partition(":")
         dst_part, _, dst_pin = dst.partition(":")
 
-        # Ignore direct breadboard internal jumper lines for clean top-level Mermaid
+        # Ignore direct breadboard internal jumpers
         if "bb" in src_part and "bb" in dst_part:
             continue
 
+        # Skip MCU power rail feeds to breadboard rails in top-level diagram
+        if src_part == b_id and ("3V3" in src_pin or "GND" in src_pin) and "bb" in dst_part:
+            continue
+
+        # Redirect Ground connections to terminal GND
+        is_dst_gnd = (dst_part == b_id and "GND" in dst_pin.upper()) or (
+            "bb" in dst_part and "tn" in dst_pin
+        )
+        if is_dst_gnd:
+            edge_lbl = f"|{src_pin}|" if src_pin else ""
+            resolved_edges.append((src_part, edge_lbl, "gnd[GND]"))
+            continue
+
+        is_src_gnd = (src_part == b_id and "GND" in src_pin.upper()) or (
+            "bb" in src_part and "tn" in src_pin
+        )
+        if is_src_gnd:
+            edge_lbl = f"|{dst_pin}|" if dst_pin else ""
+            resolved_edges.append(("gnd[GND]", edge_lbl, dst_part))
+            continue
+
+        # Redirect Power rail connections
+        if "bb" in dst_part and "tp" in dst_pin:
+            edge_lbl = f"|{src_pin}|" if src_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, src_part))
+            continue
+        if "bb" in src_part and "tp" in src_pin:
+            edge_lbl = f"|{dst_pin}|" if dst_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, dst_part))
+            continue
+
+        # Group connections on breadboard terminal rows (e.g. 12t.a) into nets
+        if "bb" in dst_part and "." in dst_pin:
+            row = dst_pin.split(".")[0]
+            bb_nets[row].append(("src", src_part, src_pin))
+            continue
+        if "bb" in src_part and "." in src_pin:
+            row = src_pin.split(".")[0]
+            bb_nets[row].append(("dst", dst_part, dst_pin))
+            continue
+
         edge_label = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
-        lines.append(f"    {src_part} -->{edge_label} {dst_part}")
+        resolved_edges.append((src_part, edge_label, dst_part))
+
+    # Resolve breadboard row nets into direct component-to-component edges
+    for _row, items in bb_nets.items():
+        srcs = [it for it in items if it[0] == "src"]
+        dsts = [it for it in items if it[0] == "dst"]
+        for s in srcs:
+            for d in dsts:
+                label = f"|{s[2]} -> {d[2]}|" if s[2] and d[2] else ""
+                resolved_edges.append((s[1], label, d[1]))
+
+    lines = ["```mermaid", "flowchart LR"]
+
+    # Board subgraph
+    if board_part:
+        lines.append(f'    subgraph Board["{board_part.get("type", "Board")}"]')
+        lines.append(f"        {b_id}[{b_id}]")
+        lines.append("    end")
+
+    # Parts
+    for pid, part in parts.items():
+        ptype = part.get("type", "")
+        if "board" in ptype or "breadboard" in ptype:
+            continue
+        attrs = part.get("attrs", {})
+        if ptype == "wokwi-resistor":
+            val = attrs.get("value", "R")
+            lines.append(f'    {pid}("{pid} [{val}Ω]")')
+        elif ptype == "wokwi-led":
+            col = attrs.get("color", "LED")
+            lines.append(f'    {pid}("{pid} [LED {col}]")')
+        elif ptype == "wokwi-pushbutton":
+            btn_lbl = attrs.get("label", "Button")
+            lines.append(f'    {pid}("{pid} [{btn_lbl}]")')
+
+    lines.append("")
+
+    for src, lbl, dst in resolved_edges:
+        arrow = f"-->{lbl} " if lbl else "--> "
+        lines.append(f"    {src} {arrow}{dst}")
 
     lines.append("```")
     return "\n".join(lines)
@@ -203,15 +266,15 @@ def reformat_police_flasher_diagram(diagram: dict) -> dict:
             part["left"] = 360
         elif pid == "led2":
             # Branch 1 reverse LED (anti-parallel)
-            part["top"] = 70
+            part["top"] = 55
             part["left"] = 360
         elif pid == "r2":
             # Branch 2 series resistor on breadboard
-            part["top"] = 150
+            part["top"] = 105
             part["left"] = 230
         elif pid == "led3":
             # Branch 2 indicator LED
-            part["top"] = 150
+            part["top"] = 105
             part["left"] = 360
         parts.append(part)
 
@@ -229,25 +292,26 @@ def reformat_police_flasher_diagram(diagram: dict) -> dict:
 
     new_diagram["parts"] = parts
 
-    # Clean Manhattan connections on breadboard
+    # Clean Manhattan connections on breadboard:
+    # Wires route around top edge of MCU, avoiding any diagonal cutting across chip faces
     new_diagram["connections"] = [
         # Power rails to breadboard
-        ["esp:3V3.1", "bb1:tp.1", "red", ["h30", "v-60"]],
-        ["esp:GND.1", "bb1:tn.1", "black", ["h20", "v-80"]],
-        # Button: GPIO7 -> btn1:1.l, btn1:2.l -> GND
-        ["btn1:1.l", "esp:7", "green", ["h30", "v30"]],
-        ["btn1:2.l", "esp:GND.1", "black", ["v100", "h180"]],
+        ["esp:3V3.1", "bb1:tp.1", "red", ["h-20", "v-40", "h240"]],
+        ["esp:GND.1", "bb1:tn.1", "black", ["h20", "v-60", "h180"]],
+        # Button: GPIO7 -> btn1:1.l, btn1:2.l -> GND.2 (local bottom-left GND)
+        ["btn1:1.l", "esp:7", "green", ["h30"]],
+        ["btn1:2.l", "esp:GND.2", "black", ["v30", "h40"]],
         # Branch 1: GPIO4 -> r1 -> Node X (row 12 on breadboard)
-        ["esp:4", "r1:1", "orange", ["h40", "v-20"]],
+        ["esp:4", "r1:1", "orange", ["h-15", "v-45", "h210", "v30"]],
         ["r1:2", "bb1:12t.a", "blue", ["h10"]],
         ["bb1:12t.b", "led1:A", "blue", ["h20", "v-20"]],
         ["led1:C", "bb1:tn.15", "black", ["v-20"]],
-        ["bb1:12t.c", "led2:C", "blue", ["h20", "v20"]],
-        ["led2:A", "bb1:tp.15", "red", ["v-40"]],
+        ["bb1:12t.c", "led2:C", "blue", ["h20", "v15"]],
+        ["led2:A", "bb1:tp.15", "red", ["v-45"]],
         # Branch 2: GPIO6 -> r2 -> led3 -> GND rail
-        ["esp:6", "r2:1", "purple", ["h50", "v50"]],
+        ["esp:6", "r2:1", "purple", ["h-25", "v-65", "h230", "v85"]],
         ["r2:2", "led3:A", "red", ["h20"]],
-        ["led3:C", "bb1:tn.22", "black", ["v-100"]],
+        ["led3:C", "bb1:tn.22", "black", ["v-75"]],
         # Serial monitor
         ["esp:TX", "$serialMonitor:RX", "green", []],
         ["esp:RX", "$serialMonitor:TX", "green", []],
