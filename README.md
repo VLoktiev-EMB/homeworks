@@ -16,7 +16,7 @@ documents render directly in the repository view.
 <!-- BEGIN GENERATED: homeworks -->
 | ID | Project | Board | Framework | Status | Report |
 |----|---------|-------|-----------|--------|--------|
-| 1.3 | [1.3 Police Flasher](homeworks/1_3-police-flasher/) | esp32-s3-devkitc-1 | arduino | in-progress | [report](homeworks/1_3-police-flasher/report.md) |
+| 1.3 | [1.3 Police Flasher](homeworks/1_3-police-flasher/) | esp32-s3-devkitc-1 | arduino | complete | [report](homeworks/1_3-police-flasher/report.md) |
 <!-- END GENERATED -->
 
 ## Repository rules

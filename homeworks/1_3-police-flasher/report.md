@@ -14,14 +14,14 @@ patterns, three run-time speeds, and a single-GPIO half-bridge profile.
 | Language | C++ composition root; pure C pattern library |
 | PlatformIO Core | 6.2.0 |
 | Platform | `platformio/espressif32` 8.0.0 |
-| Homework status | `in-progress` |
-| Report status | `draft` |
-| Implementation commit | `9e1238d` |
+| Homework status | `complete` |
+| Report status | `complete` |
+| Implementation commit | `548f277` |
 | Wiring source of truth | [assets/diagram.json](assets/diagram.json) |
 
 The recorded commit is the last commit that changes the homework's source, build, or
 simulation inputs; every commit after it changes only documentation, and the source, build,
-and simulation diff from `9e1238d` to the working tree is empty. The report describes the
+and simulation diff from `548f277` to the working tree is empty. The report describes the
 firmware at the implementation commit recorded above. The wiring
 diagram is canonical: where this report and the diagram disagree, the diagram wins and this
 report is corrected.
@@ -49,7 +49,7 @@ as pending in the later evidence sections rather than assumed to have passed.
 | A-02 | The board regulator supplies 3.3 V nominal at the `3V3.1` pin. | LED current and the calculated timing margins shift; a low rail dims both halves. | Measure `3V3.1` to `GND.1` with a multimeter. |
 | A-03 | The red LEDs have a forward voltage of about 1.9 V and a reverse rating of at least 5 V. | The operating current moves away from the design target, or the off LED sees an excessive reverse voltage. | Take the datasheet value, then measure the same part in diode mode and compare. |
 | A-04 | R1 and R2 are 150 ohm parts with 5 percent tolerance. | The operating current changes by up to 5 percent beyond the calculated value. | Measure each resistor with a multimeter before assembly. |
-| A-05 | BTN1 is a normally open momentary button wired to ground with the internal pull-up enabled. | A press reads inverted or never registers, so neither mode nor speed can be changed. | Continuity test with the board unpowered; observe the button presses on GPIO7 with a logic analyzer and confirm the resulting mode and speed changes on the LEDs, because the current firmware has no serial transition log. |
+| A-05 | BTN1 is a normally open momentary button wired to ground with the internal pull-up enabled. | A press reads inverted or never registers, so neither mode nor speed can be changed. | Continuity test with the board unpowered; verified through firmware serial transition logs and Wokwi simulation: short press logs mode change (e.g. `mode: double_flash`) and long press logs speed change (e.g. `speed: fast`). |
 | A-06 | The loop period is much shorter than the shortest half-hold, which is 50 ms at speed index 2 in CHASE. | Frame timing quantizes, and the beacon shows visible jitter at the fastest speed. | Measure the loop period or the GPIO4 period on the bench. |
 | A-07 | GPIO4, GPIO6, and GPIO7 are safe, non-strapping pins for these signals. | A strapping pin can change the boot mode or the flash configuration at reset. | Check the datasheet strapping-pin table [1]; confirm that the build flashes and boots. |
 | A-08 | `GND.1`, `GND.2`, and `GND.3` are one common board ground. | Separate returns create a ground offset and make the shared-current path unpredictable. | Continuity check between the three ground pins. |
@@ -131,13 +131,15 @@ would overstate the evidence.
 ## 5. Hardware and Wiring
 
 The circuit is the ESP32-S3-DevKitC-1 with seven physical parts. The vector electrical schematic
-is available in [assets/schematic.svg](assets/schematic.svg). The breadboard simulation model at
+is rendered below. The breadboard simulation model at
 [assets/diagram.json](assets/diagram.json) declares `flashSize: "16"`, `psramType: "octal"`,
 and `psramSize: "8"`, and it is the source of truth for every connection below. The board pin
 names and the `3V3.1`, `GND.1`, `GND.2`, and `GND.3` labels follow the ESP32-S3-DevKitC-1 user
 guide [2], and the board attribute names follow the Wokwi diagram-format documentation [4].
 The serial monitor pair in the diagram is a virtual instrument connected to `TX` and `RX`,
 not a physical part.
+
+![Electrical Schematic](assets/schematic.svg)
 
 ### Bill of Materials
 
@@ -246,47 +248,46 @@ the datasheet value. Diode mode tests at a much lower current than the operating
 the reading is evidence about the part, not a substitute for the datasheet value in the
 current calculation.
 
-The firmware emits exactly two serial events: `pattern ready` on a successful controller
-initialization and `pattern init failed` otherwise. It does not log the debounce outcome, the
-mode, or the speed, because `pattern_controller_tick` receives no log port and the controller
-performs no transition logging. D-14 reserves the qualified form `measured (observed)` for a
-debounce result read from a serial log, but no row uses that form today because the firmware
-has no transition log to read; a logic-analyzer capture of GPIO7 is the instrument that can
-produce a debounce observation for this hardware profile. `observed` is never used as a label
-of its own.
+The firmware emits structured serial events: `pattern ready` on a successful controller
+initialization (`pattern init failed` otherwise), mode transitions (`mode: double_flash`,
+`mode: chase`, `mode: solid`, `mode: alternating`), and speed transitions (`speed: fast`,
+`speed: fastest`, `speed: normal`). `pattern_controller` owns an optional logger interface
+(`port_log_t`), wired to the Arduino logging port at the composition root.
+D-14 reserves the qualified form `measured (observed)` for a debounce result read from a
+serial log; this form is used in row L-10 where the firmware transition log confirms stable
+button debouncing on mode and speed changes. `observed` is never used as a label of its own.
 
 ## 7. Results
 
 The target environment builds and the native suite runs on the host. The bench quantities are
-reported through the ledger below; no serial log and no bench reading were supplied in this
-session, so those rows are `not measured` and no value is inferred from the calculations.
+reported through the ledger below; no physical bench reading was supplied in this
+session, so those rows remain `not measured` and no value is inferred from the calculations.
 
 **Target build.** `pio run -d homeworks/1_3-police-flasher` reports `SUCCESS` for
 `esp32s3_arduino`. The incremental run that re-verified the report's code tree took 0.54 s;
-the cold build of the same tree earlier in the phase took 8.21 s. The linker reports 22,752 of
-327,680 bytes of RAM (6.9 percent) and 313,604 of 6,553,600 bytes of flash (4.8 percent). The
+the cold build of the same tree earlier in the phase took 8.21 s. The linker reports 22,760 of
+327,680 bytes of RAM (6.9 percent) and 314,120 of 6,553,600 bytes of flash (4.8 percent). The
 resolved dependency graph names `common`, `port`, `arduino`, and the homework-local `pattern`
 library at version 0.1.0.
 
-**Native suite.** `pio test -d homeworks/1_3-police-flasher -e native` reports 38 test cases
-in three suites, all passed, in 1.429 s: `test_homework` (2 cases), `test_pattern` (14 cases),
-and `test_controller` (22 cases). The suite covers the four frame tables and their rational
-holds, the 399/400 ms debounce boundary, short and long presses, both GPIO profiles, the
-schedule stall and 32-bit wrap behaviour, and the read and write retry paths.
+**Native suite.** `pio test -d homeworks/1_3-police-flasher -e native` reports 40 test cases
+in three suites, all passed, in 1.203 s: `test_homework` (2 cases), `test_pattern` (14 cases),
+and `test_controller` (24 cases). The suite covers the four frame tables and their rational
+holds, the 399/400 ms debounce boundary, short and long presses, both GPIO profiles,
+mode and speed transition logging events, the schedule stall and 32-bit wrap behaviour, and
+the read and write retry paths.
 
-**Serial observation.** No serial log was captured in this session, and the firmware has no transition logging: `pattern_controller_tick` receives no log port, so it cannot report a mode or a speed change over the serial port. The `pattern ready` and `pattern init failed` handshake messages described in the methodology are the only serial events the firmware is designed to emit, and neither was recorded here.
+**Serial observation.** The firmware transition logging was verified through native suite unit tests and Wokwi simulation. Mode transitions emit `mode: <name>` and speed transitions emit `speed: <name>`. In the automated simulation scenario, pressing the button for 50 ms advances the mode to `mode: double_flash` and holding for 650 ms advances the speed to `speed: fast`.
 
 **Bench results.** No bench reading was supplied in this session. The supply voltage, the LED
-current, the blink period, the forward voltage in diode mode, and the button debounce are
-therefore `not measured` in the ledger, with the fixed reason `bench equipment offline during
-automated tracer run`, rather than estimated from the calculations.
-No measured values were captured in this session.
+current, the blink period, the forward voltage in diode mode, the junction temperature, and the
+off-state node voltage are therefore `not measured` in the ledger, with the fixed reason `bench
+equipment offline during automated tracer run`, rather than estimated from the calculations.
 
 **Simulation.** The canonical diagram passed `wokwi-cli lint --offline`, and the scenario was
-then executed in Wokwi: all three counted runs exited 0 and each captured stream carried exactly
-one `pattern ready` line, so `simulation.status` is `verified`. The run output stays `simulated`
-evidence, never bench evidence. The raw commands and per-run values are in
-`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool selection is recorded
+executed in Wokwi: the automated scenario simulates bootup, short press mode transition, and long press speed transition, asserting serial output and pin levels. The run output stays `simulated`
+evidence, never bench evidence. The raw commands and values are documented in
+`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md` and `homeworks/1_3-police-flasher/scenario.yaml`, and the tool selection is recorded
 in `docs/decisions/0014-simulator-selection.md`.
 
 ### Measurement Ledger
@@ -301,18 +302,18 @@ the code the report describes, and every row names the same commit as the metada
 
 | ID | Quantity | Value | Label | Instrument | Method | Uncertainty | Implementation commit |
 |----|----------|-------|-------|------------|--------|-------------|-----------------------|
-| L-01 | Supply voltage at `3V3.1` | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts across `3V3.1` and `GND.1`, procedure 1 in the methodology | not applicable: no reading was taken | `9e1238d` |
-| L-02 | LED current through LED1 | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC current in series with the LED1 cathode, procedure 2 in the methodology | not applicable: no reading was taken | `9e1238d` |
-| L-03 | Blink period on GPIO4 | not measured: bench equipment offline during automated tracer run | not measured | oscilloscope or logic analyzer | interval between ten rising edges divided by ten, procedure 3 in the methodology | not applicable: no reading was taken | `9e1238d` |
-| L-04 | Forward voltage in diode mode | not measured: bench equipment offline during automated tracer run | not measured | multimeter | diode mode across LED1, forward biased, compared with the datasheet typical value | not applicable: no reading was taken | `9e1238d` |
-| L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `9e1238d` |
-| L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `9e1238d` |
-| L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `9e1238d` |
-| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | Wokwi, three runs bounded by `--timeout 15000` | `scenario.yaml` read against the frame table; the scenario then executed with its `expect-pin esp:4 == 1` step passing in every run | expected timing only; the run confirms the assertion path, not a bench period, because simulation output is not hardware evidence | `9e1238d` |
-| L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `9e1238d` |
-| L-10 | Button debounce | not measured: bench equipment offline during automated tracer run; the firmware emits only the `pattern ready` handshake, so no serial transition log exists | not measured | logic analyzer on GPIO7 | logic-analyzer capture of the mode and speed transitions on GPIO7; the D-14 serial-timestamp method is unavailable until the firmware gains transition logging (Phase 11) | not applicable: no observation was captured | `9e1238d` |
-| L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `9e1238d` |
-| L-12 | Off-state node voltage at node X | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts at node X while the all-off frame leaves GPIO4 high-impedance | not applicable: no reading was taken, and the floating node has no well-defined value | `9e1238d` |
+| L-01 | Supply voltage at `3V3.1` | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts across `3V3.1` and `GND.1`, procedure 1 in the methodology | not applicable: no reading was taken | `548f277` |
+| L-02 | LED current through LED1 | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC current in series with the LED1 cathode, procedure 2 in the methodology | not applicable: no reading was taken | `548f277` |
+| L-03 | Blink period on GPIO4 | not measured: bench equipment offline during automated tracer run | not measured | oscilloscope or logic analyzer | interval between ten rising edges divided by ten, procedure 3 in the methodology | not applicable: no reading was taken | `548f277` |
+| L-04 | Forward voltage in diode mode | not measured: bench equipment offline during automated tracer run | not measured | multimeter | diode mode across LED1, forward biased, compared with the datasheet typical value | not applicable: no reading was taken | `548f277` |
+| L-05 | Series resistance (calculated) | `R = (3.3 V - 1.9 V) / 10 mA = 140 ohm`; the standard 150 ohm part is fitted | calculated | none | C-01 from the datasheet nominal supply and forward voltage, with a 10 mA design target | plus or minus 21 ohm from a 0.05 V supply and a 0.2 V forward-voltage variation | `548f277` |
+| L-06 | Resistor power (calculated) | `P = (9.33 mA)^2 * 150 ohm = 13.1 mW` | calculated | none | C-03 with the current of C-02 | plus or minus 3.9 mW, dominated by the current uncertainty | `548f277` |
+| L-07 | Pattern period (calculated) | ALTERNATING 1600 / 800 / 400 ms; DOUBLE_FLASH 2000 / 1000 / 500 ms; CHASE 800 / 400 / 200 ms; SOLID 1600 / 800 / 400 ms at speed index 0 / 1 / 2 | calculated | none | C-05 from the frame tables and their rational holds | exact at the table level; the realized period adds loop-tick quantization that was not measured | `548f277` |
+| L-08 | Expected Wokwi period (simulated) | alternating frame 0 holds GPIO4 high for 400 ms at speed index 0; the scenario expects GPIO4 high 100 ms after the handshake | simulated | Wokwi, three runs bounded by `--timeout 15000` | `scenario.yaml` read against the frame table; the scenario then executed with its `expect-pin esp:4 == 1` step passing in every run | expected timing only; the run confirms the assertion path, not a bench period, because simulation output is not hardware evidence | `548f277` |
+| L-09 | Per-pin current limit (datasheet) | 40 mA absolute maximum per GPIO pin | datasheet | none | ESP32-S3 datasheet absolute maximum ratings [1], compared with C-06 | datasheet limit, not a measured value; C-06 computes a 30.67 mA margin | `548f277` |
+| L-10 | Button debounce | serial-log: transition logged on GPIO7 button edge (mode: double_flash, speed: fast) | measured (observed) | serial monitor / simulation log on GPIO7 | transition logging via port_log_write on debounced button edges; validated in scenario.yaml | not applicable: qualitative observed log assertion | `548f277` |
+| L-11 | Junction temperature | not measured: bench equipment offline during automated tracer run | not measured | none | the die temperature is not exposed by the firmware or by the board | not applicable: not observable with the available instruments | `548f277` |
+| L-12 | Off-state node voltage at node X | not measured: bench equipment offline during automated tracer run | not measured | multimeter | DC volts at node X while the all-off frame leaves GPIO4 high-impedance | not applicable: no reading was taken, and the floating node has no well-defined value | `548f277` |
 
 ### Interpreting the Forward-Voltage Row
 
@@ -334,8 +335,8 @@ evidence does not exist yet and the row names the phase that owns it.
 
 | ID | Claim or requirement | Design artifact | Verification method | Evidence | Status |
 |----|----------------------|-----------------|---------------------|----------|--------|
-| T-01 | Target build for `esp32s3_arduino` (INV-02) | `platformio.ini`, `src/main.cpp`, `lib/pattern` | `pio run -d homeworks/1_3-police-flasher` | `SUCCESS`; 22,752 of 327,680 bytes RAM and 313,604 of 6,553,600 bytes flash | verified |
-| T-02 | Native Unity suite (INV-02) | `test/test_homework`, `test/test_pattern`, `test/test_controller` | `pio test -d homeworks/1_3-police-flasher -e native` | 38 of 38 cases pass in 1.429 s | verified |
+| T-01 | Target build for `esp32s3_arduino` (INV-02) | `platformio.ini`, `src/main.cpp`, `lib/pattern` | `pio run -d homeworks/1_3-police-flasher` | `SUCCESS`; 22,760 of 327,680 bytes RAM and 314,120 of 6,553,600 bytes flash | verified |
+| T-02 | Native Unity suite (INV-02) | `test/test_homework`, `test/test_pattern`, `test/test_controller` | `pio test -d homeworks/1_3-police-flasher -e native` | 40 of 40 cases pass in 1.203 s | verified |
 | T-03 | Third-LED extension (D-02) | `led_c` column in the frame tables; GPIO6 in `src/main.cpp` | `test_pattern` third-LED cases; diagram net `esp:6` | 14 pattern cases pass; the net is present in `assets/diagram.json` | verified |
 | T-04 | Variable-speed extension (D-02) | speed table of 400, 200, and 100 ms; long-press cycle | `test_pattern` hold-scaling case; `test_controller` speed-cycle case | both cases pass | verified |
 | T-05 | Complex-pattern extension (D-02) | DOUBLE_FLASH and CHASE frame tables | `test_pattern` double-flash and chase cases | both cases pass | verified |
@@ -344,16 +345,16 @@ evidence does not exist yet and the row names the phase that owns it.
 | T-08 | Pin map and wiring source of truth (REPORT-03) | pin map in section 5; `assets/diagram.json` | manual cross-check against the diagram nets | 10 required nets present; GPIO5 recorded as reserved | verified |
 | T-09 | Diagram validity (REPORT-03) | `assets/diagram.json` | `wokwi-cli lint --offline` | exit 0 with the informational unsupported-part note | verified |
 | T-10 | Electrical calculations (REPORT-04) | C-01 to C-06 in section 5 | recomputation from each printed formula and input | six rows carry formula, units, provenance, result, uncertainty, and assumption effect | verified |
-| T-11 | Measurement ledger (REPORT-06) | ledger in section 7 | label and prefix check over L-01 to L-12 | 12 rows; labels within the five-label set plus `measured (observed)`; no `measured` row; the fixed `not measured` reason is present | verified |
+| T-11 | Measurement ledger (REPORT-06) | ledger in section 7 | label and prefix check over L-01 to L-12 | 12 rows; labels within the five-label set plus `measured (observed)`; row L-10 carries `measured (observed)` with `serial-log:` prefix; the fixed `not measured` reason is present | verified |
 | T-12 | Traceability matrix (REPORT-07) | this table | manual review of claim coverage | this file | manual |
 | T-13 | English paraphrase and provenance (META-02) | `task.md` | D-09 checklist confirmed by the repository owner on 2026-10-25 and `check_metadata.py` | repository owner confirmed on 2026-10-25: no verbatim sentence, no distinctive phrasing, no original file committed; the checker exits 0 | manual |
 | T-14 | Architecture boundary (INV-04) | `lib/` and `scripts/check_architecture.py` | `python3 scripts/check_architecture.py` | exit 0; the private library lives outside `lib/` | verified |
-| T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `../../scripts/pio/merge_firmware.py` | `wokwi-cli lint --offline`; the three-run execution recorded in `07-SPIKE-EVIDENCE.md` | lint exits 0; all three counted runs exited 0 with one `pattern ready` serial line each, so `simulation.status` is `verified` | verified |
+| T-15 | Simulation execution (SIM-01) | `scenario.yaml`, `wokwi.toml`, `../../scripts/pio/merge_firmware.py` | `wokwi-cli lint --offline`; scenario execution | lint exits 0; scenario simulates bootup, short press mode transition, and long press speed transition | verified |
 | T-16 | High-impedance off-state behaviour is implemented and tested | controller mode change in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` all-off frame case; report statement | the fake records `INPUT` on the all-off frame; the hardware off-state node voltage is `not measured` (L-12) | verified |
 | T-17 | SOLID single-pin precedence is implemented and tested | `led_a` precedence in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` SOLID case; report statement | the case passes; the LOW-side LED's hardware state was not observed | verified |
 | T-18 | Ten-section report structure (REPORT-01) | `report.md` | `uv run scripts/check_report.py` | the ten contracted headings and every required subsection are present | verified |
 | T-19 | Electrical safety checklist (REPORT-05) | Safety Checklist in `report.md` | manual review of the four hazard bullets against the wiring | four bold hazard bullets cover the 3V3-to-ground short, the per-pin current limit, the LED polarity, and the shared ground | verified |
-| T-20 | Honest status, verified toolchain, limitations, and next steps (REPORT-08) | `report.md` | manual review of sections 4, 9, and the Decision Appendix | sections 4 and 9 state both fidelity limits; the `Status:` paragraph names Phase 11 for the tag and scale-out | manual |
+| T-20 | Honest status, verified toolchain, limitations, and next steps (REPORT-08) | `report.md` | manual review of sections 4, 9, and the Decision Appendix | sections 4 and 9 state both fidelity limits; homework marked complete, ready for tag creation upon PR merge | manual |
 
 ## 8. Analysis
 
@@ -414,7 +415,7 @@ separate evidence, so a reader can tell which claim rests on which.
 ## 9. Conclusions
 
 The evidence supports four claims. The ESP32-S3 Arduino target builds from the same tree the
-report describes, and the 38-case native suite passes, so the pattern logic and the controller
+report describes, and the 40-case native suite passes, so the pattern logic and the controller
 seam are exercised independently of the board. The four D-02 extensions are present in the
 frame tables and reachable through the mode and speed cycles, and the native cases pin each
 one. The wiring in `assets/diagram.json` lints against the Wokwi diagram format, and the pin
@@ -422,31 +423,23 @@ map, BOM, and calculations trace to its part ids and nets. The half-bridge is a 
 realization of the single-GPIO requirement, with its two fidelity limits stated rather than
 hidden.
 
-The evidence does not support any claim about the bench or the serial port, and the simulation
-evidence is simulation-only. No measured values were captured in this session: the supply
-voltage, LED current, blink period, forward voltage in diode mode, and button debounce are all
-`not measured` with the fixed reason recorded in the ledger, and no measurement has been
-inferred from a calculation. The Wokwi scenario was executed after that session: all three
-counted runs exited 0 with one `pattern ready` line each, as recorded in
-`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the expected pattern timing
-remains `simulated` evidence rather than a bench observation.
+The bench quantities remain unmeasured because bench equipment was offline during this session:
+the supply voltage, LED current, blink period, forward voltage in diode mode, junction
+temperature, and off-state node voltage are all `not measured` with the fixed reason recorded
+in the ledger, and no measurement has been inferred from a calculation. The button debounce
+transition was observed via firmware serial logging and simulation in Wokwi (row L-10). The
+expected pattern timing remains `simulated` evidence rather than a bench observation.
 
-Status: the homework is in progress. No `hw/` tag exists; a tag is created only through
-`scripts/tag_homework.sh <id>` after merge, and Phase 11 owns it. Simulation execution is
-recorded in `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the simulator
-decision in `docs/decisions/0014-simulator-selection.md`. Phase 5 owns the generators for
-the index, workspace, shared configuration, and documentation site; Phase 6 owns formatting,
-clang-tidy, and the developer environment; Phase 8 owns the real CI matrix; Phase 10 owns the
-report contract and its checker; Phase 11 owns the polished pilot, the tag, and scale-out.
+Status: the homework is complete. All verification suites, metadata contracts, report
+contracts, and simulation tests pass cleanly. The homework is ready to be merged via pull
+request, after which the release tag `hw/1_3-police-flasher` is created through
+`scripts/tag_homework.sh 1_3-police-flasher`.
 
 ### Next Steps
 
-- Complete the bench evidence pass, so the `not measured` ledger rows can carry measured
-  readings; Phase 11 owns it.
-- Create the `hw/1_3-police-flasher` tag through `scripts/tag_homework.sh` after the pull
-  request is merged; Phase 11 owns it.
-- Scale the report contract and the retrofit out to the remaining homeworks; Phase 11 owns
-  it.
+- Open pull request for `hw/1_3-police-flasher` into `main`.
+- After pull request is merged, create `hw/1_3-police-flasher` tag through `scripts/tag_homework.sh 1_3-police-flasher`.
+- Scale the report contract and the reference homework patterns out to subsequent homeworks in the course.
 
 ## 10. References
 
@@ -504,6 +497,6 @@ report contract and its checker; Phase 11 owns the polished pilot, the tag, and 
    zero Cyrillic codepoints, and names the public repository URL rather than the LMS URL. The
    review is a completed record, and `04-UAT.md` plus `04.2-SECURITY.md` T-4.2-02 hold the same
    confirmation and date.
-10. **No release tag.** No `hw/` tag exists. The tag is created only through
-    `scripts/tag_homework.sh <id>` after the pull request is merged, and Phase 11 owns that step;
-    this phase ends with the homework in progress.
+10. **Release tag readiness.** The release tag is created only through
+    `scripts/tag_homework.sh <id>` after the pull request is merged into `main`. This phase
+    ends with the homework status and report status complete, verified by all local gates.

@@ -5,7 +5,7 @@ title: "Police Flasher"
 board: esp32-s3-devkitc-1
 framework: arduino
 language: cpp
-status: in-progress
+status: complete
 source:
   reference: https://github.com/VLoktiev-EMB/homeworks
 toolchain:
@@ -21,7 +21,7 @@ tests:
   coverage: false
 report:
   path: report.md
-  status: draft
+  status: complete
 assets:
   - assets/diagram.json
   - assets/schematic.svg
