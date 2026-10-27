@@ -67,7 +67,9 @@ the same register as `AGENTS.md`.
   copula form such as `password is <value>`, a keyword embedded after another
   word such as `userpassword = <value>`, a keyword followed by up to 128
   identifier characters such as `secretKey: <value>`, `secret_key = <value>` or
-  `passwordHash: <value>`, the `passphrase` and `pwd` keywords, and a
+  `passwordHash: <value>`, a compound keyword written with one space, underscore or hyphen
+  between its words such as `secret key = <value>` or `SECRET KEY: <value>`, the
+  `passphrase` and `pwd` keywords, and a
   space-separated value of six or more characters, accepting occasional false
   positives. On a match it writes nothing and
   reports `capture unavailable`. No other skill, path, or file inherits the

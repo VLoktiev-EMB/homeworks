@@ -6,8 +6,8 @@
       "owner": "skills",
       "source": ".claude/skills/_shared/guardrails.md",
       "mode": "whole",
-      "sha256": "89385d698d9163c173f130af8dcd912ca30afea85e85f08ecda254519bf1f03d",
-      "bytes": 4483
+      "sha256": "425828a88c5f2e385b4eb94faf9ec35cd28eb06ea24d63bf8bcc040d18e71014",
+      "bytes": 4626
     },
     {
       "path": ".agents/skills/course-index/CHANGELOG.md",
@@ -86,8 +86,8 @@
       "owner": "skills",
       "source": ".claude/skills/hw-flash/SKILL.md",
       "mode": "whole",
-      "sha256": "b9ad7dd2de0e5915c188d54a6eff8bbc5a1293d40aa630d5c2af0d3724d9b8b5",
-      "bytes": 13024
+      "sha256": "034d23e32ff2e082275b42b3a97b3e02ff80b8a656609512ed855a5ad778cf44",
+      "bytes": 12682
     },
     {
       "path": ".agents/skills/hw-report/CHANGELOG.md",

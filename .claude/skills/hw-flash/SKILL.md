@@ -51,8 +51,8 @@ simulation is a separate quota-metered action that never proves hardware behavio
   skill on more than one candidate, announcing every path and asking the user for `--port`,
   because two interfaces can belong to one board. Validate a user-named port as an absolute
   path under `/dev` with no `..` component before it appears in any command or path, and pass
-  it as one argv element. The selected path is passed to both the upload and the capture;
-  neither command resolves a port independently.
+  it as one argv element. Port handling follows the shared flashing rule in
+  `../_shared/guardrails.md`; it is not restated here.
 - Capture is hardware work: it requires a connected board and a serial port. Never claim
   the firmware is on the board without a real upload exit code.
 
@@ -83,8 +83,6 @@ Then: a ~20-second serial capture goes to .skill-state/logs/<id>.log
 
 The bracketed `-e <env>` segment is included only when `needs_e_flag` is true, and
 `[--baud <n>]` only when a user-named baud was accepted after an absent `monitor_speed`.
-The announced port is the executed port: the same resolved path appears in the upload's
-`--upload-port` and the capture's `--port`, so the announced capture is the executed capture.
 
 Then ask for a literal affirmative. Accept exactly `так` or `yes`, case-insensitive, with
 no other text on the line. The answer is a gate, not a preference:
@@ -109,8 +107,7 @@ pio run -d homeworks/<id> [-e <env>] -t upload --upload-port <port>
 
 Include the `-e <env>` segment only when `needs_e_flag` is true, and announce the command
 with that flag before it runs. The `--upload-port <port>` value is the path resolved before
-the gate and announced at the gate; PlatformIO's implicit port selection is never used.
-Report the real command and its real exit code; never wrap
+the gate and announced at the gate. Report the real command and its real exit code; never wrap
 it in a script that hides the exit code.
 
 On a non-zero exit, stop. Report the exit code and the diagnostics, and name the outcome
@@ -127,8 +124,8 @@ uv run scripts/serial_capture.py --id <id> [--env <env>] [--baud <n>] --port <po
 
 Include `--env <env>` only when `needs_e_flag` is true, `--baud <n>` only on the
 user-named path, and `--seconds` only when the default 20 seconds is not intended. The
-`--port <port>` value is the path resolved before the gate and announced at the gate; the
-helper never selects a port on its own. The helper forwards `--baud` to the monitor as
+`--port <port>` value is the path resolved before the gate and announced at the gate. The
+helper forwards `--baud` to the monitor as
 `-b <n>`. The helper runs
 
 ```text
@@ -163,8 +160,7 @@ Baud and port come from the project, not from this skill:
 
 - Never hardcode `-b 115200`. The monitor inherits the declared `monitor_speed` resolved
   before the gate, and an absent setting stops the skill instead of falling through to
-  PlatformIO's 9600 default. The port is resolved once before the gate, passed to both
-  commands, and never chosen implicitly.
+  PlatformIO's 9600 default. The port is resolved once before the gate.
 - Pass `--baud <n>` only for the user-named value accepted after an absent setting.
   Validate `<n>` as a positive integer before use and record the value in the outcome; the
   helper forwards it to the monitor as `-b <n>`.
