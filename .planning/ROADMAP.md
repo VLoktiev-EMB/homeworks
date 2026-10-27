@@ -431,7 +431,7 @@ Plans:
   3. `docs/standards/electrical-calculations.md` lists the calculation catalog, and each calculation records formula, units, input provenance, result, uncertainty, and assumption impact.
   4. The self-audit rubric maps every report artifact and evidence item to the pre-PR checklist.
 
-**Plans:** 10/10 plans executed, 2 gap-closure
+**Plans:** 10/12 plans executed, 4 gap-closure
 
 **Wave 1**
 - [x] 10-01-PLAN.md — Checker core and structure rules: `scripts/report/` package, vocabulary, fence-aware parser, `check_report.py` CLI, `RPT-0xx`/`RPT-1xx` (tracer)
@@ -462,6 +462,12 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 - [x] 10-10-PLAN.md — G-10-1: contain `report.path` and pin the hostile-document contract (CR-03)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 10-11-PLAN.md — G-10-1: unrepresentable path refusal, loader depth bound, safe OSError handling (CR-04, CR-05, WR-11, WR-14)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 10-12-PLAN.md — G-10-1: metadata and diagram intermediate symlink refusal, TOCTOU hardening (CR-06, WR-12, WR-13)
 
 ### Phase 11: Pilot Homework 1.3 — Finalization
 
