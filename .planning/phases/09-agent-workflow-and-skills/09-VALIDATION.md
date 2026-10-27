@@ -64,6 +64,10 @@ evidence it audits.
 | 09-14 | 09-14 | 4 | FLOW-07 | T-09-40 | An identifier-suffixed credential (`{"secretKey": "hunter2"}`, `secret_key = hunter2`, `passwordHash: abcdef`, `SECRET_KEY = hunter2`) matches, and the pinned benign set still does not | unit | `python3 -m unittest scripts.tests.test_serial_capture.CredentialScanTests -v` | ✅ | ✅ green |
 | 09-14 | 09-14 | 4 | FLOW-07 | T-09-40 | An identifier-suffixed credential refuses before the filesystem is touched: `CaptureFailed`, no log file, no `.skill-state` directory | end-to-end | `python3 -m unittest scripts.tests.test_serial_capture.CaptureAndStoreTests -v` | ✅ | ✅ green |
 | 09-14 | 09-14 | 4 | FLOW-01 | — | The guardrails capture exception, the helper docstring and the generated mirror name the same suffix form | smoke | `uv run scripts/gen_skills.py --check` | ✅ | ✅ green |
+| 09-17 | 09-17 | 1 | FLOW-07 | — | A space-separated compound credential (`SECRET KEY: hunter2`, `secret key = hunter2`, `Secret Key: hunter2`, `secret key: hunter2`, `SECRET KEY = hunter2`) matches, and every pinned benign negative still does not | unit | `python3 -m unittest scripts.tests.test_serial_capture.CredentialScanTests -v` | ✅ | ✅ green |
+| 09-17 | 09-17 | 1 | FLOW-07 | T-09-40 | A space-separated compound credential refuses before the filesystem is touched: `CaptureFailed`, no log file, no `.skill-state` directory | end-to-end | `python3 -m unittest scripts.tests.test_serial_capture.CaptureAndStoreTests.test_a_space_separated_compound_credential_child_writes_nothing -v` | ✅ | ✅ green |
+| 09-18 | 09-18 | 2 | FLOW-01 | — | The shared guardrails own the resolved-port rule and the compound-credential shape; the regenerated mirror matches the canonical tree | smoke | `uv run scripts/gen_skills.py --check` | ✅ | ✅ green |
+| 09-18 | 09-18 | 2 | FLOW-01 | — | `hw-flash/SKILL.md` carries no normative restatement of the shared port rule while keeping every operational step | manual/review (D-18) | — | ✅ | ✅ green (review) |
 | 09-01 | 09-01 | 1 | — | — | Frontmatter transform strips Claude-only keys, keeps the body, injects the banner | unit | `python3 -m unittest scripts.tests.test_gen_skills -v` | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | Unknown frontmatter key exits 2 | unit | same | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | `--check` reports MODIFIED/DELETED/ORPHAN and writes nothing | unit | same | ✅ | ✅ green |
@@ -118,9 +122,12 @@ locked decision.
       manual-only by design (D-22 dry-run transcript), so the phase is VALIDATED (PARTIAL)
 
 **Approval:** validated (partial) — audit re-run 2026-10-27 after the gap-closure plans
-09-11…09-14; fifteen automated rows green, seven manual-only rows carried with their dry-run
-evidence. The 09-14 rows cover T-09-40 end to end: the scan matches the identifier-suffixed
-forms and the refusal happens before any log file or state directory exists.
+09-11…09-14 and again after 09-17/09-18; eighteen automated rows green, seven manual-only rows
+carried with their dry-run evidence, and one review-enforced row. The 09-14 rows cover T-09-40
+end to end: the scan matches the identifier-suffixed forms and the refusal happens before any
+log file or state directory exists. The 09-17 rows extend that to the space-separated compound
+form (`SECRET KEY: hunter2`), and 09-18 keeps the shared guardrails the single owner of both the
+resolved-port rule and the compound-credential shape while the regenerated mirror matches.
 
 ## Validation Audit 2026-10-26
 
