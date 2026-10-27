@@ -5,7 +5,7 @@ repository root built by `scripts.tests.temp_root`, never against the
 repository itself, so a failure cannot leave a `homeworks/` directory behind.
 
 The module pins the four META-04 behaviours — scaffold, content idempotency,
-`--dry-run` parity and refusal to overwrite — and the eight FOUND-01 paths.
+`--dry-run` parity and refusal to overwrite — and the declared FOUND-01 paths.
 Every scaffolded tree is asserted against the live template it was rendered
 from — file-set equality, byte equality for every placeholder-free source and
 the substituted documents — so a template edit and a renderer change cannot
@@ -32,12 +32,15 @@ from scripts.tests.temp_root import snapshot_tree
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = "scripts/new_homework"
+REPORT_SCRIPT = "scripts/check_report.py"
 METADATA_DIR = REPO_ROOT / "scripts" / "metadata"
 
 HOMEWORK_ID = "1_3-fixture"
 TEMPLATES = ("arduino", "espidf")
 
-# FOUND-01: the seven shared paths plus the framework-specific entry point.
+# FOUND-01 / D-22: the eight shared paths plus the framework-specific entry
+# point. `report.md` is here so a green suite asserts the new artifact rather
+# than merely letting it appear (Pitfall 13).
 SHARED_PATHS = (
     "platformio.ini",
     "include/.gitkeep",
@@ -45,6 +48,7 @@ SHARED_PATHS = (
     "assets/.gitkeep",
     "README.md",
     "task.md",
+    "report.md",
     "homework.yaml",
 )
 
@@ -52,8 +56,8 @@ ENTRY_POINTS = {"arduino": "src/main.cpp", "espidf": "src/main.c"}
 LANGUAGES = {"arduino": "cpp", "espidf": "c"}
 
 
-def eight_paths(template: str) -> tuple:
-    """Return the eight FOUND-01 paths for *template*."""
+def declared_paths(template: str) -> tuple:
+    """Return the declared FOUND-01 paths for *template*."""
     return (ENTRY_POINTS[template],) + SHARED_PATHS
 
 
@@ -96,6 +100,24 @@ def run_scaffold(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
         )
     return subprocess.run(
         ["uv", "run", SCRIPT, *args],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def run_report_checker(
+    *args: str, timeout: int = 180
+) -> subprocess.CompletedProcess:
+    """Invoke `uv run scripts/check_report.py` from the repository root."""
+    if shutil.which("uv") is None:
+        raise AssertionError(
+            "uv is a required repository tool; install it before running this suite"
+        )
+    return subprocess.run(
+        ["uv", "run", REPORT_SCRIPT, *args],
         cwd=str(REPO_ROOT),
         capture_output=True,
         text=True,
@@ -149,6 +171,7 @@ class ScaffoldTestBase(unittest.TestCase):
         template_dir = REPO_ROOT / "templates" / f"homework-{template}"
         expected = authored_template_files(template_dir)
         expected["task.md"] = REPO_ROOT / "templates" / "task" / "task.md"
+        expected["report.md"] = REPO_ROOT / "templates" / "report" / "report.md"
         actual = snapshot_tree(target)
 
         self.assertEqual(
@@ -178,23 +201,23 @@ class ScaffoldTestBase(unittest.TestCase):
 
 
 class InventoryTests(ScaffoldTestBase):
-    """FOUND-01: both templates produce the eight declared paths."""
+    """FOUND-01: both templates produce the declared paths."""
 
-    def test_arduino_scaffold_creates_the_eight_paths(self) -> None:
+    def test_arduino_scaffold_creates_the_declared_paths(self) -> None:
         result = self.scaffold(self.root)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
         missing = [
-            name for name in eight_paths("arduino") if not (target / name).is_file()
+            name for name in declared_paths("arduino") if not (target / name).is_file()
         ]
         self.assertEqual([], missing)
 
-    def test_espidf_scaffold_creates_the_eight_paths(self) -> None:
+    def test_espidf_scaffold_creates_the_declared_paths(self) -> None:
         result = self.scaffold(self.root, template="espidf")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
         missing = [
-            name for name in eight_paths("espidf") if not (target / name).is_file()
+            name for name in declared_paths("espidf") if not (target / name).is_file()
         ]
         self.assertEqual([], missing)
         self.assertTrue((target / "sdkconfig.defaults").is_file())
@@ -250,9 +273,37 @@ class InventoryTests(ScaffoldTestBase):
         for relative in ("src", "include", "test/test_homework", "assets"):
             with self.subTest(directory=relative):
                 self.assertTrue((target / relative).is_dir())
-        for relative in eight_paths("arduino"):
+        for relative in declared_paths("arduino"):
             with self.subTest(file=relative):
                 self.assertTrue((target / relative).is_file())
+
+
+class ReportScaffoldTests(ScaffoldTestBase):
+    """D-22: the scaffold composes `report.md` exactly as it composes `task.md`."""
+
+    def test_report_md_is_scaffolded_and_rendered(self) -> None:
+        for template in TEMPLATES:
+            root = self.build(f"report-{template}")
+            result = self.scaffold(root, template=template)
+            with self.subTest(template=template):
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                report = self.target(root) / "report.md"
+                self.assertTrue(report.is_file(), "the scaffold must write report.md")
+                text = report.read_text(encoding="utf-8")
+                self.assertNotIn("{{", text)
+                self.assertIn("## 1. Title and Metadata", text)
+
+    def test_report_block_is_placeholder_in_both_templates(self) -> None:
+        for template in TEMPLATES:
+            manifest = (
+                REPO_ROOT / "templates" / f"homework-{template}" / "homework.yaml"
+            )
+            text = manifest.read_text(encoding="utf-8")
+            with self.subTest(template=template):
+                self.assertIn(
+                    "report:\n  path: report.md\n  status: placeholder\n",
+                    text,
+                )
 
 
 class GeneratedTemplateOutputTests(ScaffoldTestBase):
@@ -294,7 +345,7 @@ class GeneratedTemplateOutputTests(ScaffoldTestBase):
         self.assertTrue((target / "sdkconfig.defaults").is_file())
 
 
-class TemplateParityTests(ScaffoldTestBase):
+class LiveTemplateParityTests(ScaffoldTestBase):
     """The scaffolded tree equals the live template it read, not a stored copy."""
 
     def test_arduino_scaffold_matches_its_live_template(self) -> None:
