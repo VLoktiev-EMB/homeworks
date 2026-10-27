@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004 (completed 2026-10-26)
 - [x] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation (completed 2026-10-26)
 - [x] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented (completed 2026-10-27)
-- [ ] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric
+- [x] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric (completed 2026-10-27)
 - [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
 
 ## Phase Details
@@ -431,7 +431,43 @@ Plans:
   3. `docs/standards/electrical-calculations.md` lists the calculation catalog, and each calculation records formula, units, input provenance, result, uncertainty, and assumption impact.
   4. The self-audit rubric maps every report artifact and evidence item to the pre-PR checklist.
 
-**Plans**: TBD
+**Plans:** 12/12 plans complete, 4 gap-closure
+
+**Wave 1**
+- [x] 10-01-PLAN.md — Checker core and structure rules: `scripts/report/` package, vocabulary, fence-aware parser, `check_report.py` CLI, `RPT-0xx`/`RPT-1xx` (tracer)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 10-02-PLAN.md — Table contract: exact headers, row shape, required cells, data-row-or-N/A, safety bullets, BOM ↔ `diagram.json`
+- [x] 10-05-PLAN.md — Report template skeleton, scaffold composition of `report.md`, template/checker parity
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 10-03-PLAN.md — Evidence ledger and traceability: label vocabulary, prefixes, commit identity, provenance depth, artifact existence, citations, `REPORT-NN` coverage
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 10-04-PLAN.md — Identity and toolchain comparison, internal links, English-only scan, sentinels, native/simulation claims
+
+**Wave 5** *(blocked on Wave 4)*
+- [x] 10-06-PLAN.md — Bounded three-edit retrofit of `homeworks/1_3-police-flasher/report.md` and the real-tree regression
+
+**Wave 6** *(blocked on Wave 5)*
+- [x] 10-07-PLAN.md — `docs/standards/report.md` (rule reference and self-audit checklist) and `docs/standards/electrical-calculations.md`
+
+**Wave 7** *(blocked on Wave 6)*
+- [x] 10-08-PLAN.md — `check-report` hook, hook-shape tests, `AGENTS.md`, pull-request template, decisions row, `hw-report` stub and mirror
+
+**Gap closure** *(from the 2026-10-27 UAT: G-10-1)*
+
+**Wave 1**
+- [x] 10-09-PLAN.md — G-10-1: never raise on hostile metadata or diagram (CR-01, CR-02)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 10-10-PLAN.md — G-10-1: contain `report.path` and pin the hostile-document contract (CR-03)
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 10-11-PLAN.md — G-10-1: unrepresentable path refusal, loader depth bound, safe OSError handling (CR-04, CR-05, WR-11, WR-14)
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 10-12-PLAN.md — G-10-1: metadata and diagram intermediate symlink refusal, TOCTOU hardening (CR-06, WR-12, WR-13)
 
 ### Phase 11: Pilot Homework 1.3 — Finalization
 
@@ -467,7 +503,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
-| 10. Report and Evidence System | 0/TBD | Not started | - |
+| 10. Report and Evidence System | 12/12 | Complete    | 2026-10-27 |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
 ## Backlog

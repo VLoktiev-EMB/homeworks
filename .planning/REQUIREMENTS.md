@@ -88,24 +88,24 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Homework Artifacts and Reports
 
-- [ ] **REPORT-01**: Every homework has a 10-section academic report in Markdown:
+- [x] **REPORT-01**: Every homework has a 10-section academic report in Markdown:
       title/metadata, objective, assumptions, theory, hardware and wiring, methodology,
       results, analysis with industry notes, conclusions, and IEEE references.
-- [ ] **REPORT-02**: The report includes a BOM with ref, part/value, quantity, package,
+- [x] **REPORT-02**: The report includes a BOM with ref, part/value, quantity, package,
       source/link, and notes.
-- [ ] **REPORT-03**: The report includes a pin map and uses `assets/diagram.json` as the
+- [x] **REPORT-03**: The report includes a pin map and uses `assets/diagram.json` as the
       source of truth for wiring.
-- [ ] **REPORT-04**: Electrical calculations show formula, units, input provenance,
+- [x] **REPORT-04**: Electrical calculations show formula, units, input provenance,
       result, tolerance/uncertainty, and the effect of assumptions; the calculation
       catalog in `docs/standards/electrical-calculations.md` is used to select the
       relevant set.
-- [ ] **REPORT-05**: Every code homework includes an electrical safety checklist.
-- [ ] **REPORT-06**: Results use a measurement ledger labelling each value as measured,
+- [x] **REPORT-05**: Every code homework includes an electrical safety checklist.
+- [x] **REPORT-06**: Results use a measurement ledger labelling each value as measured,
       calculated, simulated, datasheet, or explicitly not measured, with instrument,
       method, uncertainty, and commit hash.
-- [ ] **REPORT-07**: Every report includes a compact traceability matrix mapping
+- [x] **REPORT-07**: Every report includes a compact traceability matrix mapping
       requirement/claim to design artifact, verification method, evidence, and status.
-- [ ] **REPORT-08**: Every report includes honest status, verified board/toolchain,
+- [x] **REPORT-08**: Every report includes honest status, verified board/toolchain,
       known limitations, and next steps.
 
 ### Simulation and Diagrams
@@ -144,7 +144,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
       `docs/decisions/`; homework assumptions live in the report with impact-if-wrong and
       validation.
       *(Narrowed 2026-10-25: ADRs for irreversible decisions only; no status index.)*
-- [ ] **TOOL-08**: A self-audit rubric maps the report, BOM, calculations, safety,
+- [x] **TOOL-08**: A self-audit rubric maps the report, BOM, calculations, safety,
       evidence, and traceability to the pre-PR checklist.
       *(Deferred 2026-10-25 until the report system has three real uses.)*
 
@@ -310,14 +310,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-05 | Phase 3 | Complete |
 | ARCH-06 | Phase 3 | Complete |
 | ARCH-07 | Phase 3 | Complete |
-| REPORT-01 | Phase 10 | Pending |
-| REPORT-02 | Phase 10 | Pending |
-| REPORT-03 | Phase 10 | Pending |
-| REPORT-04 | Phase 10 | Pending |
-| REPORT-05 | Phase 10 | Pending |
-| REPORT-06 | Phase 10 | Pending |
-| REPORT-07 | Phase 10 | Pending |
-| REPORT-08 | Phase 10 | Pending |
+| REPORT-01 | Phase 10 | Complete |
+| REPORT-02 | Phase 10 | Complete |
+| REPORT-03 | Phase 10 | Complete |
+| REPORT-04 | Phase 10 | Complete |
+| REPORT-05 | Phase 10 | Complete |
+| REPORT-06 | Phase 10 | Complete |
+| REPORT-07 | Phase 10 | Complete |
+| REPORT-08 | Phase 10 | Complete |
 | SIM-01 | Phase 11 | Pending |
 | SIM-02 | Phase 7 | Complete |
 | SIM-03 | Phase 7 | Complete |
@@ -329,7 +329,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-05 | Phase 8 | Complete |
 | TOOL-06 | Phase 8 | Complete |
 | TOOL-07 | Phase 1 | Complete |
-| TOOL-08 | Phase 10 | Pending |
+| TOOL-08 | Phase 10 | Complete |
 | FLOW-01 | Phase 9 | Complete |
 | FLOW-02 | Phase 9 | Complete |
 | FLOW-03 | Phase 9 | Complete |

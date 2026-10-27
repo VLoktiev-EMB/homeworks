@@ -65,10 +65,11 @@ def read_text(source, display):
 def read_regular_text(source, display):
     """Read one regular UTF-8 file, refusing a symlink on the final component.
 
-    `os.lstat` never follows the final component, so a repository entry that a
-    pull request replaced with a symlink is refused before its target is read.
-    `scripts/new_homework` refuses symlinked template entries the same way, so
-    the generator and the scaffold share one posture (CR-02).
+    `os.lstat` checks the entry without following. On POSIX systems, `os.open`
+    with `O_NOFOLLOW` and `os.fstat` close the check-then-use race window (WR-13).
+    The repository gate assumes a static git checkout where files are not
+    mutated concurrently; O_NOFOLLOW ensures atomic symlink substitution fails
+    with OSError before reading.
     """
     try:
         mode = os.lstat(source).st_mode
@@ -80,4 +81,24 @@ def read_regular_text(source, display):
         raise CheckError(f"{display} is a symlink; refusing to follow it")
     if not stat.S_ISREG(mode):
         raise CheckError(f"{display} is not a regular file")
-    return read_text(source, display)
+
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(source, flags)
+    except OSError as exc:
+        raise CheckError(f"cannot open {display}: {exc}") from exc
+
+    try:
+        st = os.fstat(fd)
+        if stat.S_ISLNK(st.st_mode):
+            os.close(fd)
+            raise CheckError(f"{display} is a symlink; refusing to follow it")
+        if not stat.S_ISREG(st.st_mode):
+            os.close(fd)
+            raise CheckError(f"{display} is not a regular file")
+        with open(fd, encoding="utf-8", closefd=True) as file_obj:
+            return file_obj.read()
+    except UnicodeDecodeError as exc:
+        raise CheckError(f"{display}: template file is not valid UTF-8: {exc}") from exc
+    except OSError as exc:
+        raise CheckError(f"cannot read {display}: {exc}") from exc

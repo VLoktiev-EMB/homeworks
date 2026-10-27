@@ -7,8 +7,9 @@
 
 `scripts/new_homework` is the only supported path to a new `homeworks/<id>/`
 directory (D-18, D-19). It renders `templates/homework-<name>/` plus
-`templates/task/task.md`, validates the whole candidate through the shared
-metadata module (D-12), prints the per-path plan, and only then writes.
+`templates/task/task.md` and `templates/report/report.md`, validates the whole
+candidate through the shared metadata module (D-12), prints the per-path plan,
+and only then writes.
 
 Usage:
   uv run scripts/new_homework <id> --template <name> [--dry-run] [--json]
@@ -18,8 +19,9 @@ Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
   0  every record is CREATE or UNCHANGED
   1  at least one record is CONFLICT or ERROR; nothing was written
   2  usage or environment error (bad arguments, an invalid id or template
-     name, a missing template manifest or `templates/task/task.md`, an unknown
-     `{{placeholder}}`, a `${...}` occurrence, an unreadable template entry, a
+     name, a missing template manifest, `templates/task/task.md`, or
+     `templates/report/report.md`, an unknown `{{placeholder}}`, a `${...}`
+     occurrence, an unreadable template entry, a
      symlink at `homeworks/` itself, a `homeworks` path that exists and is not
      a directory, a `homeworks` base that does not resolve to
      `<root>/homeworks`, a target that escapes `homeworks/`, a symlink at
@@ -85,6 +87,15 @@ MANIFEST_NAME = "template.yaml"
 HOMEWORK_YAML = "homework.yaml"
 TASK_MD = "task.md"
 TASK_TEMPLATE = Path("templates") / "task" / TASK_MD
+REPORT_MD = "report.md"
+REPORT_TEMPLATE = Path("templates") / "report" / REPORT_MD
+
+# D-30/D-22: the two documents composed from their own templates rather than
+# shipped inside a homework template. The scaffold treats them identically.
+COMPOSED_DOCUMENTS = (
+    (TASK_MD, TASK_TEMPLATE),
+    (REPORT_MD, REPORT_TEMPLATE),
+)
 
 # D-05: the metadata carries a board id, never inline board details.
 BOARD = "esp32-s3-devkitc-1"
@@ -203,21 +214,25 @@ def _template_files(template_dir):
 
 
 def _candidates(root, template_dir):
-    """Return the complete candidate set: template files plus `task.md`.
+    """Return the complete candidate set: template files plus the documents.
 
-    `task.md` is composed from `templates/task/task.md`, not shipped in a
-    homework template (D-30, Open Question 6). Two entries that would map to
-    the same target are a usage error rather than a silent last-one-wins.
+    `task.md` and `report.md` are composed from `templates/task/task.md` and
+    `templates/report/report.md`, not shipped in a homework template (D-30,
+    D-22). Each is refused when it is a symlink or missing, and two entries
+    that would map to the same target are a usage error rather than a silent
+    last-one-wins.
     """
     candidates = _template_files(template_dir)
-    task_template = root / TASK_TEMPLATE
-    if task_template.is_symlink():
-        raise CheckError(
-            "templates/task/task.md is a symlink; refusing to follow it"
-        )
-    if not task_template.is_file():
-        raise CheckError("missing templates/task/task.md")
-    candidates.append((Path(TASK_MD), task_template))
+    for target_name, template_relative in COMPOSED_DOCUMENTS:
+        source = root / template_relative
+        display = template_relative.as_posix()
+        if source.is_symlink():
+            raise CheckError(
+                f"{display} is a symlink; refusing to follow it"
+            )
+        if not source.is_file():
+            raise CheckError(f"missing {display}")
+        candidates.append((Path(target_name), source))
 
     seen = set()
     for relative, _ in candidates:
@@ -392,7 +407,7 @@ def _build_plan(root, homework_id, target_dir, candidates, mapping):
         payloads[display] = (target_dir / relative, data)
         rendered[relative.as_posix()] = output
 
-    for required in (HOMEWORK_YAML, TASK_MD):
+    for required in (HOMEWORK_YAML, TASK_MD, REPORT_MD):
         if required not in rendered:
             raise CheckError(f"the candidate set provides no {required}")
 

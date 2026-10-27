@@ -837,6 +837,49 @@ PUSH_OUT_OF_SCOPE_SAMPLES = (
 # 05/D-21: every hook reports; none repairs or filters.
 AUTO_CORRECT_FLAGS = ("--fix", "clang-format -i", "--all-lines")
 
+# Pitfall 12: the two stage tuples are the closed set. Every `- id:` in the
+# config must appear in exactly one of them, so a new hook cannot be added
+# without an inspection decision here. They are module constants rather than
+# inline literals because the closed-set test unions them with the ids parsed
+# from the config itself.
+FAST_HOOK_IDS = (
+    "gitleaks",
+    "trailing-whitespace",
+    "end-of-file-fixer",
+    "check-merge-conflict",
+    "check-added-large-files",
+    "clang-format",
+    "ruff-check",
+    "markdownlint-cli2",
+    "yamllint",
+    "no-generated-files",
+    "check-architecture",
+    "check-metadata",
+    "check-report",
+    "gen-views-check",
+    "gen-skills-check",
+)
+PUSH_HOOK_IDS = ("clang-tidy-db", "clang-tidy")
+
+# D-05: the eight declared input families the report hook must reach.
+REPORT_HOOK_SCOPE_SAMPLES = (
+    "homeworks/1_3-police-flasher/report.md",
+    "homeworks/1_3-police-flasher/homework.yaml",
+    "homeworks/1_3-police-flasher/assets/diagram.json",
+    "templates/report/report.md",
+    "docs/standards/report.md",
+    "docs/standards/electrical-calculations.md",
+    "scripts/check_report.py",
+    "scripts/report/contract.py",
+)
+
+# The surface the report hook must stay out of: an unrelated guide and the
+# repository README are not report-contract inputs.
+REPORT_HOOK_OUT_OF_SCOPE_SAMPLES = (
+    "docs/standards/vscode.md",
+    "README.md",
+)
+
 
 def _hook_block(text: str, hook_id: str) -> str:
     """Return one hook's block, or an empty string when the hook is absent.
@@ -866,6 +909,31 @@ def _hook_field(block: str, field: str) -> str:
         stripped = line.strip()
         if stripped.startswith(f"{field}:"):
             return stripped[len(field) + 1 :].strip()
+    return ""
+
+
+def _hook_folded_field(block: str, field: str) -> str:
+    """Return a hook block's possibly-folded scalar field, or an empty string.
+
+    A `>-` block scalar reaches the hook as one line, so its continuation
+    lines are joined with a single space, which is exactly how YAML folds
+    them. Any other spelling is returned as the plain scalar on its own line.
+    """
+    lines = block.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith(f"{field}:"):
+            continue
+        value = stripped[len(field) + 1 :].strip()
+        if value not in (">-", ">", "|-", "|"):
+            return value
+        indent = len(line) - len(line.lstrip())
+        parts = []
+        for following in lines[index + 1 :]:
+            if following.strip() and len(following) - len(following.lstrip()) <= indent:
+                break
+            parts.append(following.strip())
+        return " ".join(part for part in parts if part)
     return ""
 
 
@@ -1242,22 +1310,7 @@ class HookLayeringTests(unittest.TestCase):
         pre-push down to the two clang-tidy hooks.
         """
         text = self.config()
-        for hook_id in (
-            "gitleaks",
-            "trailing-whitespace",
-            "end-of-file-fixer",
-            "check-merge-conflict",
-            "check-added-large-files",
-            "clang-format",
-            "ruff-check",
-            "markdownlint-cli2",
-            "yamllint",
-            "no-generated-files",
-            "check-architecture",
-            "check-metadata",
-            "gen-views-check",
-            "gen-skills-check",
-        ):
+        for hook_id in FAST_HOOK_IDS:
             with self.subTest(hook=hook_id):
                 block = _hook_block(text, hook_id)
                 self.assertNotEqual("", block, hook_id)
@@ -1266,12 +1319,74 @@ class HookLayeringTests(unittest.TestCase):
 
     def test_both_push_hooks_declare_the_pre_push_stage(self) -> None:
         text = self.config()
-        for hook_id in ("clang-tidy-db", "clang-tidy"):
+        for hook_id in PUSH_HOOK_IDS:
             with self.subTest(hook=hook_id):
                 block = _hook_block(text, hook_id)
                 self.assertNotEqual("", block, hook_id)
                 self.assertIn("stages: [pre-push]", block)
                 self.assertNotIn("stages: [pre-commit]", block)
+
+    def test_every_hook_id_appears_in_one_stage_tuple(self) -> None:
+        """Pitfall 12: the stage tuples are the closed set of hook ids.
+
+        A hook added to the config without joining a tuple would dodge the
+        stage assertions above entirely, so the parsed set must equal the
+        union exactly — no orphan hook and no stale tuple entry.
+        """
+        text = self.config()
+        declared = set(re.findall(r"^\s*- id:\s*(\S+)", text, re.MULTILINE))
+        self.assertTrue(declared, "no `- id:` line found in the hook config")
+        self.assertEqual(
+            declared,
+            set(FAST_HOOK_IDS) | set(PUSH_HOOK_IDS),
+            "every hook id must be listed in either FAST_HOOK_IDS or PUSH_HOOK_IDS",
+        )
+        self.assertEqual(
+            set(),
+            set(FAST_HOOK_IDS) & set(PUSH_HOOK_IDS),
+            "a hook id cannot belong to both stage tuples",
+        )
+
+    def test_check_report_hook_is_check_only_and_scoped(self) -> None:
+        """D-05 / T-10-23 / T-10-24: the report gate only reports.
+
+        The hook must not be able to rewrite the file it rejects, must run
+        only at pre-commit, must carry the single PyYAML pin (the checker's
+        only third-party read), and must reach exactly the eight declared
+        input families.
+        """
+        block = _hook_block(self.config(), "check-report")
+        self.assertNotEqual("", block, "the check-report hook is missing")
+        self.assertIn("pass_filenames: false", block)
+        self.assertIn("stages: [pre-commit]", block)
+        self.assertNotIn("stages: [pre-push]", block)
+        self.assertEqual(
+            "python scripts/check_report.py", _hook_field(block, "entry")
+        )
+        self.assertEqual(
+            '["PyYAML==6.0.3"]', _hook_field(block, "additional_dependencies")
+        )
+        # No `args` at all: an argument is the seam through which a rewrite
+        # could sneak back in.
+        self.assertNotIn("args:", block)
+        for flag in AUTO_CORRECT_FLAGS:
+            with self.subTest(flag=flag):
+                self.assertNotIn(flag, block)
+
+        pattern = _hook_folded_field(block, "files")
+        self.assertNotEqual("", pattern)
+        for sample in REPORT_HOOK_SCOPE_SAMPLES:
+            with self.subTest(sample=sample):
+                self.assertIsNotNone(
+                    re.search(pattern, sample),
+                    f"{pattern!r} does not match {sample!r}",
+                )
+        for sample in REPORT_HOOK_OUT_OF_SCOPE_SAMPLES:
+            with self.subTest(sample=sample):
+                self.assertIsNone(
+                    re.search(pattern, sample),
+                    f"{pattern!r} must not match {sample!r}",
+                )
 
     def test_the_guard_precedes_the_clang_tidy_repository(self) -> None:
         text = self.config()

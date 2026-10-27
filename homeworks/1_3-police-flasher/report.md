@@ -152,8 +152,8 @@ not a physical part.
 
 ### Pin Map
 
-| Signal | ESP32-S3 pin | Connects to | Notes |
-|--------|--------------|-------------|-------|
+| Signal | Pin | Connects to | Notes |
+|--------|-----|-------------|-------|
 | Primary LED pair (LED A / LED B) | GPIO4 | `r1:1`; `r1:2` is node X, with `led1:A` and `led2:C` | Half-bridge drive. High lights LED1; low lights LED2; both low states are never driven together. |
 | Third LED (LED C) | GPIO6 | `r2:1`; `r2:2` to `led3:A` | Independent of the primary pair and active in every mode that sets `led_c`. |
 | Mode button | GPIO7 | `btn1:1.l`; `btn1:2.l` to `GND.3` | Configured as `INPUT_PULLUP`; a low level means pressed. |
@@ -350,6 +350,9 @@ evidence does not exist yet and the row names the phase that owns it.
 | T-15 | Simulation execution (SIM-01 first pass) | `scenario.yaml`, `wokwi.toml`, `../../scripts/pio/merge_firmware.py` | `wokwi-cli lint --offline`; the three-run execution recorded in `07-SPIKE-EVIDENCE.md` | lint exits 0; all three counted runs exited 0 with one `pattern ready` serial line each, so `simulation.status` is `verified` | verified |
 | T-16 | High-impedance off-state behaviour is implemented and tested | controller mode change in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` all-off frame case; report statement | the fake records `INPUT` on the all-off frame; the hardware off-state node voltage is `not measured` (L-12) | verified |
 | T-17 | SOLID single-pin precedence is implemented and tested | `led_a` precedence in `lib/pattern/src/controller.c`; limitation statement in sections 4 and 11 | `test_controller` SOLID case; report statement | the case passes; the LOW-side LED's hardware state was not observed | verified |
+| T-18 | Ten-section report structure (REPORT-01) | `report.md` | `uv run scripts/check_report.py` | the ten contracted headings and every required subsection are present | verified |
+| T-19 | Electrical safety checklist (REPORT-05) | Safety Checklist in `report.md` | manual review of the four hazard bullets against the wiring | four bold hazard bullets cover the 3V3-to-ground short, the per-pin current limit, the LED polarity, and the shared ground | verified |
+| T-20 | Honest status, verified toolchain, limitations, and next steps (REPORT-08) | `report.md` | manual review of sections 4, 9, and the Decision Appendix | sections 4 and 9 state both fidelity limits; the `Status:` paragraph names Phase 11 for the tag and scale-out | manual |
 
 ## 8. Analysis
 
@@ -434,6 +437,15 @@ decision in `docs/decisions/0014-simulator-selection.md`. Phase 5 owns the gener
 the index, workspace, shared configuration, and documentation site; Phase 6 owns formatting,
 clang-tidy, and the developer environment; Phase 8 owns the real CI matrix; Phase 10 owns the
 report contract and its checker; Phase 11 owns the polished pilot, the tag, and scale-out.
+
+### Next Steps
+
+- Complete the bench evidence pass, so the `not measured` ledger rows can carry measured
+  readings; Phase 11 owns it.
+- Create the `hw/1_3-police-flasher` tag through `scripts/tag_homework.sh` after the pull
+  request is merged; Phase 11 owns it.
+- Scale the report contract and the retrofit out to the remaining homeworks; Phase 11 owns
+  it.
 
 ## 10. References
 
