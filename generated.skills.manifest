@@ -70,16 +70,16 @@
       "owner": "skills",
       "source": ".claude/skills/hw-flash/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "2e8bd24137470cb38f3867e8a4d25cf76c6bfc48e91a8f3e75ca9bbb0a52a47b",
-      "bytes": 5472
+      "sha256": "19057660131e9cd0df928c2a78f1181aa9e4dd524ad58468d8df60d1dd4d62cf",
+      "bytes": 6181
     },
     {
       "path": ".agents/skills/hw-flash/LESSONS.md",
       "owner": "skills",
       "source": ".claude/skills/hw-flash/LESSONS.md",
       "mode": "whole",
-      "sha256": "91b67632b19885ee5dd70cf0e2154df074111dbf2ec57a50e97b125c510ed25a",
-      "bytes": 3191
+      "sha256": "bbf318fef378385baff26c0667534c9ae56638616795cfca618eae96da362c42",
+      "bytes": 3688
     },
     {
       "path": ".agents/skills/hw-flash/SKILL.md",

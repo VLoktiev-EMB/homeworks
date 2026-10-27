@@ -1,6 +1,15 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-15, 09-16
+
+- A serial monitor must open the port in the idle line state. Asserted DTR/RTS hold an
+  ESP32-S3 in reset, so a monitor that omits the flags captures nothing while the port
+  still looks healthy.
+- A command that must target one of several interfaces must resolve it explicitly, fail
+  closed on ambiguity, and pass the same resolved identity to both the flash and the
+  capture. An implicit choice can flash one interface and monitor the other.
+
 ## 2026-10-27 — gap-closure run, 09-14
 
 - A keyword scan must cover identifier characters on both sides of the keyword.

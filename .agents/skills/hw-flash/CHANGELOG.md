@@ -1,6 +1,18 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-15, 09-16 (G-09-1)
+
+- The monitor now opens the port with `--dtr 0 --rts 0`, so the ESP32-S3 application
+  runs instead of being held in reset; the helper resolves exactly one USB serial
+  device, forwards an explicit `--port` as `-p`, refuses an ambiguous set, and reports
+  the device path, VID:PID and effective baud.
+- `hw-flash` passes one resolved port to both `--upload-port` and `--port`, and
+  documents the native USB-Serial-JTAG (`303A:1001`) and CH343 (`1A86:55D3`) paths,
+  including baud significance, DTR/RTS reset semantics and re-enumeration.
+- The log stays byte-exact raw device output with no header and no sidecar.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-14 (RR-CR-01)
 
 - Widened the credential-shape scan to a keyword followed by identifier characters,
