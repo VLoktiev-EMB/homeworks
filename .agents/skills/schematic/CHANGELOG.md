@@ -1,6 +1,13 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
+## 2026-10-27 — updated to v1.2, 3-tier schematic architecture (quick task)
+
+- Added IEEE vector schematic SVG generation via `schemdraw` (`--svg`).
+- Added physical solderless breadboard layout with `wokwi-breadboard-half` (`bb1`) and power rail distribution (`--format`).
+- Added unified `--all` flag to execute all three visualization tiers.
+- Updated documentation and quick reference table for 3-tier model.
+
 ## 2026-10-27 — updated to v1.1, SDO and writing-skills compliance
 
 - Updated description to trigger-first SDO format ("Use when...").

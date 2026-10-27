@@ -14,7 +14,17 @@ every relative path — including the shared partition table — resolves.
 
 ## Schematic and Wiring
 
-The circuit combines an anti-parallel LED pair on GPIO4, a single indicator LED on GPIO6, and a mode pushbutton to GND on GPIO7:
+The circuit provides three complementary visualization tiers: an IEEE electrical schematic, an interactive Wokwi breadboard model, and a GitHub Mermaid block diagram.
+
+### Electrical Schematic (IEEE Std)
+
+![Electrical Schematic](assets/schematic.svg)
+
+### Breadboard Layout (Wokwi)
+
+The physical wiring on a half-size solderless breadboard (`wokwi-breadboard-half`), component placement, and orthogonal Manhattan jumper routing are modeled in [`assets/diagram.json`](assets/diagram.json).
+
+### Block Diagram (Mermaid)
 
 ```mermaid
 flowchart LR
@@ -39,8 +49,6 @@ flowchart LR
     r2 -->|2 -> A| led3
     led3 -->|C -> GND.2| esp
 ```
-
-The interactive simulation model and wire routing are defined in [`assets/diagram.json`](assets/diagram.json).
 
 ## Simulation
 

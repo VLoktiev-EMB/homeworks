@@ -24,3 +24,4 @@ report:
   status: draft
 assets:
   - assets/diagram.json
+  - assets/schematic.svg
