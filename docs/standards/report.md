@@ -224,37 +224,8 @@ The table lists every rule id the checker emits, in registry order. The set of i
 | `RPT-101` | a required numbered heading is missing | add the heading exactly as the ten-section contract spells it |
 | `RPT-102` | the numbered headings are out of ascending order | move the heading to its numbered position |
 | `RPT-103` | a numbered heading appears more than once | keep one copy of the heading |
-| `RPT-104` | a required subsection is missing from its parent section | add the subsection inside its parent section, or mark the section not applicable where the contract allows it |
-| `RPT-105` | the not-applicable marker is malformed or has no reason | write `_Not applicable — <reason>._` with a non-empty reason |
-| `RPT-106` | the not-applicable marker is in a position where it is forbidden | write the content for this section; only sections 3 and 5 may be not applicable |
-| `RPT-107` | section 8 has no paragraph beginning `Industry note:` | add at least one `Industry note:` paragraph to the analysis |
-| `RPT-108` | section 9 has no paragraph beginning `Status:` | state the honest status in a `Status:` paragraph in the conclusions |
-| `RPT-201` | a required table is absent or its header differs from the contract | write the table inside its section with exactly the contracted header |
-| `RPT-202` | a table row has a different cell count from its header | add or remove the missing cell; a literal pipe inside a cell must be escaped as `\|` |
-| `RPT-203` | a required table cell is empty | fill the cell with the evidence, the calculation, or an explicit not-applicable reason |
-| `RPT-204` | a required table has no data rows | add at least one data row, or replace the table with `_Not applicable — <reason>._` where the contract allows it |
-| `RPT-205` | the safety checklist is empty or a bullet lacks the bold hazard prefix | write at least one `- **Hazard.** <consequence and check>` bullet |
-| `RPT-206` | a bill-of-materials `Ref` is not a part id in `assets/diagram.json` | use the diagram part id as the BOM reference, or add the part to the diagram |
-| `RPT-207` | the bill of materials applies but `assets/diagram.json` is absent or malformed | restore a readable `assets/diagram.json` with a `parts` list, or mark the bill of materials not applicable |
-| `RPT-301` | a ledger row carries a label outside the evidence vocabulary | use one of measured, calculated, simulated, datasheet, not measured, or measured (observed); `observed` alone is never a label |
-| `RPT-303` | a ledger value does not carry the prefix its label requires | begin a `not measured` value with `not measured: <reason>`, a `measured` value with `user-reported:` or `serial-log:`, and a `measured (observed)` value with `serial-log:` |
-| `RPT-304` | a ledger implementation commit is malformed or differs from section 1 | record the same 7-40 character lowercase hex commit in section 1 and in every ledger row |
-| `RPT-305` | a ledger row does not carry the provenance depth its label requires | cite an `[N]` source for a `datasheet` row, name a `C-NN` calculation for a `calculated` row, name a scenario or run artifact for a `simulated` row, and name an instrument for a `measured` row |
-| `RPT-306` | a traceability row carries a status outside the enum | use verified, manual, pending, or not applicable |
-| `RPT-307` | a traceability artifact or evidence token does not resolve | name an artifact that exists under the homework directory or the repository root; a pending row is exempt until its evidence exists |
-| `RPT-308` | a table row id is malformed or duplicated | use an `A-NN`, `C-NN`, `L-NN`, or `T-NN` id, unique within its table |
-| `RPT-309` | an in-text `A-NN`/`C-NN`/`L-NN`/`T-NN` token does not resolve to a row | cite an id that exists in the matching table, or add the missing row |
-| `RPT-310` | the traceability matrix does not cover every report requirement | add a traceability row citing the missing `REPORT-01` ... `REPORT-08` requirement |
-| `RPT-311` | an in-text citation has no entry in section 10 | add the IEEE-numbered reference entry the citation names |
-| `RPT-312` | a reference entry is never cited in sections 1-9 or the appendix | cite the entry in the body, or remove an unused reference |
-| `RPT-401` | the document does not carry exactly one level-1 heading, or it does not match homework.yaml title | write one `# <title>` heading whose text equals homework.yaml `title` |
-| `RPT-402` | a section-1 identity cell does not equal its homework.yaml value | set `Homework ID`, `Title`, `Homework status`, and `Report status` to `id`, `title`, `status`, and `report.status` |
-| `RPT-403` | a section-1 toolchain cell does not equal its homework.yaml value | write `Framework`, `PlatformIO Core`, and `Platform` from `framework` and `toolchain.platformio`/`toolchain.platform` |
-| `RPT-404` | a relative Markdown link or image target does not resolve | point the link at an existing path under the homework directory or the repository root; an external URL is never fetched |
 | `RPT-405` | the report contains a Cyrillic codepoint | rewrite the text in English; `report.md` is English-only |
 | `RPT-406` | a draft or complete report still carries a TODO or TBD sentinel | replace the sentinel with the real content, or keep the report at `report.status: placeholder` until authoring starts |
-| `RPT-407` | tests.native is true but section 7 has no native-suite result paragraph | add a section-7 paragraph beginning "**Native suite.**" or "**Native tests.**" with the suite result |
-| `RPT-408` | the section-7 simulation paragraph is absent or disagrees with simulation.status | add a "**Simulation.**" paragraph that states an executed run when the status is verified, and makes no run claim when it is pending |
 
 ## Self-audit checklist
 

@@ -850,7 +850,6 @@ FAST_HOOK_IDS = (
     "check-added-large-files",
     "clang-format",
     "ruff-check",
-    "markdownlint-cli2",
     "yamllint",
     "no-generated-files",
     "check-architecture",
@@ -1459,33 +1458,13 @@ class HookLayeringTests(unittest.TestCase):
 
 
 class MarkdownlintSurfaceTests(unittest.TestCase):
-    """Pitfall 4: authored skill prose is linted, generated Markdown is not."""
+    """Phase 10.1: markdownlint-cli2 is retired from pre-commit to eliminate doc pedantry."""
 
-    def exclude(self) -> str:
+    def test_markdownlint_is_retired_from_pre_commit(self) -> None:
         block = _hook_block(
             PRECOMMIT_CONFIG.read_text(encoding="utf-8"), "markdownlint-cli2"
         )
-        self.assertNotEqual("", block, "the markdownlint-cli2 hook is missing")
-        pattern = _hook_field(block, "exclude")
-        self.assertNotEqual("", pattern)
-        return pattern
-
-    def test_authored_skill_prose_is_linted(self) -> None:
-        self.assertIsNone(
-            re.search(self.exclude(), ".claude/skills/simulate/SKILL.md"),
-            "authored canonical skill prose must reach markdownlint",
-        )
-
-    def test_the_generated_mirror_is_not_linted(self) -> None:
-        self.assertIsNotNone(
-            re.search(self.exclude(), ".agents/skills/simulate/SKILL.md"),
-            "the generated skills mirror must not be linted",
-        )
-
-    def test_other_generated_and_planning_markdown_is_not_linted(self) -> None:
-        for path in (".claude/CLAUDE.md", ".planning/phases/x/PLAN.md"):
-            with self.subTest(path=path):
-                self.assertIsNotNone(re.search(self.exclude(), path))
+        self.assertEqual("", block, "markdownlint-cli2 must not be in pre-commit hooks")
 
 
 VSCODE_GUIDE = REPO_ROOT / "docs" / "standards" / "vscode.md"

@@ -31,6 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation (completed 2026-10-26)
 - [x] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented (completed 2026-10-27)
 - [x] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric (completed 2026-10-27)
+- [x] **Phase 10.1: Lean DX and Schematic Automation (INSERTED)** - Streamline report validation, automate clean Wokwi diagrams and schematics, and cut pre-commit/CI ceremony (completed 2026-10-27)
 - [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
 
 ## Phase Details
@@ -469,6 +470,24 @@ Plans:
 **Wave 4** *(blocked on Wave 3)*
 - [x] 10-12-PLAN.md — G-10-1: metadata and diagram intermediate symlink refusal, TOCTOU hardening (CR-06, WR-12, WR-13)
 
+### Phase 10.1: Lean DX and Schematic Automation (INSERTED)
+
+**Goal:** Eliminate verification friction and AST pedantry from reports, automate clean Wokwi diagrams and schematics with proper layout, and streamline local pre-commit and CI gates for a lean educational workflow.
+**Depends on:** Phase 10
+**Requirements:** DX-01, SCHEM-01, SCHEM-02, LEAN-01
+**Success Criteria** (what must be TRUE):
+  1. `check_report.py` is reduced from a 1400-line AST table/prose parser to a lightweight sanity check (<150 lines) verifying existence, 10-section skeleton, and absence of unresolved TODOs without nitpicking column names, IEEE formatting, or commit hashes.
+  2. The `schematic` skill is upgraded from a stub to an automated generator that reads pinout/hardware config, outputs a cleanly routed Wokwi `diagram.json` (proper spacing, no wire tangles, intuitive color coding), and generates a native Mermaid wiring diagram for the report/README.
+  3. Pre-commit hooks run fast (<2 seconds) with only essential code quality and secret checks (`clang-format`, `ruff`, `gitleaks`), while CI title checks and full-history scanning on PRs are removed.
+  4. Enterprise GSD friction is disabled (`security_enforcement: false`), removing mandatory STRIDE matrices and ASVS ceremony for homework phases.
+
+**Plans:** 3 plans
+
+Plans:
+- [x] 10.1-01-PLAN.md — Lean report verification: slim down `scripts/check_report.py` and remove AST table nitpicks
+- [x] 10.1-02-PLAN.md — Schematic automation: upgrade `schematic` skill and generator for clean Wokwi diagrams and Mermaid
+- [x] 10.1-03-PLAN.md — Pre-commit, CI, and GSD ceremony trim: fast local hooks, lean PR CI, and config relaxations
+
 ### Phase 11: Pilot Homework 1.3 — Finalization
 
 **Goal**: The tracer from Phase 4.2 becomes the shipped reference artifact: polished, verified through the complete automated chain, tagged, and ready to scale to the remaining homeworks.
@@ -487,8 +506,8 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 4.2 → 5 → 6 → 7 → 8 → 9 → 10 → 11.
-Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction log. Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4.2 is complete and are justified by the log; Phase 8 needs 3, 4.2, 5, 6, and 7; Phase 11 needs 4.2 and 5–10.
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 4.2 → 5 → 6 → 7 → 8 → 9 → 10 → 10.1 → 11.
+Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction log. Phases 5, 6, 7, 9, and 10 may proceed in parallel once Phase 4.2 is complete and are justified by the log; Phase 8 needs 3, 4.2, 5, 6, and 7; Phase 10.1 trims ceremony and automates schematics; Phase 11 needs 4.2 and 5–10.1.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -504,6 +523,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
 | 10. Report and Evidence System | 12/12 | Complete    | 2026-10-27 |
+| 10.1. Lean DX and Schematic Automation | 3/3 | Complete    | 2026-10-27 |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
 ## Backlog

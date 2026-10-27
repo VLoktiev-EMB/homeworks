@@ -82,9 +82,7 @@ site, and the authored documents render in the repository view.
 The live skills layout is `.claude/skills/<name>/SKILL.md` — the canonical authored tree —
 with `.agents/skills/` as its generated, committed mirror. `scripts/gen_skills.py` is the
 only writer of the mirror; `uv run scripts/gen_skills.py --check` and the
-`gen-skills-check` pre-commit hook are the drift gate. Authored Markdown under
-`.claude/skills/**` is linted by `markdownlint-cli2`, while the generated `.agents/**`
-mirror and the generated `.claude/CLAUDE.md` adapter are excluded.
+`gen-skills-check` pre-commit hook are the drift gate.
 
 ## Definition of Done
 
@@ -191,8 +189,8 @@ Good:  feat(1_3): add police flasher state machine
 ### Secrets
 
 - **[MUST]** **[ENFORCED: pre-commit]** gitleaks must pass. The local hook scans staged
-  changes, `ci.yml`'s `meta` job scans the full history on every pull request, and
-  `nightly.yml`'s `secrets` job repeats the scan on the default branch every night,
+  changes, `ci.yml`'s `meta` job scans the pull-request commit range on every pull request, and
+  `nightly.yml`'s `secrets` job repeats the full-history scan on the default branch every night,
   replacing the retired secret-scan workflow. A red secret scan blocks the change.
 - **[MUST]** **[ENFORCED: review]** A real secret triggers, in this order: rotate the
   credential first, assess exposure, remove it with a forward fix, and document the
@@ -208,9 +206,8 @@ Good:  feat(1_3): add police flasher state machine
   and the pinned hook runs it in check-only form (`--dry-run --Werror`): it reports and never
   rewrites. The tracked tree is expected to conform, so a failure is a local fix rather than a
   bulk reformat.
-- **[MUST]** **[ENFORCED: pre-commit]** Python, authored YAML, and authored Markdown are
-  linted by ruff, yamllint, and markdownlint-cli2 from their committed policies
-  (`pyproject.toml`, `.yamllint.yaml`, `.markdownlint-cli2.jsonc`).
+- **[MUST]** **[ENFORCED: pre-commit]** Python and authored YAML are linted by ruff and
+  yamllint from their committed policies (`pyproject.toml`, `.yamllint.yaml`).
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
   Every formatter and linter named in this section arrives through a pinned `pre-commit`
   revision, never a system package manager, so the gate is byte-identical on every machine.

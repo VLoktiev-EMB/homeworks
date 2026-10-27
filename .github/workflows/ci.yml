@@ -61,21 +61,15 @@ jobs:
           echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
           install -m 0755 "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
-      - name: Scan the full history
-        run: gitleaks git --redact --verbose --log-opts="--all"
-      # D-16: the title is contributor-controlled, so it enters through `env:` and is quoted
-      # in the shell. The regex is a literal, never assembled from the value.
-      - name: Validate the pull-request title
+      - name: Scan PR commits for secrets
         if: github.event_name == 'pull_request'
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          set -euo pipefail
-          pattern='^(feat|fix|test|refactor|perf|docs|style|chore)\([a-z0-9._-]+\): .+$'
-          if [[ ! "$PR_TITLE" =~ $pattern ]]; then
-            echo "::error::pull-request title must match ${pattern}"
-            exit 1
-          fi
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gitleaks git --redact --verbose --log-opts="${BASE_SHA}..${HEAD_SHA}"
+      - name: Scan recent commits for secrets
+        if: github.event_name != 'pull_request'
+        run: gitleaks git --redact --verbose --log-opts="HEAD~1..HEAD"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'

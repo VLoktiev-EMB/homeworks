@@ -158,24 +158,24 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/CHANGELOG.md",
       "mode": "whole",
-      "sha256": "dbb262023dd8cc95e4717af7315fc544b21a808269bf7fe5febdad74311746bf",
-      "bytes": 342
+      "sha256": "8d65711255fbfcc36273af90d606f8ace5362cbc0c579df4055cc08f52ca99fa",
+      "bytes": 671
     },
     {
       "path": ".agents/skills/schematic/LESSONS.md",
       "owner": "skills",
       "source": ".claude/skills/schematic/LESSONS.md",
       "mode": "whole",
-      "sha256": "408f0e642f82ea8ebaa5004aa870ff9b933d70840cca1b7c1f8c91168341bfe7",
-      "bytes": 392
+      "sha256": "f0e18d2729aca3698b88969abf5841d76354d9d1ceeaefe5c46a7f3e80a695b9",
+      "bytes": 744
     },
     {
       "path": ".agents/skills/schematic/SKILL.md",
       "owner": "skills",
       "source": ".claude/skills/schematic/SKILL.md",
       "mode": "whole",
-      "sha256": "53517135d7bb950c9bb5f0ae9812932e790fb0a19d1c6d9af485a196e1d8f570",
-      "bytes": 1130
+      "sha256": "f758a4553d5dd04ac2dd0e04084520c7ca310cc5ed25e868725ff1ee544bb7ee",
+      "bytes": 1889
     },
     {
       "path": ".agents/skills/simulate/CHANGELOG.md",
