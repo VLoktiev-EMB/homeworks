@@ -28,26 +28,78 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "check_report.py"
 PACKAGE = REPO_ROOT / "scripts" / "report"
 
+# The seven contracted tables as literals a test can mutate in one place.
+SECTION_ONE_TABLE = (
+    "| Field | Value |\n|-------|-------|\n| Homework ID | `1_3-good` |\n| Title | Good homework |"
+)
+
+ASSUMPTIONS_TABLE = (
+    "| ID | Assumption | Impact if wrong | Validation |\n"
+    "|----|------------|-----------------|------------|\n"
+    "| A-01 | The rail is 3.3 V. | The LED current shifts. | Measure the rail. |"
+)
+
+BOM_TABLE = (
+    "| Ref | Part or value | Quantity | Package | Source or link | Notes |\n"
+    "|-----|---------------|----------|---------|----------------|-------|\n"
+    "| esp | ESP32-S3-DevKitC-1 | 1 | module | n/a | The board. |\n"
+    "| r1 | 150 ohm resistor | 1 | axial | n/a | Series resistor. |"
+)
+
+PIN_MAP_TABLE = (
+    "| Signal | Pin | Connects to | Notes |\n"
+    "|--------|-----|-------------|-------|\n"
+    "| LED A | GPIO4 | `r1:1` | Half-bridge drive. |"
+)
+
+CALCULATIONS_TABLE = (
+    "| ID | Quantity | Formula | Units | Input provenance | Result | Uncertainty | "
+    "Assumption effect |\n"
+    "|----|----------|---------|-------|------------------|--------|-------------|"
+    "-------------------|\n"
+    "| C-01 | LED current | `I = (Vs - Vf) / R` | mA | `Vs = 3.3 V` datasheet | "
+    "`I = 9.33 mA` | plus or minus 1.4 mA | A lower Vf raises the current. |"
+)
+
+SAFETY_LIST = "- **3V3-to-ground short.** Check continuity before applying power."
+
+LEDGER_TABLE = (
+    "| ID | Quantity | Value | Label | Instrument | Method | Uncertainty | "
+    "Implementation commit |\n"
+    "|----|----------|-------|-------|------------|--------|-------------|"
+    "-----------------------|\n"
+    "| L-01 | Supply voltage | not measured: bench offline | not measured | multimeter | "
+    "DC volts across the rail | not applicable: no reading | `9e1238d` |"
+)
+
+TRACEABILITY_TABLE = (
+    "| ID | Claim or requirement | Design artifact | Verification method | Evidence | Status |\n"
+    "|----|----------------------|-----------------|---------------------|----------|--------|\n"
+    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |"
+)
+
 # The body of every numbered section. A test mutates one entry or drops one
 # heading, so a failing fixture differs from the compliant report in exactly
 # one place.
 SECTION_BODIES = {
-    "1. Title and Metadata": "| Field | Value |\n|-------|-------|\n| Homework ID | `1_3-good` |",
+    "1. Title and Metadata": SECTION_ONE_TABLE,
     "2. Objective": "The objective.",
-    "3. Assumptions": "Each assumption names its consequence and validation.",
+    "3. Assumptions": (
+        "Each assumption names its consequence and validation.\n\n" + ASSUMPTIONS_TABLE
+    ),
     "4. Theory": "The theory.\n\n### Limitations\n\nNone.",
     "5. Hardware and Wiring": (
         "The wiring.\n\n"
-        "### Bill of Materials\n\nThe parts.\n\n"
-        "### Pin Map\n\nThe pins.\n\n"
-        "### Electrical Calculations\n\nThe calculations.\n\n"
-        "### Safety Checklist\n\nThe hazards."
+        "### Bill of Materials\n\n" + BOM_TABLE + "\n\n"
+        "### Pin Map\n\n" + PIN_MAP_TABLE + "\n\n"
+        "### Electrical Calculations\n\n" + CALCULATIONS_TABLE + "\n\n"
+        "### Safety Checklist\n\n" + SAFETY_LIST
     ),
     "6. Methodology": "The method.",
     "7. Results": (
         "The results.\n\n"
-        "### Measurement Ledger\n\nThe ledger.\n\n"
-        "### Traceability Matrix\n\nThe matrix."
+        "### Measurement Ledger\n\n" + LEDGER_TABLE + "\n\n"
+        "### Traceability Matrix\n\n" + TRACEABILITY_TABLE
     ),
     "8. Analysis": "Industry note: a non-blocking loop keeps the beacon responsive.",
     "9. Conclusions": "Status: the homework is in progress.\n\n### Next Steps\n\n- Tag the pilot.",
@@ -295,9 +347,9 @@ class HeadingsTests(FixtureBase):
         sections = {
             "7. Results": (
                 "The results.\n\n"
-                "### Measurement Ledger\n\nThe ledger.\n\n"
+                "### Measurement Ledger\n\n" + LEDGER_TABLE + "\n\n"
                 "### Interpreting the Forward-Voltage Row\n\nThe interpretation.\n\n"
-                "### Traceability Matrix\n\nThe matrix."
+                "### Traceability Matrix\n\n" + TRACEABILITY_TABLE
             ),
         }
         self.write_homework()
@@ -399,6 +451,94 @@ class LifecycleTests(FixtureBase):
             if ": ERROR " in line or ": OK — " in line
         ]
         self.assertEqual(len(text_records), len(json.loads(json_result.stdout)))
+
+
+class PinMapTests(FixtureBase):
+    """`RPT-201`: every required table is matched by its exact header literal."""
+
+    def test_pin_map_compliant_report_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_pin_map_renamed_column_reports_rpt_201_naming_table_and_line(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(
+            "| Signal | Pin | Connects to | Notes |",
+            "| Signal | ESP32-S3 pin | Connects to | Notes |",
+        )
+        report = compliant_report(sections={"5. Hardware and Wiring": body})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-201]")
+        self.assertIn('table "pin map"', result.stdout)
+        self.assertIn("ESP32-S3 pin", result.stdout)
+        expected = report.splitlines().index("| Signal | ESP32-S3 pin | Connects to | Notes |") + 1
+        self.assertIn(f":{expected}: ERROR [RPT-201]", result.stdout)
+
+    def test_pin_map_every_required_header_is_matched_verbatim(self):
+        cases = (
+            (
+                "section 1 metadata",
+                "1. Title and Metadata",
+                "| Field | Value |",
+                "| Field | Amount |",
+            ),
+            (
+                "assumptions",
+                "3. Assumptions",
+                "| ID | Assumption | Impact if wrong | Validation |",
+                "| ID | Assumption | Impact | Validation |",
+            ),
+            (
+                "bill of materials",
+                "5. Hardware and Wiring",
+                "| Ref | Part or value | Quantity | Package | Source or link | Notes |",
+                "| Ref | Part or value | Quantity | Package | Source or link | Remark |",
+            ),
+            (
+                "pin map",
+                "5. Hardware and Wiring",
+                "| Signal | Pin | Connects to | Notes |",
+                "| Signal | ESP32-S3 pin | Connects to | Notes |",
+            ),
+            (
+                "electrical calculations",
+                "5. Hardware and Wiring",
+                CALCULATIONS_TABLE.splitlines()[0],
+                "| ID | Quantity | Formula | Units | Provenance | Result | Uncertainty | "
+                "Assumption effect |",
+            ),
+            (
+                "measurement ledger",
+                "7. Results",
+                LEDGER_TABLE.splitlines()[0],
+                "| ID | Quantity | Value | Label | Instrument | Method | Uncertainty | Commit |",
+            ),
+            (
+                "traceability matrix",
+                "7. Results",
+                TRACEABILITY_TABLE.splitlines()[0],
+                "| ID | Claim or requirement | Design artifact | Verification method | "
+                "Evidence | State |",
+            ),
+        )
+        self.write_homework()
+        for label, section, original, renamed in cases:
+            with self.subTest(table=label):
+                body = SECTION_BODIES[section].replace(original, renamed)
+                self.write_report(compliant_report(sections={section: body}))
+                result = self.run_fixture()
+                self.assert_rejected(result, "[RPT-201]")
+                self.assertIn(f'table "{label}"', result.stdout)
+
+    def test_pin_map_absent_table_is_rpt_201(self):
+        body = SECTION_BODIES["5. Hardware and Wiring"].replace(PIN_MAP_TABLE, "The pins.")
+        self.write_homework()
+        self.write_report(compliant_report(sections={"5. Hardware and Wiring": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-201]")
+        self.assertIn('table "pin map" is absent', result.stdout)
 
 
 if __name__ == "__main__":

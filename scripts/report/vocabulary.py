@@ -165,4 +165,8 @@ RULES = {
         "section 9 has no paragraph beginning `Status:`",
         "state the honest status in a `Status:` paragraph in the conclusions",
     ),
+    "RPT-201": (
+        "a required table is absent or its header differs from the contract",
+        "write the table inside its section with exactly the contracted header",
+    ),
 }
