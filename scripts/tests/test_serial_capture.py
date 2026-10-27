@@ -80,6 +80,8 @@ REVIEW_SHAPES = (
     b"userpassword = hunter2",
     b"passphrase = hunter2",
     b"pwd = hunter2",
+    b"SECRET KEY: hunter2",
+    b"secret key = hunter2",
 )
 
 ORDINARY_PASSWORD_ASSIGNMENTS = (
@@ -99,6 +101,16 @@ IDENTIFIER_SUFFIXED_ASSIGNMENTS = (
     b"passwordHash: abcdef",
     b"SECRET_KEY = hunter2",
     b"secret_key_for_production_environment_2026 = hunter2",
+)
+
+# The CR-01 shapes the scan used to miss: a compound keyword written with one
+# space between its words, which the bare `secret` alternative could not reach.
+# The samples not already in REVIEW_SHAPES pin the case and separator variants
+# under their own failure name.
+SPACE_SEPARATED_COMPOUND_ASSIGNMENTS = (
+    b"secret key: hunter2",
+    b"SECRET KEY = hunter2",
+    b"Secret Key: hunter2",
 )
 
 
@@ -234,6 +246,11 @@ class CredentialScanTests(unittest.TestCase):
 
     def test_identifier_suffixed_assignments_match(self) -> None:
         for sample in IDENTIFIER_SUFFIXED_ASSIGNMENTS:
+            with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_space_separated_compound_assignments_match(self) -> None:
+        for sample in SPACE_SEPARATED_COMPOUND_ASSIGNMENTS:
             with self.subTest(sample=sample):
                 self.assertTrue(serial_capture.find_credential(sample))
 
@@ -448,6 +465,20 @@ class CaptureAndStoreTests(unittest.TestCase):
             sys.executable,
             "-c",
             child_that_writes(b'{"secretKey": "hunter2"}\r\n'),
+        ]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertIn("credential", str(caught.exception))
+        self.assertFalse(self.log_path.exists())
+        self.assertFalse((self.root / ".skill-state").exists())
+
+    def test_a_space_separated_compound_credential_child_writes_nothing(self) -> None:
+        argv = [
+            sys.executable,
+            "-c",
+            child_that_writes(b"SECRET KEY: hunter2\r\n"),
         ]
 
         with self.assertRaises(serial_capture.CaptureFailed) as caught:
