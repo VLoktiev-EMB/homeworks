@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -90,61 +91,83 @@ def generate_schematic_svg(output_path: Path) -> Path:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with schemdraw.Drawing(file=str(output_path), show=False) as d:
-        d.config(unit=2.0, fontsize=11)
+    with schemdraw.Drawing(show=False) as d:
+        d.config(unit=2.0, fontsize=10, margin=1.5, bgcolor="white")
 
-        # Microcontroller Block in Center
+        # Microcontroller Block in Center (ESP32-S3 DevKitC-1)
         ic = d.add(
             elm.Ic(
+                size=(6.2, 5.5),
                 pins=[
                     # Left side: inputs
-                    elm.IcPin(name="GPIO7", side="left", slot="2/2"),
-                    elm.IcPin(name="GND_L", pin="GND", side="left", slot="1/2"),
-                    # Right side: outputs
-                    elm.IcPin(name="GPIO4", side="right", slot="4/4"),
-                    elm.IcPin(name="GPIO6", side="right", slot="3/4"),
-                    elm.IcPin(name="3V3", pin="3.3V", side="right", slot="2/4"),
-                    elm.IcPin(name="GND_R", pin="GND", side="right", slot="1/4"),
+                    elm.IcPin(name="GPIO7", side="left", slot="4/7"),
+                    elm.IcPin(name="GND", anchorname="GND_L", side="left", slot="1/7"),
+                    # Right side: outputs and rails
+                    elm.IcPin(name="GPIO4", side="right", slot="6/7"),
+                    elm.IcPin(name="GPIO6", side="right", slot="4/7"),
+                    elm.IcPin(name="3V3", side="right", slot="2/7"),
+                    elm.IcPin(name="GND", anchorname="GND_R", side="right", slot="1/7"),
                 ],
-                w=3.5,
-                h=4.5,
-            ).label("ESP32-S3\nDevKitC-1", loc="center")
+            ).label("ESP32-S3\nDevKitC-1", loc="center", fontsize=11)
         )
 
-        # Button Branch on the Left
-        d.add(elm.Line().left(1.5).at(ic.GPIO7))
+        # Button Branch on the Left (Active-LOW with internal pull-up)
+        d.add(elm.Line().left(1.2).at(ic.GPIO7))
         btn = d.add(elm.Button(up=True).left(1.5).label("MODE\n(SW1)", loc="top"))
-        d.add(elm.Line().down(1.0).at(btn.start))
+        d.add(elm.Line().down(1.0).at(btn.end))
         d.add(elm.Ground())
 
-        # Branch 1 (Anti-parallel pair) on the Right
-        d.add(elm.Line().right(1.5).at(ic.GPIO4))
+        # Microcontroller GND reference on Left
+        d.add(elm.Line().left(1.2).at(ic.GND_L))
+        d.add(elm.Ground())
+
+        # Microcontroller 3V3 and GND reference on Right
+        d.add(elm.Line().right(1.0).at(ic["3V3"]))
+        d.add(elm.Vdd().label("3.3V", loc="top"))
+        d.add(elm.Line().right(1.0).at(ic.GND_R))
+        d.add(elm.Ground())
+
+        # Branch 2: Status Indicator LED3 on GPIO6
+        d.add(elm.Line().right(2.0).at(ic.GPIO6))
+        d.add(elm.Resistor().right(1.5).label("R2\n150Ω", loc="top"))
+        d.add(elm.Line().right(0.5))
+        d.add(elm.LED().down(1.5).label("LED3 (RED)\n[STATUS]", loc="bottom", ofst=0.2))
+        d.add(elm.Line().down(0.5))
+        d.add(elm.Ground())
+
+        # Branch 1: Anti-parallel Pair (LED1 / LED2) on GPIO4
+        # Routed vertically above Branch 2 to prevent any wire intersection
+        d.add(elm.Line().up(0.6).at(ic.GPIO4))
+        d.add(elm.Line().right(7.2))
         d.add(elm.Resistor().right(1.5).label("R1\n150Ω", loc="top"))
+        d.add(elm.Line().right(0.5))
         node_x = d.add(elm.Dot())
 
         # Path 1A: LED1 (Forward) -> GND
         d.add(elm.Line().down(1.0).at(node_x.center))
-        d.add(elm.LED().down(1.5).label("LED1 (RED)\n[GPIO4=HIGH]", loc="right"))
+        d.add(elm.LED().down(1.5).label("LED1 (RED)\n[GPIO4=HIGH]", loc="bottom", ofst=0.2))
+        d.add(elm.Line().down(0.6))
         d.add(elm.Ground())
 
-        # Path 1B: LED2 (Reverse to 3.3V)
+        # Path 1B: LED2 (Reverse) -> 3.3V
         d.add(elm.Line().up(1.0).at(node_x.center))
-        d.add(elm.LED().up(1.5).reverse().label("LED2 (RED)\n[GPIO4=LOW]", loc="right"))
-        d.add(elm.Vdd().label("3.3V"))
+        d.add(elm.LED().up(1.5).reverse().label("LED2 (RED)\n[GPIO4=LOW]", loc="bottom", ofst=0.2))
+        d.add(elm.Line().up(0.6))
+        d.add(elm.Vdd().label("3.3V", loc="top"))
 
-        # Branch 2 (Indicator LED3) on the Right
-        d.add(elm.Line().right(2.5).at(ic.GPIO6))
-        d.add(elm.Resistor().right(1.5).label("R2\n150Ω", loc="top"))
-        d.add(elm.LED().down(1.5).label("LED3 (RED)\n[GPIO6=HIGH]", loc="right"))
-        d.add(elm.Ground())
+        svg_content = d.get_imagedata("svg").decode("utf-8")
 
-        # Power rails reference
-        d.add(elm.Line().right(1.0).at(ic["3V3"]))
-        d.add(elm.Vdd().label("3.3V"))
+    # Inject solid white background rectangle for high contrast in both dark and light modes
+    viewbox_match = re.search(r'viewBox="([^"]+)"', svg_content)
+    if viewbox_match:
+        parts = viewbox_match.group(1).split()
+        vx, vy, vw, vh = parts
+        rect = f'<rect x="{vx}" y="{vy}" width="{vw}" height="{vh}" fill="#ffffff" rx="8"/>'
+        svg_content = re.sub(r"(<svg[^>]*>)", r"\1" + rect, svg_content, count=1)
 
-        d.add(elm.Line().right(1.0).at(ic.GND_R))
-        d.add(elm.Ground())
-
+    if not svg_content.endswith("\n"):
+        svg_content += "\n"
+    output_path.write_text(svg_content, encoding="utf-8")
     return output_path
 
 
