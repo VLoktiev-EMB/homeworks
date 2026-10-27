@@ -85,9 +85,15 @@ repos:
         stages: [pre-commit]
 
   # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
-  # and `.claude/` is the generated adapter. Every exclusion names a family
+  # `.agents/` is the generated skills mirror, and `.claude/CLAUDE.md` is the
+  # generated adapter; none is authored prose. Every exclusion names a family
   # explicitly, so a new authored file is linted by default rather than
   # silently skipped.
+  #
+  # `.claude/skills/**` is NOT excluded: a canonical skill is authored Markdown
+  # like any other document, while only its generated `.agents/` mirror is
+  # owned by `gen_skills.py` (Pitfall 4). The negative lookahead is what keeps
+  # that distinction; do not "fix" it into a blanket `.claude/` exclusion.
   #
   # D-06: the pinned `rev` is the delivery path; the hook pulls its own npm
   # dependencies into a pre-commit-managed node environment.
@@ -95,7 +101,7 @@ repos:
     rev: v0.24.0
     hooks:
       - id: markdownlint-cli2
-        exclude: ^(\.planning/|\.claude/)
+        exclude: ^(\.planning/|\.agents/|\.claude/(?!skills/))
         stages: [pre-commit]
 
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
@@ -115,6 +121,10 @@ repos:
   # the working tree and the pathspec would silently degrade. Git's own exit
   # status is bound with `|| exit 1` before the captured value is tested, so a
   # git error cannot pass as an empty result.
+  #
+  # `.skill-state` is D-13 checkpoint state: machine-specific, deletable and
+  # never a repository artifact, so `git add -f` must not be able to commit it
+  # (Pitfall 5).
   - repo: local
     hooks:
       - id: no-generated-files
@@ -122,7 +132,8 @@ repos:
         language: system
         entry: >-
           bash -c 'tracked=$(git ls-files -ci --exclude-standard --
-          compile_commands.json site .pio "homeworks/*/CMakeLists.txt"
+          compile_commands.json site .pio .skill-state
+          "homeworks/*/CMakeLists.txt"
           "homeworks/*/src/CMakeLists.txt" "homeworks/*/sdkconfig.*") || exit 1;
           if [ -n "$tracked" ]; then echo "tracked generated paths:" >&2;
           echo "$tracked" >&2; exit 1; fi'
@@ -196,6 +207,34 @@ repos:
           (?x)^(README\.md$|templates/views/|boards/|schema/|homeworks/
           |scripts/gen_views\.py$|scripts/metadata/|generated\.manifest$
           |platformio\.shared\.ini$|homeworks\.code-workspace$)
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # D-21: the skills mirror has the same local enforcement point as the
+      # generated views. This hook is CHECK-ONLY: it never regenerates and
+      # never stages a file, so it cannot repair the drift it is meant to
+      # catch. When it fails, fix the tree yourself with
+      #   uv run scripts/gen_skills.py
+      # review the diff, and commit the regenerated mirror.
+      #
+      # The isolated hook environment needs no `additional_dependencies`: the
+      # generator is stdlib-only and imports only the pure helpers under
+      # `scripts/metadata/`. If it ever exits with `ModuleNotFoundError`, the
+      # import boundary regressed; fix the boundary rather than adding a pin.
+      #
+      # `files` names the generator, its metadata helpers, both skill trees and
+      # the ledger, because a change to any of them can change the output
+      # without touching a generated file. `pass_filenames` is false: one run
+      # owns the whole mirror and a per-file argument would narrow it.
+      - id: gen-skills-check
+        name: generated skills mirror is in sync
+        language: python
+        entry: python scripts/gen_skills.py --check
+        # Folded, with `(?x)` so the line breaks stay outside the pattern: YAML
+        # folding would otherwise join the alternatives with a space.
+        files: >-
+          (?x)^(\.claude/skills/|\.agents/skills/|scripts/gen_skills\.py$
+          |scripts/metadata/|generated\.skills\.manifest$)
         pass_filenames: false
         stages: [pre-commit]
 

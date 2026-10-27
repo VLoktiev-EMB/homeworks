@@ -1,43 +1,43 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 9
-current_phase_name: Agent Workflow and Skills
+current_phase: 10
+current_phase_name: Report and Evidence System
 status: planning
-stopped_at: Phase 08 complete, ready to plan Phase 9
-last_updated: "2026-10-26T20:04:31.148Z"
-last_activity: 2026-10-26
-last_activity_desc: Phase 08 complete, transitioned to Phase 9
-state_head: ad57b93f19fe18605474cfe6f6e37c8f2f65865a
+stopped_at: Phase 09 complete, ready to plan Phase 10
+last_updated: "2026-10-27T13:19:39.986Z"
+last_activity: 2026-10-27
+last_activity_desc: Phase 09 complete, transitioned to Phase 10
+state_head: 80bf55e0839256423a660a2855400fa1a2d997db
 progress:
   total_phases: 14
-  completed_phases: 10
-  total_plans: 73
-  completed_plans: 73
-  percent: 77
+  completed_phases: 11
+  total_plans: 92
+  completed_plans: 92
+  percent: 85
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-26)
+See: .planning/PROJECT.md (updated 2026-10-27)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 9 — Agent Workflow and Skills
+**Current focus:** Phase 10 — Report and Evidence System
 
 ## Current Position
 
-Phase: 9 — Agent Workflow and Skills
+Phase: 10 — Report and Evidence System
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-26 — Phase 08 complete, transitioned to Phase 9
+Status: Ready to plan — Phase 09 shipped as PR #21
+Last activity: 2026-10-27 — Phase 09 complete and shipped as PR #21; Phase 10 ready to plan
 
-Progress: [████████████████████] 73/73 plans ([████████░░] 77%)
+Progress: [████████████████████] 92/92 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73
+- Total plans completed: 92
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -56,6 +56,7 @@ Progress: [████████████████████] 73/73 p
 | 06.1 | 1 | - | - |
 | 07 | 4 | - | - |
 | 08 | 4 | - | - |
+| 09 | 19 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -108,6 +109,10 @@ Recent decisions affecting current work:
 - Phase 8: `changes` fails safe — `AGENTS.md`, `.yamllint.yaml` and any other unrecognised path widen the matrix to every project, so this PR built `1_3` and `tests` despite touching neither.
 - Phase 8: the PR title is enforced as `type(scope): summary` in `meta`, because squash-merge makes the title the commit subject; the first live run failed on a non-conforming title.
 - Phase 8: simulation stays opt-in per pull request (`simulate` label, same-repository head, token at step level) and never enters the nightly matrix; one run measured 5 s wall clock against a 15 s upper bound.
+- Phase 9: the canonical skill tree is `.claude/skills/`, the committed mirror `.agents/skills/` is generated from it by `scripts/gen_skills.py`, and that script is the only writer; `--check` and the `gen-skills-check` hook are the drift gate, so a hand edit is never the fix.
+- Phase 9: skill prose is review-enforced — the drift check proves the mirror matches the canonical tree, not that a policy sentence is correct; text assertions pin only the load-bearing sentences, and the human review stays the gate.
+- Phase 9: seven skills exist — `new-homework`, `hw-build` and `hw-flash` active, `hw-report`, `schematic`, `simulate` and `course-index` documented stubs promoted after first real use; each carries a dated changelog and lessons record.
+- Phase 9: serial capture goes through `scripts/serial_capture.py` (PTY, raw bytes, no pipe) with a fail-closed credential scan that refuses before any file exists; one resolved USB serial port serves both upload and capture, and the monitor opens with `--dtr 0 --rts 0`.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -166,6 +171,10 @@ Recent decisions affecting current work:
 - [2026-10-25] [docs] Expand homework README and add a proper SVG schematic — [todo file](.planning/todos/pending/2026-10-25-expand-homework-readme-and-add-a-proper-svg-schematic.md) — Needs TBD — candidate shape:.
 - [2026-10-25] [tooling] Promote merge_firmware.py into a shared tool — [todo file](.planning/todos/pending/2026-10-25-promote-merge-firmware-py-into-a-shared-tool.md) — Needs TBD — candidate shape:.
 - [2026-10-25] [tooling] Standardize pull request titles across homeworks — [todo file](.planning/todos/pending/2026-10-25-standardize-pull-request-titles-across-homeworks.md) — Needs TBD — candidate shape:.
+- [2026-10-26] [tooling] Generate a root compile database so lib/ has working IntelliSense — [todo file](.planning/todos/pending/2026-10-26-add-lib-intellisense-compile-database.md)
+- [2026-10-26] [tooling] Remove the generated documentation site — [todo file](.planning/todos/pending/2026-10-26-remove-docs-site.md)
+- [2026-10-26] [process] Revisit Phase 8 scope before planning — [todo file](.planning/todos/pending/2026-10-26-revisit-phase-8-scope.md)
+- [2026-10-26] [tooling] Place diagram.json beside wokwi.toml for simulator runs — [todo file](.planning/todos/pending/2026-10-27-place-diagram-json-beside-wokwi-toml-for-simulator-runs.md) — Needs TBD — candidate shape:.
 - [unknown] [general] Trim governance ceremony (Phase 4.1) — [todo file](.planning/todos/pending/trim-ceremony.md)
 
 ### Blockers/Concerns
@@ -201,6 +210,7 @@ Recent decisions affecting current work:
 | 261025-349 | Fix the squash-merge commit body policy | 2026-10-25 | 3e6dd89 | [261025-349-fix-the-squash-merge-commit-body-policy-](./quick/261025-349-fix-the-squash-merge-commit-body-policy-/) |
 | 261025-vih | Fix the six residual findings from the Phase 04.2 verification | 2026-10-25 | 50d82ff | [261025-vih-fix-the-six-residual-findings-from-the-p](./quick/261025-vih-fix-the-six-residual-findings-from-the-p/) |
 | 3 | Ignore PlatformIO editor scaffolding and centralize IDE extensions | 2026-10-25 | 9b96a8f | — |
+| 261026-x78 | Make the ESP-IDF template and new-homework skill pure C; remove golden fixtures | 2026-10-27 | 72d2b30 | [261026-x78-make-the-esp-idf-homework-template-and-t](./quick/261026-x78-make-the-esp-idf-homework-template-and-t/) |
 
 ### Roadmap Evolution
 
@@ -220,6 +230,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T20:04:31.148Z
-Stopped at: Phase 08 complete, ready to plan Phase 9
+Last session: 2026-10-27T13:25:00.000Z
+Stopped at: Phase 09 complete, ready to plan Phase 10
 Resume file: None

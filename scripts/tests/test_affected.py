@@ -244,6 +244,11 @@ class NoBuildImpactTests(PathsTestBase):
         "README.md",
         "AGENTS.md",
         "LICENSE",
+        ".claude/skills/simulate/SKILL.md",
+        ".agents/skills/simulate/SKILL.md",
+        "generated.skills.manifest",
+        "scripts/gen_skills.py",
+        "scripts/serial_capture.py",
     )
 
     def test_every_no_build_impact_path_yields_empty_arrays(self) -> None:

@@ -150,23 +150,23 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Agent Workflow and Skills
 
-- [ ] **FLOW-01**: Seven project-local skills exist at version 0.1 (`new-homework`,
+- [x] **FLOW-01**: Seven project-local skills exist at version 0.1 (`new-homework`,
       `hw-build`, `hw-flash`, `hw-report`, `schematic`, `simulate`, `course-index`);
       `new-homework` and `hw-build` are fully implemented first.
-- [ ] **FLOW-02**: `new-homework` supports guided and one-shot modes with an adaptive
+- [x] **FLOW-02**: `new-homework` supports guided and one-shot modes with an adaptive
       question bank covering board, framework, language, mode, specification,
       simulation, tests, and deliverables.
-- [ ] **FLOW-03**: Guided mode follows explanation → code → run → questions at block
+- [x] **FLOW-03**: Guided mode follows explanation → code → run → questions at block
       granularity, pauses after each block, and deepens the explanation when the user is
       stuck.
-- [ ] **FLOW-04**: Both modes checkpoint after intake, after code, and after the report;
+- [x] **FLOW-04**: Both modes checkpoint after intake, after code, and after the report;
       guardrails for flashing, commit/PR, spec-vs-best-practice conflicts, and ambiguity
       always apply.
-- [ ] **FLOW-05**: Spec-vs-best-practice conflicts and ambiguous requirements are
+- [x] **FLOW-05**: Spec-vs-best-practice conflicts and ambiguous requirements are
       presented with a recommended assumption; the decision is recorded in the report.
-- [ ] **FLOW-06**: A failing build is fixed automatically at most twice, then the cause
+- [x] **FLOW-06**: A failing build is fixed automatically at most twice, then the cause
       is explained and direction is requested.
-- [ ] **FLOW-07**: `hw-flash` requires explicit confirmation before flashing and captures
+- [x] **FLOW-07**: `hw-flash` requires explicit confirmation before flashing and captures
       serial logs; `hw-report`, `schematic`, `simulate`, and `course-index` remain thin
       stubs until their first real use.
 
@@ -330,13 +330,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-06 | Phase 8 | Complete |
 | TOOL-07 | Phase 1 | Complete |
 | TOOL-08 | Phase 10 | Pending |
-| FLOW-01 | Phase 9 | Pending |
-| FLOW-02 | Phase 9 | Pending |
-| FLOW-03 | Phase 9 | Pending |
-| FLOW-04 | Phase 9 | Pending |
-| FLOW-05 | Phase 9 | Pending |
-| FLOW-06 | Phase 9 | Pending |
-| FLOW-07 | Phase 9 | Pending |
+| FLOW-01 | Phase 9 | Complete |
+| FLOW-02 | Phase 9 | Complete |
+| FLOW-03 | Phase 9 | Complete |
+| FLOW-04 | Phase 9 | Complete |
+| FLOW-05 | Phase 9 | Complete |
+| FLOW-06 | Phase 9 | Complete |
+| FLOW-07 | Phase 9 | Complete |
 | PILOT-01 | Phase 11 | Complete |
 | PILOT-02 | Phase 11 | Pending |
 

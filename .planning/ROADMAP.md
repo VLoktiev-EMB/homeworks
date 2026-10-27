@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding (completed 2026-10-26)
 - [x] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004 (completed 2026-10-26)
 - [x] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation (completed 2026-10-26)
-- [ ] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented
+- [x] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented (completed 2026-10-27)
 - [ ] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric
 - [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
 
@@ -383,7 +383,41 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans**: TBD
+**Plans:** 19/19 plans complete, 10 gap-closure (16 executed)
+
+**Wave 1**
+- [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
+
+**Wave 2**
+- [x] 09-02-PLAN.md — shared guardrails and the remaining three stubs (`hw-report`, `schematic`, `course-index`)
+- [x] 09-06-PLAN.md — `AGENTS.md` live skills layout and the editor guide's 14-hook count
+
+**Wave 3**
+- [x] 09-03-PLAN.md — `new-homework`: eight-topic question bank, state file, guided and one-shot block loop
+
+**Wave 4**
+- [x] 09-04-PLAN.md — `hw-build`: real commands, the two-attempt repair loop, escalation
+
+**Wave 5**
+- [x] 09-05-PLAN.md — `hw-flash`: consent gate, upload, bounded serial capture
+
+**Wave 6**
+- [x] 09-07-PLAN.md — regenerate the `GSD:skills` block, record the decision row, run the full gate
+
+**Wave 7**
+- [x] 09-08-PLAN.md — the D-22 dry run and the phase evidence transcript
+
+**Gap closure**
+- [x] 09-09-PLAN.md — close CR-02 (declared baud), CR-01 (scoped capture exception) and WR-01 (capture snippet) in `hw-flash`
+- [x] 09-10-PLAN.md — close CR-01 (headless PTY capture helper) and CR-02 (widened credential scan), restore the shared secrets rule, and regenerate the mirror
+- [x] 09-11-PLAN.md — close CR-03 (wire `--baud` through the skill into the helper) and fold the in-scope `IN-06` argv, CLI-payload and concurrent-reader tests
+- [x] 09-12-PLAN.md — close WR-12 (widen the credential scan to the four ordinary password assignments) and the shared guardrails sentence
+- [x] 09-13-PLAN.md — close WR-10 (reject non-finite and oversized `--seconds`) and WR-11 (reap the monitor on every exception path)
+- [x] 09-14-PLAN.md — close RR-CR-01 / truth 19 (cover keyword-prefixed credential assignments end to end) and reconcile the review and security records
+- [x] 09-15-PLAN.md — close G-09-1: open the monitor port idle (`--dtr 0 --rts 0`), resolve one USB serial device fail-closed with an explicit `--port`/`-p`, and report the resolved port and baud
+- [x] 09-16-PLAN.md — close G-09-1 contract half: `hw-flash` passes one resolved port to both upload and capture and documents the native USB versus CH343 paths; regenerate the mirror
+- [x] 09-17-PLAN.md — close G-09-2 (CR-01, truth 19): admit a space-separated compound keyword in the credential scan, pin both CR-01 shapes and prove the end-to-end refusal
+- [x] 09-18-PLAN.md — close G-09-3 (WR-03, truth 42): keep the same-port rule in the shared guardrails only, point the skill at it, name the compound shape in the guardrails, and regenerate the mirror
 
 ### Phase 10: Report and Evidence System
 
@@ -432,7 +466,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
-| 9. Agent Workflow and Skills | 0/TBD | Not started | - |
+| 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 

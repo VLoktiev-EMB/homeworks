@@ -15,9 +15,11 @@ never disagree about what depends on what (D-23).
 Fanout table (D-24, with the explicit no-build-impact reading of RESEARCH Open
 Question 1). Each entry reads `<changed path> -> <effect>`:
 
-- `.planning/`, `docs/`, `.github/`, `templates/views/`, `boards/`, or exactly
-  `README.md`, `AGENTS.md`, `LICENSE`, `generated.manifest`,
-  `homeworks.code-workspace` -> no build, no simulation
+- `.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
+  `templates/views/`, `boards/`, `.skill-state/`, or exactly `README.md`,
+  `AGENTS.md`, `LICENSE`, `generated.manifest`, `generated.skills.manifest`,
+  `homeworks.code-workspace`, `scripts/gen_skills.py`,
+  `scripts/serial_capture.py` -> no build, no simulation
 - `homeworks/<id>/...` -> that project's environments
 - `lib/<name>/...` -> every project whose `lib_deps` names `<name>`, transitively
   through `library.json` `dependencies`
@@ -28,9 +30,12 @@ Question 1). Each entry reads `<changed path> -> <effect>`:
 `NO_BUILD_IMPACT` is explicit and tested entry by entry. It exists because
 every generated-view pull request rewrites `generated.manifest`; without the
 set, that one path would widen to all 30+ homeworks and rebuild the tree for a
-documentation edit. These paths are view and documentation inputs, never
-compilation inputs. The fail-safe stays: an unrecognised path widens, so an
-unknown shared input can never silently skip a build (T-5-12, T-5-32).
+documentation edit. The Phase 9 entries follow the same rule: `.claude/skills/`
+and `.agents/skills/` are authored or generated Markdown, `scripts/gen_skills.py`
+writes only that Markdown, and `.skill-state/` is untracked checkpoint state.
+These paths are view, documentation and skill inputs, never compilation
+inputs. The fail-safe stays: an unrecognised path widens, so an unknown shared
+input can never silently skip a build (T-5-12, T-5-32).
 
 The project set is every `homeworks/*/` directory plus the single top-level
 `tests/` project when `tests/platformio.ini` exists. `tests/` is a real
@@ -103,6 +108,19 @@ NO_BUILD_IMPACT = (
     "LICENSE",
     "generated.manifest",
     "homeworks.code-workspace",
+    # Phase 9: skills are authored or generated Markdown, and the generator
+    # writes only that Markdown; the checkpoint state is untracked. None of
+    # them is a PlatformIO build input.
+    ".claude/",
+    ".agents/",
+    "generated.skills.manifest",
+    ".skill-state/",
+    # Named explicitly because an unrecognised path widens the matrix: a
+    # generator-only pull request must not rebuild every project.
+    "scripts/gen_skills.py",
+    # The skill runtime helper captures serial output; it is never a
+    # compilation input.
+    "scripts/serial_capture.py",
 )
 
 # Shared inputs every project consumes. `scripts/affected.py` names itself so a

@@ -9,22 +9,24 @@ repository itself. This module is that harness.
 serves the generator and diff-mapper suites: it writes a small, metadata-complete
 tree from string assembly instead of copying the authored ``docs/`` and
 ``homeworks/`` trees, so those tests cannot depend on authored content.
+``write_skills_root`` serves the skills-generator suite: it assembles a tiny
+canonical ``.claude/skills/`` tree of two skills plus ``_shared/``, and creates
+no ``.agents/`` mirror and no manifest, so that suite never reads the authored
+skills.
 
-Every helper is read-only with respect to the repository: they only copy out of
-it, and ``render_tree`` only reads a template source. ``render_tree`` performs
-the same plain ``{{name}}`` substitution the scaffold performs; it exists to
-build the committed golden fixtures and is never imported by the scaffold.
+Every helper is read-only with respect to the repository: ``build_root`` and
+the two synthetic-root builders only copy out of it, and ``snapshot_tree`` only
+reads a scaffolded directory. ``snapshot_tree`` returns each file's bytes keyed
+by its relative POSIX path, so a suite can compare two runs or a run against a
+live template without a committed copy of the expected tree.
 """
 
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import subprocess
 from pathlib import Path
-
-PLACEHOLDER = re.compile(r"\{\{([^{}]*)\}\}")
 
 # Copied at their repository-relative depths so every relative path the
 # scaffold or `pio` resolves from `homeworks/<id>` still works.
@@ -60,6 +62,16 @@ def _copy(source, target):
     else:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+
+
+def snapshot_tree(directory):
+    """Return every file under *directory* as `relative POSIX path -> bytes`."""
+    root = Path(directory)
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in sorted(root.rglob("*"), key=lambda item: item.as_posix())
+        if path.is_file()
+    }
 
 
 def build_root(base, *, source_root=None, homeworks=True):
@@ -323,35 +335,87 @@ def _write_synthetic_tests_project(project):
     )
 
 
-def render_tree(source, target, mapping, skip=()):
-    """Render every regular file under *source* into *target*.
+def write_skills_root(base, *, source_root=None):
+    """Create a canonical skill tree at *base* and return it.
 
-    Substitution is the closed ``{{name}}`` map, exactly as the scaffold does
-    it; an unknown token raises ``KeyError`` so a broken golden fixture cannot
-    be generated silently. *skip* names source-relative POSIX paths that are
-    not rendered (the scaffold skips ``template.yaml``). Returns the written
-    paths in sorted order.
+    This is the fixture builder for the skills-generator suite. It writes, by
+    string assembly and never with PyYAML:
+
+    * ``.claude/skills/alpha/`` — an implemented skill: quoted
+      ``version: "0.1"``, ``status: active``, ``disable-model-invocation:
+      true``, a column-0 ``#`` comment inside the frontmatter, one
+      ``references/topic.md``, ``CHANGELOG.md`` and ``LESSONS.md``;
+    * ``.claude/skills/beta/`` — a stub: ``status: stub``, no
+      ``disable-model-invocation``, one reference;
+    * ``.claude/skills/_shared/guardrails.md`` — a shared file, not a skill.
+
+    It deliberately creates no ``.agents/`` mirror and no manifest, so every
+    test proves the generator's first run. *source_root* is accepted for
+    symmetry with ``build_root`` and ``write_synthetic_root`` and is never
+    used: the tree is assembled, never copied, so the suite cannot depend on
+    the authored ``.claude/skills/`` tree.
     """
-    source_dir = Path(source)
-    target_dir = Path(target)
-    omitted = set(skip)
-    written = []
+    root = Path(base)
+    root.mkdir(parents=True, exist_ok=True)
 
-    def replace(match):
-        token = match.group(1)
-        if token not in mapping:
-            raise KeyError(f"unknown placeholder {token}")
-        return mapping[token]
+    skills = root / ".claude" / "skills"
 
-    for path in sorted(source_dir.rglob("*"), key=lambda item: item.as_posix()):
-        if path.is_symlink() or not path.is_file():
-            continue
-        relative = path.relative_to(source_dir)
-        if relative.as_posix() in omitted:
-            continue
-        rendered = PLACEHOLDER.sub(replace, path.read_text(encoding="utf-8"))
-        destination = target_dir / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(rendered, encoding="utf-8", newline="\n")
-        written.append(destination)
-    return written
+    alpha = skills / "alpha"
+    (alpha / "references").mkdir(parents=True, exist_ok=True)
+    (alpha / "SKILL.md").write_text(
+        "---\n"
+        "name: alpha\n"
+        "description: An authored fixture skill for the skills-generator suite.\n"
+        "# authored comment stays in place and is never a key\n"
+        "disable-model-invocation: true\n"
+        "metadata:\n"
+        '  version: "0.1"\n'
+        "  status: active\n"
+        "---\n"
+        "\n"
+        "# Alpha (fixture)\n"
+        "\n"
+        "Body for the alpha fixture skill.\n",
+        encoding="utf-8",
+    )
+    (alpha / "references" / "topic.md").write_text(
+        "# Alpha reference\n\nOne level deep, so the mirror may carry it.\n",
+        encoding="utf-8",
+    )
+    (alpha / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## 2026-10-26 — fixture\n- Added the alpha fixture.\n",
+        encoding="utf-8",
+    )
+    (alpha / "LESSONS.md").write_text(
+        "# Lessons\n\n## 2026-10-26 — fixture\n- The fixture is assembled.\n",
+        encoding="utf-8",
+    )
+
+    beta = skills / "beta"
+    (beta / "references").mkdir(parents=True, exist_ok=True)
+    (beta / "SKILL.md").write_text(
+        "---\n"
+        "name: beta\n"
+        "description: A stub fixture skill for the skills-generator suite.\n"
+        "metadata:\n"
+        '  version: "0.1"\n'
+        "  status: stub\n"
+        "---\n"
+        "\n"
+        "# Beta (stub fixture)\n"
+        "\n"
+        "Body for the beta fixture skill.\n",
+        encoding="utf-8",
+    )
+    (beta / "references" / "topic.md").write_text(
+        "# Beta reference\n\nOne level deep, so the mirror may carry it.\n",
+        encoding="utf-8",
+    )
+
+    shared = skills / "_shared"
+    shared.mkdir(parents=True, exist_ok=True)
+    (shared / "guardrails.md").write_text(
+        "# Guardrails\n\nShared prose mirrored as a file, never as a skill.\n",
+        encoding="utf-8",
+    )
+    return root
