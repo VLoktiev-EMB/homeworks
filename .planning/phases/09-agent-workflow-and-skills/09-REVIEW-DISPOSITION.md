@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The 32-character connector ceiling still writes a credential assigned to a long identifier"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The promised `auth mode = WPA2` benign negative is not pinned by the suite"
   - id: CR-03
     severity: critical
@@ -103,7 +103,7 @@ findings:
     severity: info
     disposition: open
     title: "The copula branch now refuses ordinary status lines, and the docstring overstates the negative coverage"
-open: 11
+open: 9
 total: 25
 recorded: 2026-10-27T10:13:00.086Z
 ---
@@ -112,8 +112,8 @@ recorded: 2026-10-27T10:13:00.086Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
-| WR-01 | warning | open | - |
+| CR-01 | critical | fixed | 87ca910 |
+| WR-01 | warning | fixed | 27462fb |
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
 | WR-10 | warning | fixed | 09-13-PLAN.md — closed by the `math.isfinite` positive-finite-upper-bound validation before `resolve_root`, the monitor argv or `Popen`. (not in the current review) |
 | WR-11 | warning | fixed | 09-13-PLAN.md — closed by the reaping `finally` in `capture_pty`, which kills a live child and waits on every exception path. (not in the current review) |
