@@ -44,7 +44,10 @@ write is refused. Every refusal reports `capture unavailable`.
 
 The credential scan is fail-closed and runs on the exact bytes before any file
 is created. It matches a token, secret, password, passwd, passphrase, pwd,
-API-key or auth/authorization keyword. The keyword may sit inside a larger word
+API-key or auth/authorization keyword. A compound keyword may be written with
+one space, underscore or hyphen, or with no separator (`secret key`,
+`secret_key`, `secret-key`, `secretkey`); the shared guardrails own the policy
+shapes this scan implements. The keyword may sit inside a larger word
 on either side: it may follow another word (`userpassword`) or precede
 identifier characters (`secretKey`, `secret_key`, `passwordHash`). The
 assignment branch admits a connector of at most 128 word, dot or hyphen
