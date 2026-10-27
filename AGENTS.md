@@ -48,8 +48,8 @@ below.
   `templates/views/` — the text templates `scripts/gen_views.py` renders.
 - `lib/` — `port`, `common`, `host`, and the thin Arduino and ESP-IDF adapters.
 - `homeworks/<id>/` — one project per assignment, created only by `scripts/new_homework`.
-- `.claude/skills/` — the canonical authored skills, each with `SKILL.md`, `CHANGELOG.md`,
-  `LESSONS.md` and optional `references/`, plus `_shared/guardrails.md`.
+- `.claude/skills/` — the canonical authored skills, each with `SKILL.md` and optional
+  `references/`, plus `_shared/guardrails.md`.
 - `.agents/skills/` — the generated, committed mirror for non-Claude agents, never
   hand-edited.
 - `scripts/gen_skills.py` — the only writer of the mirror, with `--check`.

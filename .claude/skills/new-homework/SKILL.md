@@ -156,9 +156,5 @@ section. Phase 10 owns that section's format and its validation.
 
 ## After the run
 
-Draft a dated `CHANGELOG.md` or `LESSONS.md` entry naming the run, ask
-`[Записати | Не зараз]`, and write it only on `Записати` (D-17). Never write the entry
-without that confirmation.
-
 Point an editor question at `docs/standards/vscode.md`, which is the one onboarding guide
 and the only committed editor contract.

@@ -108,8 +108,7 @@ reader can tell them apart.
 ## What the loop remembers
 
 `hw-build` writes no durable checkpoint. `.skill-state/<id>.json` belongs to
-`new-homework`; this skill records its result only in the conversation and, after the
-run, in the optional changelog or lessons entry.
+`new-homework`; this skill records its result only in the conversation.
 
 Two F-05 facts a repair must respect:
 

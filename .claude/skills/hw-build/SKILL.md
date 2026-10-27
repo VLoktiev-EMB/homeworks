@@ -75,13 +75,7 @@ run never claims that chain ran.
 ## State and commits
 
 Write no durable checkpoint. `.skill-state/<id>.json` belongs to `new-homework`; this
-skill records its result in the conversation and in the optional changelog entry.
+skill records its result in the conversation.
 
 Never commit. A commit requires the guardrails confirmation, and that confirmation covers
 exactly the action it announced.
-
-## After the run
-
-Draft a dated `CHANGELOG.md` or `LESSONS.md` entry naming the run, ask
-`[Записати | Не зараз]`, and write it only on `Записати` (D-17). Never write the entry
-without that confirmation.
