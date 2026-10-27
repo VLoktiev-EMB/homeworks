@@ -3,6 +3,14 @@ phase: 09
 review: 09-REVIEW.md
 titles: json
 findings:
+  - id: CR-01
+    severity: critical
+    disposition: open
+    title: "The 32-character connector ceiling still writes a credential assigned to a long identifier"
+  - id: WR-01
+    severity: warning
+    disposition: open
+    title: "The promised `auth mode = WPA2` benign negative is not pinned by the suite"
   - id: CR-03
     severity: critical
     disposition: fixed
@@ -39,18 +47,10 @@ findings:
     severity: info
     disposition: open
     title: "Two `NO_BUILD_IMPACT` rules have no test entry"
-  - id: CR-01
-    severity: critical
-    disposition: fixed
-    title: "The capture snippet pipes stdout, so `pio device monitor` always exits before the bound"
   - id: CR-02
     severity: critical
     disposition: fixed
     title: "The credential-shape scan misses ordinary assignment forms, so the gated write can persist a credential"
-  - id: WR-01
-    severity: warning
-    disposition: fixed
-    title: "The log path is cwd-relative, contradicting the guardrails' scoped path"
   - id: WR-02
     severity: warning
     disposition: fixed
@@ -102,52 +102,28 @@ findings:
   - id: IN-05
     severity: info
     disposition: open
-    title: "The `gen-skills-check` hook's `files` pattern is untested"
-  - id: RR-CR-01
-    severity: critical
-    disposition: fixed
-    title: "The widened credential scan still persists `secretKey` / `secret_key` / `passwordHash` assignments"
-  - id: RR-WR-01
-    severity: warning
-    disposition: open
-    title: "The reaping `finally` can hang the bounded capture and mask the original failure"
-  - id: RR-IN-01
-    severity: info
-    disposition: open
-    title: "The announced capture command still is not the executed one on the default duration"
-  - id: RR-IN-02
-    severity: info
-    disposition: open
-    title: "The helper's new exit-2 usage error is outside the skill's outcome states"
-  - id: RR-IN-03
-    severity: info
-    disposition: open
-    title: "`CliDurationTests` does not prove the ordering the must-have claims"
-  - id: RR-IN-04
-    severity: info
-    disposition: open
     title: "The copula branch now refuses ordinary status lines, and the docstring overstates the negative coverage"
-open: 14
-total: 31
-recorded: 2026-10-27T00:15:41Z
+open: 11
+total: 25
+recorded: 2026-10-27T10:13:00.086Z
 ---
 
 # Phase 09: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
+| CR-01 | critical | open | - |
+| WR-01 | warning | open | - |
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
 | WR-10 | warning | fixed | 09-13-PLAN.md — closed by the `math.isfinite` positive-finite-upper-bound validation before `resolve_root`, the monitor argv or `Popen`. (not in the current review) |
 | WR-11 | warning | fixed | 09-13-PLAN.md — closed by the reaping `finally` in `capture_pty`, which kills a live child and waits on every exception path. (not in the current review) |
 | WR-12 | warning | fixed | 09-12-PLAN.md — closed by the widened `find_credential` covering the copula, embedded keyword, `passphrase` and `pwd` forms. (not in the current review) |
 | IN-06 | info | fixed | 09-11-PLAN.md — closed by `BuildCommandTests`, `CliResultPayloadTests` and the concurrent-reader case. (not in the current review) |
-| IN-07 | info | open | - |
-| IN-08 | info | open | - |
-| IN-09 | info | open | - |
-| IN-10 | info | open | - |
-| CR-01 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `capture_pty` (pseudo-terminal, no pipe). (not in the current review) |
+| IN-07 | info | open | - (not in the current review) |
+| IN-08 | info | open | - (not in the current review) |
+| IN-09 | info | open | - (not in the current review) |
+| IN-10 | info | open | - (not in the current review) |
 | CR-02 | critical | fixed | 09-10-PLAN.md — closed by `scripts/serial_capture.py` `find_credential` and its six-shape test. (not in the current review) |
-| WR-01 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` root anchoring. (not in the current review) |
 | WR-02 | warning | fixed | 09-10-PLAN.md — closed by `write_log_atomically` directory descriptors and the corrected `SKILL.md`. (not in the current review) |
 | WR-03 | warning | fixed | 09-10-PLAN.md — closed by the corrected `hw-flash` outcome table. (not in the current review) |
 | WR-04 | warning | fixed | 09-10-PLAN.md — closed by the announced conditional `-e` segment. (not in the current review) |
@@ -161,17 +137,6 @@ recorded: 2026-10-27T00:15:41Z
 | IN-03 | info | open | - (not in the current review) |
 | IN-04 | info | open | - (not in the current review) |
 | IN-05 | info | open | - (not in the current review) |
-| RR-CR-01 | critical | fixed | 09-14-PLAN.md — closed by the `[\w.-]{0,32}` connector in the assignment branch only, the four identifier-suffixed shapes pinned in `IDENTIFIER_SUFFIXED_ASSIGNMENTS`, and `test_an_identifier_suffixed_credential_child_writes_nothing`, which drives `capture_and_store` and proves no log and no `.skill-state` directory. |
-| RR-WR-01 | warning | open | Gap-closure re-review; the reviewer's own `WR-01`. |
-| RR-IN-01 | info | open | Gap-closure re-review; the reviewer's own `IN-01`. |
-| RR-IN-02 | info | open | Gap-closure re-review; the reviewer's own `IN-02`. |
-| RR-IN-03 | info | open | Gap-closure re-review; the reviewer's own `IN-03`. |
-| RR-IN-04 | info | open | Gap-closure re-review; the reviewer's own `IN-04`. Confirmed by the orchestrator: `password is required`, `auth is required` and `pwd directory` now match. |
-
-`RR-` rows come from the second review of this phase (`09-REVIEW.md`, reviewed 2026-10-27T00:15:41Z,
-covering only the gap-closure delta). The `RR-` prefix exists because that review restarted its ID
-series at `CR-01` / `WR-01` / `IN-01` and those ids already carry *fixed* decisions above; recording
-them verbatim would have dropped the earlier rows under the id-reuse rule below.
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
