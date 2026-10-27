@@ -229,10 +229,6 @@ upload exit code and nothing else.
 
 ## After the run
 
-Draft a dated `CHANGELOG.md` or `LESSONS.md` entry naming the run, ask
-`[Записати | Не зараз]`, and write it only on `Записати` (D-17). Never write the entry
-without that confirmation.
-
 Never commit, push, open a pull request or create a tag. Those actions need their own
 confirmation under the shared guardrails, and a flash confirmation covers exactly the
 announced upload and capture.
