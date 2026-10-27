@@ -54,6 +54,19 @@ SECOND_USB_DEVICE = {
     "hwid": "USB VID:PID=1A86:55D3 SER=5CBC0287411",
 }
 
+# The flattened shape `pio project config --json-output` emits for this
+# homework: one default environment and an integer monitor_speed under it.
+PROJECT_CONFIG = [
+    ["platformio", [["default_envs", ["esp32s3_arduino"]]]],
+    [
+        "env:esp32s3_arduino",
+        [
+            ["extends", ["esp32s3_arduino"]],
+            ["monitor_speed", 115200],
+        ],
+    ],
+]
+
 # The six exact samples from 09-REVIEW.md CR-02, then the four ordinary password
 # assignments the WR-12 finding proved the scan missed.
 REVIEW_SHAPES = (
@@ -483,6 +496,16 @@ class CliUsageTests(unittest.TestCase):
     def test_a_zero_duration_is_a_usage_error(self) -> None:
         self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--seconds", "0"))
 
+    def test_a_relative_port_is_a_usage_error(self) -> None:
+        self.assert_usage_error(
+            self.run_cli("--id", HOMEWORK, "--port", "usbmodem2101", "--seconds", "1")
+        )
+
+    def test_a_port_outside_dev_is_a_usage_error(self) -> None:
+        self.assert_usage_error(
+            self.run_cli("--id", HOMEWORK, "--port", "/etc/passwd", "--seconds", "1")
+        )
+
 
 class CliDurationTests(unittest.TestCase):
     """A non-finite or oversized duration is a usage error before any capture."""
@@ -572,6 +595,70 @@ class PortResolutionTests(unittest.TestCase):
         for value in ("usbmodem2101", "/etc/passwd", "/dev/../etc/passwd"):
             with self.subTest(value=value):
                 self.assertFalse(serial_capture._valid_port_path(value))
+
+
+class BaudResolutionTests(unittest.TestCase):
+    """The reported baud is the project's effective monitor speed."""
+
+    def test_an_explicit_baud_wins_without_reading_a_config(self) -> None:
+        self.assertEqual(57600, serial_capture.resolve_baud(57600, None, None))
+
+    def test_the_selected_environment_monitor_speed_is_returned(self) -> None:
+        self.assertEqual(115200, serial_capture.resolve_baud(None, PROJECT_CONFIG, None))
+        self.assertEqual(
+            115200,
+            serial_capture.resolve_baud(None, PROJECT_CONFIG, "esp32s3_arduino"),
+        )
+
+    def test_a_string_monitor_speed_is_normalized_to_an_int(self) -> None:
+        config = [["env:esp32s3_arduino", [["monitor_speed", "115200"]]]]
+
+        self.assertEqual(
+            115200,
+            serial_capture.resolve_baud(None, config, "esp32s3_arduino"),
+        )
+
+    def test_an_absent_monitor_speed_refuses(self) -> None:
+        config = [["env:esp32s3_arduino", [["extends", ["esp32s3_arduino"]]]]]
+
+        with self.assertRaises(serial_capture.CheckError) as caught:
+            serial_capture.resolve_baud(None, config, "esp32s3_arduino")
+
+        self.assertIn("--baud", str(caught.exception))
+
+    def test_an_unknown_environment_refuses(self) -> None:
+        with self.assertRaises(serial_capture.CheckError) as caught:
+            serial_capture.resolve_baud(None, PROJECT_CONFIG, "nope")
+
+        self.assertIn("--env", str(caught.exception))
+
+    def test_several_default_environments_without_env_refuse(self) -> None:
+        config = [
+            ["platformio", [["default_envs", ["esp32s3_arduino", "native"]]]],
+            ["env:esp32s3_arduino", [["monitor_speed", 115200]]],
+            ["env:native", [["monitor_speed", 115200]]],
+        ]
+
+        with self.assertRaises(serial_capture.CheckError) as caught:
+            serial_capture.resolve_baud(None, config, None)
+
+        message = str(caught.exception)
+        self.assertIn("--env", message)
+        self.assertIn("--baud", message)
+
+    def test_a_non_positive_monitor_speed_refuses(self) -> None:
+        for value in (0, "0", -1, "fast"):
+            with self.subTest(value=value):
+                config = [["env:esp32s3_arduino", [["monitor_speed", value]]]]
+
+                with self.assertRaises(serial_capture.CheckError) as caught:
+                    serial_capture.resolve_baud(None, config, "esp32s3_arduino")
+
+                self.assertIn("--baud", str(caught.exception))
+
+    def test_a_malformed_config_refuses(self) -> None:
+        with self.assertRaises(serial_capture.CheckError):
+            serial_capture.resolve_baud(None, {"platformio": {}}, None)
 
 
 class CaptureEndToEndTests(unittest.TestCase):
@@ -731,6 +818,27 @@ class CliResultPayloadTests(unittest.TestCase):
             },
             json.loads(output.strip()),
         )
+
+    def test_an_omitted_baud_is_reported_from_the_project(self) -> None:
+        target = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
+
+        with (
+            mock.patch.object(
+                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
+            ),
+            mock.patch.object(
+                serial_capture, "project_config", return_value=PROJECT_CONFIG
+            ),
+            mock.patch.object(
+                serial_capture, "capture_and_store", return_value=(target, 17)
+            ),
+        ):
+            code, output = self.run_json(
+                "--id", HOMEWORK, "--dir", str(self.root), "--json"
+            )
+
+        self.assertEqual(0, code, output)
+        self.assertEqual(115200, json.loads(output.strip())["baud"])
 
     def test_a_json_refusal_payload(self) -> None:
         refusal = serial_capture.CaptureFailed("credential-shaped device output")

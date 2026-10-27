@@ -10,11 +10,31 @@ exit before the bound. This helper allocates a pseudo-terminal, puts the slave
 side in raw mode, runs the monitor on it, and reads the master side for a
 bounded interval.
 
-The child is started as `pio device monitor -d homeworks/<id> --raw --quiet`,
-plus `-e <env>` and `-b <baud>` only when the caller supplies them. `--raw`
-keeps the device bytes untransformed and `--quiet` keeps PlatformIO's terminal
-banner out of the captured stream, so the log holds exactly the bytes the
-scan below inspected.
+The child is started as
+`pio device monitor -d homeworks/<id> -p <port> --dtr 0 --rts 0 --raw --quiet`,
+plus `-e <env>` and `-b <baud>` only when the caller supplies them. `-p` pins
+the interface, `--dtr 0 --rts 0` opens it in the idle line state (the asserted
+pair is the ESP32-S3 chip-reset state, so the application would never run and
+the capture would collect nothing), `--raw` keeps the device bytes
+untransformed, and `--quiet` keeps PlatformIO's terminal banner out of the
+captured stream, so the log holds exactly the bytes the scan below inspected.
+
+The port is resolved before the monitor starts. `pio device list
+--json-output` is filtered to entries whose `hwid` matches
+`USB VID:PID=<vid>:<pid>`; `--port` names one such path explicitly, and
+omitting it requires exactly one candidate. Zero candidates refuse with `no
+USB serial device found`, and two or more refuse as ambiguous, naming every
+candidate and `--port`: two ports on one board (its native USB interface and
+its UART bridge) are a real ambiguity the user breaks, never one the helper
+guesses. `--port` must be an absolute path under `/dev` with no `..`
+component, and a path `pio device list` does not report as a USB serial device
+is refused.
+
+The effective baud is `--baud` when supplied, otherwise the selected
+environment's `monitor_speed` read through `pio project config`. An absent or
+non-positive `monitor_speed`, an environment that cannot be chosen, or a
+missing section is a usage error: PlatformIO's implicit 9600 fallback is never
+used silently.
 
 The 20-second default bound is the designed end of a capture, not a failure:
 the bytes collected up to it are the log. A capture is refused when the command
@@ -44,9 +64,15 @@ file is created exclusively with mode `0o600` and replaced onto the destination
 through the same descriptor; a repeated run replaces the log rather than
 appending to it.
 
+The `--json` object and the human `CAPTURED` line name the resolved device
+path, its `VID:PID` and the effective baud, so a log can be traced to the
+interface that produced it. The log itself stays exactly the raw device bytes:
+no header and no sidecar.
+
 Usage:
-  uv run scripts/serial_capture.py --id ID [--env NAME] [--baud N]
-                                   [--seconds SECONDS] [--dir PATH] [--json]
+  uv run scripts/serial_capture.py --id ID [--port PATH] [--env NAME]
+                                   [--baud N] [--seconds SECONDS]
+                                   [--dir PATH] [--json]
 
 `--seconds` must be a positive finite number no greater than `MAX_SECONDS`
 (600); anything else is a usage error, decided before any process starts.
@@ -54,11 +80,12 @@ Usage:
 Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
   0  the bound was reached and the log was written
   1  `capture unavailable` — the command could not start, exited before the
-     bound, produced no bytes, matched the credential scan, or the write was
-     refused
-  2  usage or environment error (an invalid id, environment, baud or duration,
-     a duration outside the positive-finite bound, an unresolvable repository
-     root)
+     bound, produced no bytes, matched the credential scan, the write was
+     refused, no USB serial device was found, several were found without
+     `--port`, or a named port is not a reported USB serial device
+  2  usage or environment error (an invalid id, environment, port, baud or
+     duration, a duration outside the positive-finite bound, an unresolvable
+     repository root or `monitor_speed`)
 """
 
 from __future__ import annotations
@@ -229,6 +256,98 @@ def _valid_port_path(value: str) -> bool:
     if not path.is_absolute() or not value.startswith("/dev/"):
         return False
     return ".." not in path.parts
+
+
+def project_config(root: Path, homework_id: str) -> object:
+    """Return `pio project config` for one homework as its decoded payload."""
+    return _run_json(
+        [
+            "pio",
+            "project",
+            "config",
+            "-d",
+            str(Path(root) / "homeworks" / homework_id),
+            "--json-output",
+        ]
+    )
+
+
+def _config_sections(payload: object) -> dict[str, dict[str, object]]:
+    """Map each `pio project config` section name to its option mapping."""
+    if not isinstance(payload, list):
+        raise CheckError("project configuration is not a list of sections")
+    sections: dict[str, dict[str, object]] = {}
+    for item in payload:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise CheckError("project configuration section is malformed")
+        name, options = item
+        if not isinstance(name, str) or not isinstance(options, (list, tuple)):
+            raise CheckError("project configuration section is malformed")
+        mapping: dict[str, object] = {}
+        for option in options:
+            if not isinstance(option, (list, tuple)) or len(option) != 2:
+                raise CheckError(
+                    f"project configuration option in {name} is malformed"
+                )
+            key, value = option
+            if not isinstance(key, str):
+                raise CheckError(
+                    f"project configuration option in {name} is malformed"
+                )
+            mapping[key] = value
+        sections[name] = mapping
+    return sections
+
+
+def _default_envs(value: object) -> list[str]:
+    """Return `platformio.default_envs` as a list of environment names."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (list, tuple)) and all(
+        isinstance(item, str) for item in value
+    ):
+        return list(value)
+    return []
+
+
+def resolve_baud(explicit: int | None, config: object, env: str | None) -> int:
+    """Return the baud the monitor will use, refusing an unresolvable value.
+
+    A supplied `--baud` is returned before *config* is touched, so the explicit
+    path reads no project configuration at all.
+    """
+    if explicit is not None:
+        return explicit
+    sections = _config_sections(config)
+    if env is not None:
+        section_name = f"env:{env}"
+    else:
+        defaults = _default_envs(sections.get("platformio", {}).get("default_envs"))
+        if len(defaults) != 1:
+            raise CheckError(
+                "cannot choose an environment from the project config; pass "
+                "--env or --baud"
+            )
+        section_name = f"env:{defaults[0]}"
+    section = sections.get(section_name)
+    if section is None:
+        raise CheckError(
+            f"{section_name} is absent from the project config; pass --env or --baud"
+        )
+    if "monitor_speed" not in section:
+        raise CheckError(f"{section_name} has no monitor_speed; pass --baud")
+    try:
+        baud = int(str(section["monitor_speed"]))
+    except (TypeError, ValueError) as exc:
+        raise CheckError(
+            f"{section_name} monitor_speed {section['monitor_speed']!r} is not "
+            "an integer; pass --baud"
+        ) from exc
+    if baud <= 0:
+        raise CheckError(
+            f"{section_name} monitor_speed {baud} is not positive; pass --baud"
+        )
+    return baud
 
 
 def _reap(process: subprocess.Popen) -> int:
@@ -472,7 +591,10 @@ def main(argv: list[str] | None = None) -> int:
         identity = resolve_port(args.port, list_serial_devices())
         port = identity.path
         vid_pid = f"{identity.vid}:{identity.pid}"
-        baud = args.baud
+        if args.baud is None:
+            baud = resolve_baud(None, project_config(root, args.id), args.env)
+        else:
+            baud = args.baud
         command = _build_command(args, port)
         path, count = capture_and_store(root, args.id, command, args.seconds)
     except CaptureFailed as exc:
