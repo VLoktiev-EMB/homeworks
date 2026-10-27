@@ -61,6 +61,9 @@ evidence it audits.
 | 09-11 | 09-11 | 1 | FLOW-07 | T-09-31 | Both announced capture commands carry `[--baud <n>]`; `_build_command` forwards `-e`/`-b` only when supplied | unit | `python3 -m unittest scripts.tests.test_serial_capture.BuildCommandTests scripts.tests.test_serial_capture.CliResultPayloadTests scripts.tests.test_serial_capture.AtomicLogWriteTests -v` | ✅ | ✅ green |
 | 09-12 | 09-12 | 2 | FLOW-07 | T-09-30 | The credential scan matches ordinary password assignments and still refuses before any file exists | unit | `python3 -m unittest scripts.tests.test_serial_capture.CredentialScanTests -v` | ✅ | ✅ green |
 | 09-13 | 09-13 | 3 | FLOW-07 | — | An invalid `--seconds` is a usage error before any monitor starts; the child is reaped on every exception path | unit | `python3 -m unittest scripts.tests.test_serial_capture.CliDurationTests scripts.tests.test_serial_capture.CaptureReapTests -v` | ✅ | ✅ green |
+| 09-14 | 09-14 | 4 | FLOW-07 | T-09-40 | An identifier-suffixed credential (`{"secretKey": "hunter2"}`, `secret_key = hunter2`, `passwordHash: abcdef`, `SECRET_KEY = hunter2`) matches, and the pinned benign set still does not | unit | `python3 -m unittest scripts.tests.test_serial_capture.CredentialScanTests -v` | ✅ | ✅ green |
+| 09-14 | 09-14 | 4 | FLOW-07 | T-09-40 | An identifier-suffixed credential refuses before the filesystem is touched: `CaptureFailed`, no log file, no `.skill-state` directory | end-to-end | `python3 -m unittest scripts.tests.test_serial_capture.CaptureAndStoreTests -v` | ✅ | ✅ green |
+| 09-14 | 09-14 | 4 | FLOW-01 | — | The guardrails capture exception, the helper docstring and the generated mirror name the same suffix form | smoke | `uv run scripts/gen_skills.py --check` | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | Frontmatter transform strips Claude-only keys, keeps the body, injects the banner | unit | `python3 -m unittest scripts.tests.test_gen_skills -v` | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | Unknown frontmatter key exits 2 | unit | same | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | `--check` reports MODIFIED/DELETED/ORPHAN and writes nothing | unit | same | ✅ | ✅ green |
@@ -115,8 +118,9 @@ locked decision.
       manual-only by design (D-22 dry-run transcript), so the phase is VALIDATED (PARTIAL)
 
 **Approval:** validated (partial) — audit re-run 2026-10-27 after the gap-closure plans
-09-11…09-13; twelve automated rows green, six manual-only rows carried with their dry-run
-evidence.
+09-11…09-14; fifteen automated rows green, seven manual-only rows carried with their dry-run
+evidence. The 09-14 rows cover T-09-40 end to end: the scan matches the identifier-suffixed
+forms and the refusal happens before any log file or state directory exists.
 
 ## Validation Audit 2026-10-26
 
