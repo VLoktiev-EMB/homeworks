@@ -431,10 +431,10 @@ Plans:
   3. `docs/standards/electrical-calculations.md` lists the calculation catalog, and each calculation records formula, units, input provenance, result, uncertainty, and assumption impact.
   4. The self-audit rubric maps every report artifact and evidence item to the pre-PR checklist.
 
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 
 **Wave 1**
-- [ ] 10-01-PLAN.md — Checker core and structure rules: `scripts/report/` package, vocabulary, fence-aware parser, `check_report.py` CLI, `RPT-0xx`/`RPT-1xx` (tracer)
+- [x] 10-01-PLAN.md — Checker core and structure rules: `scripts/report/` package, vocabulary, fence-aware parser, `check_report.py` CLI, `RPT-0xx`/`RPT-1xx` (tracer)
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 10-02-PLAN.md — Table contract: exact headers, row shape, required cells, data-row-or-N/A, safety bullets, BOM ↔ `diagram.json`
@@ -489,7 +489,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
-| 10. Report and Evidence System | 0/8 | Not started | - |
+| 10. Report and Evidence System | 1/8 | In Progress | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
 ## Backlog
