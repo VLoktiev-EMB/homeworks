@@ -5,12 +5,14 @@ because it reads `homework.yaml` with PyYAML, and this suite stays
 dependency-free: no test module may import PyYAML or jsonschema. Every fixture
 is a temporary root that contains one `homeworks/<id>/` directory, so the real
 tree is never touched and a negative case can fail only because of its single
-mutation.
+mutation. `RealTreeTests` additionally reads the shipped tree and proves the
+repository itself satisfies the contract.
 
 Coverage: one rule id per fixture for the lifecycle family (`RPT-001` ... `RPT-004`)
 and the structure family (`RPT-101` ... `RPT-108`), a compliant report, a fenced
 heading, the section-5 not-applicable waiver, the section-7 extra subsection,
-determinism, the `--json` shape, and the stdlib-only import boundary.
+determinism, the `--json` shape, the stdlib-only import boundary, and the
+real-tree pass that locks the retrofitted worked example.
 """
 
 from __future__ import annotations
@@ -538,7 +540,7 @@ class IdentityTests(FixtureBase):
 
     def test_identity_live_report_identity_matches(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-401", "RPT-402", "RPT-403"})
 
@@ -678,7 +680,7 @@ class LanguageTests(FixtureBase):
 
     def test_language_live_report_is_english_and_sentinel_free(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-405", "RPT-406"})
 
@@ -731,7 +733,7 @@ class LinkTests(FixtureBase):
 
     def test_link_live_report_links_resolve(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-404"})
 
@@ -812,7 +814,7 @@ class StatusClaimsTests(FixtureBase):
 
     def test_status_claims_live_report_passes(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-407", "RPT-408"})
 
@@ -1323,7 +1325,7 @@ class TraceabilityTests(FixtureBase):
 
     def test_traceability_live_report_resolves_artifacts(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-306", "RPT-307", "RPT-308"})
 
@@ -1440,7 +1442,7 @@ class CrossReferenceTests(FixtureBase):
 
     def test_cross_reference_live_report_has_no_id_or_citation_records(self):
         result = run_report_checker("--json")
-        self.assertEqual(1, result.returncode, combined(result))
+        self.assertEqual(0, result.returncode, combined(result))
         rules = {item["rule"] for item in json.loads(result.stdout)}
         self.assertEqual(set(), rules & {"RPT-309", "RPT-311", "RPT-312"})
 
@@ -1469,6 +1471,49 @@ class CrossReferenceTests(FixtureBase):
         result = self.run_fixture()
         self.assert_rejected(result, "[RPT-312]")
         self.assertIn("reference entry [6] is never cited", result.stdout)
+
+
+class RealTreeTests(unittest.TestCase):
+    """The shipped repository is the worked example the contract must accept.
+
+    Each fixture class above proves one rule on a temporary root; this class
+    proves the contract is satisfiable on the real tree, so a green fixture can
+    never stand in for a repository that violates its own contract.
+    """
+
+    def real_reports(self):
+        """Every report the tree ships, discovered the same way a reader would."""
+        return sorted((REPO_ROOT / "homeworks").glob("*/report.md"))
+
+    def test_real_tree_checker_exits_zero_with_the_pass_summary(self):
+        result = run_report_checker()
+        self.assertEqual(0, result.returncode, combined(result))
+        self.assertEqual("", result.stderr)
+        self.assertEqual("PASS: report contract satisfied", result.stdout.splitlines()[-1])
+
+    def test_real_tree_json_has_one_ok_record_per_report(self):
+        reports = self.real_reports()
+        # Guard the count assertion against vacuity: a tree with no report would
+        # otherwise satisfy "one record per report" with zero records.
+        self.assertGreaterEqual(len(reports), 1, "no real report was discovered")
+        result = run_report_checker("--json")
+        self.assertEqual(0, result.returncode, combined(result))
+        payload = json.loads(result.stdout)
+        self.assertEqual(len(reports), len(payload), combined(result))
+        for record in payload:
+            with self.subTest(path=record.get("path")):
+                self.assertEqual("OK", record["status"], record)
+                self.assertTrue({"rule", "line"} <= set(record), record)
+                self.assertTrue((REPO_ROOT / record["path"]).is_file(), record["path"])
+        order = [(record["path"], record["line"], record["rule"]) for record in payload]
+        self.assertEqual(sorted(order), order, "records are not sorted by (path, line, rule)")
+
+    def test_real_tree_two_runs_are_byte_identical(self):
+        first = run_report_checker()
+        second = run_report_checker()
+        self.assertEqual(0, first.returncode, combined(first))
+        self.assertEqual(first.stdout, second.stdout)
+        self.assertEqual(first.stderr, second.stderr)
 
 
 if __name__ == "__main__":
