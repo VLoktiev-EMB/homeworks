@@ -254,11 +254,15 @@ class CredentialScanTests(unittest.TestCase):
             with self.subTest(sample=sample):
                 self.assertTrue(serial_capture.find_credential(sample))
 
-    def test_a_connector_longer_than_32_characters_matches(self) -> None:
-        for suffix_length in (32, 33, 42):
+    def test_the_connector_ceiling_is_128_characters(self) -> None:
+        for suffix_length in (32, 33, 42, 128):
             sample = b"secret" + b"k" * suffix_length + b" = hunter2"
             with self.subTest(suffix_length=suffix_length):
                 self.assertTrue(serial_capture.find_credential(sample))
+        # 129 identifier characters exceed the documented ceiling, so the scan
+        # refuses the shape by design rather than by oversight.
+        over_ceiling = b"secret" + b"k" * 129 + b" = hunter2"
+        self.assertFalse(serial_capture.find_credential(over_ceiling))
 
     def test_an_ordinary_word_containing_a_keyword_does_not_match(self) -> None:
         for sample in (

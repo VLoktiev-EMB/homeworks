@@ -48,12 +48,11 @@ simulation is a separate quota-metered action that never proves hardware behavio
 - Resolve exactly one serial port before the gate, fail-closed. Run
   `pio device list --json-output` and keep only entries whose `hwid` carries
   `USB VID:PID=<vid>:<pid>`. When exactly one remains, that is the port: record its device
-  path and VID:PID. Stop the skill on zero candidates, naming the missing device. Stop the
-  skill on more than one candidate, announcing every path and asking the user for `--port`,
-  because two interfaces can belong to one board. Validate a user-named port as an absolute
-  path under `/dev` with no `..` component before it appears in any command or path, and pass
-  it as one argv element. Port handling follows the shared flashing rule in
-  `../_shared/guardrails.md`; it is not restated here.
+  path and VID:PID. Stop the skill on zero candidates, naming the missing device. When more
+  than one candidate remains, announce every path and ask the user for `--port`. Validate a
+  user-named port as an absolute path under `/dev` with no `..` component before it appears
+  in any command or path, and pass it as one argv element. Port handling follows the shared
+  flashing rule in `../_shared/guardrails.md`; the steps here only apply it.
 - Capture is hardware work: it requires a connected board and a serial port. Never claim
   the firmware is on the board without a real upload exit code.
 
@@ -185,9 +184,6 @@ Re-enumeration: the port resolved before the gate is the one announced and passe
 commands. If the board reappears under a different path, the capture refuses with
 `capture unavailable` and the user re-runs the skill to resolve again. The skill never
 switches interfaces silently.
-
-Both cables attached produce two candidates, which is the ambiguous candidate set from
-before the gate: stop and ask for `--port`.
 
 ### The log path
 
