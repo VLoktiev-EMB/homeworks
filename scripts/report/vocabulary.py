@@ -86,6 +86,10 @@ NOT_APPLICABLE_SUFFIX = "._"
 # D-34: only sections 3 and 5 can genuinely be absent; the rest never are.
 NOT_APPLICABLE_SECTIONS = frozenset({"3. Assumptions", "5. Hardware and Wiring"})
 
+# D-07: the two required paragraph openings in sections 8 and 9.
+INDUSTRY_NOTE_PREFIX = "Industry note:"
+STATUS_PREFIX = "Status:"
+
 # D-10: the five semantic labels plus the single qualified form.
 EVIDENCE_LABELS = frozenset(
     {

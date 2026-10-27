@@ -224,5 +224,102 @@ class TracerTests(FixtureBase):
                 self.assertEqual(set(), roots & forbidden, f"{path.name} imports a third party")
 
 
+class HeadingsTests(FixtureBase):
+    """One failing fixture and one passing counterpart per structure rule."""
+
+    def swapped_order(self):
+        order = list(REPORT_HEADINGS)
+        order[2], order[3] = order[3], order[2]
+        return order
+
+    def test_headings_fenced_heading_is_invisible_and_true_line_survives(self):
+        sections = {
+            "2. Objective": "```text\n## 9. Conclusions\n```\n\nAfter the fence.",
+        }
+        report = compliant_report(sections=sections, order=self.swapped_order())
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-102]")
+        self.assertNotIn("[RPT-103]", result.stdout)
+        expected = report.splitlines().index("## 3. Assumptions") + 1
+        self.assertIn(f":{expected}: ERROR [RPT-102]", result.stdout)
+
+    def test_headings_out_of_order_reports_rpt_102(self):
+        self.write_homework()
+        self.write_report(compliant_report(order=self.swapped_order()))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-102]")
+        self.assertIn("out of ascending order", result.stdout)
+
+    def test_headings_duplicate_reports_rpt_103(self):
+        order = list(REPORT_HEADINGS)
+        order.insert(2, "2. Objective")
+        self.write_homework()
+        self.write_report(compliant_report(order=order))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-103]")
+        self.assertIn('duplicate heading "2. Objective"', result.stdout)
+        self.assertNotIn("[RPT-102]", result.stdout)
+
+    def test_headings_missing_subsection_reports_rpt_104(self):
+        self.write_homework()
+        self.write_report(compliant_report(sections={"4. Theory": "The theory."}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-104]")
+        self.assertIn('required subsection "Limitations"', result.stdout)
+
+    def test_headings_not_applicable_without_reason_reports_rpt_105(self):
+        self.write_homework()
+        self.write_report(compliant_report(sections={"3. Assumptions": "_Not applicable._"}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-105]")
+
+    def test_headings_not_applicable_in_forbidden_section_reports_rpt_106(self):
+        sections = {"2. Objective": "_Not applicable — no objective._"}
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-106]")
+        self.assertIn('section "2. Objective"', result.stdout)
+
+    def test_headings_section_five_not_applicable_waives_subsections(self):
+        sections = {
+            "5. Hardware and Wiring": "_Not applicable — software-only assignment._",
+        }
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        self.assert_accepted(self.run_fixture())
+
+    def test_headings_section_seven_extra_subsection_passes(self):
+        sections = {
+            "7. Results": (
+                "The results.\n\n"
+                "### Measurement Ledger\n\nThe ledger.\n\n"
+                "### Interpreting the Forward-Voltage Row\n\nThe interpretation.\n\n"
+                "### Traceability Matrix\n\nThe matrix."
+            ),
+        }
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        self.assert_accepted(self.run_fixture())
+
+    def test_headings_missing_industry_note_reports_rpt_107(self):
+        sections = {"8. Analysis": "The analysis without the required note."}
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-107]")
+        self.assertIn('beginning "Industry note:"', result.stdout)
+
+    def test_headings_missing_status_paragraph_reports_rpt_108(self):
+        sections = {"9. Conclusions": "### Next Steps\n\n- Tag the pilot."}
+        self.write_homework()
+        self.write_report(compliant_report(sections=sections))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-108]")
+        self.assertIn('beginning "Status:"', result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
