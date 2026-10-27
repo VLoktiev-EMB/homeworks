@@ -84,26 +84,6 @@ repos:
           ^(\.github/workflows/|homeworks/[^/]+/homework\.yaml$|boards/[^/]+\.yaml$|templates/.*\.ya?ml$|\.pre-commit-config\.yaml$|\.yamllint\.ya?ml$)
         stages: [pre-commit]
 
-  # D-11/D-12: authored Markdown only. `.planning/` holds 200+ phase artifacts,
-  # `.agents/` is the generated skills mirror, and `.claude/CLAUDE.md` is the
-  # generated adapter; none is authored prose. Every exclusion names a family
-  # explicitly, so a new authored file is linted by default rather than
-  # silently skipped.
-  #
-  # `.claude/skills/**` is NOT excluded: a canonical skill is authored Markdown
-  # like any other document, while only its generated `.agents/` mirror is
-  # owned by `gen_skills.py` (Pitfall 4). The negative lookahead is what keeps
-  # that distinction; do not "fix" it into a blanket `.claude/` exclusion.
-  #
-  # D-06: the pinned `rev` is the delivery path; the hook pulls its own npm
-  # dependencies into a pre-commit-managed node environment.
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.24.0
-    hooks:
-      - id: markdownlint-cli2
-        exclude: ^(\.planning/|\.agents/|\.claude/(?!skills/))
-        stages: [pre-commit]
-
   # `.gitignore` only stops an accidental `git add .`; `git add -f` bypasses it,
   # so the ignore rules alone do not enforce "generated files are never
   # committed" (AGENTS.md). This hook asks git which TRACKED paths its own

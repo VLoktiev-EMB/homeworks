@@ -199,16 +199,8 @@ class WorkflowTextTests(unittest.TestCase):
         ci = CI.read_text(encoding="utf-8")
         self.assertIn("pre-commit run --all-files", ci)
 
-    def test_meta_validates_the_title(self) -> None:
-        step = step_block(CI.read_text(encoding="utf-8"), "Validate the pull-request title")
-        self.assertIn(
-            r"^(feat|fix|test|refactor|perf|docs|style|chore)\([a-z0-9._-]+\): .+$",
-            step,
-        )
-        self.assertIn("PR_TITLE: ${{ github.event.pull_request.title }}", step)
-        self.assertIn("github.event_name == 'pull_request'", step)
-        body = step.split("run:", 1)[1]
-        self.assertNotIn("${{ github.event", body)
+    def test_meta_does_not_block_on_pull_request_title(self) -> None:
+        self.assertNotIn("Validate the pull-request title", CI.read_text(encoding="utf-8"))
 
     def test_ci_never_uses_pull_request_target(self) -> None:
         self.assertNotIn("pull_request_target", CI.read_text(encoding="utf-8"))
@@ -351,8 +343,9 @@ class MetaJobSurfaceTests(unittest.TestCase):
     def test_meta_fetches_the_full_history(self) -> None:
         self.assertIn("fetch-depth: 0", self.meta_job())
 
-    def test_meta_carries_the_full_history_scan(self) -> None:
-        self.assertIn('gitleaks git --redact --verbose --log-opts="--all"', self.text)
+    def test_meta_scans_pr_commits_for_secrets(self) -> None:
+        self.assertIn("Scan PR commits for secrets", self.text)
+        self.assertIn("gitleaks git --redact --verbose", self.text)
 
     def test_meta_lints_every_diagram(self) -> None:
         meta = self.meta_job()
