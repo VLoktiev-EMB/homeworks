@@ -15,3 +15,6 @@ tests:
   framework: unity
   native: true
   coverage: false
+report:
+  path: report.md
+  status: placeholder
