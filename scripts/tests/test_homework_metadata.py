@@ -1046,6 +1046,56 @@ class RealTreeTests(unittest.TestCase):
         self.assertEqual(before, after, "the checker modified the working tree")
 
 
+class SymlinkedDocumentTests(FixtureBase):
+    """CR-06: metadata checker must refuse symlinked homework.yaml and task.md."""
+
+    def test_symlinked_homework_yaml_is_refused_without_reading(self):
+        outside = self.root.parent / f"{self.root.name}-outside.yaml"
+        outside.write_text("id: 1_3-good\ntitle: LEAKME-SECRET\n", encoding="utf-8")
+        self.addCleanup(outside.unlink)
+        hw_dir = self.root / "homeworks" / "1_3-good"
+        hw_dir.mkdir(parents=True, exist_ok=True)
+        hw_link = hw_dir / "homework.yaml"
+        hw_link.symlink_to(outside)
+        self.addCleanup(hw_link.unlink)
+        self.write_task(directory="1_3-good")
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertIn(": ERROR — ", result.stdout)
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stderr)
+
+    def test_symlinked_task_md_is_refused_without_reading(self):
+        outside = self.root.parent / f"{self.root.name}-outside-task.md"
+        outside.write_text("# LEAKME-SECRET\n", encoding="utf-8")
+        self.addCleanup(outside.unlink)
+        self.write_homework(with_task=False)
+        hw_dir = self.root / "homeworks" / "1_3-good"
+        task_link = hw_dir / "task.md"
+        task_link.symlink_to(outside)
+        self.addCleanup(task_link.unlink)
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertIn(": ERROR — ", result.stdout)
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stderr)
+
+    def test_broken_symlinks_are_refused_as_symlinks(self):
+        hw_dir = self.root / "homeworks" / "1_3-good"
+        hw_dir.mkdir(parents=True, exist_ok=True)
+        hw_link = hw_dir / "homework.yaml"
+        hw_link.symlink_to(self.root / "non-existent-target.yaml")
+        self.addCleanup(hw_link.unlink)
+        self.write_task(directory="1_3-good")
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertIn(": ERROR — ", result.stdout)
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("missing", result.stdout)
+
+
 class CanonicalIdTest(unittest.TestCase):
     """One literal, checked in three places at once."""
 

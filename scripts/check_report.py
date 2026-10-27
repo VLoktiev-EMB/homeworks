@@ -22,8 +22,9 @@ Exit codes (the vocabulary shared with `check_metadata.py`, D-04):
      repository root)
 
 A content problem inside a document stays at exit 1: an absent, empty or
-symlinked report, a malformed `homework.yaml`, an inconsistent status pair, an
-oversized report, or a structural rule failure. Only the environment exits 2.
+symlinked report, a symlinked or malformed `homework.yaml`, an inconsistent
+status pair, an oversized report, or a structural rule failure. Only the
+environment exits 2.
 
 `report.path` is a plain relative path inside the homework directory. It is
 untrusted `homework.yaml` content and the checker deliberately does not apply
@@ -128,7 +129,21 @@ ALLOWED_REPORT_STATUS = {
 
 
 def _read_metadata(root, homework):
-    """Return `(metadata, records)`; records is non-empty when reading failed."""
+    """Return `(metadata, records)`; records is non-empty when reading failed.
+
+    A symlinked `homework.yaml` is refused without following or opening the
+    target (CR-06), preventing information leaks from outside host files.
+    """
+    if homework.is_symlink():
+        return None, [
+            _lexical_record(
+                root,
+                homework,
+                "ERROR",
+                "RPT-001",
+                "homework.yaml is a symlink; refusing to follow it",
+            )
+        ]
     try:
         text = homework.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
@@ -264,6 +279,16 @@ def _validate_directory(root, directory):
     """Validate one `homeworks/<id>/` directory."""
     directory = Path(directory)
     homework = directory / "homework.yaml"
+    if homework.is_symlink():
+        return [
+            _lexical_record(
+                root,
+                homework,
+                "ERROR",
+                "RPT-001",
+                "homework.yaml is a symlink; refusing to follow it",
+            )
+        ]
     if not homework.is_file():
         return [
             _record(

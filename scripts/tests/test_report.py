@@ -810,6 +810,42 @@ class HostileDocumentContractTests(FixtureBase):
                 self.assert_content_error_result(json_first)
 
 
+class SymlinkSecurityTests(FixtureBase):
+    """CR-06/WR-12: checkers must never follow symlinks to outside files."""
+
+    def test_symlinked_homework_yaml_is_rpt_001_and_never_read(self):
+        outside = self.root.parent / f"{self.root.name}-outside.yaml"
+        outside.write_text(
+            "status: LEAKME-SECRET\nreport:\n  path: report.md\n  status: complete\n",
+            encoding="utf-8",
+        )
+        self.addCleanup(outside.unlink)
+        hw_dir = self.root / "homeworks" / self.homework_id
+        hw_dir.mkdir(parents=True, exist_ok=True)
+        hw_link = hw_dir / "homework.yaml"
+        hw_link.symlink_to(outside)
+        self.addCleanup(hw_link.unlink)
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stdout)
+        self.assertNotIn("LEAKME-SECRET", result.stderr)
+        self.assertNotIn("[RPT-003]", result.stdout)
+
+    def test_broken_symlinked_homework_yaml_is_rpt_001(self):
+        hw_dir = self.root / "homeworks" / self.homework_id
+        hw_dir.mkdir(parents=True, exist_ok=True)
+        hw_link = hw_dir / "homework.yaml"
+        hw_link.symlink_to(self.root / "non-existent-target.yaml")
+        self.addCleanup(hw_link.unlink)
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("missing", result.stdout)
+
+
 class IdentityTests(FixtureBase):
     """`RPT-401`/`RPT-402`/`RPT-403`: identity against normalized metadata."""
 

@@ -22,10 +22,11 @@ Exit codes (a CI contract from Phase 8 onward):
   2  usage or environment error (bad arguments, missing document, missing or
      malformed schema, unreadable or inconsistent shared configuration)
 
-A content problem inside a document — an oversized file, a YAML syntax error,
-a non-mapping payload, a duplicated key, a schema violation, an `id` that
-disagrees with its directory, or a toolchain pin that drifted from
-`platformio.shared.ini` — stays at exit 1. Only the environment exits 2.
+A content problem inside a document — a symlinked document, an oversized file,
+a YAML syntax error, a non-mapping payload, a duplicated key, a schema
+violation, an `id` that disagrees with its directory, or a toolchain pin that
+drifted from `platformio.shared.ini` — stays at exit 1. Only the environment
+exits 2.
 
 A positional argument selects the family it names. A path under `<root>/boards/`
 that ends in `.yaml` is a board profile; anything else is a homework directory or
@@ -75,12 +76,35 @@ def _record(root, path, status, reason, line=0):
     }
 
 
+def _relative_lexical(root, path):
+    """Render *path* relative to *root* without following a symlink."""
+    try:
+        root_path = Path(os.path.abspath(root))
+        candidate = Path(os.path.abspath(path))
+        return candidate.relative_to(root_path).as_posix()
+    except (ValueError, OSError):
+        return Path(str(path)).name
+
+
+def _lexical_record(root, path, status, reason, line=0):
+    """A record whose display path is lexical, for a refused symlink."""
+    item = _record(root, path, status, reason, line)
+    item["path"] = _relative_lexical(root, path)
+    return item
+
+
 def _read_document(root, path):
     """Return `(text, failure_record)`; exactly one of the two is `None`.
 
-    A decode failure is a content problem on that document (exit 1). An
-    unreadable file is an environment problem (exit 2), as before.
+    A symlinked document is refused without following or opening the target
+    (CR-06), preventing information leaks from outside host files. A decode
+    failure is a content problem on that document (exit 1). An unreadable file
+    is an environment problem (exit 2), as before.
     """
+    if path.is_symlink():
+        return None, _lexical_record(
+            root, path, "ERROR", f"{path.name} is a symlink; refusing to follow it"
+        )
     try:
         return path.read_text(encoding="utf-8"), None
     except UnicodeDecodeError as exc:
@@ -100,8 +124,8 @@ def _validate_directory(root, directory):
     """
     homework = Path(directory) / "homework.yaml"
     task = Path(directory) / "task.md"
-    has_homework = homework.is_file()
-    has_task = task.is_file()
+    has_homework = homework.is_symlink() or homework.is_file()
+    has_task = task.is_symlink() or task.is_file()
 
     if not has_homework and not has_task:
         return [
