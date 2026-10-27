@@ -90,6 +90,24 @@ artifact — code, evidence, and report — that can be understood and verified 
   `main` ruleset requires exactly `gate` with 0 approvals and squash only; `nightly.yml`
   proves the full build and native-test matrix once a day without simulation — Phase 8
   (TOOL-05, TOOL-06, SIM-04)
+- ✓ `AGENTS.md` is the canonical rulebook with severity and enforcement tags and an agent
+  quick-start, imported by `.claude/CLAUDE.md`; it states the live skills layout, the
+  canonical tree, the generated mirror and the drift check — Phase 9 (FLOW-01)
+- ✓ Seven project-local skills exist at version 0.1 — `new-homework`, `hw-build` and
+  `hw-flash` active, `hw-report`, `schematic`, `simulate` and `course-index` documented
+  stubs — each with a dated changelog and lessons record, authored in `.claude/skills/`
+  and mirrored byte-stably to `.agents/skills/` by `scripts/gen_skills.py` — Phase 9
+  (FLOW-01, FLOW-05)
+- ✓ `new-homework` runs guided and one-shot modes over an eight-topic adaptive question
+  bank, pauses after each explanation → code → run → questions block, deepens when the
+  user is stuck, and checkpoints to `.skill-state/<id>.json` — Phase 9 (FLOW-02, FLOW-05)
+- ✓ Both intake modes checkpoint after intake, after code and after the report; flashing
+  and commit/PR accept only a literal `так`/`yes`, and a conflict or ambiguity is recorded
+  as a recommended assumption — Phase 9 (FLOW-04)
+- ✓ `hw-build` repairs a failing build at most twice before escalating with the evidence;
+  `hw-flash` uploads only after explicit confirmation, resolves one USB serial port and
+  captures a bounded log to an ignored path through a PTY helper with a fail-closed
+  credential scan — Phase 9 (FLOW-03, FLOW-06, FLOW-07)
 
 ### Active
 
@@ -101,8 +119,6 @@ artifact — code, evidence, and report — that can be understood and verified 
       generator fallback only.
 - [ ] Toolchain is pinned: PlatformIO Core 6.2.0, `platformio/espressif32` 8.0.0, and
       explicit ESP32-S3-DevKitC-1 N16R8 overrides (16 MB flash, octal PSRAM).
-- [ ] `AGENTS.md` as the canonical rulebook (up to ~300 lines) with enforcement tags,
-      short good/bad examples, and an agent quick-start; `.claude/CLAUDE.md` imports it.
 - [ ] `docs/` organized into `boards/`, `protocols/`, `components/`, `theory/`,
       `standards/`, `decisions/`, and `sources.md`.
 
@@ -115,21 +131,6 @@ artifact — code, evidence, and report — that can be understood and verified 
       measurements, a traceability matrix, and explicit assumptions.
 - [ ] All repository artifacts are written in English; communication with the user is
       in the user's language.
-
-**Workflow and skills**
-
-- [ ] Seven project-local skills at version 0.1: `new-homework`, `hw-build`, `hw-flash`,
-      `hw-report`, `schematic`, `simulate`, and `course-index`.
-- [ ] `new-homework` and `hw-build` are fully implemented first; the remaining skills are
-      thin stubs promoted after first real use.
-- [ ] `new-homework` supports guided and one-shot modes with an adaptive question bank.
-- [ ] Guided mode follows explanation → code → run → questions at block granularity and
-      deepens explanations when the user is stuck.
-- [ ] Checkpoints occur after intake, after code, and after the report; guardrails for
-      flashing, commit/PR, spec-vs-best-practice conflicts, and ambiguity apply in both
-      modes.
-- [ ] A failing build is fixed automatically at most twice, then explained and escalated.
-- [ ] Skills carry a changelog and lessons-learned section updated after each use.
 
 **Architecture**
 
@@ -304,7 +305,7 @@ artifact — code, evidence, and report — that can be understood and verified 
 | Git LFS only for large non-diffable binaries | Pages cannot serve LFS objects; LFS bandwidth is consumed by checkouts | — Pending |
 | Pin PlatformIO 6.2.0 and espressif32 8.0.0 | Reproducible builds; 8.0.0 is new and must be smoke-tested | ✓ Phase 2 — smoke-tested; 16 MB and octal PSRAM proven from `sdkconfig.json` and image headers |
 | Pilot 1.3 with all extensions in guided mode | Validates the full workflow before scaling to 30+ homeworks | — Pending |
-| Seven thin skills, two fully implemented | Complete inventory without premature design | — Pending |
+| Seven thin skills, three fully implemented | Complete inventory without premature design | ✓ Phase 9 — `new-homework`, `hw-build` and `hw-flash` active; four documented stubs; each carries a dated changelog and lessons record |
 | Four deterministic scripts | Guarantees consistency for scaffolding, index, workspace, and validation | — Pending |
 | Full template set from the first phase | Makes the correct structure the easiest path | ✓ Phase 4 — six templates, golden-tree tests, both homework templates build |
 | `AGENTS.md` as canonical, imported by `CLAUDE.md` | Portable rules for Claude and Antigravity without duplication | — Pending |
@@ -323,6 +324,9 @@ artifact — code, evidence, and report — that can be understood and verified 
 | One required `gate` aggregates every pull-request job | A single required check keeps the ruleset stable while jobs change underneath, and the aggregate fails closed on a cancelled or failed dependency | ✓ Phase 8 — `gate` is the only required status check on `main` (0 approvals, squash only); `edited` and `labeled` are trigger types so a retitle or a `simulate` label re-runs the pipeline |
 | The nightly matrix never simulates | Free-tier simulation quota cannot sustain a nightly run; the metered path stays an opt-in pull-request label | ✓ Phase 8 — `nightly.yml` runs the full build and native matrix plus the full-history scan with `cancel-in-progress: false` and no simulation job |
 | The pull-request title must match `type(scope): summary` | Squash-merge makes the PR title the commit subject, so the title is history | ✓ Phase 8 — enforced in `meta`; the first live run failed on a non-conforming title, which is the guard working |
+| Canonical authored skills with a generated, committed mirror | One editable tree for humans; a byte-stable mirror for non-Claude agents; a manifest with a digest per file makes drift detectable without re-rendering | ✓ Phase 9 — `scripts/gen_skills.py` is the only writer of `.agents/skills/`; `--check` and the `gen-skills-check` hook are the drift gate, and a hand edit is never the fix |
+| Skill prose is review-enforced; the machine check proves sync, not wording | A drift check can prove the mirror matches the canonical tree, but only a reviewer can judge whether a policy sentence is correct and unambiguous | ✓ Phase 9 — text assertions pin the load-bearing sentences, and the prose review stays a human gate |
+| Serial capture goes through a PTY helper with a fail-closed credential scan | A pipe is not a serial port, and a log that leaks a secret is worse than no log; one resolved port must serve both upload and capture | ✓ Phase 9 — `scripts/serial_capture.py` returns raw bytes, refuses any credential-shaped line before a file exists, and opens the monitor with `--dtr 0 --rts 0` |
 
 ## Evolution
 
@@ -345,4 +349,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-10-26 after Phase 08*
+*Last updated: 2026-10-27 after Phase 09*

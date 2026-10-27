@@ -1,43 +1,43 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 09
-current_phase_name: Agent Workflow and Skills
-status: executing
-stopped_at: Phase 9 context gathered
-last_updated: "2026-10-27T13:05:24.952Z"
+current_phase: 10
+current_phase_name: Report and Evidence System
+status: planning
+stopped_at: Phase 09 complete, ready to plan Phase 10
+last_updated: "2026-10-27T13:19:39.986Z"
 last_activity: 2026-10-27
-last_activity_desc: Phase 09 execution resumed (wave continue)
-state_head: c4de88b0e33ba9aee11a22b477c25dd87f788a38
+last_activity_desc: Phase 09 complete, transitioned to Phase 10
+state_head: 80bf55e0839256423a660a2855400fa1a2d997db
 progress:
   total_phases: 14
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 92
-  completed_plans: 91
-  percent: 71
+  completed_plans: 92
+  percent: 85
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-26)
+See: .planning/PROJECT.md (updated 2026-10-27)
 
 **Core value:** Every homework ships as a self-contained, reproducible, industry-standard engineering artifact — code, evidence, and report — that can be understood and verified a year later.
-**Current focus:** Phase 09 — Agent Workflow and Skills
+**Current focus:** Phase 10 — Report and Evidence System
 
 ## Current Position
 
-Phase: 09 (Agent Workflow and Skills) — EXECUTING
-Plan: 1 of 18
-Status: Executing Phase 09
-Last activity: 2026-10-27 — Phase 09 execution resumed (wave continue)
+Phase: 10 — Report and Evidence System
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-27 — Phase 09 complete, transitioned to Phase 10
 
-Progress: [████████████████████] 73/73 plans ([███████░░░] 71%)
+Progress: [████████████████████] 92/92 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73
+- Total plans completed: 92
 - Average duration: —
 - Total execution time: 0.0 hours
 
@@ -56,6 +56,7 @@ Progress: [████████████████████] 73/73 p
 | 06.1 | 1 | - | - |
 | 07 | 4 | - | - |
 | 08 | 4 | - | - |
+| 09 | 19 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -108,6 +109,10 @@ Recent decisions affecting current work:
 - Phase 8: `changes` fails safe — `AGENTS.md`, `.yamllint.yaml` and any other unrecognised path widen the matrix to every project, so this PR built `1_3` and `tests` despite touching neither.
 - Phase 8: the PR title is enforced as `type(scope): summary` in `meta`, because squash-merge makes the title the commit subject; the first live run failed on a non-conforming title.
 - Phase 8: simulation stays opt-in per pull request (`simulate` label, same-repository head, token at step level) and never enters the nightly matrix; one run measured 5 s wall clock against a 15 s upper bound.
+- Phase 9: the canonical skill tree is `.claude/skills/`, the committed mirror `.agents/skills/` is generated from it by `scripts/gen_skills.py`, and that script is the only writer; `--check` and the `gen-skills-check` hook are the drift gate, so a hand edit is never the fix.
+- Phase 9: skill prose is review-enforced — the drift check proves the mirror matches the canonical tree, not that a policy sentence is correct; text assertions pin only the load-bearing sentences, and the human review stays the gate.
+- Phase 9: seven skills exist — `new-homework`, `hw-build` and `hw-flash` active, `hw-report`, `schematic`, `simulate` and `course-index` documented stubs promoted after first real use; each carries a dated changelog and lessons record.
+- Phase 9: serial capture goes through `scripts/serial_capture.py` (PTY, raw bytes, no pipe) with a fail-closed credential scan that refuses before any file exists; one resolved USB serial port serves both upload and capture, and the monitor opens with `--dtr 0 --rts 0`.
 
 - Phase 2: pins validated in practice — PlatformIO Core 6.2.0 + `platformio/espressif32` 8.0.0 build native, Arduino and ESP-IDF; 16 MB flash and octal PSRAM proven from `sdkconfig.json` and `esptool image-info`, never from `platformio.ini`.
 - Phase 2: `platformio.shared.ini` is hand-authored; its generator and drift check remain Phase 5 (META-05). ADR-0007 records the `symlink://` + `library.json` decision.
@@ -225,6 +230,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-26T20:35:52.476Z
-Stopped at: Phase 9 context gathered
-Resume file: /Users/vloktiev/Dev/miltech/homeworks/.planning/phases/09-agent-workflow-and-skills/09-CONTEXT.md
+Last session: 2026-10-27T13:25:00.000Z
+Stopped at: Phase 09 complete, ready to plan Phase 10
+Resume file: None

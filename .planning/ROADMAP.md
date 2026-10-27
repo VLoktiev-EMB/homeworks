@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Developer Experience and Quality Layering** - Formatting, clang-tidy, esp-clangd, hooks, and beginner onboarding (completed 2026-10-26)
 - [x] **Phase 7: Simulation Spike** - Measured Wokwi/Velxio/Renode/Fritzing evidence and ADR-0004 (completed 2026-10-26)
 - [x] **Phase 8: Fast CI** - `meta` + `changes` + changed builds, one required gate, optional simulation (completed 2026-10-26)
-- [ ] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented
+- [x] **Phase 9: Agent Workflow and Skills** - Seven versioned skills with `new-homework` and `hw-build` fully implemented (completed 2026-10-27)
 - [ ] **Phase 10: Report and Evidence System** - The 10-section report contract, calculations catalog, checks, and self-audit rubric
 - [ ] **Phase 11: Pilot Homework 1.3 — Finalization** - The polished tracer shipped end to end, tagged, and ready for scale-out
 
@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 18/18 plans executed, 10 gap-closure (16 executed)
+**Plans:** 19/19 plans complete, 10 gap-closure (16 executed)
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -466,7 +466,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
-| 9. Agent Workflow and Skills | 18/18 | In Progress | - |
+| 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
