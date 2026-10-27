@@ -1,9 +1,9 @@
 ---
 phase: "09"
 slug: "agent-workflow-and-skills"
-status: verified
+status: threats-open
 # threats_open = count of OPEN threats at or above workflow.security_block_on severity (the blocking gate)
-threats_open: 0
+threats_open: 1
 asvs_level: 1
 created: "2026-10-27"
 ---
@@ -69,7 +69,7 @@ created: "2026-10-27"
 | T-09-32 | Tampering | `templates/views/shared-ini.ini.tmpl` -> `platformio.shared.ini` | medium | mitigate | Template is the only edit surface; `gen-views-check` fails on drift; `SharedIniTests` pins the baud. | closed |
 | T-09-38 | Tampering / Repudiation | `hw-flash` consent gate and capture command | high | mitigate | Both announced commands carry `[--baud <n>]`; the prose names `--baud` as the helper option and `-b` only as the forwarded monitor flag; `BuildCommandTests` pin the `-b` argv; the mirror is regenerated so no client sees the stale flag. | closed |
 | T-09-39 | Information disclosure | CLI result payload | low | mitigate | The payload prints only the repository-relative path, status, reason and byte count; never captured bytes, the matched span or stderr; `CliResultPayloadTests` assert the exact payload keys. | closed |
-| T-09-40 | Information disclosure | `find_credential` and the sole capture exception | high | mitigate | `_KEYWORDS` widened to `pass(?:word|wd|phrase)` and `pwd`, leading lookbehind dropped, copula admitted; four shapes plus a benign-negative set pinned; the exact bytes are scanned before any file exists; a match writes nothing and reports `capture unavailable`. | closed |
+| T-09-40 | Information disclosure | `find_credential` and the sole capture exception | high | mitigate | `_KEYWORDS` widened to `pass(?:word|wd|phrase)` and `pwd`, leading lookbehind dropped, copula admitted; four shapes plus a benign-negative set pinned; the exact bytes are scanned before any file exists; a match writes nothing and reports `capture unavailable`. **Reopened 2026-10-27:** `find_credential` still returns False for identifier-prefixed assignments (`secret_key = hunter2`, `{"secretKey": "hunter2"}`, `passwordHash: abcdef`), so the scan is incomplete — see `09-REVIEW.md` `CR-01` / `09-REVIEW-DISPOSITION.md` `RR-CR-01`. | open |
 | T-09-41 | Denial of service | widened scan false positives | low | accept | A widened scan can refuse a benign capture. Accepted: a refusal writes no log, leaves no `.state` directory, and reports a truthful `capture unavailable`; benign boot-log and ordinary-word tests bound the regression. | closed |
 | T-09-42 | Denial of service | `--seconds` parsing and the read loop | medium | mitigate | A non-finite, non-positive or above-`MAX_SECONDS` value is rejected with `CheckError` before `resolve_root`, `_build_command` or `Popen`; `CliDurationTests` assert exit 2 and no traceback. | closed |
 | T-09-43 | Resource exhaustion | `capture_pty` child lifecycle | medium | mitigate | Reap in the outer `finally`: kill a live child, then wait, on every exception path; `CaptureReapTests` assert the recorded child's `returncode` is set when a `RuntimeError` escapes. | closed |
@@ -114,3 +114,11 @@ created: "2026-10-27"
 | Threats found | 39 |
 | Closed | 39 |
 | Open | 0 |
+
+## Security Audit 2026-10-27
+
+| Metric | Count |
+|---|---|
+| Threats found | 39 |
+| Closed | 38 |
+| Open | 1 |
