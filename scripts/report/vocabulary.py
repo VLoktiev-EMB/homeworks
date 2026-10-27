@@ -285,4 +285,18 @@ RULES = {
         "write `Framework`, `PlatformIO Core`, and `Platform` from "
         "`framework` and `toolchain.platformio`/`toolchain.platform`",
     ),
+    "RPT-404": (
+        "a relative Markdown link or image target does not resolve",
+        "point the link at an existing path under the homework directory or "
+        "the repository root; an external URL is never fetched",
+    ),
+    "RPT-405": (
+        "the report contains a Cyrillic codepoint",
+        "rewrite the text in English; `report.md` is English-only",
+    ),
+    "RPT-406": (
+        "a draft or complete report still carries a TODO or TBD sentinel",
+        "replace the sentinel with the real content, or keep the report at "
+        "`report.status: placeholder` until authoring starts",
+    ),
 }

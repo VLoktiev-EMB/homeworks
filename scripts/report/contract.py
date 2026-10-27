@@ -1067,6 +1067,71 @@ def _identity_records(found, owned, metadata, record):
     return records
 
 
+def _link_records(lines, homework_dir, repo_root, record):
+    """`RPT-404`: every relative link or image target resolves (D-38).
+
+    External schemes are dropped by `link_targets` before any filesystem call,
+    so a URL is never fetched (T-10-11). A relative target is resolved through
+    `resolve_artifact`, which refuses an absolute or escaping path.
+    """
+    if homework_dir is None and repo_root is None:
+        return []
+    records = []
+    for number, target in link_targets(lines):
+        if resolve_artifact(target, homework_dir, repo_root):
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-404",
+                f'link target "{target}" does not resolve under the homework '
+                "directory or the repository root",
+                number,
+            )
+        )
+    return records
+
+
+def _language_records(lines, record):
+    """`RPT-405`: `report.md` is English-only (D-40)."""
+    records = []
+    for number, line in enumerate(lines, start=1):
+        offending = next((character for character in line if is_cyrillic(character)), None)
+        if offending is None:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-405",
+                f"Cyrillic character {offending!r} is not allowed in report.md",
+                number,
+            )
+        )
+    return records
+
+
+def _sentinel_records(lines, record):
+    """`RPT-406`: no `TODO`/`TBD` sentinel in a draft or complete report (D-16).
+
+    A `placeholder` report never reaches this rule because `validate_report`
+    returns its waiver first (D-17).
+    """
+    records = []
+    for number, line in enumerate(lines, start=1):
+        match = SENTINEL.search(line)
+        if match is None:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-406",
+                f'sentinel "{match.group(0)}" is not allowed in a draft or complete report',
+                number,
+            )
+        )
+    return records
+
+
 def _subsection_records(lines, sections, record):
     """`RPT-104`: every required subsection exists within its parent section.
 
@@ -1262,6 +1327,9 @@ def validate_report(
     records.extend(_cross_reference_records(lines, sections, owned, record))
     records.extend(_citation_records(lines, sections, record))
     records.extend(_identity_records(found, owned, metadata, record))
+    records.extend(_link_records(lines, homework_dir, repo_root, record))
+    records.extend(_language_records(lines, record))
+    records.extend(_sentinel_records(lines, record))
 
     if records:
         return records

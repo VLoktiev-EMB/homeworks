@@ -23,7 +23,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.report import markdown
+from scripts.report import contract, markdown
 from scripts.report.vocabulary import REPORT_HEADINGS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -637,6 +637,141 @@ class IdentityTests(FixtureBase):
         # language cell against a slug and a `cpp`; neither is compared.
         self.write_homework()
         self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+
+class LanguageTests(FixtureBase):
+    """`RPT-405`/`RPT-406`: English-only text and no authoring sentinel."""
+
+    def test_language_compliant_fixture_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_language_live_report_is_english_and_sentinel_free(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-405", "RPT-406"})
+
+    def test_language_cyrillic_word_reports_rpt_405_with_line(self):
+        body = "The objective contains тест."
+        report = compliant_report(sections={"2. Objective": body})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-405]")
+        expected = report.splitlines().index(body) + 1
+        self.assertIn(f":{expected}: ERROR [RPT-405]", result.stdout)
+        self.assertIn("Cyrillic character", result.stdout)
+
+    def test_language_cyrillic_supplement_reports_rpt_405(self):
+        body = "A supplement codepoint Ԁ is Cyrillic."
+        report = compliant_report(sections={"2. Objective": body})
+        self.write_homework()
+        self.write_report(report)
+        self.assert_rejected(self.run_fixture(), "[RPT-405]")
+
+    def test_language_todo_in_draft_reports_rpt_406_with_line(self):
+        body = "TODO: finish the objective."
+        report = compliant_report(sections={"2. Objective": body})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-406]")
+        expected = report.splitlines().index(body) + 1
+        self.assertIn(f":{expected}: ERROR [RPT-406]", result.stdout)
+        self.assertIn('sentinel "TODO"', result.stdout)
+
+    def test_language_tbd_in_complete_reports_rpt_406(self):
+        self.write_homework(homework_yaml(report_status="complete"))
+        self.write_report(compliant_report(sections={"2. Objective": "TBD objective."}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-406]")
+        self.assertIn('sentinel "TBD"', result.stdout)
+
+    def test_language_todo_in_placeholder_passes(self):
+        self.write_homework(homework_yaml(status="planned", report_status="placeholder"))
+        self.write_report("TODO: skeleton.\n")
+        result = self.run_fixture()
+        self.assert_accepted(result)
+        self.assertIn("placeholder", result.stdout)
+
+
+class LinkTests(FixtureBase):
+    """`RPT-404`: relative Markdown links and images resolve without I/O."""
+
+    def test_link_live_report_links_resolve(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-404"})
+
+    def test_link_live_report_has_two_relative_links(self):
+        text = (REPO_ROOT / "homeworks" / "1_3-police-flasher" / "report.md").read_text(
+            encoding="utf-8"
+        )
+        targets = [target for _, target in contract.link_targets(text.splitlines())]
+        self.assertEqual(["assets/diagram.json", "assets/diagram.json"], targets)
+
+    def test_link_compliant_fixture_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_link_missing_target_reports_rpt_404_with_line(self):
+        body = "See [the diagram](assets/missing.json)."
+        report = compliant_report(sections={"2. Objective": body})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-404]")
+        expected = report.splitlines().index(body) + 1
+        self.assertIn(f":{expected}: ERROR [RPT-404]", result.stdout)
+        self.assertIn("assets/missing.json", result.stdout)
+
+    def test_link_escaping_target_reports_rpt_404(self):
+        body = "See [passwd](../../../etc/passwd)."
+        self.write_homework()
+        self.write_report(compliant_report(sections={"2. Objective": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-404]")
+        self.assertIn("../../../etc/passwd", result.stdout)
+
+    def test_link_external_url_is_skipped_without_resolution(self):
+        targets = [
+            target
+            for _, target in contract.link_targets(["[x](https://example.invalid)"])
+        ]
+        self.assertEqual([], targets)
+
+    def test_link_external_url_fixture_passes(self):
+        self.write_homework()
+        self.write_report(
+            compliant_report(sections={"2. Objective": "See [the site](https://example.invalid)."})
+        )
+        self.assert_accepted(self.run_fixture())
+
+    def test_link_title_and_fragment_are_stripped(self):
+        lines = [
+            '[x](assets/diagram.json "a title")',
+            "[x](assets/diagram.json#section)",
+            "[x](assets/diagram.json?rev=1)",
+        ]
+        targets = [target for _, target in contract.link_targets(lines)]
+        self.assertEqual(["assets/diagram.json"] * 3, targets)
+
+    def test_link_image_target_is_checked(self):
+        self.write_homework()
+        self.write_report(
+            compliant_report(sections={"2. Objective": "![d](assets/missing.png)"})
+        )
+        self.assert_rejected(self.run_fixture(), "[RPT-404]")
+
+    def test_link_inside_a_fence_is_invisible(self):
+        fence = "```text\n[x](assets/missing.json)\n```"
+        self.write_homework()
+        self.write_report(compliant_report(sections={"2. Objective": fence}))
         self.assert_accepted(self.run_fixture())
 
 
