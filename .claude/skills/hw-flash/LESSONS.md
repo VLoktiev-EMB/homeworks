@@ -1,5 +1,14 @@
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-13
+
+- A bounded wait must validate its duration before it starts the child. `select` raises on
+  a non-finite or overflowing timeout, not the validator, so a NaN or infinity reaches the
+  read loop as a traceback and a leaked child unless the check runs first.
+- A child started by a helper must be owned in a `finally`. Every exceptional path that
+  skips the happy-path kill leaves the serial port busy and the `Popen` unreaped, so the
+  cleanup belongs in the block that also closes the descriptor, not in the happy path.
+
 ## 2026-10-27 — gap-closure run, 09-11
 
 - A wrapper's flag is not the wrapped tool's flag: `hw-flash` told the agent to pass `-b`,

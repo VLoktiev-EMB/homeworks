@@ -9,11 +9,11 @@ findings:
     title: "`hw-flash` never passes the user-resolved baud to the capture helper"
   - id: WR-10
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`--seconds` accepts NaN and infinity, which crash the CLI with a traceback"
   - id: WR-11
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "An exception in the read loop leaves `pio device monitor` running"
   - id: WR-12
     severity: warning
@@ -103,7 +103,7 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 11
+open: 9
 total: 25
 recorded: 2026-10-26T23:39:09.858Z
 ---
@@ -113,8 +113,8 @@ recorded: 2026-10-26T23:39:09.858Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
-| WR-10 | warning | open | - |
-| WR-11 | warning | open | - |
+| WR-10 | warning | fixed | 09-13-PLAN.md — closed by the `math.isfinite` positive-finite-upper-bound validation before `resolve_root`, the monitor argv or `Popen`. (not in the current review) |
+| WR-11 | warning | fixed | 09-13-PLAN.md — closed by the reaping `finally` in `capture_pty`, which kills a live child and waits on every exception path. (not in the current review) |
 | WR-12 | warning | fixed | 09-12-PLAN.md — closed by the widened `find_credential` covering the copula, embedded keyword, `passphrase` and `pwd` forms. (not in the current review) |
 | IN-06 | info | fixed | 09-11-PLAN.md — closed by `BuildCommandTests`, `CliResultPayloadTests` and the concurrent-reader case. (not in the current review) |
 | IN-07 | info | open | - |
