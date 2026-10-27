@@ -23,6 +23,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.report import markdown
 from scripts.report.vocabulary import REPORT_HEADINGS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -92,7 +93,7 @@ SECTION_BODIES = {
     "3. Assumptions": (
         "Each assumption names its consequence and validation.\n\n" + ASSUMPTIONS_TABLE
     ),
-    "4. Theory": "The theory.\n\n### Limitations\n\nNone.",
+    "4. Theory": "The theory [1].\n\n### Limitations\n\nNone.",
     "5. Hardware and Wiring": (
         "The wiring.\n\n"
         "### Bill of Materials\n\n" + BOM_TABLE + "\n\n"
@@ -1029,6 +1030,59 @@ class TraceabilityTests(FixtureBase):
         self.assert_rejected(result, "[RPT-310]")
         reasons = [line for line in result.stdout.splitlines() if "[RPT-310]" in line]
         self.assertEqual(8, len(reasons))
+
+
+class CrossReferenceTests(FixtureBase):
+    """`RPT-309`/`RPT-311`/`RPT-312`: intra-report ids and IEEE citations."""
+
+    def test_cross_reference_live_report_has_six_references(self):
+        text = (REPO_ROOT / "homeworks" / "1_3-police-flasher" / "report.md").read_text(
+            encoding="utf-8"
+        )
+        lines = text.splitlines()
+        sections = markdown.sections(lines)
+        entries = markdown.reference_entries(lines, sections, "10. References")
+        self.assertEqual([1, 2, 3, 4, 5, 6], [number for number, _ in entries])
+        references = next(item for item in sections if item.heading.text == "10. References")
+        self.assertTrue(
+            all(
+                references.body_start <= line <= references.body_end
+                for _, line in entries
+            ),
+            "a reference entry was collected outside section 10",
+        )
+
+    def test_cross_reference_live_report_has_no_id_or_citation_records(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-309", "RPT-311", "RPT-312"})
+
+    def test_cross_reference_unresolved_id_reports_rpt_309(self):
+        report = compliant_report(sections={"2. Objective": "The objective refers to C-99."})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-309]")
+        self.assertIn('"C-99" does not resolve to a row in the C table', result.stdout)
+
+    def test_cross_reference_missing_entry_reports_rpt_311(self):
+        report = compliant_report(sections={"2. Objective": "The objective cites [7]."})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-311]")
+        self.assertIn('citation [7] has no entry in "10. References"', result.stdout)
+
+    def test_cross_reference_uncited_entry_reports_rpt_312(self):
+        report = compliant_report(
+            sections={"10. References": "[1] A reference.\n\n[6] An uncited reference."}
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-312]")
+        self.assertIn("reference entry [6] is never cited", result.stdout)
 
 
 if __name__ == "__main__":

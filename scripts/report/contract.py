@@ -26,6 +26,7 @@ from scripts.report.vocabulary import (
     ASSUMPTIONS_HEADER,
     BOM_HEADER,
     CALCULATIONS_HEADER,
+    DECISION_APPENDIX_HEADING,
     EVIDENCE_LABEL_ORDER,
     EVIDENCE_LABELS,
     INDUSTRY_NOTE_PREFIX,
@@ -745,6 +746,88 @@ def _traceability_records(owned, homework_dir, repo_root, record):
     return records
 
 
+def _defined_ids(owned):
+    """Return `{prefix: {id}}` for the four id-bearing tables."""
+    defined = {}
+    for label, prefix in ID_TABLES:
+        table = next((table for name, table, _ in owned if name == label), None)
+        if table is None:
+            continue
+        ids = defined.setdefault(prefix, set())
+        for row in table.rows:
+            row_id = _cell(row, 0)
+            if re.fullmatch(rf"{prefix}-\d{{2}}", row_id):
+                ids.add(row_id)
+    return defined
+
+
+def _cross_reference_records(lines, sections, owned, record):
+    """`RPT-309`: every `A-NN`/`C-NN`/`L-NN`/`T-NN` token resolves (D-36).
+
+    Tokens are collected from sections 1-9 and the decision appendix, never
+    from the reference list. A duplicate id is `RPT-308`, not this rule.
+    """
+    defined = _defined_ids(owned)
+    scoped = set(REPORT_HEADINGS[:9]) | {DECISION_APPENDIX_HEADING}
+    records = []
+    for section in sections:
+        if section.heading.text not in scoped:
+            continue
+        for number in range(section.body_start, section.body_end + 1):
+            for match in IDENTIFIER.finditer(lines[number - 1]):
+                if match.group(0) in defined.get(match.group(1), set()):
+                    continue
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-309",
+                        f'"{match.group(0)}" does not resolve to a row in the '
+                        f"{match.group(1)} table",
+                        number,
+                    )
+                )
+    return records
+
+
+def _citation_records(lines, sections, record):
+    """`RPT-311`/`RPT-312`: bidirectional IEEE citations, section-scoped (D-36).
+
+    Entries live only in `## 10. References`; citations live only in sections
+    1-9 and the decision appendix. Neither side is a document-wide sweep, so the
+    wrapped section-8 line that begins `[1] ` is a citation, not an entry.
+    """
+    entries = markdown.reference_entries(lines, sections, "10. References")
+    entry_numbers = {number for number, _ in entries}
+    scoped = list(REPORT_HEADINGS[:9]) + [DECISION_APPENDIX_HEADING]
+    citations = markdown.citation_tokens(lines, sections, scoped)
+    cited_numbers = {number for number, _ in citations}
+    records = []
+    for number, line in citations:
+        if number in entry_numbers:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-311",
+                f'citation [{number}] has no entry in "10. References"',
+                line,
+            )
+        )
+    for number, line in entries:
+        if number in cited_numbers:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-312",
+                f"reference entry [{number}] is never cited in sections 1-9 or the "
+                "Decision Appendix",
+                line,
+            )
+        )
+    return records
+
+
 def _subsection_records(lines, sections, record):
     """`RPT-104`: every required subsection exists within its parent section.
 
@@ -937,6 +1020,8 @@ def validate_report(
     records.extend(table_records)
     records.extend(_ledger_records(owned, record))
     records.extend(_traceability_records(owned, homework_dir, repo_root, record))
+    records.extend(_cross_reference_records(lines, sections, owned, record))
+    records.extend(_citation_records(lines, sections, record))
 
     if records:
         return records

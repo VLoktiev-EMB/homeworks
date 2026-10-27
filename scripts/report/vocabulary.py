@@ -252,9 +252,21 @@ RULES = {
         "a table row id is malformed or duplicated",
         "use an `A-NN`, `C-NN`, `L-NN`, or `T-NN` id, unique within its table",
     ),
+    "RPT-309": (
+        "an in-text `A-NN`/`C-NN`/`L-NN`/`T-NN` token does not resolve to a row",
+        "cite an id that exists in the matching table, or add the missing row",
+    ),
     "RPT-310": (
         "the traceability matrix does not cover every report requirement",
         "add a traceability row citing the missing `REPORT-01` ... `REPORT-08` "
         "requirement",
+    ),
+    "RPT-311": (
+        "an in-text citation has no entry in section 10",
+        "add the IEEE-numbered reference entry the citation names",
+    ),
+    "RPT-312": (
+        "a reference entry is never cited in sections 1-9 or the appendix",
+        "cite the entry in the body, or remove an unused reference",
     ),
 }
