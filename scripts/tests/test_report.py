@@ -1186,6 +1186,33 @@ class BomTests(FixtureBase):
         self.assert_accepted(self.run_fixture())
 
 
+class HostileDiagramTests(FixtureBase):
+    """CR-02/T-10-29: a deeply nested diagram is RPT-207, never a traceback."""
+
+    def test_parse_diagram_never_raises_on_deep_json(self):
+        diagram = contract.parse_diagram(DEEP_DIAGRAM)
+        self.assertIsNone(diagram.parts)
+        self.assertTrue(diagram.error)
+
+    def test_deeply_nested_diagram_is_rpt_207_not_a_traceback(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram(DEEP_DIAGRAM)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-207]")
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_deeply_nested_diagram_keeps_the_json_contract(self):
+        self.write_homework()
+        self.write_report()
+        self.write_diagram(DEEP_DIAGRAM)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        records = json.loads(result.stdout)
+        self.assertTrue(records, result.stdout)
+        self.assertIn("RPT-207", {item["rule"] for item in records})
+
+
 class LedgerTests(FixtureBase):
     """`RPT-301`/`RPT-303`/`RPT-304`/`RPT-305`: the measurement ledger columns."""
 
