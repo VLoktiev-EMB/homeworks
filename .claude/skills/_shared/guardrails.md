@@ -14,6 +14,11 @@ the same register as `AGENTS.md`.
   insensitive, with no other text. Never default to yes. An empty answer, a
   refusal, a question, or anything else is a stop, and the action needs a new
   invocation.
+- **[MUST]** **[ENFORCED: review]** Resolve one serial port before the gate and
+  pass it explicitly to both the upload (`--upload-port`) and the capture
+  (`--port`). Never let either command select a port implicitly. When more than
+  one USB serial device is plausible, the candidate set is ambiguous: stop and
+  ask for `--port` instead of capturing from one of them.
 - **[MUST]** **[ENFORCED: review]** Never pre-approve `upload` in
   `allowed-tools`, because that would let a client skip the human gate.
 
