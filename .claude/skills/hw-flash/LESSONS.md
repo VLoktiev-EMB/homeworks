@@ -1,5 +1,11 @@
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-14
+
+- A keyword scan must cover identifier characters on both sides of the keyword.
+  Matching only an adjacent separator misses camelCase and snake_case assignments such
+  as `secretKey:` and `secret_key =`, so the credential the rule forbids reaches the log.
+
 ## 2026-10-27 — gap-closure run, 09-13
 
 - A bounded wait must validate its duration before it starts the child. `select` raises on
