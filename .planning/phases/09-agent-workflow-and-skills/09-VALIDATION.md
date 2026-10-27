@@ -57,7 +57,10 @@ evidence it audits.
 | 09-03 | 09-03 | 3 | FLOW-04 | — | Checkpoints after intake, code, report; guardrails always apply | manual dry run + JSON inspection | — | ✅ `09-DRY-RUN.md` Legs 1–3 | ⬜ manual-only |
 | 09-03 | 09-03 | 3 | FLOW-05 | — | Conflicts and ambiguity produce a recorded recommendation | manual dry run + JSON inspection | — | ✅ `09-DRY-RUN.md` Leg 3 | ⬜ manual-only |
 | 09-04 | 09-04 | 4 | FLOW-06 | — | A failing build is repaired at most twice, then escalated | manual dry run against a broken fixture | — | ✅ `09-DRY-RUN.md` Legs 4–5 | ⬜ manual-only |
-| 09-05 | 09-05 | 5 | FLOW-07 | T-09-30 | `hw-flash` stops at confirmation and resolves the baud before the monitor | manual + unit | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests -v` | ✅ | ✅ green (automated part) |
+| 09-05 | 09-05 | 5 | FLOW-07 | T-09-32 | `hw-flash` stops at confirmation and resolves the baud before the monitor | manual + unit | `python3 -m unittest scripts.tests.test_gen_views.SharedIniTests -v` | ✅ | ✅ green (automated part) |
+| 09-11 | 09-11 | 1 | FLOW-07 | T-09-31 | Both announced capture commands carry `[--baud <n>]`; `_build_command` forwards `-e`/`-b` only when supplied | unit | `python3 -m unittest scripts.tests.test_serial_capture.BuildCommandTests scripts.tests.test_serial_capture.CliResultPayloadTests scripts.tests.test_serial_capture.AtomicLogWriteTests -v` | ✅ | ✅ green |
+| 09-12 | 09-12 | 2 | FLOW-07 | T-09-30 | The credential scan matches ordinary password assignments and still refuses before any file exists | unit | `python3 -m unittest scripts.tests.test_serial_capture.CredentialScanTests -v` | ✅ | ✅ green |
+| 09-13 | 09-13 | 3 | FLOW-07 | — | An invalid `--seconds` is a usage error before any monitor starts; the child is reaped on every exception path | unit | `python3 -m unittest scripts.tests.test_serial_capture.CliDurationTests scripts.tests.test_serial_capture.CaptureReapTests -v` | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | Frontmatter transform strips Claude-only keys, keeps the body, injects the banner | unit | `python3 -m unittest scripts.tests.test_gen_skills -v` | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | Unknown frontmatter key exits 2 | unit | same | ✅ | ✅ green |
 | 09-01 | 09-01 | 1 | — | — | `--check` reports MODIFIED/DELETED/ORPHAN and writes nothing | unit | same | ✅ | ✅ green |
@@ -111,8 +114,9 @@ locked decision.
 - [ ] `nyquist_compliant: true` set in frontmatter — not set: FLOW-02…FLOW-06 are
       manual-only by design (D-22 dry-run transcript), so the phase is VALIDATED (PARTIAL)
 
-**Approval:** validated (partial) — audit run 2026-10-27; nine automated rows green, six
-manual-only rows carried with their dry-run evidence.
+**Approval:** validated (partial) — audit re-run 2026-10-27 after the gap-closure plans
+09-11…09-13; twelve automated rows green, six manual-only rows carried with their dry-run
+evidence.
 
 ## Validation Audit 2026-10-26
 
@@ -121,3 +125,11 @@ manual-only rows carried with their dry-run evidence.
 | Gaps found | 5 |
 | Resolved | 0 |
 | Escalated | 5 |
+
+## Validation Audit 2026-10-27
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
