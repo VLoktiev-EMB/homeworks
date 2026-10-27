@@ -845,6 +845,27 @@ class SymlinkSecurityTests(FixtureBase):
         self.assertIn("symlink", result.stdout)
         self.assertNotIn("missing", result.stdout)
 
+    def test_symlinked_assets_directory_is_rpt_207_and_never_read(self):
+        outside_assets = self.root.parent / f"{self.root.name}-outside-assets"
+        outside_assets.mkdir(parents=True, exist_ok=True)
+        (outside_assets / "diagram.json").write_text(
+            '{"parts": [{"type": "wokwi-outside-secret"}]}', encoding="utf-8"
+        )
+        self.addCleanup(shutil.rmtree, outside_assets, True)
+        hw_dir = self.root / "homeworks" / self.homework_id
+        hw_dir.mkdir(parents=True, exist_ok=True)
+        assets_link = hw_dir / "assets"
+        assets_link.symlink_to(outside_assets)
+        self.addCleanup(assets_link.unlink)
+        self.write_homework()
+        self.write_report(with_diagram=False)
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assert_rejected(result, "[RPT-207]")
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("wokwi-outside-secret", result.stdout)
+        self.assertNotIn("wokwi-outside-secret", result.stderr)
+
 
 class IdentityTests(FixtureBase):
     """`RPT-401`/`RPT-402`/`RPT-403`: identity against normalized metadata."""
