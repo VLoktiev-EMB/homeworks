@@ -135,6 +135,46 @@ IDENTIFIER = re.compile(r"\b([ACLT])-(\d{2})\b")
 # D-13: artifact tokens are only those inside a backticked span.
 BACKTICK_SPAN = re.compile(r"`([^`]+)`")
 
+# D-11: the four section-1 identity cells, each mapped to the metadata path it
+# must equal. `Board` and `Language` are deliberately absent: they are display
+# text, and the worked example writes a prose board description against the
+# metadata slug, so string-comparing them would reject a compliant report.
+IDENTITY_FIELDS = (
+    ("Homework ID", ("id",)),
+    ("Title", ("title",)),
+    ("Homework status", ("status",)),
+    ("Report status", ("report", "status")),
+)
+
+# D-11: the three toolchain cells and the comparison each one needs.
+TOOLCHAIN_FIELDS = (
+    ("Framework", ("framework",), "casefold"),
+    ("PlatformIO Core", ("toolchain", "platformio"), "cell"),
+    ("Platform", ("toolchain", "platform"), "platform"),
+)
+
+# D-40: the Cyrillic blocks the English-only scan covers.
+CYRILLIC_RANGES = (
+    (0x0400, 0x04FF),
+    (0x0500, 0x052F),
+    (0x2DE0, 0x2DFF),
+    (0xA640, 0xA69F),
+)
+
+# D-16: a sentinel token anywhere in a draft or complete report.
+SENTINEL = re.compile(r"\b(?:TODO|TBD)\b")
+
+# D-38: a Markdown inline link or image, and the scheme that marks a target as
+# external. An external target is never fetched or resolved.
+INLINE_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]*)\)")
+EXTERNAL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+
+# D-37: the paragraph lead-ins section 7 must carry when the metadata promises
+# a native suite or a simulation run.
+NATIVE_PREFIXES = ("**Native suite.**", "**Native tests.**")
+SIMULATION_PREFIX = "**Simulation.**"
+RUN_CLAIM_TOKENS = ("exited 0", "scenario passed")
+
 
 def path_like(token):
     """True when *token* looks like a path rather than prose (D-13)."""
@@ -201,6 +241,97 @@ def artifact_tokens(cell):
         for token in span.split():
             if path_like(token):
                 yield token
+
+
+def _metadata_value(metadata, path):
+    """Return the metadata value at *path*, or `None` when any step is absent."""
+    value = metadata
+    for key in path:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value
+
+
+def is_cyrillic(character):
+    """True when *character* is a single Cyrillic codepoint (D-40)."""
+    if not isinstance(character, str) or len(character) != 1:
+        return False
+    code = ord(character)
+    return any(low <= code <= high for low, high in CYRILLIC_RANGES)
+
+
+def _link_target(raw):
+    """Return the relative target of one inline-link payload, or `None`.
+
+    An optional angle-bracket wrapper, title, fragment and query are stripped.
+    A scheme-bearing target (`https:`, `mailto:`, …) is external and is never
+    resolved or fetched (D-38, T-10-11). A fragment-only target needs no file.
+    """
+    text = raw.strip()
+    if not text:
+        return None
+    if text.startswith("<"):
+        end = text.find(">")
+        if end == -1:
+            return None
+        text = text[1:end].strip()
+    else:
+        text = text.split()[0]
+    text = text.split("#", 1)[0].split("?", 1)[0].strip()
+    if not text or text.startswith("#") or EXTERNAL_SCHEME.match(text):
+        return None
+    return text
+
+
+def link_targets(lines):
+    """Yield `(line, target)` for every relative Markdown link or image.
+
+    Fenced code is skipped for the same reason the heading and table scanners
+    skip it: a sample link inside a fence is not a document link.
+    """
+    in_fence = False
+    for number, line in enumerate(lines, start=1):
+        if markdown.FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        for match in INLINE_LINK.finditer(line):
+            target = _link_target(match.group(1))
+            if target is not None:
+                yield number, target
+
+
+def _paragraphs(lines, start, end):
+    """Yield `(first_line, joined_text)` for each paragraph in an inclusive range."""
+    current = []
+    first = None
+    for number in range(start, end + 1):
+        text = lines[number - 1]
+        if not text.strip():
+            if current:
+                yield first, " ".join(current)
+            current = []
+            first = None
+            continue
+        if not current:
+            first = number
+        current.append(text.strip())
+    if current:
+        yield first, " ".join(current)
+
+
+def _identity_line(table, key):
+    """Return the line of the section-1 row whose `Field` is *key*."""
+    try:
+        field_index = table.header.index("Field")
+    except ValueError:
+        return table.header_line
+    for row in table.rows:
+        if field_index < len(row.normalized) and row.normalized[field_index] == key:
+            return row.line
+    return table.header_line
 
 
 @dataclass(frozen=True)
@@ -828,6 +959,248 @@ def _citation_records(lines, sections, record):
     return records
 
 
+def _identity_records(found, owned, metadata, record):
+    """`RPT-401`...`RPT-403`: identity and toolchain match normalized metadata.
+
+    The comparison is always against a machine value, never display prose. A
+    cell is normalized first (`normalize_cell`), `Framework` is compared with
+    `casefold()`, and `Platform` goes through `normalize_platform`, so both
+    repository spellings compare equal (D-11, Pitfall 2).
+    """
+    records = []
+
+    # RPT-401: exactly one H1, and it names the homework title.
+    h1s = [heading for heading in found if heading.level == 1]
+    title = _metadata_value(metadata, ("title",))
+    if len(h1s) != 1:
+        line = h1s[1].line if len(h1s) > 1 else 0
+        records.append(
+            record(
+                "ERROR",
+                "RPT-401",
+                f"the report has {len(h1s)} level-1 headings; expected exactly one",
+                line,
+            )
+        )
+    elif isinstance(title, str) and tables.normalize_cell(h1s[0].text) != tables.normalize_cell(
+        title
+    ):
+        records.append(
+            record(
+                "ERROR",
+                "RPT-401",
+                f"the level-1 heading {h1s[0].text!r} does not match "
+                f'homework.yaml title {title!r}',
+                h1s[0].line,
+            )
+        )
+
+    table = next(
+        (candidate for label, candidate, _ in owned if label == "section 1 metadata"),
+        None,
+    )
+    if table is None:
+        return records
+
+    # RPT-402: the four identity cells equal their metadata values.
+    for field_name, path in IDENTITY_FIELDS:
+        expected = _metadata_value(metadata, path)
+        if not isinstance(expected, str):
+            continue
+        observed = tables.lookup_row(table, field_name)
+        if observed is None:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-402",
+                    f'section-1 "{field_name}" cell is absent; expected {expected!r}',
+                    table.header_line,
+                )
+            )
+            continue
+        if tables.normalize_cell(observed) == tables.normalize_cell(expected):
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-402",
+                f'section-1 "{field_name}" is {observed!r}; expected {expected!r}',
+                _identity_line(table, field_name),
+            )
+        )
+
+    # RPT-403: the three toolchain cells equal their metadata values under the
+    # comparison each one needs. `Board` and `Language` are display text and are
+    # deliberately not compared (D-11).
+    for field_name, path, comparison in TOOLCHAIN_FIELDS:
+        expected = _metadata_value(metadata, path)
+        if not isinstance(expected, str):
+            continue
+        observed = tables.lookup_row(table, field_name)
+        if observed is None:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-403",
+                    f'section-1 "{field_name}" cell is absent; expected {expected!r}',
+                    table.header_line,
+                )
+            )
+            continue
+        if comparison == "casefold":
+            matches = observed.casefold() == expected.casefold()
+        elif comparison == "platform":
+            matches = tables.normalize_platform(observed) == tables.normalize_platform(expected)
+        else:
+            matches = tables.normalize_cell(observed) == tables.normalize_cell(expected)
+        if matches:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-403",
+                f'section-1 "{field_name}" is {observed!r}; expected {expected!r}',
+                _identity_line(table, field_name),
+            )
+        )
+
+    return records
+
+
+def _link_records(lines, homework_dir, repo_root, record):
+    """`RPT-404`: every relative link or image target resolves (D-38).
+
+    External schemes are dropped by `link_targets` before any filesystem call,
+    so a URL is never fetched (T-10-11). A relative target is resolved through
+    `resolve_artifact`, which refuses an absolute or escaping path.
+    """
+    if homework_dir is None and repo_root is None:
+        return []
+    records = []
+    for number, target in link_targets(lines):
+        if resolve_artifact(target, homework_dir, repo_root):
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-404",
+                f'link target "{target}" does not resolve under the homework '
+                "directory or the repository root",
+                number,
+            )
+        )
+    return records
+
+
+def _language_records(lines, record):
+    """`RPT-405`: `report.md` is English-only (D-40)."""
+    records = []
+    for number, line in enumerate(lines, start=1):
+        offending = next((character for character in line if is_cyrillic(character)), None)
+        if offending is None:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-405",
+                f"Cyrillic character {offending!r} is not allowed in report.md",
+                number,
+            )
+        )
+    return records
+
+
+def _sentinel_records(lines, record):
+    """`RPT-406`: no `TODO`/`TBD` sentinel in a draft or complete report (D-16).
+
+    A `placeholder` report never reaches this rule because `validate_report`
+    returns its waiver first (D-17).
+    """
+    records = []
+    for number, line in enumerate(lines, start=1):
+        match = SENTINEL.search(line)
+        if match is None:
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-406",
+                f'sentinel "{match.group(0)}" is not allowed in a draft or complete report',
+                number,
+            )
+        )
+    return records
+
+
+def _status_claim_records(lines, sections, metadata, record):
+    """`RPT-407`/`RPT-408`: section-7 claims match homework.yaml (D-37).
+
+    Only presence and the two run-claim tokens are machine-checked; whether the
+    prose describes the run honestly stays a review duty (D-14, T-10-14).
+    """
+    section = next((item for item in sections if item.heading.text == "7. Results"), None)
+    if section is None:
+        return []
+    paragraphs = list(_paragraphs(lines, section.body_start, section.body_end))
+    records = []
+
+    # RPT-407: a native-suite result paragraph when the metadata promises one.
+    if _metadata_value(metadata, ("tests", "native")) is True and not any(
+        text.startswith(NATIVE_PREFIXES) for _, text in paragraphs
+    ):
+        records.append(
+            record(
+                "ERROR",
+                "RPT-407",
+                'section 7 must contain a "**Native suite.**" or "**Native tests.**" '
+                "paragraph because tests.native is true",
+            )
+        )
+
+    # RPT-408: a simulation paragraph, and its claim agrees with the status.
+    simulation = _metadata_value(metadata, ("simulation",))
+    if not isinstance(simulation, dict):
+        return records
+    paragraph = next(
+        ((number, text) for number, text in paragraphs if text.startswith(SIMULATION_PREFIX)),
+        None,
+    )
+    if paragraph is None:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'section 7 must contain a paragraph beginning "**Simulation.**" '
+                "because homework.yaml declares a simulation block",
+            )
+        )
+        return records
+    number, text = paragraph
+    claims_run = any(token in text for token in RUN_CLAIM_TOKENS)
+    status = simulation.get("status")
+    if status == "verified" and not claims_run:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'the simulation paragraph must state an executed-run outcome '
+                '("exited 0" or "scenario passed") because simulation.status is verified',
+                number,
+            )
+        )
+    elif status == "pending" and claims_run:
+        records.append(
+            record(
+                "ERROR",
+                "RPT-408",
+                'the simulation paragraph claims an executed run ("exited 0" or '
+                '"scenario passed") although simulation.status is pending',
+                number,
+            )
+        )
+    return records
+
+
 def _subsection_records(lines, sections, record):
     """`RPT-104`: every required subsection exists within its parent section.
 
@@ -1022,6 +1395,11 @@ def validate_report(
     records.extend(_traceability_records(owned, homework_dir, repo_root, record))
     records.extend(_cross_reference_records(lines, sections, owned, record))
     records.extend(_citation_records(lines, sections, record))
+    records.extend(_identity_records(found, owned, metadata, record))
+    records.extend(_link_records(lines, homework_dir, repo_root, record))
+    records.extend(_language_records(lines, record))
+    records.extend(_sentinel_records(lines, record))
+    records.extend(_status_claim_records(lines, sections, metadata, record))
 
     if records:
         return records

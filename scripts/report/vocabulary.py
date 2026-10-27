@@ -269,4 +269,44 @@ RULES = {
         "a reference entry is never cited in sections 1-9 or the appendix",
         "cite the entry in the body, or remove an unused reference",
     ),
+    # --- Document integrity family (plan 10-04) ---
+    "RPT-401": (
+        "the document does not carry exactly one level-1 heading, or it does "
+        "not match homework.yaml title",
+        "write one `# <title>` heading whose text equals homework.yaml `title`",
+    ),
+    "RPT-402": (
+        "a section-1 identity cell does not equal its homework.yaml value",
+        "set `Homework ID`, `Title`, `Homework status`, and `Report status` to "
+        "`id`, `title`, `status`, and `report.status`",
+    ),
+    "RPT-403": (
+        "a section-1 toolchain cell does not equal its homework.yaml value",
+        "write `Framework`, `PlatformIO Core`, and `Platform` from "
+        "`framework` and `toolchain.platformio`/`toolchain.platform`",
+    ),
+    "RPT-404": (
+        "a relative Markdown link or image target does not resolve",
+        "point the link at an existing path under the homework directory or "
+        "the repository root; an external URL is never fetched",
+    ),
+    "RPT-405": (
+        "the report contains a Cyrillic codepoint",
+        "rewrite the text in English; `report.md` is English-only",
+    ),
+    "RPT-406": (
+        "a draft or complete report still carries a TODO or TBD sentinel",
+        "replace the sentinel with the real content, or keep the report at "
+        "`report.status: placeholder` until authoring starts",
+    ),
+    "RPT-407": (
+        "tests.native is true but section 7 has no native-suite result paragraph",
+        'add a section-7 paragraph beginning "**Native suite.**" or '
+        '"**Native tests.**" with the suite result',
+    ),
+    "RPT-408": (
+        "the section-7 simulation paragraph is absent or disagrees with simulation.status",
+        'add a "**Simulation.**" paragraph that states an executed run when the '
+        "status is verified, and makes no run claim when it is pending",
+    ),
 }

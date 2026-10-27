@@ -97,6 +97,25 @@ def normalize_platform(value):
     return _WHITESPACE.sub(" ", text.replace("@", " ")).strip()
 
 
+def lookup_row(table, key):
+    """Return the normalized `Value` cell of the row whose `Field` is *key*.
+
+    The section-1 table is `Field | Value`, so an identity comparison names a
+    row by its field label instead of a positional index. `None` means the
+    table has no `Field`/`Value` header or no row carrying *key*.
+    """
+    try:
+        field_index = table.header.index("Field")
+        value_index = table.header.index("Value")
+    except ValueError:
+        return None
+    for row in table.rows:
+        if field_index >= len(row.normalized) or row.normalized[field_index] != key:
+            continue
+        return row.normalized[value_index] if value_index < len(row.normalized) else ""
+    return None
+
+
 def _is_separator(line):
     """True when every cell of *line* is a separator cell (`---`, `:---`)."""
     cells = split_row(line)
