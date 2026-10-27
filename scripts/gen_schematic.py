@@ -178,6 +178,12 @@ def main() -> int:
         diagram_path.write_text(json.dumps(formatted, indent=2) + "\n", encoding="utf-8")
         print(f"Formatted {diagram_path}")
 
+    if args.check:
+        formatted = reformat_police_flasher_diagram(content)
+        if content != formatted:
+            print(f"ERROR: {diagram_path} is not formatted cleanly", file=sys.stderr)
+            return 1
+
     return 0
 
 
