@@ -5,9 +5,10 @@ a `sys.executable -c` child. The PTY test proves the child sees stdin and
 stdout as terminals and that raw capture preserves `bytes(range(256))`; the
 pipe test runs the same child without a terminal and proves it fails, so a
 pipe-based regression cannot pass. The credential cases pin the six shapes the
-09-REVIEW.md CR-02 finding executed and the four ordinary password assignments
-WR-12 added, and the write cases cover the root anchor, symlink refusals,
-replace-not-append and concurrent writers.
+09-REVIEW.md CR-02 finding executed, the four ordinary password assignments
+WR-12 added, and the four identifier-suffixed assignments RR-CR-01 added, and
+the write cases cover the root anchor, symlink refusals, replace-not-append and
+concurrent writers.
 """
 
 from __future__ import annotations
@@ -52,6 +53,15 @@ ORDINARY_PASSWORD_ASSIGNMENTS = (
     b"userpassword = hunter2",
     b"passphrase = hunter2",
     b"pwd = hunter2",
+)
+
+# The RR-CR-01 shapes: a keyword followed by identifier characters before the
+# separator, which the shipped scan used to miss.
+IDENTIFIER_SUFFIXED_ASSIGNMENTS = (
+    b'{"secretKey": "hunter2"}',
+    b"secret_key = hunter2",
+    b"passwordHash: abcdef",
+    b"SECRET_KEY = hunter2",
 )
 
 
@@ -182,6 +192,11 @@ class CredentialScanTests(unittest.TestCase):
 
     def test_the_ordinary_password_assignments_match(self) -> None:
         for sample in ORDINARY_PASSWORD_ASSIGNMENTS:
+            with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_identifier_suffixed_assignments_match(self) -> None:
+        for sample in IDENTIFIER_SUFFIXED_ASSIGNMENTS:
             with self.subTest(sample=sample):
                 self.assertTrue(serial_capture.find_credential(sample))
 
@@ -373,6 +388,20 @@ class CaptureAndStoreTests(unittest.TestCase):
 
     def test_a_credential_child_writes_nothing(self) -> None:
         argv = [sys.executable, "-c", child_that_writes(b"password hunter2\r\n")]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertIn("credential", str(caught.exception))
+        self.assertFalse(self.log_path.exists())
+        self.assertFalse((self.root / ".skill-state").exists())
+
+    def test_an_identifier_suffixed_credential_child_writes_nothing(self) -> None:
+        argv = [
+            sys.executable,
+            "-c",
+            child_that_writes(b'{"secretKey": "hunter2"}\r\n'),
+        ]
 
         with self.assertRaises(serial_capture.CaptureFailed) as caught:
             serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
