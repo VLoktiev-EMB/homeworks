@@ -86,6 +86,15 @@ def _lexical_record(root, path, status, rule, reason, line=0):
     return item
 
 
+# D-18: the only consistent homework-status / report-status pairs.
+ALLOWED_REPORT_STATUS = {
+    "planned": ("placeholder",),
+    "in-progress": ("draft", "complete"),
+    "complete": ("complete",),
+    "verified": ("complete",),
+}
+
+
 def _read_metadata(root, homework):
     """Return `(metadata, records)`; records is non-empty when reading failed."""
     try:
@@ -108,6 +117,34 @@ def _read_metadata(root, homework):
     return metadata, []
 
 
+def _status_records(root, homework, status, report_status):
+    """`RPT-003`: the homework status and the report status agree (D-18)."""
+    allowed = ALLOWED_REPORT_STATUS.get(status)
+    if allowed is None:
+        return [
+            _record(
+                root,
+                homework,
+                "ERROR",
+                "RPT-003",
+                f"unknown homework status {status!r}",
+            )
+        ]
+    if report_status in allowed:
+        return []
+    expected = " or ".join(allowed)
+    return [
+        _record(
+            root,
+            homework,
+            "ERROR",
+            "RPT-003",
+            f"homework status {status!r} requires report.status {expected}, "
+            f"not {report_status!r}",
+        )
+    ]
+
+
 def _validate_directory(root, directory):
     """Validate one `homeworks/<id>/` directory."""
     directory = Path(directory)
@@ -128,13 +165,33 @@ def _validate_directory(root, directory):
         return records
 
     report = metadata.get("report")
-    report_path_value = report.get("path") if isinstance(report, dict) else None
+    if not isinstance(report, dict):
+        # D-31/Pitfall 18: the schema does not require `report`, so a `planned`
+        # homework is legitimately valid without one and is skipped.
+        if metadata.get("status") == "planned":
+            return [_record(root, homework, "OK", "", "no report declared")]
+        return [
+            _record(
+                root,
+                homework,
+                "ERROR",
+                "RPT-001",
+                "homework.yaml declares no report block",
+            )
+        ]
+
+    report_path_value = report.get("path")
+    report_status = report.get("status")
     if not isinstance(report_path_value, str) or not report_path_value.strip():
-        return [_record(root, homework, "OK", "", "no report declared")]
+        return [_record(root, homework, "ERROR", "RPT-001", "report.path is absent")]
+    if not isinstance(report_status, str) or not report_status.strip():
+        return [_record(root, homework, "ERROR", "RPT-001", "report.status is absent")]
+
+    records = _status_records(root, homework, metadata.get("status"), report_status)
 
     report_path = directory / report_path_value
     if report_path.is_symlink():
-        return [
+        records.append(
             _lexical_record(
                 root,
                 report_path,
@@ -142,18 +199,25 @@ def _validate_directory(root, directory):
                 "RPT-002",
                 "report document is a symlink; refusing to follow it",
             )
-        ]
+        )
+        return records
     if not report_path.is_file():
-        return [_record(root, report_path, "ERROR", "RPT-002", "report document is absent")]
+        records.append(
+            _record(root, report_path, "ERROR", "RPT-002", "report document is absent")
+        )
+        return records
 
     text = read_regular_text(report_path, relative_path(root, report_path))
-    return validate_report(
-        text,
-        metadata,
-        homework_dir=directory,
-        repo_root=root,
-        path=report_path,
+    records.extend(
+        validate_report(
+            text,
+            metadata,
+            homework_dir=directory,
+            repo_root=root,
+            path=report_path,
+        )
     )
+    return records
 
 
 def _directories(root, positionals=None):

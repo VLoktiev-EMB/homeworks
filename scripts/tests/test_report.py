@@ -321,5 +321,85 @@ class HeadingsTests(FixtureBase):
         self.assertIn('beginning "Status:"', result.stdout)
 
 
+class LifecycleTests(FixtureBase):
+    """Status gating, the placeholder exemption, the bound and determinism."""
+
+    def test_lifecycle_planned_without_report_block_is_ok(self):
+        self.write_homework(homework_yaml(status="planned", with_report=False))
+        result = self.run_fixture()
+        self.assert_accepted(result)
+        self.assertIn("no report declared", result.stdout)
+
+    def test_lifecycle_in_progress_without_report_block_is_rpt_001(self):
+        self.write_homework(homework_yaml(status="in-progress", with_report=False))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+
+    def test_lifecycle_in_progress_with_placeholder_is_rpt_003(self):
+        self.write_homework(homework_yaml(status="in-progress", report_status="placeholder"))
+        self.write_report("TODO: skeleton.\n")
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-003]")
+
+    def test_lifecycle_placeholder_report_without_headings_is_exempt(self):
+        self.write_homework(homework_yaml(status="planned", report_status="placeholder"))
+        self.write_report("TODO: skeleton.\n")
+        result = self.run_fixture()
+        self.assert_accepted(result)
+        self.assertIn("placeholder", result.stdout)
+
+    def test_lifecycle_empty_report_is_rpt_002(self):
+        self.write_homework()
+        self.write_report("")
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-002]")
+        self.assertIn("empty", result.stdout)
+
+    def test_lifecycle_absent_report_is_rpt_002(self):
+        self.write_homework()
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-002]")
+        self.assertIn("absent", result.stdout)
+
+    def test_lifecycle_symlink_report_is_rpt_002(self):
+        self.write_homework()
+        target = self.root / "outside-report.md"
+        target.write_text("outside\n", encoding="utf-8")
+        path = self.root / "homeworks" / self.homework_id / "report.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.symlink_to(target)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-002]")
+        self.assertIn("symlink", result.stdout)
+
+    def test_lifecycle_oversized_report_is_rpt_004(self):
+        self.write_homework()
+        self.write_report("x" * (1024 * 1024 + 1))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-004]")
+        self.assertIn(str(1024 * 1024 + 1), result.stdout)
+
+    def test_lifecycle_two_runs_are_byte_identical(self):
+        self.write_homework()
+        self.write_report()
+        first = self.run_fixture()
+        second = self.run_fixture()
+        self.assertEqual(0, first.returncode, combined(first))
+        self.assertEqual(first.stdout, second.stdout)
+
+    def test_lifecycle_json_and_text_agree_on_record_count(self):
+        self.write_homework()
+        order = [title for title in REPORT_HEADINGS if title != "4. Theory"]
+        self.write_report(compliant_report(order=order))
+        text_result = self.run_fixture()
+        json_result = self.run_fixture("--json")
+        text_records = [
+            line
+            for line in text_result.stdout.splitlines()
+            if ": ERROR " in line or ": OK — " in line
+        ]
+        self.assertEqual(len(text_records), len(json.loads(json_result.stdout)))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,7 @@ from scripts.report.vocabulary import (
     NOT_APPLICABLE_SECTIONS,
     NOT_APPLICABLE_SUFFIX,
     REPORT_HEADINGS,
+    REPORT_MAX_BYTES,
     REQUIRED_SUBSECTIONS,
     STATUS_PREFIX,
 )
@@ -190,6 +191,30 @@ def validate_report(text, metadata, *, homework_dir=None, repo_root=None, path=N
 
     if not text.strip():
         return [record("ERROR", "RPT-002", "report document is empty")]
+
+    size = len(text.encode("utf-8"))
+    if size > REPORT_MAX_BYTES:
+        return [
+            record(
+                "ERROR",
+                "RPT-004",
+                f"report document is {size} bytes, larger than the "
+                f"{REPORT_MAX_BYTES}-byte bound",
+            )
+        ]
+
+    report = metadata.get("report") if isinstance(metadata, dict) else None
+    report_status = report.get("status") if isinstance(report, dict) else None
+    if report_status == "placeholder":
+        # D-17: a placeholder report only has to exist and be non-empty; its
+        # headings and tables are not validated until authoring starts.
+        return [
+            record(
+                "OK",
+                "",
+                "report content checks are waived by report.status: placeholder",
+            )
+        ]
 
     lines = text.splitlines()
     found = markdown.headings(lines)
