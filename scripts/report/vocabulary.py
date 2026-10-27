@@ -129,8 +129,9 @@ REPORT_MAX_BYTES = 1024 * 1024
 # summaries are the short reason wording, the remediations the human fix.
 RULES = {
     "RPT-001": (
-        "the report declaration is missing or unreadable",
-        "add a `report` block with `path` and `status` to `homework.yaml`",
+        "the report declaration is missing, unreadable, or its `path` is uncontained",
+        "add a `report` block with `path` and `status` to `homework.yaml`, and keep "
+        "`path` a relative path inside the homework directory",
     ),
     "RPT-002": (
         "the declared report document is absent, empty, or a symlink",

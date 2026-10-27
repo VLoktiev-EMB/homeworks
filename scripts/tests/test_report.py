@@ -20,6 +20,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -159,6 +160,7 @@ def homework_yaml(
     status="in-progress",
     report_status="draft",
     with_report=True,
+    report_path="report.md",
     native=True,
     simulation_status=None,
 ):
@@ -195,7 +197,7 @@ def homework_yaml(
         ]
     )
     if with_report:
-        lines.extend(["report:", "  path: report.md", f"  status: {report_status}"])
+        lines.extend(["report:", f"  path: {report_path}", f"  status: {report_status}"])
     return "\n".join(lines) + "\n"
 
 
@@ -284,6 +286,18 @@ class FixtureBase(unittest.TestCase):
         self.write_artifact("platformio.ini", homework_id=homework_id)
         if with_diagram:
             self.write_diagram(homework_id=homework_id)
+        return path
+
+    def _outside_sentinel(self, suffix):
+        """Write a malformed report outside the checked root, and return it.
+
+        The body opens with `# OUTSIDE-SENTINEL` so a test can prove the file
+        was never opened, and it is malformed enough that opening it would emit
+        `RPT-101` records instead of the expected refusal.
+        """
+        path = self.root.parent / f"{self.root.name}-{suffix}"
+        path.write_text("# OUTSIDE-SENTINEL\n\n# Broken\n", encoding="utf-8")
+        self.addCleanup(path.unlink)
         return path
 
     def run_fixture(self, *args):
@@ -539,6 +553,88 @@ class LifecycleTests(FixtureBase):
         self.assertEqual(len(text_records), len(json.loads(json_result.stdout)))
 
 
+class ReportPathContainmentTests(FixtureBase):
+    """CR-03/T-10-30/T-10-31: `report.path` never leaves its homework directory.
+
+    `homework.yaml` is untrusted repository content and the checker deliberately
+    does not apply the JSON Schema (D-02), so an absolute or escaping
+    `report.path` must be refused before any `stat`, `is_file` or read. The
+    final component keeps its shipped classification, so a symlinked or absent
+    document is still `RPT-002`.
+    """
+
+    def test_absolute_report_path_is_rpt_001_and_never_read(self):
+        sentinel = self._outside_sentinel("absolute")
+        self.write_homework(homework_yaml(report_path=str(sentinel)))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("OUTSIDE-SENTINEL", result.stdout)
+        self.assertNotIn("[RPT-101]", result.stdout)
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_parent_directory_escape_is_rpt_001_and_never_read(self):
+        sentinel = self._outside_sentinel("parent")
+        self.write_homework(homework_yaml(report_path=f"../../../{sentinel.name}"))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertNotIn("OUTSIDE-SENTINEL", result.stdout)
+        self.assertNotIn("[RPT-101]", result.stdout)
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_intermediate_symlink_is_rpt_001_and_never_read(self):
+        outside_dir = self.root.parent / f"{self.root.name}-linked"
+        outside_dir.mkdir()
+        (outside_dir / "report.md").write_text("# OUTSIDE-SENTINEL\n", encoding="utf-8")
+        self.addCleanup(shutil.rmtree, outside_dir, True)
+        linked = self.root / "homeworks" / self.homework_id / "linked"
+        linked.parent.mkdir(parents=True, exist_ok=True)
+        linked.symlink_to(outside_dir)
+        self.addCleanup(linked.unlink)
+        self.write_homework(homework_yaml(report_path="linked/report.md"))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-001]")
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("OUTSIDE-SENTINEL", result.stdout)
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_nested_relative_report_path_inside_the_homework_is_accepted(self):
+        # The traceability row names the report as a design artifact, so the
+        # fixture's token must follow the declared nested path.
+        traceability = TRACEABILITY_TABLE.replace("`report.md`", "`docs/report.md`")
+        report = compliant_report(
+            sections={
+                "7. Results": SECTION_BODIES["7. Results"].replace(
+                    TRACEABILITY_TABLE, traceability
+                )
+            }
+        )
+        self.write_homework(homework_yaml(report_path="docs/report.md"))
+        self.write_artifact("docs/report.md", report)
+        self.write_artifact("platformio.ini")
+        self.write_diagram()
+        result = self.run_fixture()
+        self.assert_accepted(result)
+
+    def test_final_component_symlink_is_still_rpt_002(self):
+        self.write_homework()
+        target = self.root / "outside-report.md"
+        target.write_text("outside\n", encoding="utf-8")
+        path = self.root / "homeworks" / self.homework_id / "report.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.symlink_to(target)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-002]")
+        self.assertIn("symlink", result.stdout)
+        self.assertNotIn("[RPT-001]", result.stdout)
+
+    def test_absent_document_is_still_rpt_002(self):
+        self.write_homework()
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-002]")
+        self.assertIn("absent", result.stdout)
+        self.assertNotIn("[RPT-001]", result.stdout)
+
+
 class HostileMetadataTests(FixtureBase):
     """CR-01/T-10-28: a hostile `homework.yaml` is a record, not a traceback."""
 
@@ -560,6 +656,79 @@ class HostileMetadataTests(FixtureBase):
                 self.assertEqual(
                     {"path", "status", "rule", "line", "reason"}, set(item)
                 )
+
+
+class HostileDocumentContractTests(FixtureBase):
+    """G-10-1: every hostile document is valid JSON at exit 1, never a crash.
+
+    The three inputs are the two CR-01/CR-02 payloads and the CR-03 escaping
+    path. Each must exit 1 with a parseable, non-empty `--json` array whose
+    records carry the five contract keys, with no traceback, and repeated runs
+    over each fixture must be byte-identical (T-10-28 through T-10-31).
+    """
+
+    def write_deep_metadata(self, homework_id=None):
+        self.write_homework(DEEP_YAML, homework_id=homework_id)
+
+    def write_deep_diagram(self, homework_id=None):
+        self.write_homework(homework_id=homework_id)
+        self.write_report(homework_id=homework_id)
+        self.write_diagram(DEEP_DIAGRAM, homework_id=homework_id)
+
+    def write_escaping_path(self, homework_id=None):
+        homework_id = homework_id or self.homework_id
+        sentinel = self._outside_sentinel("contract")
+        self.write_homework(
+            homework_yaml(homework_id=homework_id, report_path=str(sentinel)),
+            homework_id=homework_id,
+        )
+        return sentinel
+
+    def assert_content_error(self, *args):
+        return self.assert_content_error_result(self.run_fixture("--json", *args))
+
+    def assert_content_error_result(self, result):
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertNotIn("Traceback", combined(result))
+        records = json.loads(result.stdout)
+        self.assertTrue(records, result.stdout)
+        self.assertIn("ERROR", {item["status"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual({"path", "status", "rule", "line", "reason"}, set(item))
+        return records
+
+    def test_deep_metadata_keeps_the_contract(self):
+        self.write_deep_metadata()
+        records = self.assert_content_error()
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+
+    def test_deep_diagram_keeps_the_contract(self):
+        self.write_deep_diagram()
+        records = self.assert_content_error()
+        self.assertIn("RPT-207", {item["rule"] for item in records})
+
+    def test_escaping_report_path_keeps_the_contract(self):
+        self.write_escaping_path()
+        result = self.run_fixture("--json")
+        records = self.assert_content_error_result(result)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        self.assertNotIn("OUTSIDE-SENTINEL", result.stdout)
+
+    def test_hostile_inputs_are_deterministic(self):
+        cases = (
+            ("1_3-deep", self.write_deep_metadata),
+            ("1_3-diagram", self.write_deep_diagram),
+            ("1_3-escape", self.write_escaping_path),
+        )
+        for homework_id, writer in cases:
+            with self.subTest(fixture=homework_id):
+                writer(homework_id=homework_id)
+                positional = f"homeworks/{homework_id}"
+                first = self.run_fixture(positional)
+                second = self.run_fixture(positional)
+                self.assertEqual(1, first.returncode, combined(first))
+                self.assertEqual(first.stdout, second.stdout)
 
 
 class IdentityTests(FixtureBase):
