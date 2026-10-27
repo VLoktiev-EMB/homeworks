@@ -100,9 +100,9 @@ recorded: 2026-10-27T15:40:00Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | 10-REVIEW.md |
-| CR-02 | critical | open | 10-REVIEW.md |
-| CR-03 | critical | open | 10-REVIEW.md |
+| CR-01 | critical | open | Block-until-fixed (2026-10-27): RecursionError escapes the YAML-only except; reproduced — rc=1, empty `--json` stdout, traceback. See `10-UAT.md` G-10-1. |
+| CR-02 | critical | open | Block-until-fixed (2026-10-27): RecursionError escapes the JSON-only except; reproduced — rc=1, empty `--json` stdout, traceback. See `10-UAT.md` G-10-1. |
+| CR-03 | critical | open | Block-until-fixed (2026-10-27): `report.path` uncontained; reproduced reading `/etc/passwd` and `../../../secret.md` outside the root. See `10-UAT.md` G-10-1. |
 | WR-01 | warning | open | 10-REVIEW.md |
 | WR-02 | warning | open | 10-REVIEW.md |
 | WR-03 | warning | open | 10-REVIEW.md |
