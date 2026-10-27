@@ -1,179 +1,178 @@
 ---
 phase: 09-agent-workflow-and-skills
-reviewed: 2026-10-27T12:17:14Z
+reviewed: 2026-10-27T12:50:00Z
 depth: standard
-files_reviewed: 6
+files_reviewed: 11
 files_reviewed_list:
-  - scripts/serial_capture.py
-  - scripts/tests/test_serial_capture.py
-  - .claude/skills/hw-flash/SKILL.md
+  - .agents/skills/_shared/guardrails.md
+  - .agents/skills/hw-flash/CHANGELOG.md
+  - .agents/skills/hw-flash/LESSONS.md
+  - .agents/skills/hw-flash/SKILL.md
   - .claude/skills/_shared/guardrails.md
   - .claude/skills/hw-flash/CHANGELOG.md
   - .claude/skills/hw-flash/LESSONS.md
+  - .claude/skills/hw-flash/SKILL.md
+  - generated.skills.manifest
+  - scripts/serial_capture.py
+  - scripts/tests/test_serial_capture.py
 findings:
-  critical: 1
-  warning: 3
-  info: 5
-  total: 9
+  critical: 0
+  warning: 2
+  info: 3
+  total: 5
 status: issues_found
 ---
 
-# Phase 09: Code Review Report (G-09-1: 09-15, 09-16)
+# Phase 09: Code Review Report (gap-closure 09-17, 09-18)
 
-**Reviewed:** 2026-10-27T12:17:14Z
+**Reviewed:** 2026-10-27T12:50:00Z
 **Depth:** standard
-**Files Reviewed:** 6
+**Files Reviewed:** 11
 **Status:** issues_found
 
 ## Summary
 
-Перевірено дельту закриття G-09-1: явне розв'язання одного USB-порту, відкриття порту в
-idle-стані (`--dtr 0 --rts 0`), звітування `port`/`vid_pid`/`baud` у `--json` та людському
-рядку `CAPTURED`, а також контракт `hw-flash` «один розв'язаний порт для upload і capture».
-Структурних знахідок (fallow) не надано; усі знахідки нижче — наративні.
+Інкрементальне рев'ю дельти закриття `09-17`/`09-18` відносно `04e78ba2` (5 змінених
+файлів, +59/−22, плюс перегенероване дзеркало `.agents/skills/**` і
+`generated.skills.manifest`). Структурних знахідок (fallow) не надано; усі знахідки
+нижче — наративні.
 
-Що перевірено, а не прийнято на віру:
+Що перевірено виконанням, а не прийнято на віру:
 
-- `pio device monitor --help` (PlatformIO Core 6.2.0) справді має `--dtr INTEGER RANGE`,
-  `--rts INTEGER RANGE` і `-p`; `pio project config --json-output` та
-  `pio device list --json-output` повертають форми, які відтворюють фікстури тестів;
-  реальний пристрій цього хоста збігається з `SERIAL_DEVICES` (`USB VID:PID=303A:1001`).
-- `python3 -m unittest discover scripts/tests` — 439 тестів, `OK` (запущено поза sandbox:
-  у sandbox `pty.openpty()` падає з `out of pty devices`, що є середовищною відмовою, а не
-  дефектом коду).
-- `uv run scripts/gen_skills.py --check` — усі записи `UNCHANGED`; `.agents/skills/**` і
-  `generated.skills.manifest` не редаговані вручну.
-- Апаратний UAT (`uv run scripts/serial_capture.py --id 1_3-police-flasher --seconds 20` з
-  під'єднаною платою) у рев'ю не відтворюється: sandbox закриває `/dev/cu.*`, плати немає.
-  Твердження G-09-1 про реальні байти лишається непідтвердженим саме тут.
+- `python3 -m unittest scripts.tests.test_serial_capture` — 53 тести `ok`, 11 падають
+  виключно на `pty.openpty()` → `out of pty devices`. Це середовищна відмова sandbox
+  (`/dev/ptmx` є, алокація заборонена), а не дефект коду: усі 11 задіюють `capture_pty`.
+  `CredentialScanTests` — 12/12 `ok`; `_valid_port_path`, `resolve_port`,
+  `resolve_baud`, `write_log_atomically`, `_build_command` і `main`-контракт перевірені
+  поза PTY і проходять.
+- `python3 scripts/gen_skills.py --check` → `EXIT:0`, усі записи `UNCHANGED`. Дзеркало
+  `.agents/skills/**` і маніфест не редаговані вручну: будь-яка правка скіла йде в
+  `.claude/skills/**` з наступною регенерацією.
+- Прямі виклики `find_credential` на матриці форм політики (нижче) і на негативах.
 
-Цей звіт замінює попередній `09-REVIEW.md` (дельта 09-14); той текст лишається в історії git
-(коміт `4df4a9f`).
+### Re-check закритих знахідок
+
+**CR-01 — ЗАКРИТО.** `_KEYWORDS` тепер `secret(?:[ _-]?key)?`. Перевірено прямим
+викликом: `SECRET KEY: hunter2`, `secret key = hunter2`, `secret key: hunter2`,
+`SECRET KEY = hunter2`, `Secret Key: hunter2`, `secret-key: hunter2`,
+`secret_key = hunter2`, `secretkey: hunter2` → `True`. Усі закріплені негативи
+лишилися `False`: `auth mode = WPA2`, `the cpwd tool reports ready`,
+`author wrote nothing here`, `secret is`, ESP32 ROM boot log. Форми політики з
+`optional separator`/`optional quoting`/`authorization`/`copula`/`embedded keyword`/
+`passphrase`/`pwd`/`api key`/`api-key` також `True`. Guardrails називає складену форму,
+є end-to-end тест відмови без запису лога і без `.skill-state`.
+
+**WR-03 — ЧАСТКОВО ЗАКРИТО.** Назване речення («The selected path is passed to both the
+upload and the capture; neither command resolves a port independently.») справді
+видалене, і одна locator-фраза додана. Але нормативна половина правила про неоднозначний
+набір портів усе ще переказана в скілі у двох місцях, попри твердження «it is not
+restated here» — див. WR-13.
+
+`WR-01` і `WR-02` лишаються відкритими за планом і тут не переоголошуються.
 
 ## Narrative Findings (AI reviewer)
 
-### CR-01: Сканування не ловить складені ключові слова, розділені пробілом
+### WR-13: Скіл усе ще переказує нормативне правило про неоднозначний порт, стверджуючи протилежне
 
-**File:** `scripts/serial_capture.py:139-145`
-**Issue:** `_KEYWORDS` дозволяє лише суцільний варіант (`secretKey`, `secret_key`,
-`secret-key`) і не допускає пробілу між словами складеного ключа. Перевірено прямим
-викликом: `find_credential(b"SECRET KEY: hunter2")` і
-`find_credential(b"secret key = hunter2")` повертають `False`. Це суперечить першому реченню
-політики shared guardrails («a token, secret, password, passwd, passphrase, pwd, or API-key
-assignment») і принципу fail-closed: рядок `SECRET KEY: <value>` з прошивки потрапить у
-`.skill-state/logs/<id>.log`, тобто в єдиний файл, який ця перевірка має захищати. Дефект
-передує дельті 09-15/09-16 (regex востаннє змінювався в 09-14), але файл у межах рев'ю, і
-клас знахідки той самий, що й попередній CR-02 (прості присвоєння пароля).
-**Fix:**
-```python
-_KEYWORDS = rb"(?:authorization|auth|token|secret(?:[\s_-]?key)?|pass(?:word|wd|phrase)|pwd|api[ _-]?key)"
-```
-Додати `b"secret key = hunter2"` і `b"SECRET KEY: hunter2"` до `REVIEW_SHAPES` та зберегти
-негативний тест `auth mode = WPA2` (він не має почати збігатися: `auth` без пробільного
-конектора далі не проходить).
+**Severity:** WARNING
+**File:** `.claude/skills/hw-flash/SKILL.md:50-52`, `.claude/skills/hw-flash/SKILL.md:54-55`,
+`.claude/skills/hw-flash/SKILL.md:188-189`, `.claude/skills/hw-flash/CHANGELOG.md:11-12`
+**Issue:** Locator-речення каже «Port handling follows the shared flashing rule in
+`../_shared/guardrails.md`; it is not restated here.», але безпосередньо перед ним
+стоїть «Stop the skill on more than one candidate, announcing every path and asking the
+user for `--port`, because two interfaces can belong to one board.» — це той самий
+нормативний припис, що й у guardrails: «the candidate set is ambiguous: stop and ask for
+`--port` instead of capturing from one of them». Друга копія є нижче: «Both cables
+attached produce two candidates, which is the ambiguous candidate set from before the
+gate: stop and ask for `--port`.» Отже твердження «not restated here» хибне в межах
+власного абзацу, і ризик дрейфу, який фіксувала WR-03, лишається саме для
+ambiguity-половини правила: при наступній правці guardrails два тексти розійдуться.
+CHANGELOG (`:11-12`) тим часом звітує, що скіл «no longer restates the shared
+same-resolved-port rule».
+**Fix:** лишити в скілі операційні кроки (запустити `pio device list --json-output`,
+відфільтрувати за `hwid`, записати шлях і `VID:PID`, перевірити форму шляху), а
+нормативні речення «stop … and ask for `--port`» прибрати з обох місць — наказ already
+живе в guardrails, які скіл велить прочитати до gate. Якщо план усе ж вважає «stop/ask»
+операційним кроком, переформулювати locator без хибного заперечення, наприклад:
+`Port handling follows the shared flashing rule in ../_shared/guardrails.md; the steps below only apply it.`
+Скопіювати правку в дзеркало регенерацією (`uv run scripts/gen_skills.py`), не руками.
 
-### WR-01: `-d` для монітора ігнорує розв'язаний корінь репозиторію
+### WR-14: Докстрінг модуля не описує складену форму ключового слова, яку скан тепер приймає
 
-**File:** `scripts/serial_capture.py:525` (виклик — `scripts/serial_capture.py:598`)
-**Issue:** `_build_command` жорстко будує `-d "homeworks/" + args.id`, тобто шлях відносно
-поточного робочого каталогу процесу, тоді як `project_config` (`:261-272`) читає конфігурацію
-з абсолютного `root`, а `write_log_atomically` пише лог під тим самим `root`
-(`:590-599`). Якщо запустити з підкаталогу репозиторію або з `--dir <root>`, конфігурація й
-лог беруться з `root`, а `pio device monitor` відкриває проєкт, якого за шляхом відносно cwd
-немає. Відтворено: при `cwd=/tmp` і `--dir <tmp-root>` отримано argv
-`['pio','device','monitor','-d','homeworks/1_3-police-flasher', ...]`, хоча `root` передано
-абсолютним. E2E-тест це маскує, бо патчить `_build_command` цілком.
-**Fix:**
-```python
-command = _build_command(args, port, str(root / "homeworks" / args.id))
-# у _build_command: "-d", project_dir  (абсолютний шлях)
-```
-Оновити `BuildCommandTests`, який зараз пінить `-d homeworks/<id>`.
+**Severity:** WARNING
+**File:** `scripts/serial_capture.py:45-57` (контракт), `scripts/serial_capture.py:127-143`
+(єдине місце, де форма названа), `scripts/serial_capture.py:144-147`
+**Issue:** Докстрінг модуля перелічує прийняті форми («It matches a token, secret,
+password, passwd, passphrase, pwd, API-key or auth/authorization keyword…») і не згадує
+складену форму. Єдине згадування `secret key`/`secret-key`/`secretkey` — у коментарі над
+`_KEYWORDS` (`:131-136`). Докстрінг цього файлу є контрактом поведінки (він докладно
+описує exit-коди, гілки й межі), тож читач, який звіряє регекс із докстрінгом, дійде
+висновку, що `SECRET KEY:` покритий лише ключовим словом `secret` — і при наступному
+звуженні відновить CR-01. Додатково скан приймає складену форму й без роздільника
+(`secretkey:`, `apikey:`), чого не називає ні політика, ні докстрінг (для fail-closed
+скану це безпечний бік, але контракт має це фіксувати). Це вже третя перелічувана копія
+набору форм (guardrails, коментар, докстрінг), що суперечить уроку 09-09 про єдиного
+власника політики.
+**Fix:** або додати одне речення в докстрінг: «A compound keyword may be written with one
+space, underscore or hyphen, or with no separator (`secret key`, `secret_key`,
+`secret-key`, `secretkey`)», або (краще, за уроком 09-09) замінити перелік форм у
+докстрінгу посиланням на `_shared/guardrails.md` і лишити докстрінгу опис гілок, а не
+набору ключових слів.
 
-### WR-02: Збій `pio project config` звітується як «port discovery failed» і має код 1 замість 2
+### IN-11: Межа конектора 128 символів не закріплена тестом, а назва тесту застаріла
 
-**File:** `scripts/serial_capture.py:172-196`, `scripts/serial_capture.py:261-272`,
-`scripts/serial_capture.py:594-595`, докстрінг `scripts/serial_capture.py:86-89`
-**Issue:** `_run_json` зашиває префікс `port discovery failed` для кожного запиту, а
-`project_config` використовує його без зміни підпису. Тому відсутній homework-каталог, збій
-`pio`, таймаут або невалідний JSON конфігурації дають
-`capture unavailable: port discovery failed: ...` з кодом 1, хоча жодного пошуку порту не
-відбувалося. Це суперечить докстрінгу, який відносить «unresolvable `monitor_speed`» до
-exit 2 (usage/environment), і збиває з пантелику при неправильному `--dir`.
-**Fix:** параметризувати підпис (`_run_json(argv, failure: str)`) і для конфігураційного
-запиту або підняти `CheckError` (exit 2), або явно задокументувати exit 1. Додати тест на
-збій `project_config`.
+**Severity:** INFO
+**File:** `scripts/tests/test_serial_capture.py:257-261`, `scripts/serial_capture.py:152`
+**Issue:** `test_a_connector_longer_than_32_characters_matches` перевіряє лише 32, 33 і 42,
+хоча фактична межа в регексі — `[\w.-]{0,128}`. Немає жодного тесту ні на 128 (має
+збігатися), ні на 129 (не має). Перевірено: `b"secret" + b"k"*n + b" = hunter2"` дає
+`True` для n = 126, 127, 128 і `False` для n = 129, 130, 200, тобто рядок
+`secret<129 ідентифікаторів> = hunter2` усе ще буде записаний у лог. Це задокументована
+межа («at most 128»), а не порушення політики, але незакріплена межа дозволить майбутній
+правці тихо змінити її в будь-який бік; назва тесту при цьому відсилає до давно знятої
+межі 32.
+**Fix:** перейменувати на `test_the_connector_ceiling_is_128_characters` і закріпити обидва
+боки: `assertTrue` для 128, `assertFalse` для 129, з коментарем, що 129+ — задокументована
+межа, а не недогляд.
 
-### WR-03: Правило «один порт для upload і capture» продубльовано в guardrails і в скілі
+### IN-12: Коментарі в тестовому модулі описують старий склад вибірок
 
-**File:** `.claude/skills/_shared/guardrails.md:17-21`, `.claude/skills/hw-flash/SKILL.md:47-55`
-**Issue:** Нормативне правило тепер сформульовано двічі: у shared guardrails і в
-`hw-flash` («The selected path is passed to both the upload and the capture; neither command
-resolves a port independently.»). План 09-16 (task H) прямо вимагав не переказувати правило
-в скілі, а посилатися на shared-файл; репозиторій уже мав урок 09-09 про єдиного власника
-політики. Два тексти неминуче розійдуться при наступній правці.
-**Fix:** лишити в скілі лише операційні кроки (`pio device list`, фільтр `hwid`, вибір
-єдиного кандидата, питання `--port`), а нормативне речення замінити посиланням на правило
-shared guardrails.
+**Severity:** INFO
+**File:** `scripts/tests/test_serial_capture.py:7-11`, `scripts/tests/test_serial_capture.py:70-71`
+**Issue:** Коментар над `REVIEW_SHAPES` каже «The six exact samples from 09-REVIEW.md
+CR-02, then the four ordinary password assignments the WR-12 finding proved the scan
+missed», хоча кортеж тепер містить дванадцять елементів, включно з двома новими
+складеними формами. Докстрінг модуля (`:7-11`) перелічує шість форм CR-02, чотири WR-12,
+`IDENTIFIER_SUFFIXED_ASSIGNMENTS` і long-suffix випадок, але не згадує ні новий кортеж
+`SPACE_SEPARATED_COMPOUND_ASSIGNMENTS`, ні новий end-to-end тест складеного credential.
+**Fix:** оновити обидва тексти: назвати додаткові складені форми у коментарі
+`REVIEW_SHAPES` і додати складену форму та її end-to-end тест у докстрінг модуля.
 
-### IN-01: Порада «pass --port» не працює, коли кандидатів нуль
+### IN-13: Складене ключове слово з табуляцією лишається поза сканом
 
-**File:** `scripts/serial_capture.py:243-246`
-**Issue:** Повідомлення `no USB serial device found; connect a board or pass --port`
-пропонує `--port`, але `resolve_port` з явним `--port` усе одно вимагає, щоб шлях був у
-списку `pio device list` (`:235-242`). За нуля кандидатів `--port` не допоможе — користувач
-іде в глухий кут.
-**Fix:** прибрати `or pass --port` з повідомлення про нуль кандидатів (лишити його лише для
-ambiguous-випадку).
+**Severity:** INFO
+**File:** `scripts/serial_capture.py:145`
+**Issue:** Клас роздільника — `[ _-]?`, тобто рівно один пробіл, підкреслення, дефіс або
+нічого. Перевірено: `b"secret\tkey: hunter2"` і `b"secret  key: hunter2"` → `False`.
+Політика guardrails називає саме «one space, underscore or hyphen», тож це
+задокументований компроміс, а не порушення; але скан описаний як fail-closed, і
+вирівняний табуляцією рядок прошивки — правдоподібний вивід. Перехід через межу рядка
+при цьому не виникає.
+**Fix:** якщо табуляцію треба покривати, замінити на `[ \t_-]?` (усе ще не перетинає
+`\n`), додати позитивний тест `SECRET\tKEY:` і негативний `secret\nkey:`; якщо ні —
+зафіксувати залишок явно в докстрінгу, щоб він не читався як недогляд.
 
-### IN-02: `--json` не дає JSON на exit 2
+### Перенесені відкриті знахідки (не переоголошуються)
 
-**File:** `scripts/serial_capture.py:564`, `scripts/serial_capture.py:619-621`
-**Issue:** Help `--json` обіцяє «emit one JSON object», але будь-який `CheckError` (невалідний
-id/порт/baud/тривалість) друкує текст у stderr і повертає 2 без JSON. Машинний споживач, який
-передає `--json`, отримує порожній stdout.
-**Fix:** або в `--json`-режимі друкувати JSON-об'єкт зі `status: REFUSED`/`USAGE`, або
-уточнити help («one JSON object on success or capture refusal»). Існуючі `CliUsageTests`
-не передають `--json`, тому їх це не ламає.
-
-### IN-03: `HOMEWORK_ID`/`ENVIRONMENT` приймають хвіст `\n`
-
-**File:** `scripts/serial_capture.py:572`, `scripts/serial_capture.py:577`
-(регулярка — `scripts/metadata/paths.py:23`, `scripts/serial_capture.py:147`)
-**Issue:** у Python `$` збігається і перед фінальним `\n`, тому
-`HOMEWORK_ID.match("1_3-abc\n")` і `ENVIRONMENT.match("esp32\n")` істинні. Id із хвостовим
-переводом рядка проходить валідацію (`write_log_atomically` перевіряє тим самим regex),
-створює ім'я логу з `\n` і ламає `-d`-шлях. Це спадковий дефект (регулярка — канонічний
-літерал, спільний зі схемою), але саме `main` покладається на нього.
-**Fix:** використати `HOMEWORK_ID.fullmatch(...)` / `ENVIRONMENT.fullmatch(...)` (або `\Z`
-у `scripts/metadata/paths.py`), щоб Python-перевірка не розходилася зі схемою.
-
-### IN-04: Скіл не вимагає, щоб названий користувачем `--port` був серед знайдених кандидатів
-
-**File:** `.claude/skills/hw-flash/SKILL.md:47-55`, `.claude/skills/hw-flash/SKILL.md:130`
-**Issue:** Скіл валідує `--port` лише як абсолютний шлях під `/dev` без `..`, але не вимагає
-належності до списку `pio device list`; хелпер цю належність перевіряє
-(`scripts/serial_capture.py:235-242`). Тому друкарська помилка в шляху буде оголошена на
-consent gate як «executed port», а потім відмовлена як `capture unavailable`. Додатково
-фраза «neither command resolves a port independently» (рядок 55) суперечить опису нижче
-(рядки 141-142), що хелпер самостійно розв'язує порт, коли `--port` не передано.
-**Fix:** дописати, що названий `--port` має бути одним із оголошених USB-кандидатів, і
-уточнити, що незалежне розв'язання хелпера — це fail-closed backstop для прямих викликів.
-
-### IN-05: Явний `--baud` обходить перевірку вибору environment
-
-**File:** `scripts/serial_capture.py:319-320`, `scripts/serial_capture.py:594-597`,
-докстрінг `scripts/serial_capture.py:33-37`
-**Issue:** Докстрінг обіцяє, що «an environment that cannot be chosen ... is a usage error»,
-але `resolve_baud` повертає явний baud до читання конфігурації, а `main` узагалі не викликає
-`resolve_baud`, коли `--baud` заданий. Прямий виклик з `--baud` без `--env` на проєкті без
-`default_envs` (або з кількома) не перевіряє environment і дозволяє монітору вибрати його
-неявно.
-**Fix:** або перевіряти environment і на явному шляху (читаючи лише `default_envs`), або
-уточнити докстрінг, що перевірка environment виконується лише без `--baud`.
+`WR-01`, `WR-02` — відкриті за планом. `IN-01`, `IN-02`, `IN-03`, `IN-04`, `IN-05`,
+`WR-07`, `WR-08`, `IN-07`, `IN-08`, `IN-09`, `IN-10` — лишаються відкритими з
+`09-REVIEW-DISPOSITION.md` і цією дельтою не зачіпалися. Побічно: суперечливе речення,
+назване другою половиною `IN-04` («neither command resolves a port independently»),
+цією правкою видалене; перша половина `IN-04` (скіл не вимагає, щоб названий `--port` був
+серед знайдених кандидатів) лишається відкритою.
 
 ---
 
-_Reviewed: 2026-10-27T12:17:14Z_
+_Reviewed: 2026-10-27T12:50:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_

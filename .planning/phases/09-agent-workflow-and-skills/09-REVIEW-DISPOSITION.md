@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "Сканування не ловить складені ключові слова, розділені пробілом"
   - id: WR-01
     severity: warning
@@ -103,19 +103,39 @@ findings:
     severity: info
     disposition: open
     title: "Two `NO_BUILD_IMPACT` rules have no test entry"
-open: 15
-total: 25
-recorded: 2026-10-27T12:30:00.000Z
+  - id: WR-13
+    severity: warning
+    disposition: open
+    title: "The skill still restates the ambiguous-port rule while claiming it is not restated"
+  - id: WR-14
+    severity: warning
+    disposition: open
+    title: "The module docstring omits the compound keyword shape the scan now admits"
+  - id: IN-11
+    severity: info
+    disposition: open
+    title: "The 128-character connector bound is not pinned by a test"
+  - id: IN-12
+    severity: info
+    disposition: open
+    title: "Test-module comments describe the old fixture composition"
+  - id: IN-13
+    severity: info
+    disposition: open
+    title: "A tab-separated compound keyword remains outside the scan"
+open: 19
+total: 30
+recorded: 2026-10-27T13:05:00.000Z
 ---
 
 # Phase 09: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | open | - |
+| CR-01 | critical | fixed | 09-17-PLAN.md — review re-run 2026-10-27 confirmed `SECRET KEY: hunter2`, `secret key = hunter2`, `Secret Key: hunter2` and `SECRET KEY = hunter2` match, every pinned benign negative still refuses, and `CredentialScanTests` is 12/12 green. |
 | WR-01 | warning | open | - |
 | WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| WR-03 | warning | open | Partially closed by 09-18: the named sentence is gone and one locator remains, but WR-13 records the normative ambiguous-port half still restated at `hw-flash/SKILL.md:50-52` and `:188-189`. |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
@@ -137,6 +157,11 @@ recorded: 2026-10-27T12:30:00.000Z
 | IN-08 | info | open | - (not in the current review) |
 | IN-09 | info | open | - (not in the current review) |
 | IN-10 | info | open | - (not in the current review) |
+| WR-13 | warning | open | - |
+| WR-14 | warning | open | - |
+| IN-11 | info | open | - |
+| IN-12 | info | open | - |
+| IN-13 | info | open | - |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
