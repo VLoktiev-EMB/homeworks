@@ -75,7 +75,7 @@ clangd reads a compilation database, not a guess about include paths. Generate t
 per-project database whenever the build flags change:
 
 ```bash
-pio run -d homeworks/1_3-police-flasher -t compiledb
+pio run -d homeworks/<id> -t compiledb
 ```
 
 The database is written to the project root and is never committed. Each homework carries
@@ -86,7 +86,7 @@ The shared libraries under `lib/` sit outside every project, so clangd finds no 
 above them. Build the three source databases the root database is assembled from:
 
 - `pio run -d tests -e native -t compiledb`
-- `pio run -d homeworks/1_3-police-flasher -t compiledb`
+- `pio run -d homeworks/<id> -t compiledb` (for an active Arduino homework)
 - `pio run -d templates/homework-espidf -e esp32s3_espidf -t compiledb`
 
 Then regenerate the root database with one command:
@@ -112,7 +112,7 @@ Treat it as the repository's single standard, not as byte equivalence with the f
 
 ## Read the Problems panel
 
-Open `homeworks/1_3-police-flasher/src/main.cpp` and open the Problems panel (`View ->
+Open a source file such as `homeworks/<id>/src/main.cpp` and open the Problems panel (`View ->
 Problems`, or `Ctrl+Shift+M` on Linux and `Cmd+Shift+M` on macOS). Expect no errors.
 
 When clangd reports a problem, read the diagnostic's warning name:
@@ -128,7 +128,7 @@ When clangd reports a problem, read the diagnostic's warning name:
 To see the same analysis without the editor, run the wrapper directly:
 
 ```bash
-"$HOME/.local/bin/clangd-wrapper" --check=homeworks/1_3-police-flasher/src/main.cpp
+"$HOME/.local/bin/clangd-wrapper" --check=homeworks/<id>/src/main.cpp
 ```
 
 esp-clangd declares the flag as `--check[=<string>]`, so the value is attached with `=`; a
@@ -142,7 +142,7 @@ Two commands work with no board attached:
 
 ```bash
 pio test -d tests -e native
-pio run -d homeworks/1_3-police-flasher
+pio run -d homeworks/<id>
 ```
 
 The first runs the shared-library Unity suite on the host. The second compiles the homework

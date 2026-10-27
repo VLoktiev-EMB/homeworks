@@ -19,8 +19,8 @@ Three artifacts carry the report, and each has one job:
 - `assets/diagram.json` — the wiring source of truth. Its `parts` list supplies the part ids
   the bill of materials references.
 
-Start from `templates/report/report.md`, then fill it against
-`homeworks/1_3-police-flasher/report.md` as the worked example. Run the checker from the
+Start from `templates/report/report.md`, then fill it against an existing completed report
+(such as `homeworks/<id>/report.md`) as the reference. Run the checker from the
 repository root at any point:
 
 ```bash
@@ -31,7 +31,7 @@ With no positional argument the checker scans every direct child of `homeworks/`
 one homework, pass its directory or its document:
 
 ```bash
-uv run scripts/check_report.py --dir . homeworks/1_3-police-flasher
+uv run scripts/check_report.py --dir . homeworks/<id>
 ```
 
 Every record prints `path:line: STATUS [RULE] — reason`. An `ERROR` names a rule id; look the

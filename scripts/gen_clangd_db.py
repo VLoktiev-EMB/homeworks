@@ -3,7 +3,7 @@
 
 clangd resolves a file by walking upward and using the first
 `compile_commands.json` it finds. The databases that already describe the
-shared libraries are siblings — under `tests/`, `homeworks/1_3-police-flasher/`
+shared libraries are siblings — under `tests/`, `homeworks/<id>/`
 and `templates/homework-espidf/` — so a source under `lib/` has none. This
 script reads those three databases, keeps exactly one entry per `lib/**` source,
 and writes a root `compile_commands.json` that clangd discovers from `lib/`.
@@ -12,7 +12,7 @@ Each `lib/` subtree is served by its own representative context, because one
 compile command per path is a physical constraint:
 
   common, port, host   tests/compile_commands.json          (native)
-  arduino              homeworks/1_3-police-flasher/...     (Arduino)
+  arduino              homeworks/<id>/...                   (Arduino)
   espidf               templates/homework-espidf/...        (ESP-IDF)
 
 The script reads only. It runs no PlatformIO command and writes exactly one
@@ -40,35 +40,71 @@ from pathlib import Path
 
 OUTPUT_NAME = "compile_commands.json"
 
-# One ordered group per representative context. Each triple is (subtrees,
-# source database, the exact PlatformIO command that writes it). Order matters:
-# a path named by two databases belongs to the first group whose subtree holds
-# it, so `lib/common` stays in the native context even though the Arduino
-# database describes it too.
-SOURCES = (
-    (
-        ("common", "port", "host"),
-        Path("tests") / "compile_commands.json",
-        "pio run -d tests -e native -t compiledb",
-    ),
-    (
-        ("arduino",),
-        Path("homeworks") / "1_3-police-flasher" / "compile_commands.json",
-        "pio run -d homeworks/1_3-police-flasher -t compiledb",
-    ),
-    (
-        ("espidf",),
-        Path("templates") / "homework-espidf" / "compile_commands.json",
-        "pio run -d templates/homework-espidf -e esp32s3_espidf -t compiledb",
-    ),
-)
-
 # The fields a clangd entry needs. `output` is PlatformIO bookkeeping and is
 # dropped; a relative `-o` or include path stays resolvable because `directory`
 # is copied verbatim.
 ENTRY_FIELDS = ("directory", "command", "arguments")
 
 SOURCE_SUFFIXES = (".c", ".cpp")
+
+
+def find_arduino_source(root: Path) -> tuple[Path, str]:
+    """Find an Arduino compile commands database from homeworks/ or provide a remedy."""
+    homeworks_dir = root / "homeworks"
+    if homeworks_dir.is_dir():
+        # First priority: an active homework with an existing compile_commands.json
+        for hw in sorted(homeworks_dir.iterdir()):
+            if not hw.is_dir():
+                continue
+            db_path = hw / "compile_commands.json"
+            if db_path.is_file():
+                return (
+                    db_path.relative_to(root),
+                    f"pio run -d homeworks/{hw.name} -t compiledb",
+                )
+        # Second priority: an active homework directory without compile_commands.json
+        for hw in sorted(homeworks_dir.iterdir()):
+            if not hw.is_dir():
+                continue
+            hw_yaml = hw / "homework.yaml"
+            if hw_yaml.is_file():
+                return (
+                    (hw / "compile_commands.json").relative_to(root),
+                    f"pio run -d homeworks/{hw.name} -t compiledb",
+                )
+    return (
+        Path("homeworks") / "<id>" / "compile_commands.json",
+        "pio run -d homeworks/<id> -t compiledb (for an active Arduino homework)",
+    )
+
+
+def get_sources(root: Path) -> list[tuple[tuple[str, ...], Path, str]]:
+    """Return the ordered source groups for the given repository root.
+
+    One ordered group per representative context. Each triple is (subtrees,
+    source database, the exact PlatformIO command that writes it). Order matters:
+    a path named by two databases belongs to the first group whose subtree holds
+    it, so `lib/common` stays in the native context even though the Arduino
+    database describes it too.
+    """
+    arduino_db, arduino_remedy = find_arduino_source(root)
+    return [
+        (
+            ("common", "port", "host"),
+            Path("tests") / "compile_commands.json",
+            "pio run -d tests -e native -t compiledb",
+        ),
+        (
+            ("arduino",),
+            arduino_db,
+            arduino_remedy,
+        ),
+        (
+            ("espidf",),
+            Path("templates") / "homework-espidf" / "compile_commands.json",
+            "pio run -d templates/homework-espidf -e esp32s3_espidf -t compiledb",
+        ),
+    ]
 
 
 class EnvironmentProblem(Exception):
@@ -136,11 +172,15 @@ def _under(resolved: Path, base: Path) -> bool:
     return True
 
 
-def select_entries(root: Path) -> dict[Path, dict]:
+def select_entries(
+    root: Path, sources: list[tuple[tuple[str, ...], Path, str]] | None = None
+) -> dict[Path, dict]:
     """Return one source entry per resolved `lib/` path; the first group wins."""
+    if sources is None:
+        sources = get_sources(root)
     selected: dict[Path, dict] = {}
     libraries = root / "lib"
-    for subtrees, database, remedy in SOURCES:
+    for subtrees, database, remedy in sources:
         path = root / database
         if not path.is_file():
             raise MissingInput(f"{path} is absent.\n  regenerate it with: {remedy}")
@@ -157,9 +197,13 @@ def select_entries(root: Path) -> dict[Path, dict]:
     return selected
 
 
-def unmapped_subtrees(root: Path) -> list[str]:
+def unmapped_subtrees(
+    root: Path, sources: list[tuple[tuple[str, ...], Path, str]] | None = None
+) -> list[str]:
     """Return every child directory of `lib/` that no group names."""
-    mapped = {subtree for subtrees, _database, _remedy in SOURCES for subtree in subtrees}
+    if sources is None:
+        sources = get_sources(root)
+    mapped = {subtree for subtrees, _database, _remedy in sources for subtree in subtrees}
     libraries = root / "lib"
     if not libraries.is_dir():
         return []
@@ -170,10 +214,16 @@ def unmapped_subtrees(root: Path) -> list[str]:
     )
 
 
-def missing_sources(root: Path, selected: dict[Path, dict]) -> list[tuple[Path, str]]:
+def missing_sources(
+    root: Path,
+    selected: dict[Path, dict],
+    sources: list[tuple[tuple[str, ...], Path, str]] | None = None,
+) -> list[tuple[Path, str]]:
     """Return every `.c`/`.cpp` under `lib/` that has no selected entry."""
+    if sources is None:
+        sources = get_sources(root)
     remedies = {
-        subtree: remedy for subtrees, _database, remedy in SOURCES for subtree in subtrees
+        subtree: remedy for subtrees, _database, remedy in sources for subtree in subtrees
     }
     libraries = root / "lib"
     missing: list[tuple[Path, str]] = []
@@ -204,14 +254,15 @@ def write_database(database: Path, entries: list) -> None:
 
 def run_generate(root: Path) -> tuple[int, list[str]]:
     """Return the exit status and the message lines for one root."""
-    selected = select_entries(root)
-    unnamed = unmapped_subtrees(root)
+    sources = get_sources(root)
+    selected = select_entries(root, sources)
+    unnamed = unmapped_subtrees(root, sources)
     if unnamed:
         raise EnvironmentProblem(
             "lib/ subtree has no compile-command source: " + ", ".join(unnamed)
         )
 
-    missing = missing_sources(root, selected)
+    missing = missing_sources(root, selected, sources)
     if missing:
         lines = [
             f"FAIL gen-clangd-db: {len(missing)} lib source(s) have no compile command:"
@@ -230,7 +281,7 @@ def run_generate(root: Path) -> tuple[int, list[str]]:
 
     write_database(root / OUTPUT_NAME, entries)
     return 0, [
-        f"PASS gen-clangd-db: {len(entries)} entries from {len(SOURCES)} database(s)"
+        f"PASS gen-clangd-db: {len(entries)} entries from {len(sources)} database(s)"
     ]
 
 

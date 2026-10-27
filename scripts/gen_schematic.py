@@ -149,7 +149,7 @@ def generate_schematic_svg(output_path: Path) -> Path:
 
 
 def reformat_police_flasher_diagram(diagram: dict) -> dict:
-    """Apply clean breadboard layout and Manhattan wire routing to 1_3-police-flasher."""
+    """Apply clean breadboard layout and Manhattan wire routing to anti-parallel LED circuit."""
     new_diagram = dict(diagram)
     parts = []
 
@@ -237,7 +237,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate Wokwi layouts, Schemdraw SVGs, and Mermaid schematics."
     )
-    parser.add_argument("directory", help="Homework directory (e.g. homeworks/1_3-police-flasher)")
+    parser.add_argument("directory", help="Homework directory (e.g. homeworks/<id>)")
     parser.add_argument("--mermaid", action="store_true", help="Print generated Mermaid flowchart")
     parser.add_argument(
         "--svg", action="store_true", help="Generate IEEE vector schematic SVG via Schemdraw"
