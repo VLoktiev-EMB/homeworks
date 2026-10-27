@@ -1,71 +1,63 @@
 ---
 created: 2026-10-27T00:00:00.000Z
-title: Trim non-artifact surface — planning archive, generators, drift hooks, dead scripts
+title: Remove dead code, config-text tests, and template build junk
 area: tooling
-severity: major
+severity: minor
 source: .planning/notes/repo-surface-trim-2026-10-27.md
 files:
-  - .planning/
-  - scripts/gen_views.py
-  - scripts/gen_skills.py
-  - scripts/affected.py
-  - scripts/check_architecture.py
-  - scripts/clang-tidy-db
-  - scripts/clang-tidy-hook
-  - scripts/gen_clangd_db.py
-  - scripts/clangd-wrapper.sh
-  - scripts/review_smoke_test.sh
   - scripts/ci/check_lfs_pointers.sh
-  - .agents/skills/
-  - templates/views/
+  - scripts/review_smoke_test.sh
+  - scripts/tests/test_tooling_config.py
+  - scripts/tests/test_ci_workflows.py
+  - .claude/skills/
   - templates/homework-espidf/
-  - generated.manifest
-  - generated.skills.manifest
-  - homeworks.code-workspace
-  - .pre-commit-config.yaml
-  - .github/workflows/ci.yml
-  - .github/workflows/nightly.yml
 ---
 
-# Trim non-artifact surface
+# Remove dead code, config-text tests, and template build junk
 
-Apply `.planning/notes/repo-surface-trim-2026-10-27.md`. Three atomic commits. Do not
-rewrite history; every step is a forward change.
+Confirmed scope on 2026-10-27. The maintainer keeps planning artifacts, every scaffold
+and generator, and every linter and static-analysis tool. Only the four groups below are
+removed.
 
-## Commit 1 — `chore(planning): untrack process history`
+## D1 — dead code
 
-- [ ] `git rm -r --cached .planning/phases .planning/quick .planning/research .planning/notes .planning/todos .planning/debug`
-- [ ] Add those paths to `.gitignore`; keep `PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `STATE.md`, `config.json` tracked.
-- [ ] Leave the files on disk so GSD continues to work locally.
+- [ ] Delete `scripts/ci/check_lfs_pointers.sh` (38 lines). It guards the GitHub Pages
+      site removed in `9d28f5d`; no workflow, script, or document calls it.
+- [ ] Delete `scripts/review_smoke_test.sh` (92 lines). It tests the GSD reviewer lanes,
+      not repository code.
 
-## Commit 2 — `refactor(tooling): drop generators and drift gates`
+## D2 — tests that assert configuration text
 
-- [ ] Delete `scripts/gen_views.py`, `scripts/gen_skills.py`, `scripts/affected.py`, `scripts/check_architecture.py`, `scripts/architecture/`, `scripts/ci/`, `scripts/clang-tidy-db`, `scripts/clang-tidy-hook`, `scripts/clangd-wrapper.sh`, `scripts/gen_clangd_db.py`, `scripts/review_smoke_test.sh`.
-- [ ] Delete `templates/views/`, `.agents/skills/`, `generated.manifest`, `generated.skills.manifest`, `homeworks.code-workspace`, `templates/homework-espidf/`, and the `.clangd` files.
-- [ ] Remove the generated-header from `platformio.shared.ini`; it becomes authored.
-- [ ] Delete `scripts/tests/test_gen_views.py`, `test_gen_skills.py`, `test_affected.py`, `test_tooling_config.py`; trim `temp_root.py` and `test_ci_workflows.py` to what survives.
-- [ ] Remove the six custom hooks from `.pre-commit-config.yaml`: `no-generated-files`, `check-architecture`, `gen-views-check`, `gen-skills-check`, `clang-tidy-db`, `clang-tidy`; drop the pre-push stage.
-- [ ] Remove CI job `changes` and `static-analysis`; `build` runs every project. Reduce `nightly.yml` to the secrets scan plus the full build.
-- [ ] Keep `check_metadata` and `check_report` hooks; add a one-line grep for the dependency rule if desired.
+- [ ] Delete `scripts/tests/test_tooling_config.py` (1,537 lines).
+- [ ] Delete `scripts/tests/test_ci_workflows.py` (509 lines).
 
-## Commit 3 — `docs: record the trim and shrink the rulebook`
+Accepted loss: automated coverage of `clangd-wrapper.sh` behaviour and of the
+`pull_request_target` / `permissions: read` CI invariants. Both subjects themselves stay.
 
-- [ ] Update `AGENTS.md`: remove the routing rows and rules for deleted paths; replace the 313-line rulebook with the surviving rules; keep the quick-start and Definition of Done.
-- [ ] Update `README.md`: the homework table is hand-maintained.
-- [ ] Mark the three reversed decisions in `docs/decisions/README.md` (generator, architecture check, second template) with a `superseded 2026-10-27` status and a link to the note. Do not rewrite ADR bodies.
-- [ ] Set `graphify.enabled` and `intel.enabled` to `false` in `.planning/config.json`.
+## D3 — skill process documents
+
+- [ ] Delete `.claude/skills/*/CHANGELOG.md` and `.claude/skills/*/LESSONS.md` (14 files).
+- [ ] Regenerate the mirror: `uv run scripts/gen_skills.py`, then commit the mirror diff.
+      Without this step the `gen-skills-check` hook fails on drift.
+
+## D4 — untracked build junk inside a template
+
+- [ ] `rm -rf templates/homework-espidf/.pio templates/homework-espidf/.cache` (33 MB).
+      Nothing here is tracked; the template itself stays.
 
 ## Verify
 
 - [ ] `pio run -d homeworks/1_3-police-flasher` is green.
 - [ ] `pio test -d tests -e native` is green.
-- [ ] `pre-commit run --all-files` is green with the trimmed hook set.
-- [ ] `python3 scripts/check_metadata.py` is green.
-- [ ] `python3 scripts/check_report.py` is green.
-- [ ] No dangling references to deleted paths in `README.md`, `AGENTS.md`, `docs/`, `.github/`, or the skills.
-- [ ] CI `gate` is green on the pull request with 4 jobs.
+- [ ] `pre-commit run --all-files` is green with all hooks and pins unchanged.
+- [ ] `python3 scripts/check_metadata.py` and `python3 scripts/check_report.py` are green.
+- [ ] `python3 -m unittest discover scripts/tests` is green.
+- [ ] `uv run scripts/gen_skills.py --check` is green.
+- [ ] No dangling references to the deleted paths.
 
-## Out of scope
+## Explicitly out of scope
 
-Do not touch `lib/`, `tests/`, the schema, the report contract, or the surviving skills.
-Those are the artifact path and are explicitly kept.
+Do not remove `.planning/`, any generator or scaffold (`gen_views`, `gen_skills`,
+`affected`, `new_homework`, `templates/`, `homeworks.code-workspace`), or any linter and
+static-analysis tool (`clang-format`, `clang-tidy`, `ruff`, `yamllint`,
+`check_architecture`). The maintainer confirmed all of these stay.
