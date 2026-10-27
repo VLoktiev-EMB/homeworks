@@ -29,7 +29,7 @@ findings:
     title: "Сканування не ловить складені ключові слова, розділені пробілом"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Правило «один порт для upload і capture» продубльовано в guardrails і в скілі"
   - id: IN-01
     severity: info
@@ -117,19 +117,19 @@ findings:
     title: "Two `NO_BUILD_IMPACT` rules have no test entry"
   - id: WR-13
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The skill still restates the ambiguous-port rule while claiming it is not restated"
   - id: WR-14
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The module docstring omits the compound keyword shape the scan now admits"
   - id: IN-11
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The 128-character connector bound is not pinned by a test"
-open: 20
+open: 16
 total: 31
-recorded: 2026-10-27T13:13:20.909Z
+recorded: 2026-10-27T13:18:00.000Z
 ---
 
 # Phase 09: Code Review Disposition
