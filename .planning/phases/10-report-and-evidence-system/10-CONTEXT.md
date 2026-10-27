@@ -120,12 +120,22 @@ for an ESP-IDF or STM32 homework that does not exist yet, and any change to
   `observed` is an `ERROR`. A `not measured` value must begin `not measured:` with a
   reason; a `measured` value must begin `user-reported:` or `serial-log:`; a
   `measured (observed)` value must begin `serial-log:`. This locks Phase 7 and 04.2
-  D-13/D-14 rather than re-opening them.
-- **D-11:** Identity and commit consistency are machine-checked. The section-1 table's
-  `Homework ID`, `Title`, `Board`, and `Framework` rows must equal `homework.yaml`; the
-  `Implementation commit` cell must be a 7–40 character lowercase hex string and every
-  ledger row's `Implementation commit` cell must be identical to it. A mismatch is an
-  `ERROR`: a ledger that names a different code tree is not evidence for this report.
+  D-13/D-14 rather than re-opening them. The vocabulary rules are scoped to the `Label`
+  and `Value` cells of ledger rows only: prose elsewhere may legitimately contain the
+  words `observed` or `not measured` (the worked example explains both), and a
+  document-wide scan would false-positive on that prose.
+- **D-11:** Identity and commit consistency are machine-checked against normalized
+  machine values, never display prose. The H1 must equal `homework.yaml.title`; the
+  section-1 `Homework ID`, `Title`, `Homework status`, and `Report status` cells must equal
+  `id`, `title`, `status`, and `report.status`; `Framework` is compared case-insensitively;
+  `PlatformIO Core` and `Platform` are compared after normalization (`espressif32@8.0.0`
+  equals `platformio/espressif32 8.0.0`). `Board` and `Language` are display text and are
+  not string-compared, because the worked example writes
+  `ESP32-S3-DevKitC-1 (N16R8: 16 MB flash, 8 MB octal PSRAM)` against the metadata slug
+  `esp32-s3-devkitc-1`. The `Implementation commit` cell must be a 7–40 character lowercase
+  hex string and every ledger row's `Implementation commit` cell must be identical to it.
+  A mismatch is an `ERROR`: a ledger that names a different code tree is not evidence for
+  this report.
 - **D-12:** BOM referential integrity is machine-checked when the BOM applies and
   `assets/diagram.json` exists: every BOM `Ref` must be a part id in the diagram. Extra
   diagram parts without a BOM row are allowed, because the diagram may include virtual
@@ -251,6 +261,74 @@ for an ESP-IDF or STM32 homework that does not exist yet, and any change to
   `python3 -m unittest discover scripts/tests`, plus the new
   `uv run scripts/check_report.py` and a green `gate` on the pull request.
 
+### Self-audit additions (2026-10-27)
+
+A second pass checked every proposed rule against the real 1.3 report. It found two
+scoping defects in D-10/D-11 (fixed above) and eight additional machine-checkable gaps.
+These decisions are added to the contract before planning.
+
+- **D-34:** The `_Not applicable — <reason>._` marker is allowed only where the artifact
+  can genuinely be absent. Sections 1, 2, 4, 6, 7, 8, 9, and 10 are never N/A; section 3
+  may be N/A only with a reason; section 5 and its four subsections may be N/A for a
+  software-only assignment; each required table must contain at least one data row or the
+  marker. An N/A in a non-allowed position, or without a reason, is an `ERROR`.
+- **D-35:** `report.status: complete` certifies that the report satisfies the checked
+  contract and that every claim carries a label; it does **not** assert that a bench
+  measurement exists. A report may be `complete` with `not measured` rows when the
+  `Status:` paragraph states the evidence basis and the self-audit checklist confirms the
+  honesty. There is no machine floor on `measured` rows, because the honest answer for a
+  session without bench access is `not measured`, and a floor would pressure an author to
+  relabel a calculation.
+- **D-36:** Cross-reference integrity is machine-checked inside `report.md`. IDs must be
+  unique within their table (`A-NN`, `C-NN`, `L-NN`, `T-NN`); every token matching one of
+  those shapes must resolve to a row of that table, whether it appears in prose, another
+  table, or a ledger method; every in-text `[N]` citation must resolve to a section-10
+  entry, and every section-10 entry must be cited at least once in sections 1–9 or the
+  appendix. An unresolved ID or citation is an `ERROR`.
+- **D-37:** Claim consistency is machine-checked against `homework.yaml`. When
+  `tests.native` is true, section 7 must contain a native-suite result paragraph; when a
+  `simulation` block exists, section 7 must contain a `**Simulation.**` paragraph; when
+  `simulation.status` is `verified`, that paragraph must state an executed-run outcome
+  (`exited 0`, `scenario passed`, or equivalent), and when it is `pending`, the paragraph
+  must not claim a run. The exact prose is review-enforced; the presence and the run-claim
+  token are machine-checked.
+- **D-38:** Internal link integrity is machine-checked: every relative Markdown link and
+  image target in `report.md` must resolve under the homework directory or the repository
+  root, and a target that escapes either root is an `ERROR`. External URLs are not fetched:
+  third-party liveness is flaky and belongs to a scheduled audit, not a merge gate.
+- **D-39:** Evidence provenance depth is machine-checked in the ledger: a `datasheet`
+  row's `Method` or `Instrument` cell must contain a `[N]` citation; a `calculated` row
+  must name a `C-NN` calculation; a `simulated` row must name a scenario or run artifact
+  path; a `measured` row must name an instrument. The bounded token is the machine check;
+  whether the cited source actually supports the value is review-enforced.
+- **D-40:** `report.md` is English-only, and the Cyrillic scan that INV-01 already applies
+  to `task.md` is extended to the report. Any Cyrillic codepoint in `report.md` is an
+  `ERROR`. This closes the gap where the repository artifact rule was enforced only on the
+  assignment paraphrase.
+- **D-41:** The traceability matrix must cover every report requirement: at least one row
+  must cite each of `REPORT-01` through `REPORT-08`. This follows the
+  no-missing-relationships practice (NASA SWE-072, FAA VRTM) and makes the matrix auditable
+  rather than illustrative. The 1.3 matrix needs three added rows (`REPORT-01`,
+  `REPORT-05`, `REPORT-08`).
+- **D-42:** Two standards are documented but not machine-enforced. Uncertainty follows a
+  GUM-lite convention: each uncertainty cell states its basis (tolerance, meter accuracy,
+  datasheet, or coverage) and, where an expanded uncertainty is claimed, the coverage
+  factor or that the value is a tolerance bound; a bare `±` without a basis is discouraged
+  in review. Instruments use a preferred vocabulary (`multimeter`, `oscilloscope`, `logic
+  analyzer`, `power supply`, `thermal camera`, `Wokwi`, `none`), but a new instrument is
+  allowed without a checker change. A keyword rule for either would be brittle and would
+  fail legitimate prose.
+- **D-43:** The status transition is a documented process, not a machine rule: the author
+  flips `placeholder → draft` when authoring starts and `→ complete` when the self-audit
+  checklist passes; Phase 11 flips the pilot to `complete` after the final evidence pass.
+  `docs/standards/report.md` carries a rule-id remediation table, so every `RPT-…` failure
+  names the fix as well as the defect.
+- **D-44:** The 1.3 retrofit is bounded: change the pin-map header `ESP32-S3 pin` to `Pin`,
+  add `### Next Steps` under `## 9. Conclusions`, and add three traceability rows for
+  `REPORT-01`, `REPORT-05`, and `REPORT-08`. The report already passes the identity,
+  citation, link, provenance, Cyrillic, toolchain, native-suite, and simulation checks
+  under the normalized comparison.
+
 ### Claude's Discretion
 
 The user delegated all four gray areas to Claude on a best-practices basis. The following
@@ -364,6 +442,22 @@ remain implementation choices:
   — a scored documentation rubric; the heavier alternative deferred here.
 - `https://rulehub.github.io/rulehub/editorial-checklist/` — a lightweight pre-PR
   editorial checklist; the shape adopted for the self-audit checklist.
+- `https://www.iso.org/sites/JCGM/GUM/JCGM100/C045315e-html/C045315e_FILES/MAIN_C045315e/07_e.html`
+  — GUM Clause 7, reporting uncertainty; the basis for the GUM-lite convention (D-42).
+- `https://www.nist.gov/pml/nist-technical-note-1297/nist-tn-1297-7-reporting-uncertainty`
+  — NIST TN 1297 §7; expanded uncertainty, coverage factor, and component reporting.
+- `https://swehb.nasa.gov/spaces/SWEHBVB/pages/32604549/SWE-072+-+Bidirectional+Traceability+Between+Software+Test+Procedures+and+Software+Requirements`
+  — no-missing-relationships traceability (D-41).
+- `https://www.faa.gov/sites/faa.gov/files/2022-02/VVSPT-E5-GDE-017_VRTM_V3.0.pdf` — VRTM
+  requirement/evidence/status shape (D-41).
+- `https://www.hhs.gov/sites/default/files/ocio/eplc/EPLC%20Archive%20Documents/24%20-%20Requirements%20Traceability%20Matrix/eplc_requirements_traceability_practices_guide.pdf`
+  — bidirectional traceability and completeness review (D-41).
+- `https://alint.org/docs/rules/cross-file/markdown_links_resolve/` — offline internal
+  Markdown link resolution; the model for D-38.
+- `https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/IEEE-Reference-Guide.pdf`
+  — IEEE numbered-citation style; the basis for the bidirectional citation check (D-36).
+- `https://github.com/okiratli/Citation-Cross-Checker` — bidirectional `[n]` citation
+  validation; the model for D-36.
 
 </canonical_refs>
 
@@ -415,6 +509,9 @@ remain implementation choices:
 - `docs/decisions/README.md` — one decision row.
 - `.claude/skills/hw-report/SKILL.md` and `.agents/skills/hw-report/SKILL.md` — the stub
   pointer and the regenerated mirror.
+- `scripts/tests/test_report.py` — the new stdlib-only suite; fixtures cover a compliant
+  report, each rule violation, fenced-code headings, escaped pipes, and the 1.3 worked
+  example.
 
 </code_context>
 
@@ -437,6 +534,10 @@ remain implementation choices:
 - Repository artifacts are English; the conversation is Ukrainian.
 - `docs/standards/report.md` is the human entry point the `hw-report` stub already points
   at; publishing it lets the stub stop referring to a future phase.
+- A self-audit on 2026-10-27 checked every proposed rule against the real 1.3 report. It
+  found two scoping defects (D-10, D-11) and eight additional gaps (D-34…D-41); the
+  retrofit is bounded to the pin-map header, one `### Next Steps` subsection, and three
+  traceability rows (D-44).
 
 </specifics>
 
@@ -460,6 +561,19 @@ remain implementation choices:
   skeleton and the N/A marker cover them until one does.
 - **Report validation in the `affected.py` build matrix** — the report check is a
   whole-tree `meta` concern; the build matrix is unchanged.
+- **A nightly run of `scripts/check_report.py`** — PR `meta` plus the required `gate`
+  already cover every merge; nightly would add cost without a new trust boundary.
+- **External link liveness** — third-party checks are flaky in a merge gate; schedule them
+  only if the repository ever grows an external-link audit.
+- **Commit reachability (`git cat-file`) for the implementation commit** — it needs
+  `fetch-depth: 0` in `meta`; the hex-shape and ledger-consistency checks stay, and
+  reachability is review-enforced.
+- **Recomputing every calculation from its formula** — parsing arbitrary engineering
+  formulas is fragile; the printed formula, inputs, and uncertainty stay review-enforced.
+- **Report YAML frontmatter** — it would duplicate the section-1 metadata table, which is
+  the canonical record.
+- **A minimum prose depth or line count per section** — non-empty is machine-checked;
+  depth and quality stay review-enforced.
 
 ### Reviewed Todos (not folded)
 

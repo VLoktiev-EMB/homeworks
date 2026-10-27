@@ -5,7 +5,8 @@
 
 **Date:** 2026-10-27
 **Phase:** 10-Report and Evidence System
-**Areas discussed:** Checker shape, section applicability, gate severity, TOOL-08 scope
+**Areas discussed:** Checker shape, section applicability, gate severity, TOOL-08 scope,
+self-audit follow-up
 
 ---
 
@@ -91,6 +92,33 @@ standard in place is the Phase 11 pilot.
   claim → method → result → evidence → status chain.
 - A lightweight pre-PR checklist derived from the contract is preferred over a heavy
   scored rubric; deterministic rules belong in CI, prose judgement in review.
+
+## Self-audit follow-up (2026-10-27)
+
+The user asked whether every gray area had been identified and requested a self-check with
+research. The audit checked each proposed rule against the real 1.3 report. It found two
+scoping defects in the recorded decisions and eight additional machine-checkable gaps:
+
+- **C-1:** the `observed` label rule was document-wide; it is scoped to the ledger `Label`
+  and `Value` cells because the 1.3 prose legitimately contains the word (lines 254, 295,
+  352).
+- **C-2:** the identity cross-check compared display prose; it now compares normalized
+  machine values and leaves `Board`/`Language` as display text.
+- **N-1:** N/A allowlist.
+- **N-2:** `complete` semantics and the absence of a measured-value floor.
+- **N-3:** cross-reference integrity for IDs and IEEE citations.
+- **N-4:** claim consistency for tests, simulation, status, and toolchain.
+- **N-5:** internal Markdown link integrity.
+- **N-6:** evidence provenance depth per label.
+- **N-7:** English-only Cyrillic scan for the report.
+- **N-8:** traceability coverage for `REPORT-01`…`REPORT-08`.
+
+**Research:** GUM Clause 7 and NIST TN 1297 (uncertainty reporting), NASA SWE-072, FAA
+VRTM, and HHS EPLC (traceability completeness), alint and linklint (internal link
+resolution), the IEEE Reference Guide and Citation-Cross-Checker (bidirectional citations).
+
+**User's choice:** "Усі рекомендовані" — N-1…N-8 plus C-1/C-2 were folded into CONTEXT.md
+as D-34…D-44.
 
 ## Claude's Discretion
 
