@@ -32,6 +32,27 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "serial_capture.py"
 
 HOMEWORK = "1_3-police-flasher"
+PORT = "/dev/cu.usbmodem2101"
+
+# The shape `pio device list --json-output` reports on this host: the two
+# non-USB entries PlatformIO always lists plus the ESP32-S3 native USB port.
+SERIAL_DEVICES = [
+    {"port": "/dev/cu.debug-console", "description": "n/a", "hwid": "n/a"},
+    {"port": "/dev/cu.Bluetooth-Incoming-Port", "description": "n/a", "hwid": "n/a"},
+    {
+        "port": PORT,
+        "description": "USB JTAG/serial debug unit",
+        "hwid": "USB VID:PID=303A:1001 SER=AC:27:6E:AA:81:4C LOCATION=2-1",
+    },
+]
+
+# The CH343 UART bridge, present when the board is connected through both
+# cables: a second plausible port that must never be chosen silently.
+SECOND_USB_DEVICE = {
+    "port": "/dev/cu.usbmodem5CBC0287411",
+    "description": "USB Single Serial",
+    "hwid": "USB VID:PID=1A86:55D3 SER=5CBC0287411",
+}
 
 # The six exact samples from 09-REVIEW.md CR-02, then the four ordinary password
 # assignments the WR-12 finding proved the scan missed.
@@ -499,16 +520,140 @@ class CliDurationTests(unittest.TestCase):
         self.assert_duration_usage_error("601")
 
 
+class PortResolutionTests(unittest.TestCase):
+    """Exactly one USB serial device is selected, never guessed."""
+
+    def test_one_usb_device_is_selected_among_non_usb_entries(self) -> None:
+        identity = serial_capture.resolve_port(None, SERIAL_DEVICES)
+
+        self.assertEqual(PORT, identity.path)
+        self.assertEqual("303A", identity.vid)
+        self.assertEqual("1001", identity.pid)
+
+    def test_two_usb_devices_refuse_as_ambiguous(self) -> None:
+        devices = SERIAL_DEVICES + [SECOND_USB_DEVICE]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.resolve_port(None, devices)
+
+        message = str(caught.exception)
+        self.assertIn("ambiguous", message)
+        self.assertIn(PORT, message)
+        self.assertIn(SECOND_USB_DEVICE["port"], message)
+        self.assertIn("--port", message)
+
+    def test_a_list_without_a_usb_device_refuses(self) -> None:
+        for devices in ([], SERIAL_DEVICES[:2]):
+            with self.subTest(devices=devices):
+                with self.assertRaises(serial_capture.CaptureFailed) as caught:
+                    serial_capture.resolve_port(None, devices)
+
+                self.assertIn("no USB serial device", str(caught.exception))
+
+    def test_an_explicit_port_disambiguates_the_pair(self) -> None:
+        identity = serial_capture.resolve_port(
+            SECOND_USB_DEVICE["port"], SERIAL_DEVICES + [SECOND_USB_DEVICE]
+        )
+
+        self.assertEqual(SECOND_USB_DEVICE["port"], identity.path)
+        self.assertEqual("1A86", identity.vid)
+        self.assertEqual("55D3", identity.pid)
+
+    def test_an_explicit_port_absent_from_the_list_refuses(self) -> None:
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.resolve_port("/dev/cu.usbmodem9999", SERIAL_DEVICES)
+
+        self.assertIn("--port", str(caught.exception))
+
+    def test_valid_port_path_accepts_an_absolute_device_path(self) -> None:
+        self.assertTrue(serial_capture._valid_port_path(PORT))
+
+    def test_valid_port_path_rejects_relative_and_outside_paths(self) -> None:
+        for value in ("usbmodem2101", "/etc/passwd", "/dev/../etc/passwd"):
+            with self.subTest(value=value):
+                self.assertFalse(serial_capture._valid_port_path(value))
+
+
+class CaptureEndToEndTests(unittest.TestCase):
+    """The whole path resolves a port, captures raw bytes and reports identity."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="serial-capture-e2e-")
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name).resolve()
+        self.log_path = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
+
+    def run_json(self, *arguments: str) -> tuple[int, str]:
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = serial_capture.main(list(arguments))
+        return code, buffer.getvalue()
+
+    def test_a_capture_reports_the_port_vid_pid_and_baud(self) -> None:
+        payload = b"I pattern ready\r\n"
+        child = [sys.executable, "-c", child_that_writes(payload)]
+
+        with (
+            mock.patch.object(
+                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
+            ),
+            mock.patch.object(serial_capture, "_build_command", return_value=child),
+        ):
+            code, output = self.run_json(
+                "--id",
+                HOMEWORK,
+                "--dir",
+                str(self.root),
+                "--json",
+                "--baud",
+                "115200",
+                "--seconds",
+                "0.4",
+            )
+
+        self.assertEqual(0, code, output)
+        self.assertEqual(payload, self.log_path.read_bytes())
+        captured = json.loads(output.strip())
+        self.assertEqual("CAPTURED", captured["status"])
+        self.assertEqual(PORT, captured["port"])
+        self.assertEqual("303A:1001", captured["vid_pid"])
+        self.assertEqual(115200, captured["baud"])
+
+    def test_an_ambiguous_port_refuses_before_the_capture_starts(self) -> None:
+        with (
+            mock.patch.object(
+                serial_capture,
+                "list_serial_devices",
+                return_value=SERIAL_DEVICES + [SECOND_USB_DEVICE],
+            ),
+            mock.patch.object(
+                serial_capture,
+                "capture_pty",
+                side_effect=AssertionError("capture started"),
+            ),
+        ):
+            code, output = self.run_json(
+                "--id", HOMEWORK, "--dir", str(self.root), "--json", "--seconds", "0.4"
+            )
+
+        self.assertEqual(1, code, output)
+        refused = json.loads(output.strip())
+        self.assertEqual("REFUSED", refused["status"])
+        self.assertIn("ambiguous", refused["reason"])
+        self.assertIsNone(refused["port"])
+        self.assertFalse(self.log_path.exists())
+
+
 class BuildCommandTests(unittest.TestCase):
-    """The optional flags reach the monitor argv as the flags the monitor accepts."""
+    """The monitor argv always names one port and opens it in the idle line state."""
 
     def build(self, **flags: object) -> list[str]:
         args = argparse.Namespace(id=HOMEWORK, env=None, baud=None)
         for name, value in flags.items():
             setattr(args, name, value)
-        return serial_capture._build_command(args)
+        return serial_capture._build_command(args, PORT)
 
-    def test_base_argv_has_no_optional_flags(self) -> None:
+    def test_the_monitor_opens_in_the_idle_line_state_with_an_explicit_port(self) -> None:
         self.assertEqual(
             [
                 "pio",
@@ -516,6 +661,12 @@ class BuildCommandTests(unittest.TestCase):
                 "monitor",
                 "-d",
                 "homeworks/" + HOMEWORK,
+                "-p",
+                PORT,
+                "--dtr",
+                "0",
+                "--rts",
+                "0",
                 "--raw",
                 "--quiet",
             ],
@@ -555,11 +706,16 @@ class CliResultPayloadTests(unittest.TestCase):
     def test_a_json_success_payload(self) -> None:
         target = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
 
-        with mock.patch.object(
-            serial_capture, "capture_and_store", return_value=(target, 17)
+        with (
+            mock.patch.object(
+                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
+            ),
+            mock.patch.object(
+                serial_capture, "capture_and_store", return_value=(target, 17)
+            ),
         ):
             code, output = self.run_json(
-                "--id", HOMEWORK, "--dir", str(self.root), "--json"
+                "--id", HOMEWORK, "--dir", str(self.root), "--json", "--baud", "115200"
             )
 
         self.assertEqual(0, code)
@@ -569,6 +725,9 @@ class CliResultPayloadTests(unittest.TestCase):
                 "status": "CAPTURED",
                 "reason": "17 bytes captured",
                 "bytes": 17,
+                "port": PORT,
+                "vid_pid": "303A:1001",
+                "baud": 115200,
             },
             json.loads(output.strip()),
         )
@@ -576,11 +735,16 @@ class CliResultPayloadTests(unittest.TestCase):
     def test_a_json_refusal_payload(self) -> None:
         refusal = serial_capture.CaptureFailed("credential-shaped device output")
 
-        with mock.patch.object(
-            serial_capture, "capture_and_store", side_effect=refusal
+        with (
+            mock.patch.object(
+                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
+            ),
+            mock.patch.object(
+                serial_capture, "capture_and_store", side_effect=refusal
+            ),
         ):
             code, output = self.run_json(
-                "--id", HOMEWORK, "--dir", str(self.root), "--json"
+                "--id", HOMEWORK, "--dir", str(self.root), "--json", "--baud", "115200"
             )
 
         self.assertEqual(1, code)
@@ -588,6 +752,9 @@ class CliResultPayloadTests(unittest.TestCase):
         self.assertEqual("REFUSED", payload["status"])
         self.assertIn("capture unavailable", payload["reason"])
         self.assertEqual(0, payload["bytes"])
+        self.assertEqual(PORT, payload["port"])
+        self.assertEqual("303A:1001", payload["vid_pid"])
+        self.assertEqual(115200, payload["baud"])
 
 
 if __name__ == "__main__":

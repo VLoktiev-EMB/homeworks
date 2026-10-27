@@ -75,6 +75,7 @@ import subprocess
 import sys
 import time
 import tty
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -88,6 +89,13 @@ DEFAULT_SECONDS = 20
 MAX_SECONDS = 600
 READ_SIZE = 4096
 LOG_PARTS = (".skill-state", "logs")
+# A device or configuration query must answer promptly; a hung `pio` process is
+# a refusal, not a capture that waits forever.
+DEVICE_QUERY_TIMEOUT = 15
+
+# `pio device list` reports a USB serial port as
+# `USB VID:PID=303A:1001 SER=...`; the non-USB entries report `n/a`.
+USB_HWID = re.compile(r"USB VID:PID=([0-9A-Fa-f]{4}):([0-9A-Fa-f]{4})")
 
 # The keyword set the shared guardrails name: `password`, `passwd`,
 # `passphrase` and `pwd` share one `pass(?:word|wd|phrase)|pwd` alternative.
@@ -116,6 +124,15 @@ class CaptureFailed(Exception):
     """A capture refusal; the message is the reason reported to the user."""
 
 
+@dataclass(frozen=True)
+class PortIdentity:
+    """One USB serial port: its device path and its reported USB identity."""
+
+    path: str
+    vid: str
+    pid: str
+
+
 def find_credential(data: bytes) -> bool:
     """Return whether *data* contains a credential-shaped assignment.
 
@@ -123,6 +140,95 @@ def find_credential(data: bytes) -> bool:
     that the scan matched.
     """
     return CREDENTIAL.search(data) is not None
+
+
+def _run_json(argv: list[str]) -> object:
+    """Run *argv* and return its decoded JSON output, refusing on any failure.
+
+    The refusal names the failure class only: the child's stderr may echo a
+    device path or device bytes, and a refusal never repeats child output.
+    """
+    try:
+        completed = subprocess.run(
+            argv,
+            capture_output=True,
+            text=True,
+            timeout=DEVICE_QUERY_TIMEOUT,
+            check=False,
+        )
+    except OSError as exc:
+        detail = exc.strerror or type(exc).__name__
+        raise CaptureFailed(f"port discovery failed: {detail}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise CaptureFailed("port discovery failed: timed out") from exc
+    if completed.returncode != 0:
+        raise CaptureFailed(f"port discovery failed: exit {completed.returncode}")
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise CaptureFailed("port discovery failed: invalid JSON") from exc
+
+
+def list_serial_devices() -> list[dict]:
+    """Return the serial ports `pio device list --json-output` reports."""
+    payload = _run_json(["pio", "device", "list", "--json-output"])
+    if not isinstance(payload, list) or not all(
+        isinstance(entry, dict) for entry in payload
+    ):
+        raise CaptureFailed("port discovery failed: unexpected device list payload")
+    return payload
+
+
+def _usb_identity(entry: dict) -> PortIdentity | None:
+    """Return the USB identity of one `pio device list` entry, or None."""
+    port = entry.get("port")
+    hwid = entry.get("hwid")
+    if not isinstance(port, str) or not isinstance(hwid, str):
+        return None
+    match = USB_HWID.search(hwid)
+    if match is None:
+        return None
+    return PortIdentity(
+        path=port, vid=match.group(1).upper(), pid=match.group(2).upper()
+    )
+
+
+def resolve_port(explicit: str | None, devices: list[dict]) -> PortIdentity:
+    """Return the one USB serial port to open, refusing rather than guessing.
+
+    Two ports on one board are a real ambiguity (the native USB interface and
+    the UART bridge), so the identity is never deduplicated by VID:PID: the
+    user breaks the tie with `--port`.
+    """
+    identities = [
+        identity
+        for entry in devices
+        if (identity := _usb_identity(entry)) is not None
+    ]
+    if explicit is not None:
+        for identity in identities:
+            if identity.path == explicit:
+                return identity
+        raise CaptureFailed(
+            f"--port {explicit} is not a USB serial device reported by "
+            "pio device list"
+        )
+    if not identities:
+        raise CaptureFailed(
+            "no USB serial device found; connect a board or pass --port"
+        )
+    if len(identities) > 1:
+        paths = ", ".join(identity.path for identity in identities)
+        raise CaptureFailed(f"ambiguous USB serial ports ({paths}); pass --port")
+    return identities[0]
+
+
+def _valid_port_path(value: str) -> bool:
+    """Return whether *value* is an absolute device path under `/dev`."""
+    path = Path(value)
+    if not path.is_absolute() or not value.startswith("/dev/"):
+        return False
+    return ".." not in path.parts
 
 
 def _reap(process: subprocess.Popen) -> int:
@@ -285,14 +391,25 @@ def capture_and_store(
     return path, len(data)
 
 
-def _build_command(args: argparse.Namespace) -> list[str]:
-    """Build the monitor argv; the id is validated before this call."""
+def _build_command(args: argparse.Namespace, port: str) -> list[str]:
+    """Build the monitor argv; the id and *port* are validated before this call.
+
+    `-p` pins the interface, and `--dtr 0 --rts 0` opens it in the idle line
+    state: the asserted pair is the ESP32-S3 chip-reset state, so the
+    application never runs and the capture stays empty without it.
+    """
     command = [
         "pio",
         "device",
         "monitor",
         "-d",
         "homeworks/" + args.id,
+        "-p",
+        port,
+        "--dtr",
+        "0",
+        "--rts",
+        "0",
         "--raw",
         "--quiet",
     ]
@@ -310,6 +427,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--id", required=True, help="homework id")
     parser.add_argument("--env", help="PlatformIO environment to monitor")
+    parser.add_argument(
+        "--port",
+        help=(
+            "serial device path such as /dev/cu.usbmodem2101; omit it only when "
+            "exactly one USB serial device is connected"
+        ),
+    )
     parser.add_argument("--baud", type=int, help="baud rate; omit to inherit monitor_speed")
     parser.add_argument(
         "--seconds",
@@ -322,6 +446,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     log_display = f"{LOG_PARTS[0]}/{LOG_PARTS[1]}/{args.id}.log"
+    port = None
+    vid_pid = None
+    baud = None
     try:
         if not HOMEWORK_ID.match(args.id):
             raise CheckError(
@@ -336,8 +463,17 @@ def main(argv: list[str] | None = None) -> int:
             raise CheckError(
                 f"--seconds must be a positive finite number no greater than {MAX_SECONDS}"
             )
+        if args.port is not None and not _valid_port_path(args.port):
+            raise CheckError(
+                "--port must be an absolute serial device path under /dev, "
+                f"not {args.port!r}"
+            )
         root = resolve_root(args.dir)
-        command = _build_command(args)
+        identity = resolve_port(args.port, list_serial_devices())
+        port = identity.path
+        vid_pid = f"{identity.vid}:{identity.pid}"
+        baud = args.baud
+        command = _build_command(args, port)
         path, count = capture_and_store(root, args.id, command, args.seconds)
     except CaptureFailed as exc:
         reason = f"capture unavailable: {exc}"
@@ -349,6 +485,9 @@ def main(argv: list[str] | None = None) -> int:
                         "status": "REFUSED",
                         "reason": reason,
                         "bytes": 0,
+                        "port": port,
+                        "vid_pid": vid_pid,
+                        "baud": baud,
                     }
                 )
             )
@@ -368,11 +507,17 @@ def main(argv: list[str] | None = None) -> int:
                     "status": "CAPTURED",
                     "reason": f"{count} bytes captured",
                     "bytes": count,
+                    "port": port,
+                    "vid_pid": vid_pid,
+                    "baud": baud,
                 }
             )
         )
     else:
-        print(f"{display}: CAPTURED — {count} bytes captured")
+        print(
+            f"{display}: CAPTURED — {count} bytes captured from {port} "
+            f"(USB VID:PID={vid_pid}) at {baud} baud"
+        )
     return 0
 
 
