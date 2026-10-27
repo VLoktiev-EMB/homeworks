@@ -5,8 +5,9 @@ a `sys.executable -c` child. The PTY test proves the child sees stdin and
 stdout as terminals and that raw capture preserves `bytes(range(256))`; the
 pipe test runs the same child without a terminal and proves it fails, so a
 pipe-based regression cannot pass. The credential cases pin the six shapes the
-09-REVIEW.md CR-02 finding executed, and the write cases cover the root anchor,
-symlink refusals, replace-not-append and concurrent writers.
+09-REVIEW.md CR-02 finding executed and the four ordinary password assignments
+WR-12 added, and the write cases cover the root anchor, symlink refusals,
+replace-not-append and concurrent writers.
 """
 
 from __future__ import annotations
@@ -31,7 +32,8 @@ SCRIPT = REPO_ROOT / "scripts" / "serial_capture.py"
 
 HOMEWORK = "1_3-police-flasher"
 
-# The six exact samples from 09-REVIEW.md CR-02.
+# The six exact samples from 09-REVIEW.md CR-02, then the four ordinary password
+# assignments the WR-12 finding proved the scan missed.
 REVIEW_SHAPES = (
     b"secret = hunter2",
     b"PASSWORD = hunter2",
@@ -39,6 +41,17 @@ REVIEW_SHAPES = (
     b'{"apiKey": "abc123"}',
     b"password abc123",
     b"Authorization: Bearer eyJhbGciOiJIUzI1NiJ9",
+    b"password is hunter2",
+    b"userpassword = hunter2",
+    b"passphrase = hunter2",
+    b"pwd = hunter2",
+)
+
+ORDINARY_PASSWORD_ASSIGNMENTS = (
+    b"password is hunter2",
+    b"userpassword = hunter2",
+    b"passphrase = hunter2",
+    b"pwd = hunter2",
 )
 
 
@@ -131,6 +144,16 @@ class CredentialScanTests(unittest.TestCase):
         for sample in REVIEW_SHAPES:
             with self.subTest(sample=sample):
                 self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_the_ordinary_password_assignments_match(self) -> None:
+        for sample in ORDINARY_PASSWORD_ASSIGNMENTS:
+            with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_an_ordinary_word_containing_a_keyword_does_not_match(self) -> None:
+        for sample in (b"the cpwd tool reports ready\r\n", b"author wrote nothing here\r\n"):
+            with self.subTest(sample=sample):
+                self.assertFalse(serial_capture.find_credential(sample))
 
     def test_passwd_matches(self) -> None:
         self.assertTrue(serial_capture.find_credential(b"passwd = hunter2"))
@@ -321,6 +344,7 @@ class CaptureAndStoreTests(unittest.TestCase):
 
         self.assertIn("credential", str(caught.exception))
         self.assertFalse(self.log_path.exists())
+        self.assertFalse((self.root / ".skill-state").exists())
 
     def test_an_empty_child_writes_nothing(self) -> None:
         argv = [sys.executable, "-c", "import time; time.sleep(10)"]

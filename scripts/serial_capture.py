@@ -23,11 +23,15 @@ when no bytes are collected, when the credential scan matches, or when the log
 write is refused. Every refusal reports `capture unavailable`.
 
 The credential scan is fail-closed and runs on the exact bytes before any file
-is created. It matches a token, secret, password, passwd, API-key or
-auth/authorization keyword followed either by an optional quote, optional
+is created. It matches a token, secret, password, passwd, passphrase, pwd,
+API-key or auth/authorization keyword, and the keyword may sit inside a larger
+word (`userpassword`). It is followed either by an optional quote, optional
 whitespace, a colon or equals sign, optional whitespace, an optional quote and
-a non-space run, or by whitespace and a non-space run of six or more
-characters. The match is never returned, printed or stored.
+a non-space run, or by whitespace, an optional `is` copula, and a non-space run
+of six or more characters. Occasional false positives are accepted because a
+match writes nothing and reports `capture unavailable`; a match on a benign
+boot log is a regression the suite forbids. The match is never returned,
+printed or stored.
 
 The log is written to `<root>/.skill-state/logs/<id>.log` where `<root>` is
 resolved once. Each directory is opened with `O_DIRECTORY | O_NOFOLLOW` and
@@ -74,17 +78,20 @@ DEFAULT_SECONDS = 20
 READ_SIZE = 4096
 LOG_PARTS = (".skill-state", "logs")
 
-# The keyword set the shared guardrails name. The six-character floor on the
-# space-separated alternative is a deliberate fail-closed choice: it catches
-# the review's `password abc123` fixture while leaving ordinary words such as
-# `secret is` alone. Occasional false positives are accepted, because a match
-# writes nothing and reports `capture unavailable`.
-_KEYWORDS = rb"(?:authorization|auth|token|secret|password|passwd|api[ _-]?key)"
+# The keyword set the shared guardrails name: `password`, `passwd`,
+# `passphrase` and `pwd` share one `pass(?:word|wd|phrase)|pwd` alternative.
+# The keyword may sit inside a larger word (`userpassword = hunter2`), so no
+# leading boundary is required, and the space-separated branch admits the `is`
+# copula (`password is hunter2`). The six-character floor on that branch keeps
+# ordinary words such as `secret is` unmatched. Occasional false positives are
+# accepted, because a match writes nothing and reports `capture unavailable`,
+# and a match on a benign boot log is a regression the suite forbids.
+_KEYWORDS = rb"(?:authorization|auth|token|secret|pass(?:word|wd|phrase)|pwd|api[ _-]?key)"
 
 CREDENTIAL = re.compile(
-    rb"(?i)(?<![a-z0-9])"
+    rb"(?i)"
     + _KEYWORDS
-    + rb"(?:[\"']?\s*[:=]\s*[\"']?\S+|\s+\S{6,})"
+    + rb"(?:[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})"
 )
 
 ENVIRONMENT = re.compile(r"^[A-Za-z0-9_-]+$")
