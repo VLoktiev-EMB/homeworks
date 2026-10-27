@@ -484,7 +484,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 10.1-01-PLAN.md — Lean report verification: slim down `scripts/check_report.py` and remove AST table nitpicks
+- [x] 10.1-01-PLAN.md — Lean report verification: slim down `scripts/check_report.py` and remove AST table nitpicks
 - [ ] 10.1-02-PLAN.md — Schematic automation: upgrade `schematic` skill and generator for clean Wokwi diagrams and Mermaid
 - [ ] 10.1-03-PLAN.md — Pre-commit, CI, and GSD ceremony trim: fast local hooks, lean PR CI, and config relaxations
 
@@ -523,7 +523,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
 | 10. Report and Evidence System | 12/12 | Complete    | 2026-10-27 |
-| 10.1. Lean DX and Schematic Automation | 0/3 | In progress | - |
+| 10.1. Lean DX and Schematic Automation | 1/3 | In progress | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
 ## Backlog
