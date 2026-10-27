@@ -27,7 +27,7 @@ is created. It matches a token, secret, password, passwd, passphrase, pwd,
 API-key or auth/authorization keyword. The keyword may sit inside a larger word
 on either side: it may follow another word (`userpassword`) or precede
 identifier characters (`secretKey`, `secret_key`, `passwordHash`). The
-assignment branch admits a connector of at most 32 word, dot or hyphen
+assignment branch admits a connector of at most 128 word, dot or hyphen
 characters before the optional quote and the colon or equals sign, then
 optional whitespace, an optional quote and a non-space run. The space-separated
 branch is unchanged: whitespace, an optional `is` copula, and a non-space run
@@ -95,7 +95,7 @@ LOG_PARTS = (".skill-state", "logs")
 # boundary is required, and the space-separated branch admits the `is` copula
 # (`password is hunter2`). In the assignment branch a keyword may instead be
 # followed by identifier characters (`secretKey`, `secret_key`, `passwordHash`),
-# so a `[\w.-]{0,32}` connector of at most 32 word, dot or hyphen characters is
+# so a `[\w.-]{0,128}` connector of at most 128 word, dot or hyphen characters is
 # admitted before the optional quote and separator; the space-separated branch
 # is unchanged. The six-character floor on that branch keeps ordinary words such
 # as `secret is` unmatched. Occasional false positives are accepted, because a
@@ -106,7 +106,7 @@ _KEYWORDS = rb"(?:authorization|auth|token|secret|pass(?:word|wd|phrase)|pwd|api
 CREDENTIAL = re.compile(
     rb"(?i)"
     + _KEYWORDS
-    + rb"(?:[\w.-]{0,32}[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})"
+    + rb"(?:[\w.-]{0,128}[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})"
 )
 
 ENVIRONMENT = re.compile(r"^[A-Za-z0-9_-]+$")

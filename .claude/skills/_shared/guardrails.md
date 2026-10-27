@@ -59,8 +59,8 @@ the same register as `AGENTS.md`.
   passwd, passphrase, pwd, or API-key assignment. The scan is fail-closed
   across an optional separator, optional quoting, the authorization form, a
   copula form such as `password is <value>`, a keyword embedded after another
-  word such as `userpassword = <value>`, a keyword followed by identifier
-  characters such as `secretKey: <value>`, `secret_key = <value>` or
+  word such as `userpassword = <value>`, a keyword followed by up to 128
+  identifier characters such as `secretKey: <value>`, `secret_key = <value>` or
   `passwordHash: <value>`, the `passphrase` and `pwd` keywords, and a
   space-separated value of six or more characters, accepting occasional false
   positives. On a match it writes nothing and

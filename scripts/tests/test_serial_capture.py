@@ -6,9 +6,9 @@ stdout as terminals and that raw capture preserves `bytes(range(256))`; the
 pipe test runs the same child without a terminal and proves it fails, so a
 pipe-based regression cannot pass. The credential cases pin the six shapes the
 09-REVIEW.md CR-02 finding executed, the four ordinary password assignments
-WR-12 added, and the four identifier-suffixed assignments RR-CR-01 added, and
-the write cases cover the root anchor, symlink refusals, replace-not-append and
-concurrent writers.
+WR-12 added, and the identifier-suffixed assignments RR-CR-01 added plus the
+long-suffix case CR-01 added, and the write cases cover the root anchor, symlink
+refusals, replace-not-append and concurrent writers.
 """
 
 from __future__ import annotations
@@ -56,12 +56,15 @@ ORDINARY_PASSWORD_ASSIGNMENTS = (
 )
 
 # The RR-CR-01 shapes: a keyword followed by identifier characters before the
-# separator, which the shipped scan used to miss.
+# separator, which the shipped scan used to miss. The last entry is CR-01: its
+# suffix is longer than the former 32-character connector ceiling, so the old
+# bound cannot return without failing this tuple.
 IDENTIFIER_SUFFIXED_ASSIGNMENTS = (
     b'{"secretKey": "hunter2"}',
     b"secret_key = hunter2",
     b"passwordHash: abcdef",
     b"SECRET_KEY = hunter2",
+    b"secret_key_for_production_environment_2026 = hunter2",
 )
 
 
@@ -198,6 +201,12 @@ class CredentialScanTests(unittest.TestCase):
     def test_identifier_suffixed_assignments_match(self) -> None:
         for sample in IDENTIFIER_SUFFIXED_ASSIGNMENTS:
             with self.subTest(sample=sample):
+                self.assertTrue(serial_capture.find_credential(sample))
+
+    def test_a_connector_longer_than_32_characters_matches(self) -> None:
+        for suffix_length in (32, 33, 42):
+            sample = b"secret" + b"k" * suffix_length + b" = hunter2"
+            with self.subTest(suffix_length=suffix_length):
                 self.assertTrue(serial_capture.find_credential(sample))
 
     def test_an_ordinary_word_containing_a_keyword_does_not_match(self) -> None:

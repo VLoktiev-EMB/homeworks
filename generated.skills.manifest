@@ -6,8 +6,8 @@
       "owner": "skills",
       "source": ".claude/skills/_shared/guardrails.md",
       "mode": "whole",
-      "sha256": "8e6cfcfb269ce912ad0b9db12da212dd7c1fa722a26c4c9b4c822b4d33a85088",
-      "bytes": 4102
+      "sha256": "e7f646898bb9af85e835b768f4d1b0aaf9a3f550ad072cec1c13450da88b904c",
+      "bytes": 4112
     },
     {
       "path": ".agents/skills/course-index/CHANGELOG.md",
