@@ -12,6 +12,36 @@ tests.
 The project must live at `homeworks/<id>`, two levels below the repository root, so
 every relative path — including the shared partition table — resolves.
 
+## Schematic and Wiring
+
+The circuit combines an anti-parallel LED pair on GPIO4, a single indicator LED on GPIO6, and a mode pushbutton to GND on GPIO7:
+
+```mermaid
+flowchart LR
+    subgraph Board["ESP32-S3 DevKitC-1"]
+        esp[esp]
+    end
+    r1("r1 [150Ω]")
+    led1("led1 [LED red]")
+    led2("led2 [LED red]")
+    r2("r2 [150Ω]")
+    led3("led3 [LED red]")
+    btn1("btn1 [MODE]")
+
+    btn1 -->|1.l -> 7| esp
+    btn1 -->|2.l -> GND.1| esp
+    esp -->|4 -> 1| r1
+    r1 -->|2 -> A| led1
+    r1 -->|2 -> C| led2
+    led1 -->|C -> GND.2| esp
+    esp -->|3V3.1 -> A| led2
+    esp -->|6 -> 1| r2
+    r2 -->|2 -> A| led3
+    led3 -->|C -> GND.2| esp
+```
+
+The interactive simulation model and wire routing are defined in [`assets/diagram.json`](assets/diagram.json).
+
 ## Simulation
 
 `wokwi.toml` points at `.pio/build/esp32s3_arduino/firmware.merged.bin`, so build the

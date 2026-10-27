@@ -6,8 +6,8 @@
     {
       "type": "board-esp32-s3-devkitc-1",
       "id": "esp",
-      "top": 0,
-      "left": 0,
+      "top": 100,
+      "left": 50,
       "attrs": {
         "flashSize": "16",
         "psramType": "octal",
@@ -17,58 +17,160 @@
     {
       "type": "wokwi-resistor",
       "id": "r1",
-      "top": -60,
-      "left": 300,
-      "attrs": { "value": "150" }
+      "top": -80,
+      "left": 320,
+      "attrs": {
+        "value": "150"
+      }
     },
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": -100,
-      "left": 220,
-      "attrs": { "color": "red" }
+      "top": -150,
+      "left": 460,
+      "attrs": {
+        "color": "red"
+      }
     },
     {
       "type": "wokwi-led",
       "id": "led2",
-      "top": -140,
-      "left": 220,
-      "attrs": { "color": "red" }
+      "top": -30,
+      "left": 460,
+      "attrs": {
+        "color": "red"
+      }
     },
     {
       "type": "wokwi-resistor",
       "id": "r2",
-      "top": -200,
-      "left": 300,
-      "attrs": { "value": "150" }
+      "top": 160,
+      "left": 320,
+      "attrs": {
+        "value": "150"
+      }
     },
     {
       "type": "wokwi-led",
       "id": "led3",
-      "top": -240,
-      "left": 220,
-      "attrs": { "color": "red" }
+      "top": 160,
+      "left": 460,
+      "attrs": {
+        "color": "red"
+      }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn1",
-      "top": -300,
-      "left": 220,
-      "attrs": { "color": "green", "label": "MODE" }
+      "top": 140,
+      "left": -140,
+      "attrs": {
+        "color": "green",
+        "label": "MODE"
+      }
     }
   ],
   "connections": [
-    [ "esp:4", "r1:1", "green", [] ],
-    [ "r1:2", "led1:A", "blue", [] ],
-    [ "led1:C", "esp:GND.1", "black", [] ],
-    [ "led2:A", "esp:3V3.1", "red", [] ],
-    [ "led2:C", "r1:2", "blue", [] ],
-    [ "esp:6", "r2:1", "green", [] ],
-    [ "r2:2", "led3:A", "red", [] ],
-    [ "led3:C", "esp:GND.2", "black", [] ],
-    [ "btn1:1.l", "esp:7", "green", [] ],
-    [ "btn1:2.l", "esp:GND.3", "black", [] ],
-    [ "esp:TX", "$serialMonitor:RX", "green", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "green", [] ]
+    [
+      "btn1:1.l",
+      "esp:7",
+      "green",
+      [
+        "h40",
+        "v80"
+      ]
+    ],
+    [
+      "btn1:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "v120",
+        "h180"
+      ]
+    ],
+    [
+      "esp:4",
+      "r1:1",
+      "orange",
+      [
+        "h80",
+        "v-220"
+      ]
+    ],
+    [
+      "r1:2",
+      "led1:A",
+      "blue",
+      [
+        "h40",
+        "v-50"
+      ]
+    ],
+    [
+      "r1:2",
+      "led2:C",
+      "blue",
+      [
+        "h40",
+        "v70"
+      ]
+    ],
+    [
+      "led1:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v140",
+        "h-220"
+      ]
+    ],
+    [
+      "esp:3V3.1",
+      "led2:A",
+      "red",
+      [
+        "h60",
+        "v-150"
+      ]
+    ],
+    [
+      "esp:6",
+      "r2:1",
+      "purple",
+      [
+        "h90",
+        "v30"
+      ]
+    ],
+    [
+      "r2:2",
+      "led3:A",
+      "red",
+      [
+        "h40"
+      ]
+    ],
+    [
+      "led3:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v80",
+        "h-220"
+      ]
+    ],
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "green",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "green",
+      []
+    ]
   ]
 }
