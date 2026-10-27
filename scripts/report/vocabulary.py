@@ -79,6 +79,9 @@ TRACEABILITY_HEADER = (
     "Status",
 )
 
+# D-15: the traceability status enum.
+TRACEABILITY_STATUSES = frozenset({"verified", "manual", "pending", "not applicable"})
+
 # D-06/D-34: the one marker that replaces an artifact that does not apply.
 NOT_APPLICABLE = "_Not applicable — "
 NOT_APPLICABLE_SUFFIX = "._"
@@ -235,5 +238,23 @@ RULES = {
         "cite an `[N]` source for a `datasheet` row, name a `C-NN` calculation "
         "for a `calculated` row, name a scenario or run artifact for a "
         "`simulated` row, and name an instrument for a `measured` row",
+    ),
+    "RPT-306": (
+        "a traceability row carries a status outside the enum",
+        "use verified, manual, pending, or not applicable",
+    ),
+    "RPT-307": (
+        "a traceability artifact or evidence token does not resolve",
+        "name an artifact that exists under the homework directory or the "
+        "repository root; a pending row is exempt until its evidence exists",
+    ),
+    "RPT-308": (
+        "a table row id is malformed or duplicated",
+        "use an `A-NN`, `C-NN`, `L-NN`, or `T-NN` id, unique within its table",
+    ),
+    "RPT-310": (
+        "the traceability matrix does not cover every report requirement",
+        "add a traceability row citing the missing `REPORT-01` ... `REPORT-08` "
+        "requirement",
     ),
 }

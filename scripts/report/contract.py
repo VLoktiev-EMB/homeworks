@@ -15,6 +15,7 @@ jsonschema into the test import graph, and never PyYAML itself (Pitfall 9).
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,10 +36,12 @@ from scripts.report.vocabulary import (
     PIN_MAP_HEADER,
     REPORT_HEADINGS,
     REPORT_MAX_BYTES,
+    REPORT_REQUIREMENTS,
     REQUIRED_SUBSECTIONS,
     SECTION_ONE_HEADER,
     STATUS_PREFIX,
     TRACEABILITY_HEADER,
+    TRACEABILITY_STATUSES,
 )
 
 # D-06/D-34: a required table names its owning section, and optionally the
@@ -110,6 +113,27 @@ _LEDGER_INSTRUMENT = LEDGER_HEADER.index("Instrument")
 _LEDGER_METHOD = LEDGER_HEADER.index("Method")
 _LEDGER_COMMIT = LEDGER_HEADER.index("Implementation commit")
 
+# The traceability columns the artifact and status rules read.
+_TRACEABILITY_ID = TRACEABILITY_HEADER.index("ID")
+_TRACEABILITY_ARTIFACT = TRACEABILITY_HEADER.index("Design artifact")
+_TRACEABILITY_EVIDENCE = TRACEABILITY_HEADER.index("Evidence")
+_TRACEABILITY_STATUS = TRACEABILITY_HEADER.index("Status")
+
+# D-36: the four id-bearing tables and the prefix each row id must carry.
+ID_TABLES = (
+    ("assumptions", "A"),
+    ("electrical calculations", "C"),
+    ("measurement ledger", "L"),
+    ("traceability matrix", "T"),
+)
+
+# D-36: an intra-report id token. The leading word boundary keeps `REPORT-01`
+# from matching its trailing `T-01`.
+IDENTIFIER = re.compile(r"\b([ACLT])-(\d{2})\b")
+
+# D-13: artifact tokens are only those inside a backticked span.
+BACKTICK_SPAN = re.compile(r"`([^`]+)`")
+
 
 def path_like(token):
     """True when *token* looks like a path rather than prose (D-13)."""
@@ -119,6 +143,63 @@ def path_like(token):
 def _cell(row, index):
     """Return a row's normalized cell, or `""` when the row is short (RPT-202)."""
     return row.normalized[index] if index < len(row.normalized) else ""
+
+
+def _lexically_contained(candidate, root):
+    """True when *candidate* sits inside *root* after `.`/`..` normalization.
+
+    `os.path.abspath` normalizes the path without following a symlink, which is
+    the lexical half of the D-13 posture (Pitfall 10).
+    """
+    try:
+        Path(os.path.abspath(candidate)).relative_to(Path(os.path.abspath(root)))
+        return True
+    except ValueError:
+        return False
+
+
+def resolve_artifact(token, homework_dir, repo_root):
+    """Return True when *token* resolves to an existing path under either root.
+
+    An absolute token is rejected before any filesystem call. A relative token
+    is tried from the homework directory and from the repository root; the
+    candidate must be lexically contained in one of the two roots and, as
+    defence in depth, its resolved position must stay inside that root. Only
+    existence is checked; no file is opened (D-13, T-10-07, T-10-08).
+    """
+    if not isinstance(token, str) or not token.strip():
+        return False
+    if Path(token).is_absolute():
+        return False
+    roots = [
+        Path(os.path.abspath(root))
+        for root in (homework_dir, repo_root)
+        if root is not None
+    ]
+    if not roots:
+        return False
+    for base in roots:
+        candidate = Path(os.path.abspath(base / token))
+        inside = next((root for root in roots if _lexically_contained(candidate, root)), None)
+        if inside is None or not candidate.exists():
+            continue
+        resolved = Path(os.path.realpath(candidate))
+        if not _lexically_contained(resolved, Path(os.path.realpath(inside))):
+            continue
+        return True
+    return False
+
+
+def artifact_tokens(cell):
+    """Yield every path-like token inside a backticked span (D-13).
+
+    A span is split on whitespace so a command such as
+    `pio run -d homeworks/<id>` is not treated as one path (Pitfall 11).
+    """
+    for span in BACKTICK_SPAN.findall(cell):
+        for token in span.split():
+            if path_like(token):
+                yield token
 
 
 @dataclass(frozen=True)
@@ -568,6 +649,102 @@ def _ledger_records(owned, record):
     return records
 
 
+def _traceability_records(owned, homework_dir, repo_root, record):
+    """`RPT-306`, `RPT-307`, `RPT-308`, `RPT-310`: the traceability matrix.
+
+    Artifact existence is checked for `verified`, `manual` and `not applicable`
+    rows; a `pending` row is exempt because its evidence may not exist yet
+    (D-13). A status outside the enum is `RPT-306`, and the artifact check is
+    skipped for that row because its meaning is unknown.
+    """
+    records = []
+
+    # RPT-308: each id matches its table's shape and is unique within it.
+    for label, prefix in ID_TABLES:
+        table = next((table for name, table, _ in owned if name == label), None)
+        if table is None:
+            continue
+        seen = set()
+        for row in table.rows:
+            row_id = _cell(row, 0)
+            if not re.fullmatch(rf"{prefix}-\d{{2}}", row_id):
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-308",
+                        f'table "{label}" row id "{row_id}" does not match {prefix}-NN',
+                        row.line,
+                    )
+                )
+                continue
+            if row_id in seen:
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-308",
+                        f'table "{label}" row id "{row_id}" is duplicated',
+                        row.line,
+                    )
+                )
+                continue
+            seen.add(row_id)
+
+    matrix = next(
+        (table for name, table, _ in owned if name == "traceability matrix"),
+        None,
+    )
+    rows = matrix.rows if matrix is not None else ()
+
+    # RPT-310: every report requirement is cited by at least one row (D-41).
+    for requirement in REPORT_REQUIREMENTS:
+        if any(requirement in cell for row in rows for cell in row.cells):
+            continue
+        records.append(
+            record(
+                "ERROR",
+                "RPT-310",
+                f"the traceability matrix does not cite {requirement}",
+            )
+        )
+
+    can_resolve = homework_dir is not None or repo_root is not None
+    for row in rows:
+        row_id = _cell(row, _TRACEABILITY_ID)
+        status = _cell(row, _TRACEABILITY_STATUS)
+        if status not in TRACEABILITY_STATUSES:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-306",
+                    f'traceability row "{row_id}" has status "{status}"; expected '
+                    "verified, manual, pending, or not applicable",
+                    row.line,
+                )
+            )
+            continue
+        if status == "pending" or not can_resolve:
+            continue
+        for column, index in (
+            ("Design artifact", _TRACEABILITY_ARTIFACT),
+            ("Evidence", _TRACEABILITY_EVIDENCE),
+        ):
+            raw = row.cells[index] if index < len(row.cells) else ""
+            for token in artifact_tokens(raw):
+                if resolve_artifact(token, homework_dir, repo_root):
+                    continue
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-307",
+                        f'traceability row "{row_id}" {column} token "{token}" does not '
+                        "resolve under the homework directory or the repository root",
+                        row.line,
+                    )
+                )
+
+    return records
+
+
 def _subsection_records(lines, sections, record):
     """`RPT-104`: every required subsection exists within its parent section.
 
@@ -759,6 +936,7 @@ def validate_report(
     table_records, owned = _table_records(lines, sections, rows, diagram, record)
     records.extend(table_records)
     records.extend(_ledger_records(owned, record))
+    records.extend(_traceability_records(owned, homework_dir, repo_root, record))
 
     if records:
         return records

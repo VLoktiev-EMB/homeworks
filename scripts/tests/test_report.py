@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -77,7 +78,9 @@ LEDGER_TABLE = (
 TRACEABILITY_TABLE = (
     "| ID | Claim or requirement | Design artifact | Verification method | Evidence | Status |\n"
     "|----|----------------------|-----------------|---------------------|----------|--------|\n"
-    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |"
+    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |\n"
+    "| T-02 | Report contract REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, "
+    "REPORT-06, REPORT-07, REPORT-08 | `report.md` | manual review | this report | manual |"
 )
 
 # The body of every numbered section. A test mutates one entry or drops one
@@ -213,6 +216,13 @@ class FixtureBase(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
+    def write_artifact(self, relative, text="placeholder\n", homework_id=None):
+        homework_id = homework_id or self.homework_id
+        path = self.root / "homeworks" / homework_id / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
     def write_report(self, text=None, homework_id=None, with_diagram=True):
         homework_id = homework_id or self.homework_id
         path = self.root / "homeworks" / homework_id / "report.md"
@@ -220,6 +230,10 @@ class FixtureBase(unittest.TestCase):
         if text is None:
             text = compliant_report()
         path.write_text(text, encoding="utf-8")
+        # The fixture's traceability row names `platformio.ini`, so the file
+        # exists for RPT-307. This is the second artifact the fixture carries
+        # after the diagram, for the same reason: a rule now consumes it.
+        self.write_artifact("platformio.ini", homework_id=homework_id)
         if with_diagram:
             self.write_diagram(homework_id=homework_id)
         return path
@@ -903,6 +917,118 @@ class LedgerTests(FixtureBase):
         result = self.run_fixture()
         self.assert_rejected(result, "[RPT-305]")
         self.assertIn('measured row must name an instrument other than "none"', result.stdout)
+
+
+class TraceabilityTests(FixtureBase):
+    """`RPT-306`/`RPT-307`/`RPT-308`/`RPT-310`: the traceability matrix."""
+
+    def matrix_report(self, replacements):
+        table = TRACEABILITY_TABLE
+        for old, new in replacements:
+            table = table.replace(old, new)
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, table)
+        return compliant_report(sections={"7. Results": body})
+
+    def test_traceability_compliant_report_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_live_report_resolves_artifacts(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-306", "RPT-307", "RPT-308"})
+
+    def test_traceability_invalid_status_reports_rpt_306(self):
+        report = self.matrix_report([("| verified |", "| done |")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-306]")
+        self.assertIn('traceability row "T-01" has status "done"', result.stdout)
+
+    def test_traceability_missing_artifact_reports_rpt_307(self):
+        report = self.matrix_report([("`platformio.ini`", "`lib/missing.c`")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-307]")
+        self.assertIn('Design artifact token "lib/missing.c" does not resolve', result.stdout)
+
+    def test_traceability_pending_row_is_exempt(self):
+        report = self.matrix_report(
+            [
+                (
+                    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |",
+                    "| T-01 | Target build | `lib/missing.c` | `pio run` | `SUCCESS` | pending |",
+                )
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_escaping_token_reports_rpt_307(self):
+        report = self.matrix_report([("`platformio.ini`", "`../../../etc/passwd`")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-307]")
+        self.assertIn("../../../etc/passwd", result.stdout)
+
+    def test_traceability_command_token_splits_and_resolves(self):
+        report = self.matrix_report(
+            [("`platformio.ini`", "`pio run -d homeworks/1_3-good`")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_duplicate_id_reports_rpt_308(self):
+        report = self.matrix_report([("| T-02 |", "| T-01 |")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-308]")
+        self.assertIn('row id "T-01" is duplicated', result.stdout)
+
+    def test_traceability_missing_requirement_reports_rpt_310(self):
+        report = self.matrix_report([("REPORT-05, ", "")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        self.assertIn("does not cite REPORT-05", result.stdout)
+
+    def test_traceability_single_row_yields_seven_missing_requirements(self):
+        single = (
+            "| ID | Claim or requirement | Design artifact | Verification method | "
+            "Evidence | Status |\n"
+            "|----|----------------------|-----------------|---------------------|"
+            "----------|--------|\n"
+            "| T-01 | Report contract REPORT-01 | `report.md` | manual review | "
+            "this report | manual |"
+        )
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, single)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"7. Results": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        reasons = [line for line in result.stdout.splitlines() if "[RPT-310]" in line]
+        self.assertEqual(7, len(reasons))
+        ids = re.findall(r"REPORT-\d{2}", "\n".join(reasons))
+        self.assertEqual([f"REPORT-0{index}" for index in range(2, 9)], ids)
+
+    def test_traceability_zero_rows_reports_every_requirement(self):
+        header_only = "\n".join(TRACEABILITY_TABLE.splitlines()[:2])
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, header_only)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"7. Results": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        reasons = [line for line in result.stdout.splitlines() if "[RPT-310]" in line]
+        self.assertEqual(8, len(reasons))
 
 
 if __name__ == "__main__":
