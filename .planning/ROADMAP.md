@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 14 plans, 6 gap-closure plans
+**Plans:** 14/14 plans executed, 6 gap-closure plans
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -413,7 +413,7 @@ Plans:
 - [x] 09-11-PLAN.md — close CR-03 (wire `--baud` through the skill into the helper) and fold the in-scope `IN-06` argv, CLI-payload and concurrent-reader tests
 - [x] 09-12-PLAN.md — close WR-12 (widen the credential scan to the four ordinary password assignments) and the shared guardrails sentence
 - [x] 09-13-PLAN.md — close WR-10 (reject non-finite and oversized `--seconds`) and WR-11 (reap the monitor on every exception path)
-- [ ] 09-14-PLAN.md — close RR-CR-01 / truth 19 (cover keyword-prefixed credential assignments end to end) and reconcile the review and security records
+- [x] 09-14-PLAN.md — close RR-CR-01 / truth 19 (cover keyword-prefixed credential assignments end to end) and reconcile the review and security records
 
 ### Phase 10: Report and Evidence System
 
@@ -462,7 +462,7 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
-| 9. Agent Workflow and Skills | 13/13 | In Progress | - |
+| 9. Agent Workflow and Skills | 14/14 | In Progress | - |
 | 10. Report and Evidence System | 0/TBD | Not started | - |
 | 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
 
