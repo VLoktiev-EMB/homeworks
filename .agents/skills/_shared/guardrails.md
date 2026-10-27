@@ -57,12 +57,15 @@ the same register as `AGENTS.md`.
   write its single bounded serial capture to the ignored
   `.skill-state/logs/<id>.log`, and only when a credential-shape scan of the
   exact bytes about to be written finds no match for a token, secret, password,
-  or API-key assignment. The scan is fail-closed across an optional separator,
-  optional quoting, the authorization form, and a space-separated value of
-  six or more characters, accepting occasional false positives. On a match it
-  writes nothing and reports `capture unavailable`. No other skill, path, or
-  file inherits the exception. The log is never quoted, committed, interpreted,
-  or used as evidence of behaviour.
+  passwd, passphrase, pwd, or API-key assignment. The scan is fail-closed
+  across an optional separator, optional quoting, the authorization form, a
+  copula form such as `password is <value>`, a keyword embedded after another
+  word such as `userpassword = <value>`, the `passphrase` and `pwd` keywords,
+  and a space-separated value of six or more characters,
+  accepting occasional false positives. On a match it writes nothing and
+  reports `capture unavailable`. No other skill, path, or file inherits the
+  exception. The log is never quoted, committed, interpreted, or used as
+  evidence of behaviour.
 - **[MUST]** **[ENFORCED: review]** Record presence only as
   `simulation_token_present: true|false`.
 

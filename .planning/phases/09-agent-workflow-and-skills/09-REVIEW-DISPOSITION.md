@@ -17,7 +17,7 @@ findings:
     title: "An exception in the read loop leaves `pio device monitor` running"
   - id: WR-12
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The credential scan still misses ordinary password assignments"
   - id: IN-06
     severity: info
@@ -103,7 +103,7 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 12
+open: 11
 total: 25
 recorded: 2026-10-26T23:39:09.858Z
 ---
@@ -115,7 +115,7 @@ recorded: 2026-10-26T23:39:09.858Z
 | CR-03 | critical | fixed | 09-11-PLAN.md — closed by the announced `[--baud <n>]` segment and `BuildCommandTests` pinning the forwarded `-b` argv. (not in the current review) |
 | WR-10 | warning | open | - |
 | WR-11 | warning | open | - |
-| WR-12 | warning | open | - |
+| WR-12 | warning | fixed | 09-12-PLAN.md — closed by the widened `find_credential` covering the copula, embedded keyword, `passphrase` and `pwd` forms. (not in the current review) |
 | IN-06 | info | fixed | 09-11-PLAN.md — closed by `BuildCommandTests`, `CliResultPayloadTests` and the concurrent-reader case. (not in the current review) |
 | IN-07 | info | open | - |
 | IN-08 | info | open | - |

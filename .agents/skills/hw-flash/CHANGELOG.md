@@ -1,6 +1,18 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-12 (WR-12)
+
+- Widened the credential scan to the copula form (`password is <value>`), a keyword
+  embedded after another word (`userpassword = <value>`), and the `passphrase` and `pwd`
+  keywords, so the helper matches the policy sentence.
+- Pinned the four new shapes in `REVIEW_SHAPES`, added a named assignment test, and added
+  an ordinary-word negative test (`the cpwd tool reports ready`, `author wrote nothing
+  here`) bounding the false-positive trade.
+- Asserted that a credential match creates no `.skill-state` directory, proving the scan
+  runs before the filesystem is touched.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-11 (CR-03, IN-06)
 
 - Announced `[--baud <n>]` in both `hw-flash` capture commands, named `--baud` as the
