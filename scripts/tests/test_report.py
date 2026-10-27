@@ -33,7 +33,15 @@ PACKAGE = REPO_ROOT / "scripts" / "report"
 # The seven contracted tables as literals a test can mutate in one place.
 SECTION_ONE_TABLE = (
     "| Field | Value |\n|-------|-------|\n"
-    "| Homework ID | `1_3-good` |\n| Title | Good homework |\n"
+    "| Homework ID | `1_3-good` |\n"
+    "| Title | Good homework |\n"
+    "| Board | ESP32-S3-DevKitC-1 (N16R8: 16 MB flash, 8 MB octal PSRAM) |\n"
+    "| Framework | Arduino |\n"
+    "| Language | C++ composition root; pure C pattern library |\n"
+    "| PlatformIO Core | 6.2.0 |\n"
+    "| Platform | `platformio/espressif32` 8.0.0 |\n"
+    "| Homework status | `in-progress` |\n"
+    "| Report status | `draft` |\n"
     "| Implementation commit | `9e1238d` |"
 )
 
@@ -490,6 +498,146 @@ class LifecycleTests(FixtureBase):
             if ": ERROR " in line or ": OK — " in line
         ]
         self.assertEqual(len(text_records), len(json.loads(json_result.stdout)))
+
+
+class IdentityTests(FixtureBase):
+    """`RPT-401`/`RPT-402`/`RPT-403`: identity against normalized metadata."""
+
+    def section_one(self, old, new):
+        return compliant_report(
+            sections={"1. Title and Metadata": SECTION_ONE_TABLE.replace(old, new)}
+        )
+
+    def test_identity_live_report_identity_matches(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-401", "RPT-402", "RPT-403"})
+
+    def test_identity_compliant_fixture_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_identity_h1_mismatch_reports_rpt_401(self):
+        report = compliant_report().replace("# Good homework", "# Another title", 1)
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-401]")
+        self.assertIn("does not match homework.yaml title", result.stdout)
+
+    def test_identity_missing_h1_reports_rpt_401(self):
+        report = compliant_report().replace("# Good homework\n", "", 1)
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-401]")
+        self.assertIn("expected exactly one", result.stdout)
+
+    def test_identity_duplicate_h1_reports_rpt_401(self):
+        report = compliant_report().replace(
+            "# Good homework\n", "# Good homework\n\n# Second title\n", 1
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-401]")
+        self.assertIn("expected exactly one", result.stdout)
+
+    def test_identity_homework_id_mismatch_reports_rpt_402_naming_field(self):
+        report = self.section_one("`1_3-good`", "`1_3-other`")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-402]")
+        self.assertIn('"Homework ID"', result.stdout)
+        self.assertIn("expected '1_3-good'", result.stdout)
+
+    def test_identity_title_cell_mismatch_reports_rpt_402_naming_field(self):
+        report = self.section_one("| Title | Good homework |", "| Title | Another title |")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-402]")
+        self.assertIn('"Title"', result.stdout)
+
+    def test_identity_homework_status_mismatch_reports_rpt_402(self):
+        report = self.section_one("`in-progress`", "`complete`")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-402]")
+        self.assertIn('"Homework status"', result.stdout)
+
+    def test_identity_report_status_mismatch_reports_rpt_402(self):
+        report = self.section_one("| Report status | `draft` |", "| Report status | `complete` |")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-402]")
+        self.assertIn('"Report status"', result.stdout)
+
+    def test_identity_backticked_report_status_passes(self):
+        # Both the backticked cell the worked example uses and a plain cell
+        # compare equal after `normalize_cell`.
+        self.write_homework()
+        for cell in ("`draft`", "draft"):
+            with self.subTest(cell=cell):
+                report = self.section_one(
+                    "| Report status | `draft` |", f"| Report status | {cell} |"
+                )
+                self.write_report(report)
+                self.assert_accepted(self.run_fixture())
+
+    def test_identity_framework_case_insensitive_passes(self):
+        report = self.section_one("| Framework | Arduino |", "| Framework | arduino |")
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_identity_framework_mismatch_reports_rpt_403_naming_field(self):
+        report = self.section_one("| Framework | Arduino |", "| Framework | ESP-IDF |")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-403]")
+        self.assertIn('"Framework"', result.stdout)
+
+    def test_identity_platformio_core_mismatch_reports_rpt_403(self):
+        report = self.section_one("| PlatformIO Core | 6.2.0 |", "| PlatformIO Core | 6.1.0 |")
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-403]")
+        self.assertIn('"PlatformIO Core"', result.stdout)
+
+    def test_identity_platform_spellings_compare_equal(self):
+        report = self.section_one(
+            "`platformio/espressif32` 8.0.0",
+            "espressif32@8.0.0",
+        )
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_identity_platform_mismatch_reports_rpt_403(self):
+        report = self.section_one(
+            "`platformio/espressif32` 8.0.0",
+            "`platformio/espressif32` 7.0.0",
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-403]")
+        self.assertIn('"Platform"', result.stdout)
+
+    def test_identity_board_and_language_display_prose_passes(self):
+        # The default fixture writes a prose board description and a prose
+        # language cell against a slug and a `cpp`; neither is compared.
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
 
 
 class PinMapTests(FixtureBase):

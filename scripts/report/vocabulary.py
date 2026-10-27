@@ -269,4 +269,20 @@ RULES = {
         "a reference entry is never cited in sections 1-9 or the appendix",
         "cite the entry in the body, or remove an unused reference",
     ),
+    # --- Document integrity family (plan 10-04) ---
+    "RPT-401": (
+        "the document does not carry exactly one level-1 heading, or it does "
+        "not match homework.yaml title",
+        "write one `# <title>` heading whose text equals homework.yaml `title`",
+    ),
+    "RPT-402": (
+        "a section-1 identity cell does not equal its homework.yaml value",
+        "set `Homework ID`, `Title`, `Homework status`, and `Report status` to "
+        "`id`, `title`, `status`, and `report.status`",
+    ),
+    "RPT-403": (
+        "a section-1 toolchain cell does not equal its homework.yaml value",
+        "write `Framework`, `PlatformIO Core`, and `Platform` from "
+        "`framework` and `toolchain.platformio`/`toolchain.platform`",
+    ),
 }
