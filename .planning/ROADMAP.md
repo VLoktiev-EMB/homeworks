@@ -501,7 +501,12 @@ Plans:
   5. The pull request passes CI and the merged commit is tagged `hw/1_3-police-flasher`.
   6. The Phase 4.2 friction log is closed: every automation candidate has a phase or a recorded decision not to build it.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [x] 11-01-PLAN.md — Generic infrastructure decoupling: eliminate hardcoded 1_3-police-flasher paths and comments
+- [x] 11-02-PLAN.md — Firmware transition logging and Wokwi simulation button scenario expansion
+- [x] 11-03-PLAN.md — Report contract finalization, Schemdraw embedding, friction log closure, and release gate
 
 ## Progress
 
@@ -519,12 +524,13 @@ Phase 4.1 trims ceremony; Phase 4.2 runs the tracer and produces the friction lo
 | 4.2. Tracer Homework 1.3 | 11/11 | Complete    | 2026-10-25 |
 | 5. Generated Views and Documentation Site | 9/9 | Complete    | 2026-10-26 |
 | 6. Developer Experience and Quality Layering | 6/6 | Complete    | 2026-10-26 |
+| 06.1. Shared-library IntelliSense compile database | 1/1 | Complete | 2026-10-26 |
 | 7. Simulation Spike | 4/4 | Complete    | 2026-10-26 |
 | 8. Fast CI | 4/4 | Complete    | 2026-10-26 |
 | 9. Agent Workflow and Skills | 19/19 | Complete    | 2026-10-27 |
 | 10. Report and Evidence System | 12/12 | Complete    | 2026-10-27 |
 | 10.1. Lean DX and Schematic Automation | 3/3 | Complete    | 2026-10-27 |
-| 11. Pilot Homework 1.3 — Finalization | 0/TBD | Not started | - |
+| 11. Pilot Homework 1.3 — Finalization | 3/3 | Complete    | 2026-10-28 |
 
 ## Backlog
 
