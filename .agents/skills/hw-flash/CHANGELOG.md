@@ -1,6 +1,19 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-14 (RR-CR-01)
+
+- Widened the credential-shape scan to a keyword followed by identifier characters,
+  so `secretKey: <value>`, `secret_key = <value>`, `passwordHash: <value>` and
+  `SECRET_KEY = <value>` now match; the space-separated copula branch and its
+  six-character floor are unchanged.
+- Pinned the four shapes in `IDENTIFIER_SUFFIXED_ASSIGNMENTS` with their own named
+  test, and added the end-to-end refusal test proving an identifier-suffixed
+  credential leaves no log and no `.skill-state` directory.
+- Named the suffix form in the shared capture exception and the helper docstring, and
+  regenerated the `.agents/skills/` mirror rather than editing it.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-13 (WR-10, WR-11)
 
 - Rejected a non-finite, non-positive or above-`MAX_SECONDS` `--seconds` with a
