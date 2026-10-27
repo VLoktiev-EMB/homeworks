@@ -79,8 +79,13 @@ resolution, so it cannot prove the paths. Run the command with
 WebSocket connection or token stage without a real credential. The only token value
 that belongs in this file is `dummy`; never write a real token here.
 `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` validates the
-wiring without one. The scenario has since been executed: all three counted runs exited 0 with
-one `pattern ready` line each, so `simulation.status` in `homework.yaml` is `verified`. The
-commands and per-run values are in
+wiring without one.
+
+The scenario exercises complete interactive behavior within ~1.2s of simulation time:
+- Boot check: asserts `pattern ready` serial message and confirms GPIO4 drives HIGH during frame 0.
+- Short button press: sets `btn1` pressed for 50 ms (debounced), asserting transition to `mode: double_flash`.
+- Long button press: sets `btn1` pressed for 650 ms (holding past 600 ms), asserting transition to `speed: fast`.
+
+The commands and evidence are recorded in the report and in
 `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool decision is in
 `docs/decisions/0014-simulator-selection.md`.

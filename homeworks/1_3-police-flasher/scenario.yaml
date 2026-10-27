@@ -10,3 +10,27 @@ steps:
       part-id: esp
       name: 4
       value: 1
+
+  # Short press on btn1: advances mode from ALTERNATING to DOUBLE_FLASH
+  - set-control:
+      part-id: btn1
+      name: pressed
+      value: 1
+  - delay: 50ms
+  - set-control:
+      part-id: btn1
+      name: pressed
+      value: 0
+  - wait-serial: "mode: double_flash"
+
+  # Long press on btn1: advances speed from normal (400ms) to fast (200ms)
+  - set-control:
+      part-id: btn1
+      name: pressed
+      value: 1
+  - delay: 650ms
+  - set-control:
+      part-id: btn1
+      name: pressed
+      value: 0
+  - wait-serial: "speed: fast"

@@ -7,6 +7,7 @@
 #include "common/timing.h"
 #include "pattern/pattern.h"
 #include "port/gpio.h"
+#include "port/log.h"
 #include "port/status.h"
 #include "port/time.h"
 
@@ -51,6 +52,7 @@ typedef struct pattern_controller {
     pattern_pin_output_t output_a;
     pattern_pin_output_t output_b;
     pattern_pin_output_t output_c;
+    port_log_t log;
     bool ready;
     port_status_t status;
 } pattern_controller_t;
@@ -60,6 +62,10 @@ typedef struct pattern_controller {
    callback is PORT_ERR_INVALID_ARG. */
 port_status_t pattern_controller_init(pattern_controller_t *controller, const pattern_controller_config_t *config,
                                       port_gpio_t gpio, port_time_t time);
+
+/* Attach an optional logger for state transitions. A zeroed port_log_t or a
+   NULL controller is a safe no-op. */
+void pattern_controller_set_logger(pattern_controller_t *controller, port_log_t log);
 
 /* One non-blocking step: debounce the button, act on a short or long press,
    advance at most one frame, and apply the changed outputs. A NULL or unready
