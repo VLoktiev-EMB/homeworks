@@ -457,6 +457,20 @@ class CaptureAndStoreTests(unittest.TestCase):
         self.assertFalse(self.log_path.exists())
         self.assertFalse((self.root / ".skill-state").exists())
 
+    def test_a_space_separated_compound_credential_child_writes_nothing(self) -> None:
+        argv = [
+            sys.executable,
+            "-c",
+            child_that_writes(b"SECRET KEY: hunter2\r\n"),
+        ]
+
+        with self.assertRaises(serial_capture.CaptureFailed) as caught:
+            serial_capture.capture_and_store(self.root, HOMEWORK, argv, 0.4)
+
+        self.assertIn("credential", str(caught.exception))
+        self.assertFalse(self.log_path.exists())
+        self.assertFalse((self.root / ".skill-state").exists())
+
     def test_an_empty_child_writes_nothing(self) -> None:
         argv = [sys.executable, "-c", "import time; time.sleep(10)"]
 

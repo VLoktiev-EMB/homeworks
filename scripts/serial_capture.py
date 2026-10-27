@@ -136,7 +136,10 @@ USB_HWID = re.compile(r"USB VID:PID=([0-9A-Fa-f]{4}):([0-9A-Fa-f]{4})")
 # as `secret is` unmatched. Occasional false positives are accepted, because a
 # match writes nothing and reports `capture unavailable`, and a match on a
 # benign boot log is a regression the suite forbids.
-_KEYWORDS = rb"(?:authorization|auth|token|secret|pass(?:word|wd|phrase)|pwd|api[ _-]?key)"
+_KEYWORDS = (
+    rb"(?:authorization|auth|token|secret(?:[ _-]?key)?|pass(?:word|wd|phrase)"
+    rb"|pwd|api[ _-]?key)"
+)
 
 CREDENTIAL = re.compile(
     rb"(?i)"
