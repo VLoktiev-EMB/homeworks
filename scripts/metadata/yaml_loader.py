@@ -26,23 +26,19 @@ from yaml.composer import ComposerError
 from yaml.constructor import ConstructorError
 
 
-class StrictSafeLoader(yaml.SafeLoader):
-    """A `SafeLoader` that rejects a duplicated mapping key and deep nesting.
+class DepthBoundedLoaderMixin:
+    """A mixin for PyYAML loaders that bounds composer recursion depth (CR-01, CR-05).
 
-    PyYAML silently keeps the last value of a repeated key, so a duplicated
-    `source:` or `toolchain:` block would override the first one without a
-    trace. This loader turns that into a parse error, which the caller reports
-    as an ERROR record at exit 1.
-
-    Nesting is bounded at `MAX_DEPTH`, which is generous for a metadata
-    document (the deepest shipped block is about four levels). A document that
-    needs more is a contract change, not a reason to raise the bound quietly.
+    PyYAML's composer recurses once per nested sequence or mapping. A document
+    with many nested flow sequences exhausts the Python recursion limit. This
+    mixin bounds nesting depth at `MAX_DEPTH` (default 64) and raises
+    `ComposerError`, a `yaml.YAMLError`.
     """
 
     MAX_DEPTH = 64
 
-    def __init__(self, stream):
-        super().__init__(stream)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._node_depth = 0
 
     def compose_node(self, parent, index):
@@ -62,6 +58,21 @@ class StrictSafeLoader(yaml.SafeLoader):
             return super().compose_node(parent, index)
         finally:
             self._node_depth -= 1
+
+
+class StrictSafeLoader(DepthBoundedLoaderMixin, yaml.SafeLoader):
+    """A `SafeLoader` that rejects a duplicated mapping key and deep nesting.
+
+    PyYAML silently keeps the last value of a repeated key, so a duplicated
+    `source:` or `toolchain:` block would override the first one without a
+    trace. This loader turns that into a parse error, which the caller reports
+    as an ERROR record at exit 1.
+
+    Nesting is bounded at `MAX_DEPTH` (inherited from `DepthBoundedLoaderMixin`),
+    which is generous for a metadata document (the deepest shipped block is about
+    four levels). A document that needs more is a contract change, not a reason
+    to raise the bound quietly.
+    """
 
     def construct_mapping(self, node, deep=False):
         seen = set()

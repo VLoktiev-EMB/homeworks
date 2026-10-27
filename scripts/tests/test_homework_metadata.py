@@ -103,6 +103,7 @@ ASSETS_CHUNK = "assets:\n  - assets/wiring.png\n"
 # CR-01: ~2 KB of valid YAML syntax with 1,000 nested flow sequences. It sits
 # inside the 64 KiB input bound, so only a nesting bound turns it into a record.
 DEEP_YAML = "title: " + "[" * 1000 + "]" * 1000 + "\n"
+DEEP_FRONTMATTER = "---\nkey: " + "[" * 1000 + "]" * 1000 + "\n---\n# Task\n"
 
 # The scaffolded skeleton (D-39). `TODO` is literal and legal only while the
 # homework is `status: planned`; no timestamp is ever rendered (Pitfall P10).
@@ -901,6 +902,33 @@ class HostileNestingTests(FixtureBase):
         self.assertIn(": ERROR — ", result.stdout, combined(result))
         self.assertIn("nesting depth", result.stdout, combined(result))
         self.assertNotIn("Traceback", combined(result))
+
+    def test_deeply_nested_task_frontmatter_is_an_error_record_not_a_traceback(self):
+        self.write_homework(task_text=DEEP_FRONTMATTER)
+        result = self.run_fixture()
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertIn(": ERROR — ", result.stdout, combined(result))
+        self.assertIn("nesting depth", result.stdout, combined(result))
+        self.assertNotIn("Traceback", combined(result))
+
+    def test_deeply_nested_task_frontmatter_json_contract(self):
+        self.write_homework(task_text=DEEP_FRONTMATTER)
+        result = self.run_fixture("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        records = json.loads(result.stdout)
+        self.assertIsInstance(records, list)
+        self.assertTrue(records, result.stdout)
+        matching = [
+            item
+            for item in records
+            if item.get("path") == "homeworks/1_3-good/task.md"
+            and item.get("status") == "ERROR"
+            and "nesting depth" in item.get("reason", "")
+        ]
+        self.assertTrue(matching, records)
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual({"path", "status", "reason"}, set(item))
 
 
 class ToolchainTests(FixtureBase):

@@ -62,7 +62,7 @@ from scripts.metadata.paths import (
     relative_path,
     resolve_root,
 )
-from scripts.metadata.yaml_loader import StrictSafeLoader
+from scripts.metadata.yaml_loader import DepthBoundedLoaderMixin, StrictSafeLoader
 
 # The names above are re-exports, not second definitions (D-19, T-5-28): callers
 # import them from here, so they must survive a linter that cannot see those
@@ -100,13 +100,14 @@ class FrontmatterError(Exception):
     """A content problem in a `task.md`, reported as an ERROR record (exit 1)."""
 
 
-class StrictBaseLoader(yaml.BaseLoader):
-    """A `BaseLoader` that rejects a duplicated mapping key (Pitfall P2).
+class StrictBaseLoader(DepthBoundedLoaderMixin, yaml.BaseLoader):
+    """A `BaseLoader` that rejects a duplicated mapping key (Pitfall P2) and deep nesting (CR-05).
 
     `BaseLoader` resolves every scalar to a string, so an unquoted ISO
     timestamp stays text instead of becoming a `datetime` before validation.
     The duplicate-key rejection mirrors `StrictSafeLoader`: a repeated
     `source_url:` or `license:` must not silently keep the last value.
+    Nesting is bounded at `MAX_DEPTH` (64) via `DepthBoundedLoaderMixin`.
     """
 
     def construct_mapping(self, node, deep=False):
@@ -177,7 +178,9 @@ def parse_task_frontmatter(text):
 
     try:
         document = yaml.load(block, Loader=StrictBaseLoader)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError) as exc:
+        # DepthBoundedLoaderMixin raises ComposerError (a yaml.YAMLError);
+        # RecursionError is caught as defence in depth (T-10-33).
         raise FrontmatterError(f"invalid YAML frontmatter: {_one_line(exc)}") from exc
     if not isinstance(document, dict):
         raise FrontmatterError("task.md frontmatter is not a YAML mapping")
