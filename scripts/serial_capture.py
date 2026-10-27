@@ -45,19 +45,24 @@ Usage:
   uv run scripts/serial_capture.py --id ID [--env NAME] [--baud N]
                                    [--seconds SECONDS] [--dir PATH] [--json]
 
+`--seconds` must be a positive finite number no greater than `MAX_SECONDS`
+(600); anything else is a usage error, decided before any process starts.
+
 Exit codes (the vocabulary shared with `check_metadata.py`, D-23):
   0  the bound was reached and the log was written
   1  `capture unavailable` — the command could not start, exited before the
      bound, produced no bytes, matched the credential scan, or the write was
      refused
   2  usage or environment error (an invalid id, environment, baud or duration,
-     an unresolvable repository root)
+     a duration outside the positive-finite bound, an unresolvable repository
+     root)
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import pty
 import re
@@ -75,6 +80,9 @@ from scripts.metadata.errors import CheckError  # noqa: E402
 from scripts.metadata.paths import HOMEWORK_ID, relative_path, resolve_root  # noqa: E402
 
 DEFAULT_SECONDS = 20
+# A sanity cap on the requested bound, not the designed capture length: a
+# huge finite value overflows the same `select` timeout a non-finite one does.
+MAX_SECONDS = 600
 READ_SIZE = 4096
 LOG_PARTS = (".skill-state", "logs")
 
@@ -132,6 +140,7 @@ def capture_pty(argv: list[str], seconds: float) -> bytes:
         master, slave = pty.openpty()
     except OSError as exc:
         raise CaptureFailed(f"command cannot start: {exc}") from exc
+    process = None
     try:
         try:
             tty.setraw(slave)
@@ -170,6 +179,8 @@ def capture_pty(argv: list[str], seconds: float) -> bytes:
                 raise CaptureFailed(f"command exited {code} before the bound")
             chunks.append(chunk)
     finally:
+        if process is not None:
+            _terminate(process)
         os.close(master)
 
 
@@ -314,8 +325,10 @@ def main(argv: list[str] | None = None) -> int:
             raise CheckError(f"invalid environment name {args.env!r}")
         if args.baud is not None and args.baud <= 0:
             raise CheckError("--baud must be a positive integer")
-        if args.seconds <= 0:
-            raise CheckError("--seconds must be positive")
+        if not math.isfinite(args.seconds) or args.seconds <= 0 or args.seconds > MAX_SECONDS:
+            raise CheckError(
+                f"--seconds must be a positive finite number no greater than {MAX_SECONDS}"
+            )
         root = resolve_root(args.dir)
         command = _build_command(args)
         path, count = capture_and_store(root, args.id, command, args.seconds)
