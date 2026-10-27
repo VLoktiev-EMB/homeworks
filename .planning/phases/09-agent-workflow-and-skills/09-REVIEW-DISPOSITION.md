@@ -103,9 +103,33 @@ findings:
     severity: info
     disposition: open
     title: "The `gen-skills-check` hook's `files` pattern is untested"
-open: 9
-total: 25
-recorded: 2026-10-26T23:39:09.858Z
+  - id: RR-CR-01
+    severity: critical
+    disposition: open
+    title: "The widened credential scan still persists `secretKey` / `secret_key` / `passwordHash` assignments"
+  - id: RR-WR-01
+    severity: warning
+    disposition: open
+    title: "The reaping `finally` can hang the bounded capture and mask the original failure"
+  - id: RR-IN-01
+    severity: info
+    disposition: open
+    title: "The announced capture command still is not the executed one on the default duration"
+  - id: RR-IN-02
+    severity: info
+    disposition: open
+    title: "The helper's new exit-2 usage error is outside the skill's outcome states"
+  - id: RR-IN-03
+    severity: info
+    disposition: open
+    title: "`CliDurationTests` does not prove the ordering the must-have claims"
+  - id: RR-IN-04
+    severity: info
+    disposition: open
+    title: "The copula branch now refuses ordinary status lines, and the docstring overstates the negative coverage"
+open: 15
+total: 31
+recorded: 2026-10-27T00:15:41Z
 ---
 
 # Phase 09: Code Review Disposition
@@ -137,6 +161,17 @@ recorded: 2026-10-26T23:39:09.858Z
 | IN-03 | info | open | - (not in the current review) |
 | IN-04 | info | open | - (not in the current review) |
 | IN-05 | info | open | - (not in the current review) |
+| RR-CR-01 | critical | open | Gap-closure re-review `cc5fff3..HEAD`; the reviewer's own `CR-01`. Confirmed by the orchestrator: `find_credential` returns False for `{"secretKey": "hunter2"}`, `secret_key = hunter2` and `passwordHash: abcdef`. |
+| RR-WR-01 | warning | open | Gap-closure re-review; the reviewer's own `WR-01`. |
+| RR-IN-01 | info | open | Gap-closure re-review; the reviewer's own `IN-01`. |
+| RR-IN-02 | info | open | Gap-closure re-review; the reviewer's own `IN-02`. |
+| RR-IN-03 | info | open | Gap-closure re-review; the reviewer's own `IN-03`. |
+| RR-IN-04 | info | open | Gap-closure re-review; the reviewer's own `IN-04`. Confirmed by the orchestrator: `password is required`, `auth is required` and `pwd directory` now match. |
+
+`RR-` rows come from the second review of this phase (`09-REVIEW.md`, reviewed 2026-10-27T00:15:41Z,
+covering only the gap-closure delta). The `RR-` prefix exists because that review restarted its ID
+series at `CR-01` / `WR-01` / `IN-01` and those ids already carry *fixed* decisions above; recording
+them verbatim would have dropped the earlier rows under the id-reuse rule below.
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
