@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-17, 09-18 (CR-01, WR-03)
+
+- The credential scan now admits a space-separated compound keyword, so
+  `SECRET KEY: <value>` and `secret key = <value>` are refused end to end and leave no log.
+- The shared guardrails name that compound shape and its single-separator bound, so the
+  policy and the scan agree.
+- The skill no longer restates the shared same-resolved-port rule and points at it once;
+  the operational port steps are unchanged.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-15, 09-16 (G-09-1)
 
 - The monitor now opens the port with `--dtr 0 --rts 0`, so the ESP32-S3 application
