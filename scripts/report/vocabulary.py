@@ -102,6 +102,17 @@ EVIDENCE_LABELS = frozenset(
     }
 )
 
+# D-10: the display order the failure messages print. The frozenset above is
+# the membership set; this tuple only keeps the wording stable and readable.
+EVIDENCE_LABEL_ORDER = (
+    "measured",
+    "calculated",
+    "simulated",
+    "datasheet",
+    "not measured",
+    "measured (observed)",
+)
+
 # REPORT-01 ... REPORT-08: the report requirements the traceability matrix covers.
 REPORT_REQUIREMENTS = tuple(f"REPORT-0{index}" for index in range(1, 9))
 
@@ -198,5 +209,31 @@ RULES = {
         "malformed",
         "restore a readable `assets/diagram.json` with a `parts` list, or mark "
         "the bill of materials not applicable",
+    ),
+    # --- Evidence family (plan 10-03) ---
+    # `RPT-302` is deliberately unregistered: it is reserved for a future
+    # bare-`observed`-in-prose rule and must stay absent from this registry
+    # until that rule is specified. Do not renumber the surrounding ids.
+    "RPT-301": (
+        "a ledger row carries a label outside the evidence vocabulary",
+        "use one of measured, calculated, simulated, datasheet, not measured, "
+        "or measured (observed); `observed` alone is never a label",
+    ),
+    "RPT-303": (
+        "a ledger value does not carry the prefix its label requires",
+        "begin a `not measured` value with `not measured: <reason>`, a "
+        "`measured` value with `user-reported:` or `serial-log:`, and a "
+        "`measured (observed)` value with `serial-log:`",
+    ),
+    "RPT-304": (
+        "a ledger implementation commit is malformed or differs from section 1",
+        "record the same 7-40 character lowercase hex commit in section 1 and "
+        "in every ledger row",
+    ),
+    "RPT-305": (
+        "a ledger row does not carry the provenance depth its label requires",
+        "cite an `[N]` source for a `datasheet` row, name a `C-NN` calculation "
+        "for a `calculated` row, name a scenario or run artifact for a "
+        "`simulated` row, and name an instrument for a `measured` row",
     ),
 }

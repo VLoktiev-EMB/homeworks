@@ -30,7 +30,9 @@ PACKAGE = REPO_ROOT / "scripts" / "report"
 
 # The seven contracted tables as literals a test can mutate in one place.
 SECTION_ONE_TABLE = (
-    "| Field | Value |\n|-------|-------|\n| Homework ID | `1_3-good` |\n| Title | Good homework |"
+    "| Field | Value |\n|-------|-------|\n"
+    "| Homework ID | `1_3-good` |\n| Title | Good homework |\n"
+    "| Implementation commit | `9e1238d` |"
 )
 
 ASSUMPTIONS_TABLE = (
@@ -747,6 +749,160 @@ class BomTests(FixtureBase):
             with_diagram=False,
         )
         self.assert_accepted(self.run_fixture())
+
+
+class LedgerTests(FixtureBase):
+    """`RPT-301`/`RPT-303`/`RPT-304`/`RPT-305`: the measurement ledger columns."""
+
+    def ledger_report(self, replacements):
+        body = SECTION_BODIES["7. Results"]
+        for old, new in replacements:
+            body = body.replace(old, new)
+        return compliant_report(sections={"7. Results": body})
+
+    def test_ledger_compliant_report_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_ledger_bare_observed_label_reports_rpt_301_naming_row_and_label(self):
+        report = self.ledger_report(
+            [("| not measured | multimeter |", "| observed | multimeter |")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-301]")
+        self.assertIn('ledger row "L-01" has label "observed"', result.stdout)
+
+    def test_ledger_empty_label_reports_rpt_301(self):
+        report = self.ledger_report(
+            [("| not measured | multimeter |", "|  | multimeter |")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-301]")
+        self.assertIn('ledger row "L-01" has label ""', result.stdout)
+
+    def test_ledger_not_measured_value_without_reason_reports_rpt_303(self):
+        report = self.ledger_report(
+            [("not measured: bench offline", "bench offline")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('begin "not measured:" with a reason', result.stdout)
+
+    def test_ledger_measured_value_without_prefix_reports_rpt_303(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured | multimeter |"),
+                ("not measured: bench offline", "3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('"user-reported:" or "serial-log:"', result.stdout)
+
+    def test_ledger_measured_observed_value_without_serial_log_reports_rpt_303(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured (observed) | multimeter |"),
+                ("not measured: bench offline", "3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('measured (observed) value must begin "serial-log:"', result.stdout)
+
+    def test_ledger_differing_commit_reports_rpt_304_naming_the_row(self):
+        report = self.ledger_report(
+            [
+                (
+                    "| not applicable: no reading | `9e1238d` |",
+                    "| not applicable: no reading | `abcdef0` |",
+                )
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-304]")
+        self.assertIn('ledger row "L-01" "Implementation commit"', result.stdout)
+        self.assertIn("does not match the section-1 commit", result.stdout)
+
+    def test_ledger_non_hex_section_commit_reports_rpt_304(self):
+        report = compliant_report(
+            sections={
+                "1. Title and Metadata": SECTION_ONE_TABLE.replace(
+                    "| Implementation commit | `9e1238d` |",
+                    "| Implementation commit | `zzzzzzz` |",
+                )
+            }
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-304]")
+        self.assertIn("lowercase hex string", result.stdout)
+
+    def test_ledger_calculated_without_calculation_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| calculated | multimeter |"),
+                ("| DC volts across the rail |", "| computed from the formula |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("calculated row must name a C-NN calculation", result.stdout)
+
+    def test_ledger_datasheet_without_citation_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| datasheet | none |"),
+                ("| DC volts across the rail |", "| manufacturer ratings |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("datasheet row must cite an [N] source", result.stdout)
+
+    def test_ledger_simulated_without_path_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| simulated | Wokwi |"),
+                ("| DC volts across the rail |", "| the scenario expectation |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("simulated row must name a scenario or run-artifact path", result.stdout)
+
+    def test_ledger_measured_without_instrument_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured | none |"),
+                ("not measured: bench offline", "user-reported: 3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn('measured row must name an instrument other than "none"', result.stdout)
 
 
 if __name__ == "__main__":
