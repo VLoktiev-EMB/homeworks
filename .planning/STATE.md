@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-10-27)
 
 Phase: 10 — Report and Evidence System
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-27 — Phase 09 complete, transitioned to Phase 10
+Status: Ready to plan — Phase 09 shipped as PR #21
+Last activity: 2026-10-27 — Phase 09 complete and shipped as PR #21; Phase 10 ready to plan
 
 Progress: [████████████████████] 92/92 plans (100%)
 
