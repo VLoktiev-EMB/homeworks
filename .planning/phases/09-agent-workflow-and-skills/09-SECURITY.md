@@ -67,6 +67,12 @@ created: "2026-10-27"
 | T-09-30 | Information disclosure | `.skill-state/logs/<id>.log` write path | high | mitigate | Scan of the exact bytes before any file is created; on a match write nothing, report `capture unavailable`. | closed |
 | T-09-31 | Tampering / Spoofing | resolved baud and monitor exit code | medium | mitigate | Baud resolved from `pio project config --json-output`, stop when absent; `returncode` checked. | closed |
 | T-09-32 | Tampering | `templates/views/shared-ini.ini.tmpl` -> `platformio.shared.ini` | medium | mitigate | Template is the only edit surface; `gen-views-check` fails on drift; `SharedIniTests` pins the baud. | closed |
+| T-09-38 | Tampering / Repudiation | `hw-flash` consent gate and capture command | high | mitigate | Both announced commands carry `[--baud <n>]`; the prose names `--baud` as the helper option and `-b` only as the forwarded monitor flag; `BuildCommandTests` pin the `-b` argv; the mirror is regenerated so no client sees the stale flag. | closed |
+| T-09-39 | Information disclosure | CLI result payload | low | mitigate | The payload prints only the repository-relative path, status, reason and byte count; never captured bytes, the matched span or stderr; `CliResultPayloadTests` assert the exact payload keys. | closed |
+| T-09-40 | Information disclosure | `find_credential` and the sole capture exception | high | mitigate | `_KEYWORDS` widened to `pass(?:word|wd|phrase)` and `pwd`, leading lookbehind dropped, copula admitted; four shapes plus a benign-negative set pinned; the exact bytes are scanned before any file exists; a match writes nothing and reports `capture unavailable`. | closed |
+| T-09-41 | Denial of service | widened scan false positives | low | accept | A widened scan can refuse a benign capture. Accepted: a refusal writes no log, leaves no `.state` directory, and reports a truthful `capture unavailable`; benign boot-log and ordinary-word tests bound the regression. | closed |
+| T-09-42 | Denial of service | `--seconds` parsing and the read loop | medium | mitigate | A non-finite, non-positive or above-`MAX_SECONDS` value is rejected with `CheckError` before `resolve_root`, `_build_command` or `Popen`; `CliDurationTests` assert exit 2 and no traceback. | closed |
+| T-09-43 | Resource exhaustion | `capture_pty` child lifecycle | medium | mitigate | Reap in the outer `finally`: kill a live child, then wait, on every exception path; `CaptureReapTests` assert the recorded child's `returncode` is set when a `RuntimeError` escapes. | closed |
 | T-09-SC | Tampering | package installs | low | accept | No package is installed; pinned tools only. | closed |
 
 *Status: open · closed · open — below high threshold (non-blocking)*
@@ -80,6 +86,7 @@ created: "2026-10-27"
 | Risk ID | Threat Ref | Rationale | Accepted By | Date |
 |---------|------------|-----------|-------------|------|
 | R-09-01 | T-09-SC | The phase installs no package; it runs the already-pinned PlatformIO Core, pre-commit, and the stdlib Python suite. | project maintainer | 2026-10-27 |
+| R-09-02 | T-09-41 | Widening the credential scan trades a bounded false-positive rate for fewer misses. A refusal writes no log and leaves no state directory, so the failure mode is a truthful `capture unavailable`, not a leak. Severity is low, below the `high` block threshold. | project maintainer | 2026-10-27 |
 
 ---
 
@@ -99,3 +106,11 @@ created: "2026-10-27"
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-27
+
+## Security Audit 2026-10-27
+
+| Metric | Count |
+|---|---|
+| Threats found | 39 |
+| Closed | 39 |
+| Open | 0 |
