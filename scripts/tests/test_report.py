@@ -17,11 +17,13 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.report import markdown
 from scripts.report.vocabulary import REPORT_HEADINGS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +32,9 @@ PACKAGE = REPO_ROOT / "scripts" / "report"
 
 # The seven contracted tables as literals a test can mutate in one place.
 SECTION_ONE_TABLE = (
-    "| Field | Value |\n|-------|-------|\n| Homework ID | `1_3-good` |\n| Title | Good homework |"
+    "| Field | Value |\n|-------|-------|\n"
+    "| Homework ID | `1_3-good` |\n| Title | Good homework |\n"
+    "| Implementation commit | `9e1238d` |"
 )
 
 ASSUMPTIONS_TABLE = (
@@ -75,7 +79,9 @@ LEDGER_TABLE = (
 TRACEABILITY_TABLE = (
     "| ID | Claim or requirement | Design artifact | Verification method | Evidence | Status |\n"
     "|----|----------------------|-----------------|---------------------|----------|--------|\n"
-    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |"
+    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |\n"
+    "| T-02 | Report contract REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, "
+    "REPORT-06, REPORT-07, REPORT-08 | `report.md` | manual review | this report | manual |"
 )
 
 # The body of every numbered section. A test mutates one entry or drops one
@@ -87,7 +93,7 @@ SECTION_BODIES = {
     "3. Assumptions": (
         "Each assumption names its consequence and validation.\n\n" + ASSUMPTIONS_TABLE
     ),
-    "4. Theory": "The theory.\n\n### Limitations\n\nNone.",
+    "4. Theory": "The theory [1].\n\n### Limitations\n\nNone.",
     "5. Hardware and Wiring": (
         "The wiring.\n\n"
         "### Bill of Materials\n\n" + BOM_TABLE + "\n\n"
@@ -211,6 +217,13 @@ class FixtureBase(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
+    def write_artifact(self, relative, text="placeholder\n", homework_id=None):
+        homework_id = homework_id or self.homework_id
+        path = self.root / "homeworks" / homework_id / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
     def write_report(self, text=None, homework_id=None, with_diagram=True):
         homework_id = homework_id or self.homework_id
         path = self.root / "homeworks" / homework_id / "report.md"
@@ -218,6 +231,10 @@ class FixtureBase(unittest.TestCase):
         if text is None:
             text = compliant_report()
         path.write_text(text, encoding="utf-8")
+        # The fixture's traceability row names `platformio.ini`, so the file
+        # exists for RPT-307. This is the second artifact the fixture carries
+        # after the diagram, for the same reason: a rule now consumes it.
+        self.write_artifact("platformio.ini", homework_id=homework_id)
         if with_diagram:
             self.write_diagram(homework_id=homework_id)
         return path
@@ -747,6 +764,325 @@ class BomTests(FixtureBase):
             with_diagram=False,
         )
         self.assert_accepted(self.run_fixture())
+
+
+class LedgerTests(FixtureBase):
+    """`RPT-301`/`RPT-303`/`RPT-304`/`RPT-305`: the measurement ledger columns."""
+
+    def ledger_report(self, replacements):
+        body = SECTION_BODIES["7. Results"]
+        for old, new in replacements:
+            body = body.replace(old, new)
+        return compliant_report(sections={"7. Results": body})
+
+    def test_ledger_compliant_report_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_ledger_bare_observed_label_reports_rpt_301_naming_row_and_label(self):
+        report = self.ledger_report(
+            [("| not measured | multimeter |", "| observed | multimeter |")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-301]")
+        self.assertIn('ledger row "L-01" has label "observed"', result.stdout)
+
+    def test_ledger_empty_label_reports_rpt_301(self):
+        report = self.ledger_report(
+            [("| not measured | multimeter |", "|  | multimeter |")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-301]")
+        self.assertIn('ledger row "L-01" has label ""', result.stdout)
+
+    def test_ledger_not_measured_value_without_reason_reports_rpt_303(self):
+        report = self.ledger_report(
+            [("not measured: bench offline", "bench offline")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('begin "not measured:" with a reason', result.stdout)
+
+    def test_ledger_measured_value_without_prefix_reports_rpt_303(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured | multimeter |"),
+                ("not measured: bench offline", "3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('"user-reported:" or "serial-log:"', result.stdout)
+
+    def test_ledger_measured_observed_value_without_serial_log_reports_rpt_303(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured (observed) | multimeter |"),
+                ("not measured: bench offline", "3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-303]")
+        self.assertIn('measured (observed) value must begin "serial-log:"', result.stdout)
+
+    def test_ledger_differing_commit_reports_rpt_304_naming_the_row(self):
+        report = self.ledger_report(
+            [
+                (
+                    "| not applicable: no reading | `9e1238d` |",
+                    "| not applicable: no reading | `abcdef0` |",
+                )
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-304]")
+        self.assertIn('ledger row "L-01" "Implementation commit"', result.stdout)
+        self.assertIn("does not match the section-1 commit", result.stdout)
+
+    def test_ledger_non_hex_section_commit_reports_rpt_304(self):
+        report = compliant_report(
+            sections={
+                "1. Title and Metadata": SECTION_ONE_TABLE.replace(
+                    "| Implementation commit | `9e1238d` |",
+                    "| Implementation commit | `zzzzzzz` |",
+                )
+            }
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-304]")
+        self.assertIn("lowercase hex string", result.stdout)
+
+    def test_ledger_calculated_without_calculation_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| calculated | multimeter |"),
+                ("| DC volts across the rail |", "| computed from the formula |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("calculated row must name a C-NN calculation", result.stdout)
+
+    def test_ledger_datasheet_without_citation_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| datasheet | none |"),
+                ("| DC volts across the rail |", "| manufacturer ratings |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("datasheet row must cite an [N] source", result.stdout)
+
+    def test_ledger_simulated_without_path_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| simulated | Wokwi |"),
+                ("| DC volts across the rail |", "| the scenario expectation |"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn("simulated row must name a scenario or run-artifact path", result.stdout)
+
+    def test_ledger_measured_without_instrument_reports_rpt_305(self):
+        report = self.ledger_report(
+            [
+                ("| not measured | multimeter |", "| measured | none |"),
+                ("not measured: bench offline", "user-reported: 3.3 V"),
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-305]")
+        self.assertIn('measured row must name an instrument other than "none"', result.stdout)
+
+
+class TraceabilityTests(FixtureBase):
+    """`RPT-306`/`RPT-307`/`RPT-308`/`RPT-310`: the traceability matrix."""
+
+    def matrix_report(self, replacements):
+        table = TRACEABILITY_TABLE
+        for old, new in replacements:
+            table = table.replace(old, new)
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, table)
+        return compliant_report(sections={"7. Results": body})
+
+    def test_traceability_compliant_report_passes(self):
+        self.write_homework()
+        self.write_report()
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_live_report_resolves_artifacts(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-306", "RPT-307", "RPT-308"})
+
+    def test_traceability_invalid_status_reports_rpt_306(self):
+        report = self.matrix_report([("| verified |", "| done |")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-306]")
+        self.assertIn('traceability row "T-01" has status "done"', result.stdout)
+
+    def test_traceability_missing_artifact_reports_rpt_307(self):
+        report = self.matrix_report([("`platformio.ini`", "`lib/missing.c`")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-307]")
+        self.assertIn('Design artifact token "lib/missing.c" does not resolve', result.stdout)
+
+    def test_traceability_pending_row_is_exempt(self):
+        report = self.matrix_report(
+            [
+                (
+                    "| T-01 | Target build | `platformio.ini` | `pio run` | `SUCCESS` | verified |",
+                    "| T-01 | Target build | `lib/missing.c` | `pio run` | `SUCCESS` | pending |",
+                )
+            ]
+        )
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_escaping_token_reports_rpt_307(self):
+        report = self.matrix_report([("`platformio.ini`", "`../../../etc/passwd`")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-307]")
+        self.assertIn("../../../etc/passwd", result.stdout)
+
+    def test_traceability_command_token_splits_and_resolves(self):
+        report = self.matrix_report(
+            [("`platformio.ini`", "`pio run -d homeworks/1_3-good`")]
+        )
+        self.write_homework()
+        self.write_report(report)
+        self.assert_accepted(self.run_fixture())
+
+    def test_traceability_duplicate_id_reports_rpt_308(self):
+        report = self.matrix_report([("| T-02 |", "| T-01 |")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-308]")
+        self.assertIn('row id "T-01" is duplicated', result.stdout)
+
+    def test_traceability_missing_requirement_reports_rpt_310(self):
+        report = self.matrix_report([("REPORT-05, ", "")])
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        self.assertIn("does not cite REPORT-05", result.stdout)
+
+    def test_traceability_single_row_yields_seven_missing_requirements(self):
+        single = (
+            "| ID | Claim or requirement | Design artifact | Verification method | "
+            "Evidence | Status |\n"
+            "|----|----------------------|-----------------|---------------------|"
+            "----------|--------|\n"
+            "| T-01 | Report contract REPORT-01 | `report.md` | manual review | "
+            "this report | manual |"
+        )
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, single)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"7. Results": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        reasons = [line for line in result.stdout.splitlines() if "[RPT-310]" in line]
+        self.assertEqual(7, len(reasons))
+        ids = re.findall(r"REPORT-\d{2}", "\n".join(reasons))
+        self.assertEqual([f"REPORT-0{index}" for index in range(2, 9)], ids)
+
+    def test_traceability_zero_rows_reports_every_requirement(self):
+        header_only = "\n".join(TRACEABILITY_TABLE.splitlines()[:2])
+        body = SECTION_BODIES["7. Results"].replace(TRACEABILITY_TABLE, header_only)
+        self.write_homework()
+        self.write_report(compliant_report(sections={"7. Results": body}))
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-310]")
+        reasons = [line for line in result.stdout.splitlines() if "[RPT-310]" in line]
+        self.assertEqual(8, len(reasons))
+
+
+class CrossReferenceTests(FixtureBase):
+    """`RPT-309`/`RPT-311`/`RPT-312`: intra-report ids and IEEE citations."""
+
+    def test_cross_reference_live_report_has_six_references(self):
+        text = (REPO_ROOT / "homeworks" / "1_3-police-flasher" / "report.md").read_text(
+            encoding="utf-8"
+        )
+        lines = text.splitlines()
+        sections = markdown.sections(lines)
+        entries = markdown.reference_entries(lines, sections, "10. References")
+        self.assertEqual([1, 2, 3, 4, 5, 6], [number for number, _ in entries])
+        references = next(item for item in sections if item.heading.text == "10. References")
+        self.assertTrue(
+            all(
+                references.body_start <= line <= references.body_end
+                for _, line in entries
+            ),
+            "a reference entry was collected outside section 10",
+        )
+
+    def test_cross_reference_live_report_has_no_id_or_citation_records(self):
+        result = run_report_checker("--json")
+        self.assertEqual(1, result.returncode, combined(result))
+        rules = {item["rule"] for item in json.loads(result.stdout)}
+        self.assertEqual(set(), rules & {"RPT-309", "RPT-311", "RPT-312"})
+
+    def test_cross_reference_unresolved_id_reports_rpt_309(self):
+        report = compliant_report(sections={"2. Objective": "The objective refers to C-99."})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-309]")
+        self.assertIn('"C-99" does not resolve to a row in the C table', result.stdout)
+
+    def test_cross_reference_missing_entry_reports_rpt_311(self):
+        report = compliant_report(sections={"2. Objective": "The objective cites [7]."})
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-311]")
+        self.assertIn('citation [7] has no entry in "10. References"', result.stdout)
+
+    def test_cross_reference_uncited_entry_reports_rpt_312(self):
+        report = compliant_report(
+            sections={"10. References": "[1] A reference.\n\n[6] An uncited reference."}
+        )
+        self.write_homework()
+        self.write_report(report)
+        result = self.run_fixture()
+        self.assert_rejected(result, "[RPT-312]")
+        self.assertIn("reference entry [6] is never cited", result.stdout)
 
 
 if __name__ == "__main__":

@@ -105,3 +105,46 @@ def paragraph_starts(lines, start, end):
 def paragraph_begins_with(lines, start, end, prefix):
     """True when some paragraph in the range starts with *prefix*."""
     return any(text.lstrip().startswith(prefix) for _, text in paragraph_starts(lines, start, end))
+
+
+# An IEEE reference entry: `[N] ` at a paragraph start.
+REFERENCE_ENTRY = re.compile(r"^\[(\d+)\]\s")
+
+# An in-text citation token.
+CITATION = re.compile(r"\[(\d+)\]")
+
+
+def reference_entries(lines, sections, heading):
+    """Return `(number, line)` for each reference entry inside *heading*.
+
+    Entries are collected only from the named section, and only at paragraph
+    starts. A hard-wrapped continuation line that happens to begin `[N] ` is
+    therefore never mistaken for a seventh entry (Pitfall 1).
+    """
+    section = next((item for item in sections if item.heading.text == heading), None)
+    if section is None:
+        return []
+    entries = []
+    for number, text in paragraph_starts(lines, section.body_start, section.body_end):
+        match = REFERENCE_ENTRY.match(text.strip())
+        if match:
+            entries.append((int(match.group(1)), number))
+    return entries
+
+
+def citation_tokens(lines, sections, headings):
+    """Return `(number, line)` for every `[N]` token in the named sections.
+
+    Citations are collected from the body sections and the decision appendix
+    only, never from the reference list itself, so an entry's own `[N]` marker
+    is not counted as a citation.
+    """
+    wanted = set(headings)
+    tokens = []
+    for section in sections:
+        if section.heading.text not in wanted:
+            continue
+        for number in range(section.body_start, section.body_end + 1):
+            for match in CITATION.finditer(lines[number - 1]):
+                tokens.append((int(match.group(1)), number))
+    return tokens
