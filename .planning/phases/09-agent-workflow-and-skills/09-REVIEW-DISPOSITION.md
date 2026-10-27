@@ -105,7 +105,7 @@ findings:
     title: "The `gen-skills-check` hook's `files` pattern is untested"
   - id: RR-CR-01
     severity: critical
-    disposition: open
+    disposition: fixed
     title: "The widened credential scan still persists `secretKey` / `secret_key` / `passwordHash` assignments"
   - id: RR-WR-01
     severity: warning
@@ -127,7 +127,7 @@ findings:
     severity: info
     disposition: open
     title: "The copula branch now refuses ordinary status lines, and the docstring overstates the negative coverage"
-open: 15
+open: 14
 total: 31
 recorded: 2026-10-27T00:15:41Z
 ---
@@ -161,7 +161,7 @@ recorded: 2026-10-27T00:15:41Z
 | IN-03 | info | open | - (not in the current review) |
 | IN-04 | info | open | - (not in the current review) |
 | IN-05 | info | open | - (not in the current review) |
-| RR-CR-01 | critical | open | Gap-closure re-review `cc5fff3..HEAD`; the reviewer's own `CR-01`. Confirmed by the orchestrator: `find_credential` returns False for `{"secretKey": "hunter2"}`, `secret_key = hunter2` and `passwordHash: abcdef`. |
+| RR-CR-01 | critical | fixed | 09-14-PLAN.md — closed by the `[\w.-]{0,32}` connector in the assignment branch only, the four identifier-suffixed shapes pinned in `IDENTIFIER_SUFFIXED_ASSIGNMENTS`, and `test_an_identifier_suffixed_credential_child_writes_nothing`, which drives `capture_and_store` and proves no log and no `.skill-state` directory. |
 | RR-WR-01 | warning | open | Gap-closure re-review; the reviewer's own `WR-01`. |
 | RR-IN-01 | info | open | Gap-closure re-review; the reviewer's own `IN-01`. |
 | RR-IN-02 | info | open | Gap-closure re-review; the reviewer's own `IN-02`. |
