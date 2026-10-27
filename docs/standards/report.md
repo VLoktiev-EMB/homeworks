@@ -217,7 +217,7 @@ The table lists every rule id the checker emits, in registry order. The set of i
 
 | Rule | Meaning | Fix |
 |------|---------|-----|
-| `RPT-001` | the report declaration is missing or unreadable | add a `report` block with `path` and `status` to `homework.yaml` |
+| `RPT-001` | the report declaration is missing, unreadable, or its `path` is uncontained | add a `report` block with `path` and `status` to `homework.yaml`, and keep `path` a relative path inside the homework directory |
 | `RPT-002` | the declared report document is absent, empty, or a symlink | write a non-empty `report.md` at `report.path`; never commit a symlink |
 | `RPT-003` | the homework status and report status disagree | align the pair: planned/placeholder, in-progress/draft or complete, complete or verified/complete |
 | `RPT-004` | the report document exceeds the size bound | split unrelated material out of the report; keep it under one mebibyte |

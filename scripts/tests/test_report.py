@@ -658,6 +658,79 @@ class HostileMetadataTests(FixtureBase):
                 )
 
 
+class HostileDocumentContractTests(FixtureBase):
+    """G-10-1: every hostile document is valid JSON at exit 1, never a crash.
+
+    The three inputs are the two CR-01/CR-02 payloads and the CR-03 escaping
+    path. Each must exit 1 with a parseable, non-empty `--json` array whose
+    records carry the five contract keys, with no traceback, and repeated runs
+    over each fixture must be byte-identical (T-10-28 through T-10-31).
+    """
+
+    def write_deep_metadata(self, homework_id=None):
+        self.write_homework(DEEP_YAML, homework_id=homework_id)
+
+    def write_deep_diagram(self, homework_id=None):
+        self.write_homework(homework_id=homework_id)
+        self.write_report(homework_id=homework_id)
+        self.write_diagram(DEEP_DIAGRAM, homework_id=homework_id)
+
+    def write_escaping_path(self, homework_id=None):
+        homework_id = homework_id or self.homework_id
+        sentinel = self._outside_sentinel("contract")
+        self.write_homework(
+            homework_yaml(homework_id=homework_id, report_path=str(sentinel)),
+            homework_id=homework_id,
+        )
+        return sentinel
+
+    def assert_content_error(self, *args):
+        return self.assert_content_error_result(self.run_fixture("--json", *args))
+
+    def assert_content_error_result(self, result):
+        self.assertEqual(1, result.returncode, combined(result))
+        self.assertNotIn("Traceback", combined(result))
+        records = json.loads(result.stdout)
+        self.assertTrue(records, result.stdout)
+        self.assertIn("ERROR", {item["status"] for item in records})
+        for item in records:
+            with self.subTest(record=item):
+                self.assertEqual({"path", "status", "rule", "line", "reason"}, set(item))
+        return records
+
+    def test_deep_metadata_keeps_the_contract(self):
+        self.write_deep_metadata()
+        records = self.assert_content_error()
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+
+    def test_deep_diagram_keeps_the_contract(self):
+        self.write_deep_diagram()
+        records = self.assert_content_error()
+        self.assertIn("RPT-207", {item["rule"] for item in records})
+
+    def test_escaping_report_path_keeps_the_contract(self):
+        self.write_escaping_path()
+        result = self.run_fixture("--json")
+        records = self.assert_content_error_result(result)
+        self.assertIn("RPT-001", {item["rule"] for item in records})
+        self.assertNotIn("OUTSIDE-SENTINEL", result.stdout)
+
+    def test_hostile_inputs_are_deterministic(self):
+        cases = (
+            ("1_3-deep", self.write_deep_metadata),
+            ("1_3-diagram", self.write_deep_diagram),
+            ("1_3-escape", self.write_escaping_path),
+        )
+        for homework_id, writer in cases:
+            with self.subTest(fixture=homework_id):
+                writer(homework_id=homework_id)
+                positional = f"homeworks/{homework_id}"
+                first = self.run_fixture(positional)
+                second = self.run_fixture(positional)
+                self.assertEqual(1, first.returncode, combined(first))
+                self.assertEqual(first.stdout, second.stdout)
+
+
 class IdentityTests(FixtureBase):
     """`RPT-401`/`RPT-402`/`RPT-403`: identity against normalized metadata."""
 
