@@ -69,23 +69,31 @@ Every homework must deliver an IEEE-compliant vector schematic readable a year l
 
 ---
 
-## Tier 2: Interactive Wokwi Breadboard Models (`diagram.json`)
+## Tier 2: Interactive Wokwi Circuit Models (`diagram.json`)
 
 Detailed reference in [references/wokwi-breadboard.md](references/wokwi-breadboard.md):
 
-1. **Breadboard Integration**: Always include `wokwi-breadboard-half` (`bb1`) adjacent to the MCU (`esp`).
-2. **No-Chip-Crossing Rule**:
-   * Wires emerging from MCU pin headers must **NEVER cut across the face of the microcontroller board, antenna, or RF metal shield**.
-   * Use the **overhead conduit pattern**: step left off header pin (`h-20`), go up above the board (`v-40`), travel right across top (`h240`), and drop into breadboard column (`v30`).
-3. **Power Bus Rails**:
-   * Connect MCU `3V3` and `GND` to breadboard rails once (`bb1:tp.1` and `bb1:tn.1`).
-   * All components tap power and ground locally via short vertical jumpers.
-4. **Boundary Containment**:
-   * All components must remain fully seated within breadboard rows (`a-e` and `f-j`). Never place components hanging off the bottom (keep `top <= 110`).
-5. **Orthogonal Manhattan Vectors**:
-   * All wire bends must use `["h...", "v..."]` right-angle offsets. Never leave bend arrays empty `[]` when crossing components.
-6. **Standard Color Coding**:
-   * `red` for 3.3V/5V Power, `black` for GND Ground, distinct dedicated colors for signals (`orange`, `purple`, `green`, `blue`).
+### Architecture Patterns: Direct Wiring vs Solderless Breadboard
+1. **Pattern A: Board-Centric Direct Wiring (Standard & Preferred for Discrete Circuits)**:
+   * **When to use**: For circuits with discrete components (LEDs, resistors, pushbuttons, simple sensors).
+   * **Core Rule**: **Never add an empty or fake `wokwi-breadboard-half`**. When components do not genuinely span DIP IC pins, an unpopulated breadboard creates visual noise, unphysical floating components, and messy overhead jumper conduits.
+   * **Layout Geometry**:
+     - Microcontroller (`esp`) anchored at `(top: 0, left: 0)`.
+     - Output branches (resistors and LEDs) placed on the side of their driving GPIO pins (e.g. left side for pins 4, 6, 3V3, GND), aligned horizontally with the pin row.
+     - Resistors oriented horizontally directly facing the GPIO pin.
+     - LEDs positioned adjacent to their series resistors with clean inline connections.
+     - Input devices (pushbuttons) placed neatly in line with their GPIO pin.
+     - Ground return wires route cleanly along the outer perimeter to the nearest board `GND` pin with orthogonal Manhattan bends (`["v...", "h..."]`).
+     - **Zero wires crossing the microcontroller board, antenna, or button faces**.
+2. **Pattern B: Solderless Breadboard Wiring (Reserved for Multi-Pin ICs & Bus Topologies)**:
+   * **When to use**: Only when circuits involve multi-pin DIP ICs (e.g. shift registers, DACs) or dense multi-rail bus topologies.
+   * **Rule**: The breadboard must actually be used! Components must plug into tie strips (`bb1:<col>t.a`..`e`), power rails (`bb1:tp`, `bb1:tn`) must distribute power, and components must never float in random coordinates off-board.
+   * **No-Chip-Crossing Rule**: Never route wires across the MCU face; route around the perimeter using overhead conduits.
+
+3. **Orthogonal Manhattan Vectors**:
+   * All wire bends must use `["h...", "v..."]` right-angle offsets. Never allow diagonal lines crossing components or headers.
+4. **Standard Color Coding**:
+   * `red` for 3.3V/5V Power, `black` for GND Ground, distinct dedicated signal colors (`orange`, `purple`, `green`, `blue`).
 
 ---
 

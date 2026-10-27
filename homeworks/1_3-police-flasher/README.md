@@ -40,13 +40,13 @@ flowchart LR
 
     btn1 -->|1.l -> 7| esp
     btn1 -->|2.l| gnd[GND]
-    esp -->|4 -> 1| r1
-    r1 -->|2 -> A| led1
-    r1 -->|2 -> C| led2
+    esp -->|4 -> 2| r1
+    r1 -->|1 -> A| led1
+    r1 -->|1 -> C| led2
+    pwr["3.3V"] -->|3V3.1 -> A| led2
     led1 -->|C| gnd[GND]
-    pwr["3.3V"] -->|A| led2
-    esp -->|6 -> 1| r2
-    r2 -->|2 -> A| led3
+    esp -->|6 -> 2| r2
+    r2 -->|1 -> A| led3
     led3 -->|C| gnd[GND]
 ```
 

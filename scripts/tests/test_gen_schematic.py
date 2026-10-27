@@ -125,61 +125,51 @@ class ReformatDiagramTests(unittest.TestCase):
         self.raw_diagram = {
             "version": 1,
             "parts": [
-                {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
-                {"type": "wokwi-resistor", "id": "r1", "top": -60, "left": 300},
-                {"type": "wokwi-led", "id": "led1", "top": -100, "left": 220},
-                {"type": "wokwi-led", "id": "led2", "top": -140, "left": 220},
-                {"type": "wokwi-resistor", "id": "r2", "top": -200, "left": 300},
-                {"type": "wokwi-led", "id": "led3", "top": -240, "left": 220},
-                {"type": "wokwi-pushbutton", "id": "btn1", "top": -300, "left": 220},
+                {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 50, "left": 50},
             ],
-            "connections": [
-                ["esp:4", "r1:1", "green", []],
-            ],
+            "connections": [],
         }
 
     def test_reformat_places_components_in_clean_zones(self) -> None:
         formatted = reformat_police_flasher_diagram(self.raw_diagram)
         parts_by_id = {p["id"]: p for p in formatted["parts"]}
 
-        # Microcontroller board
+        # Microcontroller board at origin
         self.assertEqual(parts_by_id["esp"]["top"], 0)
         self.assertEqual(parts_by_id["esp"]["left"], 0)
 
-        # Half breadboard adjacent to microcontroller
-        self.assertIn("bb1", parts_by_id)
-        self.assertEqual(parts_by_id["bb1"]["type"], "wokwi-breadboard-half")
-        self.assertEqual(parts_by_id["bb1"]["top"], -30)
-        self.assertEqual(parts_by_id["bb1"]["left"], 180)
+        # Output resistors and LEDs on left wing
+        self.assertIn("r1", parts_by_id)
+        self.assertEqual(parts_by_id["r1"]["attrs"]["value"], "150")
+        self.assertIn("r2", parts_by_id)
+        self.assertEqual(parts_by_id["r2"]["attrs"]["value"], "150")
 
-        # Input button to the left
-        self.assertEqual(parts_by_id["btn1"]["top"], 120)
-        self.assertEqual(parts_by_id["btn1"]["left"], -140)
+        self.assertIn("led1", parts_by_id)
+        self.assertEqual(parts_by_id["led1"]["attrs"]["color"], "red")
+        self.assertIn("led2", parts_by_id)
+        self.assertEqual(parts_by_id["led2"]["attrs"]["color"], "red")
+        self.assertIn("led3", parts_by_id)
+        self.assertEqual(parts_by_id["led3"]["attrs"]["color"], "red")
 
-        # Output LEDs and resistors on breadboard
-        self.assertEqual(parts_by_id["r1"]["left"], 230)
-        self.assertEqual(parts_by_id["r2"]["left"], 230)
-        self.assertEqual(parts_by_id["led1"]["left"], 360)
-        self.assertEqual(parts_by_id["led2"]["left"], 360)
-        self.assertEqual(parts_by_id["led3"]["left"], 360)
+        # Input button on left wing
+        self.assertIn("btn1", parts_by_id)
+        self.assertEqual(parts_by_id["btn1"]["attrs"]["label"], "MODE")
 
-    def test_reformat_adds_manhattan_routing(self) -> None:
+    def test_reformat_connections_contain_required_signals(self) -> None:
         formatted = reformat_police_flasher_diagram(self.raw_diagram)
         connections = formatted["connections"]
 
-        # Ensure all hardware connections have Manhattan waypoints
-        hw_conns = [
-            c for c in connections if "$serialMonitor" not in c[0] and "$serialMonitor" not in c[1]
-        ]
-        for conn in hw_conns:
-            src, dst, color, bends = conn
-            self.assertIsInstance(bends, list)
-            self.assertGreater(len(bends), 0, f"Connection {src}->{dst} must have bends")
-            for bend in bends:
-                self.assertTrue(
-                    bend.startswith("h") or bend.startswith("v"),
-                    f"Bend {bend} in {src}->{dst} must be Manhattan horizontal or vertical",
-                )
+        conns_set = {(c[0], c[1]) for c in connections}
+        self.assertIn(("btn1:1.l", "esp:7"), conns_set)
+        self.assertIn(("btn1:2.l", "esp:GND.1"), conns_set)
+        self.assertIn(("esp:4", "r1:2"), conns_set)
+        self.assertIn(("r1:1", "led1:A"), conns_set)
+        self.assertIn(("r1:1", "led2:C"), conns_set)
+        self.assertIn(("esp:3V3.1", "led2:A"), conns_set)
+        self.assertIn(("led1:C", "esp:GND.1"), conns_set)
+        self.assertIn(("esp:6", "r2:2"), conns_set)
+        self.assertIn(("r2:1", "led3:A"), conns_set)
+        self.assertIn(("led3:C", "esp:GND.1"), conns_set)
 
 
 class SchematicSvgTests(unittest.TestCase):

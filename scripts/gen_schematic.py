@@ -59,6 +59,12 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         if src_part == b_id and ("3V3" in src_pin or "GND" in src_pin) and "bb" in dst_part:
             continue
 
+        # Direct 3V3 power rail feeds to components
+        if src_part == b_id and "3V3" in src_pin and "bb" not in dst_part:
+            edge_lbl = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, dst_part))
+            continue
+
         # Redirect Ground connections to terminal GND
         is_dst_gnd = (dst_part == b_id and "GND" in dst_pin.upper()) or (
             "bb" in dst_part and "tn" in dst_pin
@@ -235,89 +241,82 @@ def generate_schematic_svg(output_path: Path) -> Path:
 
 
 def reformat_police_flasher_diagram(diagram: dict) -> dict:
-    """Apply clean breadboard layout and Manhattan wire routing to anti-parallel LED circuit."""
-    new_diagram = dict(diagram)
-    parts = []
-
-    # Map existing parts and ensure breadboard is present
-    has_breadboard = any(p.get("type") == "wokwi-breadboard-half" for p in diagram.get("parts", []))
-
-    for p in diagram.get("parts", []):
-        part = dict(p)
-        pid = part["id"]
-        if pid == "esp":
-            part["top"] = 0
-            part["left"] = 0
-        elif pid == "bb1":
-            part["top"] = -30
-            part["left"] = 180
-        elif pid == "btn1":
-            # Input button to the left
-            part["top"] = 120
-            part["left"] = -140
-        elif pid == "r1":
-            # Branch 1 series resistor on breadboard
-            part["top"] = 30
-            part["left"] = 230
-            part["attrs"] = dict(part.get("attrs", {}))
-        elif pid == "led1":
-            # Branch 1 forward LED
-            part["top"] = 0
-            part["left"] = 360
-        elif pid == "led2":
-            # Branch 1 reverse LED (anti-parallel)
-            part["top"] = 55
-            part["left"] = 360
-        elif pid == "r2":
-            # Branch 2 series resistor on breadboard
-            part["top"] = 105
-            part["left"] = 230
-        elif pid == "led3":
-            # Branch 2 indicator LED
-            part["top"] = 105
-            part["left"] = 360
-        parts.append(part)
-
-    if not has_breadboard:
-        parts.insert(
-            1,
+    """Apply clean direct-wiring layout and orthogonal routing to police flasher circuit."""
+    return {
+        "version": 1,
+        "author": "VLoktiev-EMB",
+        "editor": "wokwi",
+        "parts": [
             {
-                "type": "wokwi-breadboard-half",
-                "id": "bb1",
-                "top": -30,
-                "left": 180,
-                "attrs": {},
+                "type": "board-esp32-s3-devkitc-1",
+                "id": "esp",
+                "top": 0,
+                "left": 0,
+                "attrs": {
+                    "flashSize": "16",
+                    "psramType": "octal",
+                    "psramSize": "8",
+                },
             },
-        )
-
-    new_diagram["parts"] = parts
-
-    # Clean Manhattan connections on breadboard:
-    # Wires route around top edge of MCU, avoiding any diagonal cutting across chip faces
-    new_diagram["connections"] = [
-        # Power rails to breadboard
-        ["esp:3V3.1", "bb1:tp.1", "red", ["h-20", "v-40", "h240"]],
-        ["esp:GND.1", "bb1:tn.1", "black", ["h20", "v-60", "h180"]],
-        # Button: GPIO7 -> btn1:1.l, btn1:2.l -> GND.2 (local bottom-left GND)
-        ["btn1:1.l", "esp:7", "green", ["h30"]],
-        ["btn1:2.l", "esp:GND.2", "black", ["v30", "h40"]],
-        # Branch 1: GPIO4 -> r1 -> Node X (row 12 on breadboard)
-        ["esp:4", "r1:1", "orange", ["h-15", "v-45", "h210", "v30"]],
-        ["r1:2", "bb1:12t.a", "blue", ["h10"]],
-        ["bb1:12t.b", "led1:A", "blue", ["h20", "v-20"]],
-        ["led1:C", "bb1:tn.15", "black", ["v-20"]],
-        ["bb1:12t.c", "led2:C", "blue", ["h20", "v15"]],
-        ["led2:A", "bb1:tp.15", "red", ["v-45"]],
-        # Branch 2: GPIO6 -> r2 -> led3 -> GND rail
-        ["esp:6", "r2:1", "purple", ["h-25", "v-65", "h230", "v85"]],
-        ["r2:2", "led3:A", "red", ["h20"]],
-        ["led3:C", "bb1:tn.22", "black", ["v-75"]],
-        # Serial monitor
-        ["esp:TX", "$serialMonitor:RX", "green", []],
-        ["esp:RX", "$serialMonitor:TX", "green", []],
-    ]
-
-    return new_diagram
+            {
+                "type": "wokwi-resistor",
+                "id": "r1",
+                "top": 76.8,
+                "left": -88.8,
+                "attrs": {"value": "150"},
+            },
+            {
+                "type": "wokwi-led",
+                "id": "led1",
+                "top": 40.8,
+                "left": -140,
+                "attrs": {"color": "red", "label": "LED1"},
+            },
+            {
+                "type": "wokwi-led",
+                "id": "led2",
+                "top": -16.8,
+                "left": -140,
+                "attrs": {"color": "red", "label": "LED2"},
+            },
+            {
+                "type": "wokwi-resistor",
+                "id": "r2",
+                "top": 119.3,
+                "left": -88.8,
+                "attrs": {"value": "150"},
+            },
+            {
+                "type": "wokwi-led",
+                "id": "led3",
+                "top": 83.3,
+                "left": -140,
+                "attrs": {"color": "red", "label": "LED3"},
+            },
+            {
+                "type": "wokwi-pushbutton",
+                "id": "btn1",
+                "top": 155,
+                "left": -100,
+                "attrs": {"color": "green", "label": "MODE"},
+            },
+        ],
+        "connections": [
+            ["esp:TX", "$serialMonitor:RX", "", []],
+            ["esp:RX", "$serialMonitor:TX", "", []],
+            ["btn1:1.l", "esp:7", "green", ["h20"]],
+            ["btn1:2.l", "esp:GND.1", "black", ["v80", "h90"]],
+            ["esp:4", "r1:2", "orange", []],
+            ["r1:1", "led1:A", "blue", []],
+            ["r1:1", "led2:C", "blue", ["v-38", "h-20"]],
+            ["esp:3V3.1", "led2:A", "red", ["h-40", "v-15"]],
+            ["led1:C", "esp:GND.1", "black", ["v200", "h120"]],
+            ["esp:6", "r2:2", "purple", []],
+            ["r2:1", "led3:A", "purple", []],
+            ["led3:C", "esp:GND.1", "black", ["v160", "h120"]],
+        ],
+        "dependencies": {},
+    }
 
 
 def main() -> int:

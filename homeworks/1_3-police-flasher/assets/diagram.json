@@ -15,17 +15,10 @@
       }
     },
     {
-      "type": "wokwi-breadboard-half",
-      "id": "bb1",
-      "top": -30,
-      "left": 180,
-      "attrs": {}
-    },
-    {
       "type": "wokwi-resistor",
       "id": "r1",
-      "top": 30,
-      "left": 230,
+      "top": 76.8,
+      "left": -88.8,
       "attrs": {
         "value": "150"
       }
@@ -33,26 +26,28 @@
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": 0,
-      "left": 360,
+      "top": 40.8,
+      "left": -140,
       "attrs": {
-        "color": "red"
+        "color": "red",
+        "label": "LED1"
       }
     },
     {
       "type": "wokwi-led",
       "id": "led2",
-      "top": 55,
-      "left": 360,
+      "top": -16.8,
+      "left": -140,
       "attrs": {
-        "color": "red"
+        "color": "red",
+        "label": "LED2"
       }
     },
     {
       "type": "wokwi-resistor",
       "id": "r2",
-      "top": 105,
-      "left": 230,
+      "top": 119.3,
+      "left": -88.8,
       "attrs": {
         "value": "150"
       }
@@ -60,17 +55,18 @@
     {
       "type": "wokwi-led",
       "id": "led3",
-      "top": 105,
-      "left": 360,
+      "top": 83.3,
+      "left": -140,
       "attrs": {
-        "color": "red"
+        "color": "red",
+        "label": "LED3"
       }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn1",
-      "top": 120,
-      "left": -140,
+      "top": 155,
+      "left": -100,
       "attrs": {
         "color": "green",
         "label": "MODE"
@@ -79,133 +75,94 @@
   ],
   "connections": [
     [
-      "esp:3V3.1",
-      "bb1:tp.1",
-      "red",
-      [
-        "h-20",
-        "v-40",
-        "h240"
-      ]
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
     ],
     [
-      "esp:GND.1",
-      "bb1:tn.1",
-      "black",
-      [
-        "h20",
-        "v-60",
-        "h180"
-      ]
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
     ],
     [
       "btn1:1.l",
       "esp:7",
       "green",
       [
-        "h30"
-      ]
-    ],
-    [
-      "btn1:2.l",
-      "esp:GND.2",
-      "black",
-      [
-        "v30",
-        "h40"
-      ]
-    ],
-    [
-      "esp:4",
-      "r1:1",
-      "orange",
-      [
-        "h-15",
-        "v-45",
-        "h210",
-        "v30"
-      ]
-    ],
-    [
-      "r1:2",
-      "bb1:12t.a",
-      "blue",
-      [
-        "h10"
-      ]
-    ],
-    [
-      "bb1:12t.b",
-      "led1:A",
-      "blue",
-      [
-        "h20",
-        "v-20"
-      ]
-    ],
-    [
-      "led1:C",
-      "bb1:tn.15",
-      "black",
-      [
-        "v-20"
-      ]
-    ],
-    [
-      "bb1:12t.c",
-      "led2:C",
-      "blue",
-      [
-        "h20",
-        "v15"
-      ]
-    ],
-    [
-      "led2:A",
-      "bb1:tp.15",
-      "red",
-      [
-        "v-45"
-      ]
-    ],
-    [
-      "esp:6",
-      "r2:1",
-      "purple",
-      [
-        "h-25",
-        "v-65",
-        "h230",
-        "v85"
-      ]
-    ],
-    [
-      "r2:2",
-      "led3:A",
-      "red",
-      [
         "h20"
       ]
     ],
     [
-      "led3:C",
-      "bb1:tn.22",
+      "btn1:2.l",
+      "esp:GND.1",
       "black",
       [
-        "v-75"
+        "v80",
+        "h90"
       ]
     ],
     [
-      "esp:TX",
-      "$serialMonitor:RX",
-      "green",
+      "esp:4",
+      "r1:2",
+      "orange",
       []
     ],
     [
-      "esp:RX",
-      "$serialMonitor:TX",
-      "green",
+      "r1:1",
+      "led1:A",
+      "blue",
       []
+    ],
+    [
+      "r1:1",
+      "led2:C",
+      "blue",
+      [
+        "v-38",
+        "h-20"
+      ]
+    ],
+    [
+      "esp:3V3.1",
+      "led2:A",
+      "red",
+      [
+        "h-40",
+        "v-15"
+      ]
+    ],
+    [
+      "led1:C",
+      "esp:GND.1",
+      "black",
+      [
+        "v200",
+        "h120"
+      ]
+    ],
+    [
+      "esp:6",
+      "r2:2",
+      "purple",
+      []
+    ],
+    [
+      "r2:1",
+      "led3:A",
+      "purple",
+      []
+    ],
+    [
+      "led3:C",
+      "esp:GND.1",
+      "black",
+      [
+        "v160",
+        "h120"
+      ]
     ]
-  ]
+  ],
+  "dependencies": {}
 }

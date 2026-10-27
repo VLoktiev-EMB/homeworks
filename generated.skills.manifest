@@ -78,8 +78,8 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/SKILL.md",
       "mode": "whole",
-      "sha256": "5a6518c6190f26ed9175032c18cbacfc743769d4bd89eb7e5b70b648ac0c44b1",
-      "bytes": 7927
+      "sha256": "aaa26db84ed7bf5aac899dd141f68285b6fbc6701d357a18b0c1e97ff423d3c3",
+      "bytes": 8915
     },
     {
       "path": ".agents/skills/schematic/references/mermaid-block-diagrams.md",
@@ -102,8 +102,8 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/references/wokwi-breadboard.md",
       "mode": "whole",
-      "sha256": "b1c79779c7713bee72005723933d99550f3973f5ab3f65e715eaaadd53c746eb",
-      "bytes": 3749
+      "sha256": "7e7a8e76d7918c8ee1e3eb59679391a1fc4e527c84fde59293aaba693b32f34d",
+      "bytes": 6509
     },
     {
       "path": ".agents/skills/simulate/SKILL.md",
