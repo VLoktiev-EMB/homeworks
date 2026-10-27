@@ -1,6 +1,14 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Lessons
 
+## 2026-10-27 — gap-closure run, 09-19
+
+- A locator may claim a rule is not restated only when the same paragraph carries no
+  normative variant. An operational prompt and a rule statement must be separated before
+  the claim is made, or the claim is false the moment the prompt restates the rule.
+- A behaviour contract that enumerates an accepted family must name every separator form
+  the implementation admits and pin the boundary at the boundary, not only inside it.
+
 ## 2026-10-27 — gap-closure run, 09-17, 09-18
 
 - A policy that enumerates credential shapes by name must enumerate every separator form the

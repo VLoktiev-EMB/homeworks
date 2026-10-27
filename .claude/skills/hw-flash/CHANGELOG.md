@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-19 (WR-03, WR-13, WR-14, IN-11)
+
+- Removed the two remaining normative ambiguity restatements from `hw-flash`; the
+  operational `--port` prompt stays and the one locator now says `the steps here only
+  apply it` instead of claiming a non-restatement.
+- Named the compound keyword family (one space, underscore, hyphen or no separator) in
+  the `serial_capture` module docstring, with the shared guardrails as the policy owner.
+- Pinned the connector ceiling at 128 matching and 129 refused by
+  `test_the_connector_ceiling_is_128_characters`.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-17, 09-18 (CR-01, WR-03)
 
 - The credential scan now admits a space-separated compound keyword, so
