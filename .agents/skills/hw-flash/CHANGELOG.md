@@ -1,6 +1,18 @@
 <!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Changelog
 
+## 2026-10-27 — gap-closure run, 09-13 (WR-10, WR-11)
+
+- Rejected a non-finite, non-positive or above-`MAX_SECONDS` `--seconds` with a
+  `CheckError` before `resolve_root`, the monitor argv or `Popen`, so an invalid duration
+  is the documented exit-2 usage error with no traceback and starts no process.
+- Reaped the monitor in `capture_pty`'s outer `finally` on every exception path: a
+  still-running child is killed, then waited, while the deadline, not-ready and EOF/EIO
+  early returns keep working.
+- Added `CliDurationTests` for NaN, infinity and an oversized bound, and
+  `CaptureReapTests` proving an escaping `RuntimeError` leaves no live child.
+- Kept `metadata.version: "0.1"`.
+
 ## 2026-10-27 — gap-closure run, 09-12 (WR-12)
 
 - Widened the credential scan to the copula form (`password is <value>`), a keyword

@@ -137,6 +137,41 @@ class CapturePtyTests(unittest.TestCase):
         self.assertLess(elapsed, 5.0)
 
 
+class CaptureReapTests(unittest.TestCase):
+    """An exception escaping the read loop still kills and reaps the child."""
+
+    def test_an_exception_escaping_the_loop_reaps_the_child(self) -> None:
+        created: list[subprocess.Popen] = []
+        real_popen = subprocess.Popen
+
+        def recording_popen(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            created.append(process)
+            return process
+
+        def cleanup() -> None:
+            for process in created:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+
+        self.addCleanup(cleanup)
+
+        with (
+            mock.patch.object(serial_capture.subprocess, "Popen", recording_popen),
+            mock.patch.object(
+                serial_capture.select, "select", side_effect=RuntimeError("boom")
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                serial_capture.capture_pty(
+                    [sys.executable, "-c", "import time; time.sleep(10)"], 5
+                )
+
+        self.assertEqual(1, len(created))
+        self.assertIsNotNone(created[0].returncode)
+
+
 class CredentialScanTests(unittest.TestCase):
     """The widened scan matches every review shape and stays boolean."""
 
@@ -384,6 +419,42 @@ class CliUsageTests(unittest.TestCase):
 
     def test_a_zero_duration_is_a_usage_error(self) -> None:
         self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--seconds", "0"))
+
+
+class CliDurationTests(unittest.TestCase):
+    """A non-finite or oversized duration is a usage error before any capture."""
+
+    def run_main(self, seconds: str) -> tuple[int, str, str]:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(
+                serial_capture,
+                "capture_pty",
+                side_effect=AssertionError("capture started"),
+            ),
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
+        ):
+            code = serial_capture.main(["--id", HOMEWORK, "--seconds", seconds])
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def assert_duration_usage_error(self, seconds: str) -> None:
+        code, stdout, stderr = self.run_main(seconds)
+
+        self.assertEqual(2, code, stderr)
+        self.assertIn("ERROR:", stderr)
+        self.assertIn("positive finite", stderr)
+        self.assertEqual("", stdout)
+
+    def test_nan_is_a_usage_error(self) -> None:
+        self.assert_duration_usage_error("nan")
+
+    def test_infinity_is_a_usage_error(self) -> None:
+        self.assert_duration_usage_error("inf")
+
+    def test_an_oversized_bound_is_a_usage_error(self) -> None:
+        self.assert_duration_usage_error("601")
 
 
 class BuildCommandTests(unittest.TestCase):
