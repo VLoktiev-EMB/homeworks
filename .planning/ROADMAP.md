@@ -383,7 +383,7 @@ Plans:
   4. Both modes checkpoint after intake, after code, and after the report; flashing and commit/PR require confirmation, and conflicts or ambiguity produce a recorded recommended assumption.
   5. `hw-build` fixes a failing build at most twice before explaining and escalating; `hw-flash` captures serial logs only after explicit confirmation; the four remaining skills are documented stubs.
 
-**Plans:** 14/14 plans executed, 6 gap-closure plans
+**Plans:** 16 plans, 8 gap-closure (14 executed)
 
 **Wave 1**
 - [x] 09-01-PLAN.md — canonical → mirror tracer: `scripts/gen_skills.py`, fixture and suite, the `simulate` stub, the `gen-skills-check` hook, the affected-path policy (tracer)
@@ -414,6 +414,8 @@ Plans:
 - [x] 09-12-PLAN.md — close WR-12 (widen the credential scan to the four ordinary password assignments) and the shared guardrails sentence
 - [x] 09-13-PLAN.md — close WR-10 (reject non-finite and oversized `--seconds`) and WR-11 (reap the monitor on every exception path)
 - [x] 09-14-PLAN.md — close RR-CR-01 / truth 19 (cover keyword-prefixed credential assignments end to end) and reconcile the review and security records
+- [ ] 09-15-PLAN.md — close G-09-1: open the monitor port idle (`--dtr 0 --rts 0`), resolve one USB serial device fail-closed with an explicit `--port`/`-p`, and report the resolved port and baud
+- [ ] 09-16-PLAN.md — close G-09-1 contract half: `hw-flash` passes one resolved port to both upload and capture and documents the native USB versus CH343 paths; regenerate the mirror
 
 ### Phase 10: Report and Evidence System
 
