@@ -25,6 +25,14 @@ A content problem inside a document stays at exit 1: an absent, empty or
 symlinked report, a malformed `homework.yaml`, an inconsistent status pair, an
 oversized report, or a structural rule failure. Only the environment exits 2.
 
+`report.path` is a plain relative path inside the homework directory. It is
+untrusted `homework.yaml` content and the checker deliberately does not apply
+the JSON Schema (D-02), so an absolute path, a `..` component, a symlinked
+parent or a parent that resolves outside the homework directory is an `RPT-001`
+content error and is never opened. The containment helper lives in this module
+because this is the one module that performs file I/O; the rules module
+`scripts/report/contract.py` stays free of filesystem calls (T-10-30, T-10-31).
+
 A positional may name a homework directory or any document inside it; a file is
 reduced to its parent directory exactly as `check_metadata.py` does. With no
 positionals every direct child of `homeworks/` is scanned.
@@ -39,6 +47,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -171,6 +180,68 @@ def _status_records(root, homework, status, report_status):
     ]
 
 
+def _contained_report_path(directory, value):
+    """Return `(candidate, None)`, or `(None, reason)` when *value* escapes.
+
+    `report.path` is untrusted `homework.yaml` content, so the join is guarded
+    before any `stat`, `is_file` or read (T-10-30, T-10-31). An absolute value
+    and any `..` component are refused: a `..` after a symlink component can
+    leave the directory even when lexical normalization looks contained. The
+    remaining path must stay lexically inside the homework directory, every
+    parent component must be a real directory rather than a symlink, and the
+    parent's realpath must stay inside the directory as defence in depth.
+
+    The final component is deliberately not inspected, so a symlinked or absent
+    document keeps its shipped `RPT-002` classification. A missing parent ends
+    the walk because the rest of the path is absent too. The refusal reason
+    names the failure class and never echoes a host path (IN-02); an unresolved
+    candidate is returned, so every later step sees the path that was inspected.
+    """
+    path = Path(value)
+    if path.is_absolute():
+        return None, "report.path is absolute; an uncontained path is refused"
+    if ".." in path.parts:
+        return None, "report.path contains a parent component; an uncontained path is refused"
+    base = Path(os.path.abspath(directory))
+    candidate = base / path
+    lexical = Path(os.path.abspath(candidate))
+    try:
+        relative = lexical.relative_to(base)
+    except ValueError:
+        return None, "report.path escapes the homework directory; an uncontained path is refused"
+    current = base
+    for part in relative.parts[:-1]:
+        current = current / part
+        try:
+            mode = os.lstat(current).st_mode
+        except FileNotFoundError:
+            return candidate, None
+        except OSError as exc:
+            raise CheckError(f"cannot inspect the declared report path: {exc}") from exc
+        if stat.S_ISLNK(mode):
+            return (
+                None,
+                "report.path has a parent component that is a symlink; "
+                "refusing to follow it",
+            )
+        if not stat.S_ISDIR(mode):
+            return (
+                None,
+                "report.path has a parent component that is not a directory; "
+                "refusing it",
+            )
+    resolved_base = Path(os.path.realpath(base))
+    try:
+        Path(os.path.realpath(candidate.parent)).relative_to(resolved_base)
+    except ValueError:
+        return (
+            None,
+            "report.path resolves outside the homework directory; "
+            "an uncontained path is refused",
+        )
+    return candidate, None
+
+
 def _validate_directory(root, directory):
     """Validate one `homeworks/<id>/` directory."""
     directory = Path(directory)
@@ -215,7 +286,10 @@ def _validate_directory(root, directory):
 
     records = _status_records(root, homework, metadata.get("status"), report_status)
 
-    report_path = directory / report_path_value
+    report_path, refusal = _contained_report_path(directory, report_path_value)
+    if refusal is not None:
+        records.append(_record(root, homework, "ERROR", "RPT-001", refusal))
+        return records
     if report_path.is_symlink():
         records.append(
             _lexical_record(
