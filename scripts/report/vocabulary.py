@@ -165,4 +165,38 @@ RULES = {
         "section 9 has no paragraph beginning `Status:`",
         "state the honest status in a `Status:` paragraph in the conclusions",
     ),
+    "RPT-201": (
+        "a required table is absent or its header differs from the contract",
+        "write the table inside its section with exactly the contracted header",
+    ),
+    "RPT-202": (
+        "a table row has a different cell count from its header",
+        "add or remove the missing cell; a literal pipe inside a cell must be "
+        "escaped as `\\|`",
+    ),
+    "RPT-203": (
+        "a required table cell is empty",
+        "fill the cell with the evidence, the calculation, or an explicit "
+        "not-applicable reason",
+    ),
+    "RPT-204": (
+        "a required table has no data rows",
+        "add at least one data row, or replace the table with "
+        "`_Not applicable — <reason>._` where the contract allows it",
+    ),
+    "RPT-205": (
+        "the safety checklist is empty or a bullet lacks the bold hazard prefix",
+        "write at least one `- **Hazard.** <consequence and check>` bullet",
+    ),
+    "RPT-206": (
+        "a bill-of-materials `Ref` is not a part id in `assets/diagram.json`",
+        "use the diagram part id as the BOM reference, or add the part to the "
+        "diagram",
+    ),
+    "RPT-207": (
+        "the bill of materials applies but `assets/diagram.json` is absent or "
+        "malformed",
+        "restore a readable `assets/diagram.json` with a `parts` list, or mark "
+        "the bill of materials not applicable",
+    ),
 }

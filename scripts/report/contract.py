@@ -14,20 +14,91 @@ jsonschema into the test import graph, and never PyYAML itself (Pitfall 9).
 
 from __future__ import annotations
 
+import json
+import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.metadata.paths import relative_path
-from scripts.report import markdown
+from scripts.report import markdown, tables
 from scripts.report.vocabulary import (
+    ASSUMPTIONS_HEADER,
+    BOM_HEADER,
+    CALCULATIONS_HEADER,
     INDUSTRY_NOTE_PREFIX,
+    LEDGER_HEADER,
     NOT_APPLICABLE,
     NOT_APPLICABLE_SECTIONS,
     NOT_APPLICABLE_SUFFIX,
+    PIN_MAP_HEADER,
     REPORT_HEADINGS,
     REPORT_MAX_BYTES,
     REQUIRED_SUBSECTIONS,
+    SECTION_ONE_HEADER,
     STATUS_PREFIX,
+    TRACEABILITY_HEADER,
 )
+
+# D-06/D-34: a required table names its owning section, and optionally the
+# `###` subsection that owns it. The header literals stay in `vocabulary.py`;
+# this tuple only wires them to their position.
+REQUIRED_TABLES = (
+    ("section 1 metadata", "1. Title and Metadata", None, SECTION_ONE_HEADER),
+    ("assumptions", "3. Assumptions", None, ASSUMPTIONS_HEADER),
+    ("bill of materials", "5. Hardware and Wiring", "Bill of Materials", BOM_HEADER),
+    ("pin map", "5. Hardware and Wiring", "Pin Map", PIN_MAP_HEADER),
+    (
+        "electrical calculations",
+        "5. Hardware and Wiring",
+        "Electrical Calculations",
+        CALCULATIONS_HEADER,
+    ),
+    ("measurement ledger", "7. Results", "Measurement Ledger", LEDGER_HEADER),
+    ("traceability matrix", "7. Results", "Traceability Matrix", TRACEABILITY_HEADER),
+)
+
+# D-15: the columns that may not be empty, by table label.
+REQUIRED_CELLS = {
+    "assumptions": ("Impact if wrong", "Validation"),
+    "electrical calculations": (
+        "Input provenance",
+        "Result",
+        "Uncertainty",
+        "Assumption effect",
+    ),
+}
+
+# D-15: a safety list item must open with a bold hazard name.
+SAFETY_BULLET = re.compile(r"^[-*+]\s")
+
+
+@dataclass(frozen=True)
+class Diagram:
+    """The diagram part ids, or the reason they could not be read.
+
+    `parse_diagram` never raises (T-10-27): a pull request can replace the
+    diagram with malformed or hostile JSON, and the contract reports that as a
+    content error instead of a traceback.
+    """
+
+    parts: tuple[str, ...] | None = None
+    error: str | None = None
+
+
+def parse_diagram(text):
+    """Turn the diagram payload into its part ids; never raises (T-10-27)."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return Diagram(error=f"assets/diagram.json is not valid JSON: {exc}")
+    if not isinstance(payload, dict) or not isinstance(payload.get("parts"), list):
+        return Diagram(error="assets/diagram.json is not an object with a `parts` list")
+    parts = tuple(
+        part["id"]
+        for part in payload["parts"]
+        if isinstance(part, dict) and isinstance(part.get("id"), str)
+    )
+    return Diagram(parts=parts)
 
 
 def _declared_path(metadata, homework_dir):
@@ -63,14 +134,6 @@ def _parent_section(sections, line):
     return None
 
 
-def _carries_marker(lines, section):
-    """True when a not-applicable marker appears in the section body."""
-    for number in range(section.body_start, section.body_end + 1):
-        if lines[number - 1].strip().startswith("_Not applicable"):
-            return True
-    return False
-
-
 def _valid_marker(stripped):
     """True for the exact `_Not applicable — <reason>._` form (D-06/D-34)."""
     if not stripped.startswith(NOT_APPLICABLE):
@@ -79,6 +142,222 @@ def _valid_marker(stripped):
         return False
     reason = stripped[len(NOT_APPLICABLE) : -len(NOT_APPLICABLE_SUFFIX)]
     return bool(reason.strip())
+
+
+def _marker_in_range(lines, start, end):
+    """True when a *valid* not-applicable marker sits in the inclusive range."""
+    return any(_valid_marker(lines[number - 1].strip()) for number in range(start, end + 1))
+
+
+def _section_waived(lines, section):
+    """True when the section itself carries the marker, before any child heading.
+
+    A marker inside one subsection waives that subsection only, never its
+    siblings (D-34). `_marker_in_range` requires a valid marker, so a malformed
+    one is reported by `RPT-105` and waives nothing.
+    """
+    first_child = min((child.line for child in section.children), default=section.body_end + 1)
+    return _marker_in_range(lines, section.body_start, first_child - 1)
+
+
+def _subsection_range(section, name):
+    """Return the inclusive body range of `### name`, or `None` when absent."""
+    for child in section.children:
+        if child.level == 3 and child.text == name:
+            later = [heading.line for heading in section.children if heading.line > child.line]
+            end = min(later) - 1 if later else section.body_end
+            return child.line + 1, end
+    return None
+
+
+def _owned_range(lines, section, subsection):
+    """Return `(start, end, waived)` for a required table's owning range."""
+    if subsection is None:
+        start, end = section.body_start, section.body_end
+    else:
+        body = _subsection_range(section, subsection)
+        if body is None:
+            return None
+        start, end = body
+    waived = _section_waived(lines, section)
+    if not waived and subsection is not None:
+        waived = section.heading.text in NOT_APPLICABLE_SECTIONS and _marker_in_range(
+            lines, start, end
+        )
+    return start, end, waived
+
+
+def _table_records(lines, sections, extracted, diagram, record):
+    """`RPT-201` ... `RPT-207`: header, row shape, cells, safety and BOM.
+
+    The table family runs after the heading-presence family but alongside the
+    subsection family: the live 1.3 report is missing `### Next Steps` yet its
+    tables are still reportable, and `docs/standards/report.md` maps each rule
+    id to one checklist item, so a defect must not hide another.
+    """
+    records = []
+    lookup = _section_lookup(sections)
+    owned = []
+    for label, section_heading, subsection, expected in REQUIRED_TABLES:
+        section = lookup.get(section_heading)
+        if section is None:
+            continue  # RPT-101 reports a missing section
+        owned_range = _owned_range(lines, section, subsection)
+        if owned_range is None:
+            continue  # RPT-104 reports a missing subsection
+        start, end, waived = owned_range
+        table = next(
+            (candidate for candidate in extracted if start <= candidate.header_line <= end),
+            None,
+        )
+        if table is None:
+            if not waived:
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-201",
+                        f'table "{label}" is absent; expected header "{" | ".join(expected)}"',
+                    )
+                )
+            continue
+        if table.header != expected:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-201",
+                    f'table "{label}" has header "{" | ".join(table.header)}"; '
+                    f'expected "{" | ".join(expected)}"',
+                    table.header_line,
+                )
+            )
+            continue
+        if not table.rows and not waived:
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-204",
+                    f'table "{label}" has no data rows and no not-applicable marker',
+                    table.header_line,
+                )
+            )
+        owned.append((label, table, waived))
+
+    # RPT-202: every row of every table keeps its header's column count.
+    for table in extracted:
+        for row in table.rows:
+            if len(row.cells) == len(table.header):
+                continue
+            records.append(
+                record(
+                    "ERROR",
+                    "RPT-202",
+                    f"table row has {len(row.cells)} cells but its header has "
+                    f"{len(table.header)}",
+                    row.line,
+                )
+            )
+
+    # RPT-203: the D-15 required cells are non-empty.
+    for label, table, _ in owned:
+        required = REQUIRED_CELLS.get(label)
+        if required is None:
+            continue
+        for row in table.rows:
+            for column in required:
+                index = table.header.index(column)
+                if index >= len(row.normalized) or row.normalized[index]:
+                    continue
+                records.append(
+                    record(
+                        "ERROR",
+                        "RPT-203",
+                        f'table "{label}" row has an empty "{column}" cell',
+                        row.line,
+                    )
+                )
+
+    records.extend(_safety_records(lines, lookup, record))
+    records.extend(_bom_records(lines, lookup, owned, diagram, record))
+    return records
+
+
+def _safety_records(lines, lookup, record):
+    """`RPT-205`: at least one hazard bullet, each opening `- **` (D-15)."""
+    section = lookup.get("5. Hardware and Wiring")
+    if section is None or _section_waived(lines, section):
+        return []
+    body = _subsection_range(section, "Safety Checklist")
+    if body is None:
+        return []  # RPT-104 reports the missing subsection
+    if _marker_in_range(lines, *body):
+        return []
+    start, end = body
+    bullets = [
+        (number, lines[number - 1].strip())
+        for number in range(start, end + 1)
+        if SAFETY_BULLET.match(lines[number - 1].strip())
+    ]
+    if not bullets:
+        return [
+            record(
+                "ERROR",
+                "RPT-205",
+                'the "Safety Checklist" must contain at least one hazard bullet',
+                start,
+            )
+        ]
+    return [
+        record(
+            "ERROR",
+            "RPT-205",
+            'safety bullet must begin "- **" and name a hazard',
+            number,
+        )
+        for number, stripped in bullets
+        if not stripped.startswith("- **")
+    ]
+
+
+def _bom_records(lines, lookup, owned, diagram, record):
+    """`RPT-206`/`RPT-207`: BOM refs resolve to diagram part ids (D-12)."""
+    section = lookup.get("5. Hardware and Wiring")
+    if section is None or _section_waived(lines, section):
+        return []
+    bom = next((table for label, table, _ in owned if label == "bill of materials"), None)
+    waived = next(
+        (waived for label, _, waived in owned if label == "bill of materials"),
+        None,
+    )
+    if waived is None:
+        # The BOM subsection was absent or mis-headered and `owned` therefore
+        # does not carry it. A marker in that subsection is still a waiver.
+        body = _subsection_range(section, "Bill of Materials")
+        waived = body is not None and _marker_in_range(lines, *body)
+    if waived:
+        return []
+    if diagram is None:
+        return [
+            record(
+                "ERROR",
+                "RPT-207",
+                "the bill of materials applies but assets/diagram.json was not read",
+            )
+        ]
+    if diagram.error is not None:
+        return [record("ERROR", "RPT-207", f"the bill of materials applies but {diagram.error}")]
+    if bom is None:
+        return []  # RPT-201 already reports the absent or mis-headered table
+    known = set(diagram.parts or ())
+    return [
+        record(
+            "ERROR",
+            "RPT-206",
+            f'BOM Ref "{row.normalized[0]}" is not a part id in assets/diagram.json',
+            row.line,
+        )
+        for row in bom.rows
+        if row.normalized and row.normalized[0] not in known
+    ]
 
 
 def _subsection_records(lines, sections, record):
@@ -95,7 +374,7 @@ def _subsection_records(lines, sections, record):
         section = lookup.get(section_heading)
         if section is None:
             continue  # RPT-101 already reports a missing section
-        if section_heading == "5. Hardware and Wiring" and _carries_marker(lines, section):
+        if section_heading == "5. Hardware and Wiring" and _section_waived(lines, section):
             continue
         present = {child.text for child in section.children if child.level == 3}
         for missing in required:
@@ -170,12 +449,21 @@ def _required_paragraph_records(lines, sections, record):
     return records
 
 
-def validate_report(text, metadata, *, homework_dir=None, repo_root=None, path=None):
+def validate_report(
+    text,
+    metadata,
+    *,
+    homework_dir=None,
+    repo_root=None,
+    path=None,
+    diagram=None,
+):
     """Validate one report document and return its records.
 
-    The caller owns discovery, the size gate and the lifecycle checks; this
-    function owns the document structure. An empty document is an `ERROR`
-    (`RPT-002`) and never a pass.
+    The caller owns discovery, the size gate, the lifecycle checks and the
+    diagram read; this function owns the document structure. `diagram` is a
+    `Diagram` built by `parse_diagram`, or `None` when the caller did not read
+    one. An empty document is an `ERROR` (`RPT-002`) and never a pass.
     """
     report_path = Path(path) if path is not None else _declared_path(metadata, homework_dir)
     display = _display(report_path, repo_root)
@@ -256,9 +544,11 @@ def validate_report(text, metadata, *, homework_dir=None, repo_root=None, path=N
         return records
 
     sections = markdown.sections(lines, found)
+    rows = tables.extract_tables(text)
     records.extend(_subsection_records(lines, sections, record))
     records.extend(_not_applicable_records(lines, sections, record))
     records.extend(_required_paragraph_records(lines, sections, record))
+    records.extend(_table_records(lines, sections, rows, diagram, record))
 
     if records:
         return records

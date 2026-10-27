@@ -50,7 +50,8 @@ from scripts.metadata.errors import CheckError  # noqa: E402
 from scripts.metadata.paths import relative_path, resolve_root  # noqa: E402
 from scripts.metadata.render import read_regular_text  # noqa: E402
 from scripts.metadata.yaml_loader import StrictSafeLoader  # noqa: E402
-from scripts.report.contract import validate_report  # noqa: E402
+from scripts.report.contract import Diagram, parse_diagram, validate_report  # noqa: E402
+from scripts.report.vocabulary import REPORT_MAX_BYTES  # noqa: E402
 
 
 def _record(root, path, status, rule, reason, line=0):
@@ -84,6 +85,28 @@ def _lexical_record(root, path, status, rule, reason, line=0):
     item = _record(root, path, status, rule, reason, line)
     item["path"] = _relative_lexical(root, path)
     return item
+
+
+def _read_diagram(root, path):
+    """Read `assets/diagram.json`; every failure becomes a `Diagram.error`.
+
+    T-10-05/T-10-27: the read goes through `read_regular_text`, which refuses a
+    symlink before following it, and the payload is bounded by the same size
+    gate as the report. A missing, unreadable, oversized, non-UTF-8, non-JSON or
+    wrongly shaped file is a content error (`RPT-207` at exit 1), never a
+    traceback and never an environment error.
+    """
+    display = _relative_lexical(root, path)
+    try:
+        text = read_regular_text(path, display)
+    except CheckError as exc:
+        return Diagram(error=str(exc))
+    size = len(text.encode("utf-8"))
+    if size > REPORT_MAX_BYTES:
+        return Diagram(
+            error=f"{display} is {size} bytes, larger than the {REPORT_MAX_BYTES}-byte bound"
+        )
+    return parse_diagram(text)
 
 
 # D-18: the only consistent homework-status / report-status pairs.
@@ -208,6 +231,7 @@ def _validate_directory(root, directory):
         return records
 
     text = read_regular_text(report_path, relative_path(root, report_path))
+    diagram = _read_diagram(root, directory / "assets" / "diagram.json")
     records.extend(
         validate_report(
             text,
@@ -215,6 +239,7 @@ def _validate_directory(root, directory):
             homework_dir=directory,
             repo_root=root,
             path=report_path,
+            diagram=diagram,
         )
     )
     return records
