@@ -4,9 +4,8 @@ Independent PlatformIO homework for `1_5-button-bounce`. It measures contact bou
 pull-up pushbutton, records every edge on GPIO 16, and compares the firmware count with a
 logic analyzer capture of the same node.
 
-**Status:** implementation complete; report pending. Firmware, native tests, and wiring
-are complete. Bench measurements are pending, so the report labels them `not measured`
-until they are captured.
+**Status:** in-progress. Firmware, native tests, and wiring are complete. Bench
+measurements are pending, so the report labels them `not measured` until they are captured.
 
 - [Assignment paraphrase](task.md)
 - [Report](report.md)
