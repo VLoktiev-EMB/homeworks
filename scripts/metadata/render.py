@@ -30,16 +30,12 @@ def render(text, mapping, display):
     verbatim.
     """
     if DOLLAR_BRACE.search(text):
-        raise CheckError(
-            f"{display}: dollar-brace interpolation '${{...}}' is not allowed"
-        )
+        raise CheckError(f"{display}: dollar-brace interpolation '${{...}}' is not allowed")
 
     def replace(match):
         token = match.group(1)
         if token not in mapping:
-            raise CheckError(
-                f"{display}: unknown placeholder " + "{{" + token + "}}"
-            )
+            raise CheckError(f"{display}: unknown placeholder " + "{{" + token + "}}")
         return mapping[token]
 
     return PLACEHOLDER.sub(replace, text)

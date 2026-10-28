@@ -287,8 +287,17 @@ def _label_location(direction: str) -> str:
     return "top" if direction in ("left", "right") else "bottom"
 
 
-def _draw_net(d, model: _Model, net_id: str, point, direction: str, came_from: str | None,
-              placed: set[str], seen: set[str], elm) -> None:
+def _draw_net(
+    d,
+    model: _Model,
+    net_id: str,
+    point,
+    direction: str,
+    came_from: str | None,
+    placed: set[str],
+    seen: set[str],
+    elm,
+) -> None:
     net = model.nets[net_id]
     if net["kind"] in ("ground", "power"):
         _place_terminal(d, elm, net["kind"], point, direction, net["label"])
@@ -314,8 +323,13 @@ def _draw_net(d, model: _Model, net_id: str, point, direction: str, came_from: s
         child_direction = _preferred_direction(model.nets[other]["kind"], direction)
         element = _element_for(component, child_direction, elm)
         attrs = model.parts.get(component.ref, {}).get("attrs", {})
-        d.add(element.at(point).label(_component_display(component, attrs),
-                                      loc=_label_location(child_direction), fontsize=8))
+        d.add(
+            element.at(point).label(
+                _component_display(component, attrs),
+                loc=_label_location(child_direction),
+                fontsize=8,
+            )
+        )
         placed.add(component.ref)
         _draw_net(d, model, other, d.here, child_direction, component.ref, placed, seen, elm)
         return
@@ -338,8 +352,11 @@ def _draw_net(d, model: _Model, net_id: str, point, direction: str, came_from: s
             d.add(elm.Line().at(point).to(start))
         attrs = model.parts.get(component.ref, {}).get("attrs", {})
         element = _element_for(component, preferred, elm)
-        d.add(element.at(start).label(_component_display(component, attrs),
-                                      loc=_label_location(preferred), fontsize=8))
+        d.add(
+            element.at(start).label(
+                _component_display(component, attrs), loc=_label_location(preferred), fontsize=8
+            )
+        )
         placed.add(component.ref)
         _draw_net(d, model, other, d.here, preferred, component.ref, placed, seen, elm)
 
@@ -349,9 +366,7 @@ def _draw_branches(model: _Model, d, elm) -> None:
         if len(component.pins) != 2 or len(set(component.net_ids)) != 2:
             raise _FallbackNeeded(f"component {component.ref} is not two-terminal")
 
-    signal_nets = [
-        (net_id, net) for net_id, net in model.nets.items() if net["kind"] == "signal"
-    ]
+    signal_nets = [(net_id, net) for net_id, net in model.nets.items() if net["kind"] == "signal"]
     if not signal_nets:
         raise _FallbackNeeded("no MCU signal net")
 

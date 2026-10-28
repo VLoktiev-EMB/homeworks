@@ -179,19 +179,10 @@ def _under(resolved: Path, base: Path) -> bool:
     return True
 
 
-def check_source_stale(
-    root: Path, subtrees: tuple[str, ...], db_path: Path
-) -> str | None:
+def check_source_stale(root: Path, subtrees: tuple[str, ...], db_path: Path) -> str | None:
     """Return a reason if the database is stale or missing required dependencies, or None."""
     if "espidf" in subtrees:
-        sdkconfig = (
-            db_path.parent
-            / ".pio"
-            / "build"
-            / "esp32s3_espidf"
-            / "config"
-            / "sdkconfig.h"
-        )
+        sdkconfig = db_path.parent / ".pio" / "build" / "esp32s3_espidf" / "config" / "sdkconfig.h"
         if not sdkconfig.is_file():
             return f"{sdkconfig.relative_to(root)} is absent"
     return None
@@ -222,9 +213,7 @@ def select_entries(
                 if res.returncode != 0:
                     raise EnvironmentProblem(f"failed to generate {path} with: {remedy}")
                 if not path.is_file():
-                    raise MissingInput(
-                        f"{path} is absent after generation.\n  command: {remedy}"
-                    )
+                    raise MissingInput(f"{path} is absent after generation.\n  command: {remedy}")
                 stale_reason = check_source_stale(root, subtrees, path)
                 if stale_reason:
                     raise MissingInput(
@@ -262,9 +251,7 @@ def unmapped_subtrees(
     if not libraries.is_dir():
         return []
     return sorted(
-        child.name
-        for child in libraries.iterdir()
-        if child.is_dir() and child.name not in mapped
+        child.name for child in libraries.iterdir() if child.is_dir() and child.name not in mapped
     )
 
 
@@ -276,9 +263,7 @@ def missing_sources(
     """Return every `.c`/`.cpp` under `lib/` that has no selected entry."""
     if sources is None:
         sources = get_sources(root)
-    remedies = {
-        subtree: remedy for subtrees, _database, remedy in sources for subtree in subtrees
-    }
+    remedies = {subtree: remedy for subtrees, _database, remedy in sources for subtree in subtrees}
     libraries = root / "lib"
     missing: list[tuple[Path, str]] = []
     if not libraries.is_dir():
@@ -318,9 +303,7 @@ def run_generate(root: Path, generate: bool = False) -> tuple[int, list[str]]:
 
     missing = missing_sources(root, selected, sources)
     if missing:
-        lines = [
-            f"FAIL gen-clangd-db: {len(missing)} lib source(s) have no compile command:"
-        ]
+        lines = [f"FAIL gen-clangd-db: {len(missing)} lib source(s) have no compile command:"]
         for source, remedy in missing:
             lines.append(f"  {source}")
             lines.append(f"  regenerate it with: {remedy}")
@@ -334,15 +317,11 @@ def run_generate(root: Path, generate: bool = False) -> tuple[int, list[str]]:
         entries.append(entry)
 
     write_database(root / OUTPUT_NAME, entries)
-    return 0, [
-        f"PASS gen-clangd-db: {len(entries)} entries from {len(sources)} database(s)"
-    ]
+    return 0, [f"PASS gen-clangd-db: {len(entries)} entries from {len(sources)} database(s)"]
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Generate the root compilation database for lib/."
-    )
+    parser = argparse.ArgumentParser(description="Generate the root compilation database for lib/.")
     parser.add_argument(
         "--root",
         metavar="PATH",

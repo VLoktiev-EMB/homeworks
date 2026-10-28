@@ -150,9 +150,7 @@ _KEYWORDS = (
 )
 
 CREDENTIAL = re.compile(
-    rb"(?i)"
-    + _KEYWORDS
-    + rb"(?:[\w.-]{0,128}[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})"
+    rb"(?i)" + _KEYWORDS + rb"(?:[\w.-]{0,128}[\"']?\s*[:=]\s*[\"']?\S+|\s+(?:is\s+)?\S{6,})"
 )
 
 ENVIRONMENT = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -210,9 +208,7 @@ def _run_json(argv: list[str]) -> object:
 def list_serial_devices() -> list[dict]:
     """Return the serial ports `pio device list --json-output` reports."""
     payload = _run_json(["pio", "device", "list", "--json-output"])
-    if not isinstance(payload, list) or not all(
-        isinstance(entry, dict) for entry in payload
-    ):
+    if not isinstance(payload, list) or not all(isinstance(entry, dict) for entry in payload):
         raise CaptureFailed("port discovery failed: unexpected device list payload")
     return payload
 
@@ -226,9 +222,7 @@ def _usb_identity(entry: dict) -> PortIdentity | None:
     match = USB_HWID.search(hwid)
     if match is None:
         return None
-    return PortIdentity(
-        path=port, vid=match.group(1).upper(), pid=match.group(2).upper()
-    )
+    return PortIdentity(path=port, vid=match.group(1).upper(), pid=match.group(2).upper())
 
 
 def resolve_port(explicit: str | None, devices: list[dict]) -> PortIdentity:
@@ -238,23 +232,16 @@ def resolve_port(explicit: str | None, devices: list[dict]) -> PortIdentity:
     the UART bridge), so the identity is never deduplicated by VID:PID: the
     user breaks the tie with `--port`.
     """
-    identities = [
-        identity
-        for entry in devices
-        if (identity := _usb_identity(entry)) is not None
-    ]
+    identities = [identity for entry in devices if (identity := _usb_identity(entry)) is not None]
     if explicit is not None:
         for identity in identities:
             if identity.path == explicit:
                 return identity
         raise CaptureFailed(
-            f"--port {explicit} is not a USB serial device reported by "
-            "pio device list"
+            f"--port {explicit} is not a USB serial device reported by pio device list"
         )
     if not identities:
-        raise CaptureFailed(
-            "no USB serial device found; connect a board or pass --port"
-        )
+        raise CaptureFailed("no USB serial device found; connect a board or pass --port")
     if len(identities) > 1:
         paths = ", ".join(identity.path for identity in identities)
         raise CaptureFailed(f"ambiguous USB serial ports ({paths}); pass --port")
@@ -297,14 +284,10 @@ def _config_sections(payload: object) -> dict[str, dict[str, object]]:
         mapping: dict[str, object] = {}
         for option in options:
             if not isinstance(option, (list, tuple)) or len(option) != 2:
-                raise CheckError(
-                    f"project configuration option in {name} is malformed"
-                )
+                raise CheckError(f"project configuration option in {name} is malformed")
             key, value = option
             if not isinstance(key, str):
-                raise CheckError(
-                    f"project configuration option in {name} is malformed"
-                )
+                raise CheckError(f"project configuration option in {name} is malformed")
             mapping[key] = value
         sections[name] = mapping
     return sections
@@ -314,9 +297,7 @@ def _default_envs(value: object) -> list[str]:
     """Return `platformio.default_envs` as a list of environment names."""
     if isinstance(value, str):
         return [value]
-    if isinstance(value, (list, tuple)) and all(
-        isinstance(item, str) for item in value
-    ):
+    if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value):
         return list(value)
     return []
 
@@ -336,15 +317,12 @@ def resolve_baud(explicit: int | None, config: object, env: str | None) -> int:
         defaults = _default_envs(sections.get("platformio", {}).get("default_envs"))
         if len(defaults) != 1:
             raise CheckError(
-                "cannot choose an environment from the project config; pass "
-                "--env or --baud"
+                "cannot choose an environment from the project config; pass --env or --baud"
             )
         section_name = f"env:{defaults[0]}"
     section = sections.get(section_name)
     if section is None:
-        raise CheckError(
-            f"{section_name} is absent from the project config; pass --env or --baud"
-        )
+        raise CheckError(f"{section_name} is absent from the project config; pass --env or --baud")
     if "monitor_speed" not in section:
         raise CheckError(f"{section_name} has no monitor_speed; pass --baud")
     try:
@@ -355,9 +333,7 @@ def resolve_baud(explicit: int | None, config: object, env: str | None) -> int:
             "an integer; pass --baud"
         ) from exc
     if baud <= 0:
-        raise CheckError(
-            f"{section_name} monitor_speed {baud} is not positive; pass --baud"
-        )
+        raise CheckError(f"{section_name} monitor_speed {baud} is not positive; pass --baud")
     return baud
 
 
@@ -595,8 +571,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.port is not None and not _valid_port_path(args.port):
             raise CheckError(
-                "--port must be an absolute serial device path under /dev, "
-                f"not {args.port!r}"
+                f"--port must be an absolute serial device path under /dev, not {args.port!r}"
             )
         root = resolve_root(args.dir)
         identity = resolve_port(args.port, list_serial_devices())

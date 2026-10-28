@@ -34,9 +34,7 @@ class SimulationPathTests(unittest.TestCase):
                 "wokwi-cli is not installed; install 0.28.1 with "
                 "`curl -L https://wokwi.com/ci/install.sh | sh -s 0.28.1`"
             )
-        self._tmp = tempfile.TemporaryDirectory(
-            prefix="simulation-paths-", dir=str(REPO_ROOT)
-        )
+        self._tmp = tempfile.TemporaryDirectory(prefix="simulation-paths-", dir=str(REPO_ROOT))
         self.addCleanup(self._tmp.cleanup)
         self.project_path = Path(self._tmp.name).relative_to(REPO_ROOT)
         self.project = str(self.project_path)

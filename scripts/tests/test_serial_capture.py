@@ -161,10 +161,7 @@ class CapturePtyTests(unittest.TestCase):
 
     def test_capture_fails_on_an_early_nonzero_exit(self) -> None:
         program = (
-            "import sys\n"
-            "sys.stdout.buffer.write(b'x')\n"
-            "sys.stdout.buffer.flush()\n"
-            "sys.exit(3)\n"
+            "import sys\nsys.stdout.buffer.write(b'x')\nsys.stdout.buffer.flush()\nsys.exit(3)\n"
         )
 
         with self.assertRaises(serial_capture.CaptureFailed) as caught:
@@ -176,9 +173,7 @@ class CapturePtyTests(unittest.TestCase):
 
     def test_capture_fails_on_an_early_zero_exit(self) -> None:
         with self.assertRaises(serial_capture.CaptureFailed) as caught:
-            serial_capture.capture_pty(
-                [sys.executable, "-c", "import sys; sys.exit(0)"], 5
-            )
+            serial_capture.capture_pty([sys.executable, "-c", "import sys; sys.exit(0)"], 5)
 
         message = str(caught.exception)
         self.assertIn("before the bound", message)
@@ -218,14 +213,10 @@ class CaptureReapTests(unittest.TestCase):
 
         with (
             mock.patch.object(serial_capture.subprocess, "Popen", recording_popen),
-            mock.patch.object(
-                serial_capture.select, "select", side_effect=RuntimeError("boom")
-            ),
+            mock.patch.object(serial_capture.select, "select", side_effect=RuntimeError("boom")),
         ):
             with self.assertRaises(RuntimeError):
-                serial_capture.capture_pty(
-                    [sys.executable, "-c", "import time; time.sleep(10)"], 5
-                )
+                serial_capture.capture_pty([sys.executable, "-c", "import time; time.sleep(10)"], 5)
 
         self.assertEqual(1, len(created))
         self.assertIsNotNone(created[0].returncode)
@@ -383,9 +374,7 @@ class AtomicLogWriteTests(unittest.TestCase):
             except BaseException as exc:  # reported below, never swallowed
                 errors.append(exc)
 
-        threads = [
-            threading.Thread(target=writer, args=(payload,)) for payload in payloads
-        ]
+        threads = [threading.Thread(target=writer, args=(payload,)) for payload in payloads]
         for thread in threads:
             thread.start()
         for thread in threads:
@@ -524,9 +513,7 @@ class CliUsageTests(unittest.TestCase):
         self.assert_usage_error(self.run_cli("--id", "not-an-id", "--seconds", "1"))
 
     def test_a_zero_baud_is_a_usage_error(self) -> None:
-        self.assert_usage_error(
-            self.run_cli("--id", HOMEWORK, "--baud", "0", "--seconds", "1")
-        )
+        self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--baud", "0", "--seconds", "1"))
 
     def test_a_zero_duration_is_a_usage_error(self) -> None:
         self.assert_usage_error(self.run_cli("--id", HOMEWORK, "--seconds", "0"))
@@ -716,9 +703,7 @@ class CaptureEndToEndTests(unittest.TestCase):
         child = [sys.executable, "-c", child_that_writes(payload)]
 
         with (
-            mock.patch.object(
-                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
-            ),
+            mock.patch.object(serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES),
             mock.patch.object(serial_capture, "_build_command", return_value=child),
         ):
             code, output = self.run_json(
@@ -829,12 +814,8 @@ class CliResultPayloadTests(unittest.TestCase):
         target = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
 
         with (
-            mock.patch.object(
-                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
-            ),
-            mock.patch.object(
-                serial_capture, "capture_and_store", return_value=(target, 17)
-            ),
+            mock.patch.object(serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES),
+            mock.patch.object(serial_capture, "capture_and_store", return_value=(target, 17)),
         ):
             code, output = self.run_json(
                 "--id", HOMEWORK, "--dir", str(self.root), "--json", "--baud", "115200"
@@ -858,19 +839,11 @@ class CliResultPayloadTests(unittest.TestCase):
         target = self.root / ".skill-state" / "logs" / f"{HOMEWORK}.log"
 
         with (
-            mock.patch.object(
-                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
-            ),
-            mock.patch.object(
-                serial_capture, "project_config", return_value=PROJECT_CONFIG
-            ),
-            mock.patch.object(
-                serial_capture, "capture_and_store", return_value=(target, 17)
-            ),
+            mock.patch.object(serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES),
+            mock.patch.object(serial_capture, "project_config", return_value=PROJECT_CONFIG),
+            mock.patch.object(serial_capture, "capture_and_store", return_value=(target, 17)),
         ):
-            code, output = self.run_json(
-                "--id", HOMEWORK, "--dir", str(self.root), "--json"
-            )
+            code, output = self.run_json("--id", HOMEWORK, "--dir", str(self.root), "--json")
 
         self.assertEqual(0, code, output)
         self.assertEqual(115200, json.loads(output.strip())["baud"])
@@ -879,12 +852,8 @@ class CliResultPayloadTests(unittest.TestCase):
         refusal = serial_capture.CaptureFailed("credential-shaped device output")
 
         with (
-            mock.patch.object(
-                serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES
-            ),
-            mock.patch.object(
-                serial_capture, "capture_and_store", side_effect=refusal
-            ),
+            mock.patch.object(serial_capture, "list_serial_devices", return_value=SERIAL_DEVICES),
+            mock.patch.object(serial_capture, "capture_and_store", side_effect=refusal),
         ):
             code, output = self.run_json(
                 "--id", HOMEWORK, "--dir", str(self.root), "--json", "--baud", "115200"

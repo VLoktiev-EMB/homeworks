@@ -18,6 +18,4 @@ import os
 
 Import("env")
 
-env.Replace(
-    COMPILATIONDB_PATH=os.path.join(env.subst("$PROJECT_DIR"), "compile_commands.json")
-)
+env.Replace(COMPILATIONDB_PATH=os.path.join(env.subst("$PROJECT_DIR"), "compile_commands.json"))

@@ -359,9 +359,7 @@ class SchematicCliTests(unittest.TestCase):
             hw_dir = Path(tmpdir)
             assets_dir = hw_dir / "assets"
             assets_dir.mkdir(parents=True)
-            (assets_dir / "diagram.json").write_text(
-                json.dumps(SIMPLE_DIAGRAM), encoding="utf-8"
-            )
+            (assets_dir / "diagram.json").write_text(json.dumps(SIMPLE_DIAGRAM), encoding="utf-8")
 
             self.assertEqual(run_schematic(str(hw_dir), "--svg").returncode, 0)
             first = (assets_dir / "schematic.svg").read_bytes()

@@ -71,9 +71,7 @@ def esptool_binary(directory):
 def build_merge_command(env, esptool, build_dir, target_path):
     """Return the ``esptool merge-bin`` argv; pure, so tests need no SCons."""
     board = env.BoardConfig()
-    images = [
-        (offset, env.subst(path)) for offset, path in env.get("FLASH_EXTRA_IMAGES", [])
-    ]
+    images = [(offset, env.subst(path)) for offset, path in env.get("FLASH_EXTRA_IMAGES", [])]
     images.append((env.subst("$ESP32_APP_OFFSET"), str(target_path)))
 
     command = [
