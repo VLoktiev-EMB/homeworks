@@ -90,6 +90,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: |
@@ -104,15 +105,48 @@ jobs:
         run: python -m pip install platformio==6.2.0
       - name: Run native logic tests
         run: pio test -d tests -e native
-      - name: Build all homeworks
+      - name: Build affected homeworks
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          for hw in homeworks/*; do
-            [ -d "$hw" ] || continue
-            [ -f "$hw/platformio.ini" ] || continue
-            echo "Building $hw..."
-            pio run -d "$hw"
-          done
+
+          build_all=0
+          targets=""
+
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
+            git fetch origin "$BASE_REF" --depth=1
+            diff_files=$(git diff --name-only "origin/$BASE_REF...HEAD")
+            echo "::group::PR changed files"
+            echo "$diff_files"
+            echo "::endgroup::"
+
+            if echo "$diff_files" | grep -qE '^(lib/|platformio\.shared\.ini|partitions/|scripts/pio/)'; then
+              echo "Shared code or configuration changed; building all homeworks."
+              build_all=1
+            else
+              targets=$(echo "$diff_files" | grep -oE '^homeworks/[^/]+' | sort -u || true)
+            fi
+          else
+            echo "Non-pull-request event ($EVENT_NAME); building all homeworks."
+            build_all=1
+          fi
+
+          if [ "$build_all" -eq 1 ]; then
+            targets=$(find homeworks -mindepth 1 -maxdepth 1 -type d | sort)
+          fi
+
+          if [ -z "$targets" ]; then
+            echo "No homework projects affected by changes in this PR. Skipping target firmware build."
+          else
+            for hw in $targets; do
+              if [ -f "$hw/platformio.ini" ]; then
+                echo "=== Building $hw ==="
+                pio run -d "$hw"
+              fi
+            done
+          fi
 
   python-tests:
     name: python-tests
