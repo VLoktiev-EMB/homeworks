@@ -18,6 +18,15 @@ Whenever asking the user for choices, missing parameters, confirmations, or reso
 ambiguities, use the native multiple-choice tool (`ask_question` / `AskUserQuestion`)
 with clear, structured options rather than asking open-ended plain text questions.
 
+## Source of truth
+
+Never use an existing `homeworks/<id>` tree, branch or tag as an example or a
+starting point, and never search `homeworks/` for a pattern to copy. The
+templates in `templates/`, the shared `lib/`, the standards in `.agents/`, and
+the assignment specification are the only sources of truth. The preflight only
+decides whether an existing homework must be continued; it is never mined for
+design.
+
 ## Before the first question
 
 - Take the homework id from `/new-homework <id>`. When it is absent, prompt the user for it.

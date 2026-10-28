@@ -21,10 +21,12 @@ Before `mode`, check whether the id already exists:
 `git ls-tree -r --name-only HEAD -- homeworks/<id>`, and the working tree at
 `homeworks/<id>`. An existing branch, tag or homework means the id is published
 or in progress: never scaffold a duplicate and never move the tag. Ask
-`[Continue on hw/<id> | Start a new id | Stop]` and record the answer. If the id
-is free and the current branch is `main` or `master`, create `hw/<id>` before
-the first write; if the current branch is another branch, require `hw/<id>` or
-ask. Never scaffold or commit on the default branch.
+`[Continue on hw/<id> | Start a new id | Stop]` and record the answer. The
+preflight only decides whether to continue an existing homework; never read that
+homework as a design example. If the id is free and the current branch is `main`
+or `master`, create `hw/<id>` before the first write; if the current branch is
+another branch, require `hw/<id>` or ask. Never scaffold or commit on the default
+branch.
 
 ## mode
 
@@ -163,3 +165,6 @@ The scaffold facts below are not questions, but every run must respect them:
 7. Register `homeworks/<id>` in `homeworks.code-workspace` when absent. The repository
    currently has no workspace generator, so append the folder entry idempotently; if a
    generator appears, run it instead.
+8. Never inspect or copy an existing `homeworks/<id>` tree, branch or tag as an example.
+   The templates, `lib/`, and the standards are the only sources of truth; the preflight
+   only decides whether an existing homework is continued.
