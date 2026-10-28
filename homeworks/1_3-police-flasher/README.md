@@ -86,6 +86,4 @@ The scenario exercises complete interactive behavior within ~1.2s of simulation 
 - Short button press: sets `btn1` pressed for 50 ms (debounced), asserting transition to `mode: double_flash`.
 - Long button press: sets `btn1` pressed for 650 ms (holding past 600 ms), asserting transition to `speed: fast`.
 
-The commands and evidence are recorded in the report and in
-`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool decision is in
-`docs/decisions/0014-simulator-selection.md`.
+The commands and evidence are recorded in the report.

@@ -17,7 +17,7 @@ static const uint8_t LED_PIN = 2;
 
 /* File-scope storage is an Arduino composition-root necessity: setup() runs once
    and loop() runs forever, so the contracts must outlive setup(). This is not
-   the global mutable state that library code prohibits (ADR-0008): the
+   the global mutable state that library code prohibits: the
    instances are owned here and passed to the contract calls by pointer. */
 static port_gpio_t gpio;
 static port_log_t logger;

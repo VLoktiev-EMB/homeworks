@@ -287,8 +287,7 @@ equipment offline during automated tracer run`, rather than estimated from the c
 **Simulation.** The canonical diagram passed `wokwi-cli lint --offline`, and the scenario was
 executed in Wokwi: the automated scenario simulates bootup, short press mode transition, and long press speed transition, asserting serial output and pin levels. The run output stays `simulated`
 evidence, never bench evidence. The raw commands and values are documented in
-`.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md` and `homeworks/1_3-police-flasher/scenario.yaml`, and the tool selection is recorded
-in `docs/decisions/0014-simulator-selection.md`.
+`homeworks/1_3-police-flasher/scenario.yaml`.
 
 ### Measurement Ledger
 
@@ -451,10 +450,6 @@ request, after which the release tag `hw/1_3-police-flasher` is created through
 
 [4] Wokwi, "Diagram Format," Wokwi documentation. [Online]. Available: <https://docs.wokwi.com/diagram-format>
 
-[5] VLoktiev-EMB, "ADR-0007: Symlinked shared libraries via lib_deps and library.json," Homeworks repository, Oct. 2026. [Online]. Available: <https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0007-symlink-shared-libraries.md>
-
-[6] VLoktiev-EMB, "ADR-0008: Common depends on port; ports are consumer-owned," Homeworks repository, Oct. 2026. [Online]. Available: <https://github.com/VLoktiev-EMB/homeworks/blob/main/docs/decisions/0008-common-depends-on-port.md>
-
 ## Decision Appendix
 
 1. **D-03 half-bridge correction.** The first single-GPIO idea was a literal anti-parallel pair
@@ -484,9 +479,7 @@ request, after which the release tag `hw/1_3-police-flasher` is created through
    needs a separate script, which Phase 8 owns.
 7. **Wokwi execution.** `WOKWI_CLI_TOKEN` was supplied outside the repository and its value is
    never recorded. All three counted runs exited 0 with one `pattern ready` serial line each, so
-   `simulation.status` is `verified`; the commands and per-run values are in
-   `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the simulator decision is
-   `docs/decisions/0014-simulator-selection.md`.
+   `simulation.status` is `verified`.
 8. **Private library and controller seam (D-05, D-06, D-07).** The pattern logic stays
    homework-local at `lib/pattern` with a manifest that declares no frameworks; the controller
    takes `port_gpio_t` and `port_time_t` by value; the Arduino adapters live only in the

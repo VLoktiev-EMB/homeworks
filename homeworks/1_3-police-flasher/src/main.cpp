@@ -28,7 +28,7 @@ static const uint8_t BUTTON_PIN = 7;
 
 /* File-scope storage is an Arduino composition-root necessity: setup() runs once
    and loop() runs forever, so the objects must outlive setup(). This is not the
-   global mutable state that library code prohibits (ADR-0008): the controller is
+   global mutable state that library code prohibits: the controller is
    owned here and passed to the contract calls by pointer. */
 static pattern_controller_t controller;
 static port_gpio_t gpio;

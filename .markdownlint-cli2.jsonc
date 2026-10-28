@@ -12,9 +12,7 @@
     // MD060 is the table-style rule; it would restyle every table as well.
     "MD060": false,
     // MD024: a document title repeated by a heading at a different nesting level
-    // is this repository's deliberate structure (the root README and ADR 0001).
-    // `siblings_only` permits exactly that while still failing a real duplicate
-    // at the same level, so no ADR body is rewritten and no heading is renamed.
+    // `siblings_only` permits that while still failing a real duplicate at the same level.
     "MD024": { "siblings_only": true }
   }
 }
