@@ -28,8 +28,7 @@ Run from the repository root, in this order, before opening a pull request.
 ## Repository layout
 
 Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gitattributes`,
-`.pre-commit-config.yaml`, `generated.manifest`, `generated.skills.manifest`, and the paths
-below.
+`.pre-commit-config.yaml`, and the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
 - `.github/workflows/ci.yml` — the pull-request gate: `meta`, `changes`, `build`,
@@ -41,36 +40,23 @@ below.
 - `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
   no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
-- `scripts/` — deterministic checks, the view generator and the tag script; `scripts/tests/`
+- `scripts/` — deterministic checks and the tag script; `scripts/tests/`
   — the test suite.
 - `schema/` — `homework.schema.json`, the JSON Schema 2020-12 metadata contract.
-- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`, plus
-  `templates/views/` — the text templates `scripts/gen_views.py` renders.
+- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`.
 - `lib/` — `port`, `common`, `host`, and the thin Arduino and ESP-IDF adapters.
 - `homeworks/<id>/` — one project per assignment, created only by `scripts/new_homework`.
-- `.claude/skills/` — the canonical authored skills, each with `SKILL.md` and optional
+- `.agents/skills/` — the canonical authored skills, each with `SKILL.md` and optional
   `references/`, plus `_shared/guardrails.md`.
-- `.agents/skills/` — the generated, committed mirror for non-Claude agents, never
-  hand-edited.
-- `scripts/gen_skills.py` — the only writer of the mirror, with `--check`.
-- `generated.skills.manifest` — the mirror ledger.
+- `.claude/skills` — symlink to `.agents/skills/` for tool compatibility.
 
-The generated paths — the table region in `README.md`, `homeworks.code-workspace` and
-`platformio.shared.ini` — are committed and registered in `generated.manifest`;
-`.agents/skills/` is committed and registered in `generated.skills.manifest`. Each is
-regenerated with its own generator and drift-checked. The `gen-views-check` pre-commit hook
-runs `scripts/gen_views.py --all --check` and fails on drift; the `--check` now runs inside
-`meta`'s `pre-commit run --all-files` rather than in a separate workflow. The fix is
-`uv run scripts/gen_views.py --all`, never a hand edit. `site/` and `.pio/` are build
-output and stay ignored.
+`site/` and `.pio/` are build output and stay ignored.
 
 `scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
 `platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
 explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
-`templates/views/`, `boards/`, `.skill-state/`, `generated.manifest`,
-`generated.skills.manifest`, `homeworks.code-workspace`, `scripts/gen_skills.py` and
-`scripts/serial_capture.py`) selects nothing, and any unrecognised path widens to every
-project.
+`boards/`, `.skill-state/`, `homeworks.code-workspace`, and `scripts/serial_capture.py`)
+selects nothing, and any unrecognised path widens to every project.
 
 `ci.yml`'s `changes` job consumes its `{build, simulate}` payload as the build and simulation
 matrix, and `nightly.yml` feeds the mapper the `platformio.shared.ini` path so the mapper's
@@ -247,17 +233,10 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: review]** Link videos; never commit them. Images referenced by
   a repository Markdown document (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) stay normal git
   objects, so the repository view and a checkout render the same bytes.
-- **[MUST]** **[ENFORCED: pre-commit]** Generated files are never committed:
+- **[MUST]** **[ENFORCED: pre-commit]** Generated build output is never committed:
   `compile_commands.json`, the `site/` build, and build output such as `.pio/` are listed
   in `.gitignore`, and the `no-generated-files` hook fails when any is tracked anyway —
   `.gitignore` alone cannot stop `git add -f`.
-- **[MUST]** **[ENFORCED: pre-commit]** Generated files fall into two classes. Build output
-  (`compile_commands.json`, the `site/` build, `.pio/`, and ESP-IDF build products) is never
-  committed. A committed generated projection — the README table region,
-  `homeworks.code-workspace`, `platformio.shared.ini`, `.agents/skills/` and
-  `generated.skills.manifest` — is regenerated with its own generator and drift-checked by
-  its hook, so a hand edit is never the fix; for the skills mirror the repair command is
-  `uv run scripts/gen_skills.py`.
 
 ### Licensing and identity
 
@@ -303,7 +282,7 @@ Good:  feat(1_3): add police flasher state machine
 | Choose a branch name | this file, "Git, branches, and history" |
 | Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
 | Report structure, evidence, and the self-audit checklist | `docs/standards/report.md` |
-| Reuse a versioned workflow skill | canonical `.claude/skills/`, generated mirror `.agents/skills/`; repair with `uv run scripts/gen_skills.py` |
+| Reuse a versioned workflow skill | canonical `.agents/skills/`, symlinked `.claude/skills/` |
 
 ## Precedence
 

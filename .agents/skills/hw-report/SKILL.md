@@ -5,7 +5,6 @@ metadata:
   version: "1.0"
   status: active
 ---
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 
 # Homework Report
 

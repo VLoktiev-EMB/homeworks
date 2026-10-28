@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Question bank
 
 This bank is the intake for `new-homework`. Acquire the homework id before the first

@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Skill state file
 
 `new-homework` keeps one checkpoint record per homework at `.skill-state/<id>.json`.

@@ -5,7 +5,6 @@ metadata:
   version: "0.3"
   status: active
 ---
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 > **Invocation:** explicit only — run `/new-homework`. Do not invoke this skill automatically.
 
 # New Homework
