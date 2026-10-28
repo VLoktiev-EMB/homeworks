@@ -29,7 +29,8 @@ the same register as `AGENTS.md`.
 - **[MUST]** **[ENFORCED: review]** One atomic commit per change, verified and
   without unrelated work.
 - **[MUST]** **[ENFORCED: review]** Commit messages follow Conventional Commits
-  `type(scope): summary`, with the phase-plan or homework ID as the scope.
+  `type(scope): summary`, with an optional scope naming the homework ID or the
+  affected area (`schematic`, `simulate`, `scripts`, `vscode`, `repo`).
 - **[MUST]** **[ENFORCED: review]** Squash-merge only into the default branch.
 - **[MUST]** **[ENFORCED: review]** Create the `hw/<id>` tag only through
   `scripts/tag_homework.sh <id>`, after the homework pull request is merged.

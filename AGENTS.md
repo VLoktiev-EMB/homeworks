@@ -81,15 +81,21 @@ caught (`[ENFORCED: pre-commit]`, `[ENFORCED: CI]`, or
   unrelated work in the same commit.
 - **[MUST]** **[ENFORCED: review]** Commit messages follow Conventional Commits
   `type(scope): summary`, with `type` one of `feat`, `fix`, `test`, `refactor`, `perf`,
-  `docs`, `style`, or `chore`, and `scope` the phase-plan or homework ID.
-- **[SHOULD]** **[ENFORCED: review]** Prefer one logical change per pull request; split a
-  change when its description needs an "and".
+  `docs`, `style`, `chore`, or `ci`. The scope is optional and names the area: a homework
+  ID (`1_3`), a shared subsystem (`schematic`, `simulate`, `scripts`, `vscode`), or `repo`.
+  The summary is imperative and states the essence of the change.
+- **[SHOULD]** **[ENFORCED: review]** Prefer one logical change per pull request. A
+  cohesive delivery may include the directly supporting tooling when the deliverable
+  cannot be produced without it; the body names the secondary change. Split when the title
+  needs an "and" and the parts can stand alone.
 
 Highest-risk example — the commit message:
 
 ```text
 Bad:   updated stuff
 Good:  feat(1_3): add police flasher state machine
+Good:  feat(schematic): add row layout for shared pins
+Good:  style(scripts): format Python sources
 ```
 
 ### Git, branches, and history
