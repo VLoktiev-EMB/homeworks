@@ -2,7 +2,7 @@
 name: new-homework
 description: Use when starting a new homework assignment, scaffolding a fresh homework directory, or requesting the step-by-step guided homework workflow.
 metadata:
-  version: "0.3"
+  version: "0.4"
   status: active
 ---
 > **Invocation:** explicit only — run `/new-homework`. Do not invoke this skill automatically.
@@ -31,6 +31,34 @@ with clear, structured options rather than asking open-ended plain text question
   - `Stop`
   Only an explicit clean start may overwrite an abandoned record.
 - The id is not a bank topic: `mode` stays the bank's first question.
+
+## Preflight: existing homework and branch
+
+After the id is validated and before any intake question or write, check whether
+the homework already exists:
+
+- `git branch --list "hw/<id>"` and `git tag -l "hw/<id>"`.
+- `git ls-tree -r --name-only HEAD -- homeworks/<id>` and the working tree at
+  `homeworks/<id>`.
+
+An existing branch, tag or homework means the id is already in progress or
+published. Never scaffold a duplicate on the default branch and never move the
+published tag. Ask via native multiple-choice:
+
+- `(Recommended) Continue on the existing hw/<id> branch` - switch to
+  `refs/heads/hw/<id>` (the full ref disambiguates it from the same-name tag),
+  resume from `next_block`, and leave the tag untouched.
+- `Start a new implementation under a new id` - ask for a free id; the published
+  `hw/<id>` tag is immutable.
+- `Stop` - write nothing.
+
+If a switch would overwrite uncommitted work, stop and ask; never discard the
+working tree. When the id is free, put the work on a branch before the first
+write:
+
+- On `main` or `master`, run `git switch -c hw/<id>`.
+- On another branch, require `hw/<id>` or ask; never scaffold or commit on the
+  default branch.
 
 ## Board and language
 
@@ -83,14 +111,46 @@ Validate the scaffolded metadata:
 uv run scripts/check_metadata.py homeworks/<id>
 ```
 
+Register the homework as a workspace root in `homeworks.code-workspace`:
+
+- Parse the JSON, append `{"name": "<id>", "path": "homeworks/<id>"}` to
+  `folders` when that path is absent, and write the file back atomically with
+  tab indentation.
+- Re-run the edit and confirm the path appears exactly once. If the repository
+  later grows a workspace generator, run the generator instead of hand-editing.
+
+## Shared libraries
+
+Before writing timing, debounce, CRC, ring-buffer or hex helpers, read `lib/`:
+
+- `lib/common` provides `common_elapsed_ms`, `common_timer_expired`,
+  `common_debounce_update`, CRC, hex and ring-buffer helpers.
+- `lib/port` owns the contracts; `lib/arduino` and `lib/espidf` are adapters;
+  `lib/host` provides the fakes for native tests.
+
+Reuse an existing helper instead of writing a second implementation. When the
+homework has pure logic of its own, put it in a homework-local private library
+`homeworks/<id>/lib/<name>/` with a `library.json` that omits `frameworks` and
+`platforms` and never enters `lib_deps`; the soft compatibility mode would hide
+a framework-tagged library from the native environment. Test the private
+library under `test/test_<name>/`. Keep the private library's pure tables free
+of framework headers, keep `src/main.cpp` a thin composition root, and use
+`common_debounce_update` / `common_elapsed_ms` for timing instead of a second
+implementation.
+
 ## Block sequence
 
 The deliverable sequence is:
 1. `scaffold`: generate the directory tree and initial metadata.
-2. `controller`: implement the firmware in `src/` and header interfaces in `include/`. Verify with `pio run -d homeworks/<id>`.
-3. `native-tests`: implement pure-logic unit tests in `test/test_homework/`. Verify with `pio test -d homeworks/<id> -e native`.
+2. `controller`: implement the firmware in `src/` and header interfaces in `include/`, or in a homework-local private library when the pure logic must be shared with native tests. Verify with `pio run -d homeworks/<id>`, then generate the editor databases: `pio run -d homeworks/<id> -t compiledb`, `uv run scripts/gen_clangd_db.py --generate`, and `"$HOME/.local/bin/clangd-wrapper" --check=homeworks/<id>/src/main.cpp`; expect `All checks completed, 0 errors`.
+3. `native-tests`: implement pure-logic unit tests in `test/test_homework/` or the private-library suites `test/test_<name>/`. Verify with `pio test -d homeworks/<id> -e native`.
 4. `wiring`: author `assets/diagram.json` and generate vector schematics via `uv run scripts/gen_schematic.py homeworks/<id> --all`.
 5. `report`: populate `report.md` matching `.agents/standards/report.md` with honest evidence labels.
+
+`pio run` does not run the `compiledb` target. The per-project `.clangd` points
+at `homeworks/<id>/compile_commands.json`, so without that step clangd reports
+`'Arduino.h' file not found`; `gen_clangd_db.py` adds the root database that
+serves `lib/`. `.agents/standards/vscode.md` owns the full editor contract.
 
 In standard mode, each block is implemented cleanly, verified against its toolchain command,
 and reported concisely. In guided mode, pauses are prompted via native multiple-choice options:
@@ -129,5 +189,15 @@ section. `.agents/standards/report.md` owns that section's format and contract.
 
 ## After the run
 
-Point an editor question at `.agents/standards/vscode.md`, which is the one onboarding guide
-and the only committed editor contract.
+Before handing off, re-run the editor check on the final source:
+
+```bash
+pio run -d homeworks/<id> -t compiledb
+uv run scripts/gen_clangd_db.py --generate
+"$HOME/.local/bin/clangd-wrapper" --check=homeworks/<id>/src/main.cpp
+```
+
+Expect `All checks completed, 0 errors`. Point the editor question at
+`.agents/standards/vscode.md`, which is the one onboarding guide and the only
+committed editor contract. State the branch, and remember that no commit, push
+or tag happens without explicit confirmation.
