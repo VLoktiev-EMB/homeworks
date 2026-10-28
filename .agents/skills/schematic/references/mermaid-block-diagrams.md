@@ -51,6 +51,11 @@ The generator then emits `esp --> led_blue`. Writing the LED first
 arrow this document forbids. Fix the connection order in `diagram.json`; never
 hand-edit the generated Mermaid text.
 
+A component-to-component edge is oriented away from a power-fed part: when
+`led_blue:A -> r_blue:1` is written in that order and `r_blue` is fed from
+`esp:3V3.1`, the generator emits `r_blue --> led_blue`, so the block diagram
+reads from the rail outward rather than backward into the resistor.
+
 ---
 
 ## 3. Structural Subgraphs Pattern

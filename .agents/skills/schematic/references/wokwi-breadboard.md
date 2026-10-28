@@ -112,13 +112,23 @@ stack:
 Rules:
 
 1. Give each branch its own row and at least 40–60 px of vertical separation.
-2. Rotate a horizontal LED with `"rotate": 90` or `270` so `A` and `C` land left
-   and right. Put the anode toward the source, then verify the A/C direction by
-   hovering the pins in the editor.
-3. Join the cathode ends with one vertical ground bus and take that bus to the
-   board `GND` pin. Do not run two independent long ground wires that overlap.
+2. Keep the LED in its default vertical orientation so its `label` stays
+   horizontal, and let the resistor sit on the horizontal row beside it. A
+   90°/270° rotation also turns the label on its side; rotate only an unlabeled
+   LED, or replace the label with a `wokwi-text` part. Resistors are
+   non-polar; leave them in the default orientation.
+3. Use one `wokwi-gnd` symbol beside the LEDs and connect every cathode to
+   `gnd1:GND`. The symbol is the global 0 V reference, so the long return loop
+   to the board GND pin is unnecessary. Default LEDs have `A` at the top and
+   `C` at the bottom; that orientation matches a downward current path.
 4. Feed the sink branch from the board `3V3` pin; do not invent a second supply.
-5. Route every wire with right-angle vectors and never across the board face.
+5. Use exactly two wire colours: **red** for the active/source path and
+   **black** for a ground or sink return. The blue sink return is black even
+   though it ends at GPIO4, because it is a return path; the red source path
+   ends at the LED anode. Do not rainbow-code a simple LED circuit.
+6. Route every wire with right-angle vectors and never across the board face.
+   Give the sink return its own outside lane so it cannot cross the red
+   source branches.
 
 Example for the shared-GPIO4 police flasher:
 
@@ -135,25 +145,62 @@ Example for the shared-GPIO4 police flasher:
       "left": 0,
       "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
     },
-    { "type": "wokwi-resistor", "id": "r_blue", "top": 20, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_blue", "top": 20, "left": -145, "rotate": 270, "attrs": { "color": "blue", "label": "BLUE" } },
-    { "type": "wokwi-resistor", "id": "r_red", "top": 76.8, "left": -90, "attrs": { "value": "220" } },
-    { "type": "wokwi-led", "id": "led_red", "top": 76.8, "left": -145, "rotate": 90, "attrs": { "color": "red", "label": "RED" } },
-    { "type": "wokwi-resistor", "id": "r_white", "top": 140, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_white", "top": 140, "left": -145, "rotate": 90, "attrs": { "color": "white", "label": "WHITE" } }
+    {
+      "type": "wokwi-resistor",
+      "id": "r_blue",
+      "top": 23.45,
+      "left": -97.4,
+      "attrs": { "value": "100" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_blue",
+      "top": -13.2,
+      "left": -207.4,
+      "attrs": { "color": "blue", "label": "BLUE" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_red",
+      "top": 80.75,
+      "left": -96,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_red",
+      "top": 73.2,
+      "left": -207.4,
+      "attrs": { "color": "red", "label": "RED" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_white",
+      "top": 109.55,
+      "left": -96,
+      "attrs": { "value": "100" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_white",
+      "top": 140.4,
+      "left": -207.4,
+      "attrs": { "color": "white", "label": "WHITE" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 200, "left": -260, "attrs": {} }
   ],
   "connections": [
-    ["esp:TX", "$serialMonitor:RX", "", []],
-    ["esp:RX", "$serialMonitor:TX", "", []],
-    ["esp:3V3.1", "r_blue:1", "red", ["h-40", "v20"]],
-    ["r_blue:2", "led_blue:A", "blue", []],
-    ["esp:4", "led_blue:C", "blue", ["h-120", "v-56"]],
-    ["esp:4", "r_red:2", "orange", []],
-    ["r_red:1", "led_red:A", "blue", []],
-    ["led_red:C", "led_white:C", "black", ["v60"]],
-    ["led_white:C", "esp:GND.1", "black", ["v120", "h120"]],
-    ["esp:5", "r_white:2", "purple", ["v42", "h-90"]],
-    ["r_white:1", "led_white:A", "purple", []]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:4", "led_blue:C", "black", [ "h-225.88", "v-28.98" ] ],
+    [ "esp:4", "r_red:2", "red", [] ],
+    [ "r_red:1", "led_red:A", "red", [ "h-57.6", "v28.8" ] ],
+    [ "led_red:C", "gnd1:GND", "black", [ "h-57.2", "v84.8" ] ],
+    [ "led_white:C", "gnd1:GND", "black", [ "h-57.2", "v17.6" ] ],
+    [ "esp:5", "r_white:2", "red", [ "h-24.28", "v42", "v36.27" ] ],
+    [ "r_white:1", "led_white:A", "red", [ "h-38.4", "v67.2" ] ],
+    [ "led_blue:A", "r_blue:1", "red", [ "v0" ] ],
+    [ "r_blue:2", "esp:3V3.1", "red", [ "v0" ] ]
   ],
   "dependencies": {}
 }
@@ -189,14 +236,15 @@ When routing from the left MCU header to the breadboard on the right:
 
 ## 4. Standard Wire Color Palette
 
+A simple LED circuit uses two colours, not six. The reader should see the
+current path at a glance.
+
 | Wire Function | Wire Color in `diagram.json` | Example Nets |
 |---|---|---|
-| Power (`3.3V` / `5V`) | `"red"` | `esp:3V3.1 -> led2:A`, `esp:3V3.1 -> bb1:tp.1` |
-| Ground (`GND`) | `"black"` | `led1:C -> esp:GND.1`, `btn1:2.l -> esp:GND.1` |
-| Input Signals | `"green"` | `btn1:1.l -> esp:7` |
-| Driver / Output 1 | `"orange"` | `esp:4 -> r1:2` |
-| Driver / Output 2 | `"purple"` | `esp:6 -> r2:2` |
-| Intermediate Jumpers | `"blue"` | `r1:1 -> led1:A`, `r1:1 -> led2:C` |
+| Active / source path | `"red"` | `esp:3V3.1 -> r_blue:2`, `esp:4 -> r_red:2`, `r_red:1 -> led_red:A` |
+| Ground or sink return | `"black"` | `led_red:C -> gnd1:GND`, `esp:4 -> led_blue:C` |
+| Multi-signal bus discrimination | a distinct colour per signal | use only when two signals share a bus and the reader must tell them apart |
+| Debug serial | `"green"` | `esp:TX -> $serialMonitor:RX` |
 
 ---
 

@@ -10,25 +10,62 @@
       "left": 0,
       "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
     },
-    { "type": "wokwi-resistor", "id": "r_blue", "top": 20, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_blue", "top": 20, "left": -145, "rotate": 270, "attrs": { "color": "blue", "label": "BLUE" } },
-    { "type": "wokwi-resistor", "id": "r_red", "top": 76.8, "left": -90, "attrs": { "value": "220" } },
-    { "type": "wokwi-led", "id": "led_red", "top": 76.8, "left": -145, "rotate": 90, "attrs": { "color": "red", "label": "RED" } },
-    { "type": "wokwi-resistor", "id": "r_white", "top": 140, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_white", "top": 140, "left": -145, "rotate": 90, "attrs": { "color": "white", "label": "WHITE" } }
+    {
+      "type": "wokwi-resistor",
+      "id": "r_blue",
+      "top": 23.45,
+      "left": -97.4,
+      "attrs": { "value": "100" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_blue",
+      "top": -13.2,
+      "left": -207.4,
+      "attrs": { "color": "blue", "label": "BLUE" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_red",
+      "top": 80.75,
+      "left": -96,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_red",
+      "top": 73.2,
+      "left": -207.4,
+      "attrs": { "color": "red", "label": "RED" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_white",
+      "top": 109.55,
+      "left": -96,
+      "attrs": { "value": "100" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_white",
+      "top": 140.4,
+      "left": -207.4,
+      "attrs": { "color": "white", "label": "WHITE" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 200, "left": -260, "attrs": {} }
   ],
   "connections": [
-    ["esp:TX", "$serialMonitor:RX", "", []],
-    ["esp:RX", "$serialMonitor:TX", "", []],
-    ["esp:3V3.1", "r_blue:1", "red", ["h-40", "v20"]],
-    ["r_blue:2", "led_blue:A", "blue", []],
-    ["esp:4", "led_blue:C", "blue", ["h-120", "v-56"]],
-    ["esp:4", "r_red:2", "orange", []],
-    ["r_red:1", "led_red:A", "blue", []],
-    ["led_red:C", "led_white:C", "black", ["v60"]],
-    ["led_white:C", "esp:GND.1", "black", ["v120", "h120"]],
-    ["esp:5", "r_white:2", "purple", ["v42", "h-90"]],
-    ["r_white:1", "led_white:A", "purple", []]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:4", "led_blue:C", "black", [ "h-225.88", "v-28.98" ] ],
+    [ "esp:4", "r_red:2", "red", [] ],
+    [ "r_red:1", "led_red:A", "red", [ "h-57.6", "v28.8" ] ],
+    [ "led_red:C", "gnd1:GND", "black", [ "h-57.2", "v84.8" ] ],
+    [ "led_white:C", "gnd1:GND", "black", [ "h-57.2", "v17.6" ] ],
+    [ "esp:5", "r_white:2", "red", [ "h-24.28", "v42", "v36.27" ] ],
+    [ "r_white:1", "led_white:A", "red", [ "h-38.4", "v67.2" ] ],
+    [ "led_blue:A", "r_blue:1", "red", [ "v0" ] ],
+    [ "r_blue:2", "esp:3V3.1", "red", [ "v0" ] ]
   ],
   "dependencies": {}
 }

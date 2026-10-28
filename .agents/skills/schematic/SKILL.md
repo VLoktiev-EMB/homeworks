@@ -139,7 +139,10 @@ author it by hand (details in [references/wokwi-breadboard.md](references/wokwi-
    long independent ground wires that overlap each other.
 6. **Orthogonal wiring.** Wire bends use right-angle vectors (`["h...", "v..."]`). Never
    route diagonally across the MCU face, antenna, or button faces.
-7. **Color code.** `red` for power, `black` for ground, and distinct colors for signals.
+7. **Two-colour palette.** Draw every active/source path in `red` and every
+   ground or sink return in `black`. Add a third colour only when a
+   multi-signal bus needs discrimination; a simple LED circuit needs no
+   rainbow.
 8. **Breadboard only when needed.** Use one for multi-pin DIP ICs or dense bus topologies,
    and seat every component in a tie strip.
 
@@ -200,6 +203,19 @@ uv run --with schemdraw==0.23 python -m unittest scripts.tests.test_gen_schemati
 Then open `assets/schematic.svg` and check by eye: power at the top, ground at the bottom,
 one row per branch, no two labels touching, and no internal `N` labels in a discrete
 circuit. Open `diagram.json` in the Wokwi editor and check the same for the breadboard view.
+
+### Visual acceptance checklist
+
+A schematic is finished only when the canvas passes this list:
+
+- The board is on one side, power at the top, ground at the bottom.
+- Each branch has its own row; LEDs are vertical with horizontal labels.
+- Resistors are horizontal and consistently oriented; a flipped band pattern is
+  cosmetic, not a different circuit.
+- Red marks every active/source path; black marks ground and sink returns.
+- One `wokwi-gnd` symbol serves the returns; there is no long ground loop.
+- No wire crosses a component, a label, or another wire.
+- No wire runs diagonally across the board face.
 
 When a diagram is malformed, `--check` names the offending part or terminal. Fix the
 diagram, not the renderer. A new circuit is a new `diagram.json`, never a new code path.

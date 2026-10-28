@@ -34,6 +34,12 @@ from dataclasses import dataclass, field
 _GROUND_WORDS = ("GND", "VSS", "0V")
 _POWER_WORDS = ("3V3", "3.3V", "5V", "VCC", "VDD", "VIN", "VBUS")
 
+# Wokwi virtual parts carry no physical component. A GND/VCC symbol still names
+# a rail, so its terminal folds into the matching MCU rail net; annotation parts
+# are ignored entirely.
+_VIRTUAL_PART_TYPES = frozenset({"wokwi-gnd", "wokwi-vcc", "wokwi-text", "wokwi-junction"})
+_VIRTUAL_RAILS = {"wokwi-gnd": "GND", "wokwi-vcc": "3V3"}
+
 
 class _FallbackNeeded(Exception):
     """The branch layout cannot represent this diagram; use net labels."""
@@ -131,6 +137,15 @@ def _prettify_pin(pin: str) -> str:
     return pin
 
 
+def _map_virtual_terminal(term: str, parts: dict, mcu_id: str | None) -> str:
+    """Fold a Wokwi GND/VCC symbol terminal into the matching MCU rail net."""
+    part, _pin = _split_terminal(term)
+    target = _VIRTUAL_RAILS.get(str(parts.get(part, {}).get("type", "")))
+    if target is not None and mcu_id is not None and part != mcu_id:
+        return f"{mcu_id}:{target}"
+    return term
+
+
 def _build_model(diagram: dict) -> _Model:
     parts = {part["id"]: part for part in diagram.get("parts", []) if "id" in part}
     mcu = next((part for part in parts.values() if "board" in str(part.get("type", ""))), None)
@@ -144,6 +159,8 @@ def _build_model(diagram: dict) -> _Model:
         left, right = connection[0], connection[1]
         if "$serialMonitor" in left or "$serialMonitor" in right:
             continue
+        left = _map_virtual_terminal(left, parts, mcu_id)
+        right = _map_virtual_terminal(right, parts, mcu_id)
         left_net = _normalize_terminal(left, mcu_id)
         right_net = _normalize_terminal(right, mcu_id)
         union.union(left_net, right_net)
@@ -178,6 +195,8 @@ def _build_model(diagram: dict) -> _Model:
     components: list[_Component] = []
     for ref, part in parts.items():
         if ref == mcu_id or ref.startswith("$"):
+            continue
+        if str(part.get("type", "")) in _VIRTUAL_PART_TYPES:
             continue
         pins: dict[str, str] = {}
         for connection in diagram.get("connections", []):

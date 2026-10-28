@@ -79,6 +79,21 @@ SHARED_PIN_DIAGRAM = {
     ],
 }
 
+VIRTUAL_GROUND_DIAGRAM = {
+    "version": 1,
+    "parts": [
+        {"type": "board-esp32-s3-devkitc-1", "id": "esp"},
+        {"type": "wokwi-resistor", "id": "r1", "attrs": {"value": "220"}},
+        {"type": "wokwi-led", "id": "led1", "attrs": {"color": "red"}},
+        {"type": "wokwi-gnd", "id": "gnd1"},
+    ],
+    "connections": [
+        ["esp:15", "r1:2", "orange", []],
+        ["r1:1", "led1:A", "blue", []],
+        ["led1:C", "gnd1:GND", "black", []],
+    ],
+}
+
 
 def run_schematic(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
     """Invoke `uv run scripts/gen_schematic.py` from the repository root."""
@@ -182,6 +197,37 @@ class MermaidGenerationTests(unittest.TestCase):
         self.assertIn("esp -->|4 -> 1| r1", text)
         self.assertIn("r1 -->|2 -> A| led1", text)
 
+    def test_a_power_pin_on_the_destination_side_is_a_source(self) -> None:
+        diagram = {
+            "version": 1,
+            "parts": [
+                {"type": "board-esp32-s3-devkitc-1", "id": "esp"},
+                {"type": "wokwi-resistor", "id": "r1"},
+            ],
+            "connections": [["r1:2", "esp:3V3.1", "red", []]],
+        }
+        text = generate_mermaid_from_diagram(diagram)
+        self.assertIn('pwr["3.3V"] -->|2 -> 3V3.1| r1', text)
+        self.assertNotIn("r1 --> esp", text)
+
+    def test_a_power_fed_chain_is_oriented_away_from_the_rail(self) -> None:
+        diagram = {
+            "version": 1,
+            "parts": [
+                {"type": "board-esp32-s3-devkitc-1", "id": "esp"},
+                {"type": "wokwi-resistor", "id": "r1"},
+                {"type": "wokwi-led", "id": "led1"},
+            ],
+            "connections": [
+                ["led1:A", "r1:1", "red", []],
+                ["r1:2", "esp:3V3.1", "red", []],
+                ["esp:4", "led1:C", "black", []],
+            ],
+        }
+        text = generate_mermaid_from_diagram(diagram)
+        self.assertIn("r1 -->|1 -> A| led1", text)
+        self.assertNotIn("led1 -->|A -> 1| r1", text)
+
     def test_a_shared_ground_bus_resolves_to_gnd(self) -> None:
         diagram = {
             "version": 1,
@@ -199,6 +245,11 @@ class MermaidGenerationTests(unittest.TestCase):
         self.assertIn("led1 --> gnd[GND]", text)
         self.assertIn("led2 -->|C| gnd[GND]", text)
         self.assertNotIn("led1 --> led2", text)
+
+    def test_a_virtual_ground_symbol_maps_to_gnd(self) -> None:
+        text = generate_mermaid_from_diagram(VIRTUAL_GROUND_DIAGRAM)
+        self.assertIn("led1 -->|C| gnd[GND]", text)
+        self.assertNotIn("gnd1", text)
 
 
 class DiagramValidationTests(unittest.TestCase):
@@ -257,6 +308,12 @@ class SchematicSvgTests(unittest.TestCase):
             render_schematic_svg(SHARED_PIN_DIAGRAM),
             render_schematic_svg(SHARED_PIN_DIAGRAM),
         )
+
+    def test_a_virtual_ground_symbol_is_not_drawn_as_a_part(self) -> None:
+        svg = render_schematic_svg(VIRTUAL_GROUND_DIAGRAM)
+        self.assertIn("GPIO15", svg)
+        self.assertIn("led1 (red)", svg)
+        self.assertNotIn("gnd1", svg)
 
     def test_a_multi_pin_part_falls_back_to_net_labels(self) -> None:
         svg = render_schematic_svg(MULTI_PIN_DIAGRAM)
