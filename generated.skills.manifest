@@ -78,8 +78,8 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/SKILL.md",
       "mode": "whole",
-      "sha256": "aaa26db84ed7bf5aac899dd141f68285b6fbc6701d357a18b0c1e97ff423d3c3",
-      "bytes": 8915
+      "sha256": "da6e2b0b13272300f99f1c1bcd672df4bcb4e8aa637a8c04b229b0efbbb4ce9b",
+      "bytes": 7810
     },
     {
       "path": ".agents/skills/schematic/references/mermaid-block-diagrams.md",

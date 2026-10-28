@@ -3,24 +3,31 @@
 # requires-python = ">=3.11"
 # dependencies = ["PyYAML==6.0.3", "schemdraw==0.23"]
 # ///
-"""Generate clean Wokwi diagram layouts, Schemdraw vector SVGs, and Mermaid schematics.
+"""Generate clean Schemdraw vector SVGs and Mermaid schematics from a diagram.
 
-Provides automated layout helpers, breadboard integration, Manhattan routing,
-IEEE vector schematic generation via Schemdraw, and Mermaid diagrams for homework
-circuits.
+The renderer is diagram-driven and names no homework, pin, or part. It chooses
+a wired branch layout when every part is two-terminal and the net graph is a
+forest, and a labelled net-stub layout otherwise, so an arbitrary component or
+topology still produces a schematic.
 
 Usage:
-  uv run scripts/gen_schematic.py <homework_dir> [--mermaid] [--svg] [--format] [--check] [--all]
+  uv run scripts/gen_schematic.py <homework_dir> [--mermaid] [--svg] [--check] [--all]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+# The renderer lives beside this script. Resolve it both when the file is run
+# as `uv run scripts/gen_schematic.py` and when a test imports
+# `scripts.gen_schematic`.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from schematic_svg import generate_schematic_svg as _generate_schematic_svg  # noqa: E402
+from schematic_svg import render_schematic_svg as _render_schematic_svg  # noqa: E402
 
 
 def generate_mermaid_from_diagram(diagram: dict) -> str:
@@ -148,180 +155,50 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
     return "\n".join(lines)
 
 
-def generate_schematic_svg(output_path: Path) -> Path:
-    """Generate an IEEE standard vector schematic SVG using Schemdraw."""
-    try:
-        import schemdraw
-        import schemdraw.elements as elm
-    except ImportError as exc:
-        raise RuntimeError(
-            "schemdraw is required to generate vector SVGs. Run via uv run."
-        ) from exc
+def generate_schematic_svg(diagram: dict, output_path: Path) -> Path:
+    """Render an IEEE vector schematic from the diagram.
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with schemdraw.Drawing(show=False) as d:
-        d.config(unit=2.0, fontsize=10, margin=1.5, bgcolor="white")
-
-        # Microcontroller Block in Center (ESP32-S3 DevKitC-1)
-        ic = d.add(
-            elm.Ic(
-                size=(6.2, 5.5),
-                pins=[
-                    # Left side: inputs
-                    elm.IcPin(name="GPIO7", side="left", slot="4/7"),
-                    elm.IcPin(name="GND", anchorname="GND_L", side="left", slot="1/7"),
-                    # Right side: outputs and rails
-                    elm.IcPin(name="GPIO4", side="right", slot="6/7"),
-                    elm.IcPin(name="GPIO6", side="right", slot="4/7"),
-                    elm.IcPin(name="3V3", side="right", slot="2/7"),
-                    elm.IcPin(name="GND", anchorname="GND_R", side="right", slot="1/7"),
-                ],
-            ).label("ESP32-S3\nDevKitC-1", loc="center", fontsize=11)
-        )
-
-        # Button Branch on the Left (Active-LOW with internal pull-up)
-        d.add(elm.Line().left(1.2).at(ic.GPIO7))
-        btn = d.add(elm.Button(up=True).left(1.5).label("MODE\n(SW1)", loc="top"))
-        d.add(elm.Line().down(1.0).at(btn.end))
-        d.add(elm.Ground())
-
-        # Microcontroller GND reference on Left
-        d.add(elm.Line().left(1.2).at(ic.GND_L))
-        d.add(elm.Ground())
-
-        # Microcontroller 3V3 and GND reference on Right
-        d.add(elm.Line().right(1.0).at(ic["3V3"]))
-        d.add(elm.Vdd().label("3.3V", loc="top"))
-        d.add(elm.Line().right(1.0).at(ic.GND_R))
-        d.add(elm.Ground())
-
-        # Branch 2: Status Indicator LED3 on GPIO6
-        d.add(elm.Line().right(2.0).at(ic.GPIO6))
-        d.add(elm.Resistor().right(1.5).label("R2\n150Ω", loc="top"))
-        d.add(elm.Line().right(0.5))
-        d.add(elm.LED().down(1.5).label("LED3 (RED)\n[STATUS]", loc="bottom", ofst=0.2))
-        d.add(elm.Line().down(0.5))
-        d.add(elm.Ground())
-
-        # Branch 1: Anti-parallel Pair (LED1 / LED2) on GPIO4
-        # Routed vertically above Branch 2 to prevent any wire intersection
-        d.add(elm.Line().up(0.6).at(ic.GPIO4))
-        d.add(elm.Line().right(7.2))
-        d.add(elm.Resistor().right(1.5).label("R1\n150Ω", loc="top"))
-        d.add(elm.Line().right(0.5))
-        node_x = d.add(elm.Dot())
-
-        # Path 1A: LED1 (Forward) -> GND
-        d.add(elm.Line().down(1.0).at(node_x.center))
-        d.add(elm.LED().down(1.5).label("LED1 (RED)\n[GPIO4=HIGH]", loc="bottom", ofst=0.2))
-        d.add(elm.Line().down(0.6))
-        d.add(elm.Ground())
-
-        # Path 1B: LED2 (Reverse) -> 3.3V
-        d.add(elm.Line().up(1.0).at(node_x.center))
-        d.add(elm.LED().up(1.5).reverse().label("LED2 (RED)\n[GPIO4=LOW]", loc="bottom", ofst=0.2))
-        d.add(elm.Line().up(0.6))
-        d.add(elm.Vdd().label("3.3V", loc="top"))
-
-        svg_content = d.get_imagedata("svg").decode("utf-8")
-
-    # Inject solid white background rectangle for high contrast in both dark and light modes
-    viewbox_match = re.search(r'viewBox="([^"]+)"', svg_content)
-    if viewbox_match:
-        parts = viewbox_match.group(1).split()
-        vx, vy, vw, vh = parts
-        rect = f'<rect x="{vx}" y="{vy}" width="{vw}" height="{vh}" fill="#ffffff" rx="8"/>'
-        svg_content = re.sub(r"(<svg[^>]*>)", r"\1" + rect, svg_content, count=1)
-
-    if not svg_content.endswith("\n"):
-        svg_content += "\n"
-    output_path.write_text(svg_content, encoding="utf-8")
-    return output_path
+    The layout is chosen by `scripts/schematic_svg.py`: real wires for discrete
+    two-terminal branches, labelled net stubs for anything else. No homework,
+    pin, or part is named here, so a new diagram needs no new renderer code.
+    """
+    return _generate_schematic_svg(diagram, output_path)
 
 
-def reformat_police_flasher_diagram(diagram: dict) -> dict:
-    """Apply clean direct-wiring layout and orthogonal routing to police flasher circuit."""
-    return {
-        "version": 1,
-        "author": "VLoktiev-EMB",
-        "editor": "wokwi",
-        "parts": [
-            {
-                "type": "board-esp32-s3-devkitc-1",
-                "id": "esp",
-                "top": 0,
-                "left": 0,
-                "attrs": {
-                    "flashSize": "16",
-                    "psramType": "octal",
-                    "psramSize": "8",
-                },
-            },
-            {
-                "type": "wokwi-resistor",
-                "id": "r1",
-                "top": 76.8,
-                "left": -88.8,
-                "attrs": {"value": "150"},
-            },
-            {
-                "type": "wokwi-led",
-                "id": "led1",
-                "top": 40.8,
-                "left": -140,
-                "attrs": {"color": "red", "label": "LED1"},
-            },
-            {
-                "type": "wokwi-led",
-                "id": "led2",
-                "top": -16.8,
-                "left": -140,
-                "attrs": {"color": "red", "label": "LED2"},
-            },
-            {
-                "type": "wokwi-resistor",
-                "id": "r2",
-                "top": 119.3,
-                "left": -88.8,
-                "attrs": {"value": "150"},
-            },
-            {
-                "type": "wokwi-led",
-                "id": "led3",
-                "top": 83.3,
-                "left": -140,
-                "attrs": {"color": "red", "label": "LED3"},
-            },
-            {
-                "type": "wokwi-pushbutton",
-                "id": "btn1",
-                "top": 155,
-                "left": -100,
-                "attrs": {"color": "green", "label": "MODE"},
-            },
-        ],
-        "connections": [
-            ["esp:TX", "$serialMonitor:RX", "", []],
-            ["esp:RX", "$serialMonitor:TX", "", []],
-            ["btn1:1.l", "esp:7", "green", ["h20"]],
-            ["btn1:2.l", "esp:GND.1", "black", ["v80", "h90"]],
-            ["esp:4", "r1:2", "orange", []],
-            ["r1:1", "led1:A", "blue", []],
-            ["r1:1", "led2:C", "blue", ["v-38", "h-20"]],
-            ["esp:3V3.1", "led2:A", "red", ["h-40", "v-15"]],
-            ["led1:C", "esp:GND.1", "black", ["v200", "h120"]],
-            ["esp:6", "r2:2", "purple", []],
-            ["r2:1", "led3:A", "purple", []],
-            ["led3:C", "esp:GND.1", "black", ["v160", "h120"]],
-        ],
-        "dependencies": {},
-    }
+def validate_diagram(diagram: dict) -> None:
+    """Check that a diagram is structurally usable; raise ValueError on a defect.
+
+    The check is deliberately about referential integrity, not about a specific
+    circuit: every part id is unique, and every connection names a part that
+    exists. A renderer needs no more than that.
+    """
+    parts = diagram.get("parts")
+    if not isinstance(parts, list):
+        raise ValueError("parts must be a list")
+    ids = [part.get("id") for part in parts]
+    if any(not isinstance(part_id, str) or not part_id for part_id in ids):
+        raise ValueError("every part needs a non-empty string id")
+    if len(set(ids)) != len(ids):
+        raise ValueError("part ids must be unique")
+    connections = diagram.get("connections", [])
+    if not isinstance(connections, list):
+        raise ValueError("connections must be a list")
+    for connection in connections:
+        if not isinstance(connection, list) or len(connection) < 2:
+            raise ValueError("every connection must name two terminals")
+        for terminal in connection[:2]:
+            part_id, separator, pin = str(terminal).partition(":")
+            if part_id.startswith("$"):
+                continue
+            if not separator or not pin:
+                raise ValueError(f"malformed terminal {terminal!r}")
+            if part_id not in ids:
+                raise ValueError(f"connection names unknown part {part_id!r}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate Wokwi layouts, Schemdraw SVGs, and Mermaid schematics."
+        description="Generate Schemdraw SVGs and Mermaid schematics from diagram.json."
     )
     parser.add_argument("directory", help="Homework directory (e.g. homeworks/<id>)")
     parser.add_argument("--mermaid", action="store_true", help="Print generated Mermaid flowchart")
@@ -329,11 +206,12 @@ def main() -> int:
         "--svg", action="store_true", help="Generate IEEE vector schematic SVG via Schemdraw"
     )
     parser.add_argument(
-        "--format", action="store_true", help="Apply clean layout and routing to diagram.json"
+        "--check",
+        action="store_true",
+        help="Validate diagram.json and fail when assets/schematic.svg is stale",
     )
-    parser.add_argument("--check", action="store_true", help="Check if diagram.json is formatted")
     parser.add_argument(
-        "--all", action="store_true", help="Format diagram, generate SVG, and output Mermaid"
+        "--all", action="store_true", help="Generate the SVG and print the Mermaid flowchart"
     )
 
     args = parser.parse_args()
@@ -353,15 +231,15 @@ def main() -> int:
         print(f"ERROR: Failed to read {diagram_path}: {exc}", file=sys.stderr)
         return 1
 
-    if args.format or args.all:
-        formatted = reformat_police_flasher_diagram(content)
-        diagram_path.write_text(json.dumps(formatted, indent=2) + "\n", encoding="utf-8")
-        print(f"Formatted {diagram_path}")
-        content = formatted
+    try:
+        validate_diagram(content)
+    except ValueError as exc:
+        print(f"ERROR: {diagram_path}: {exc}", file=sys.stderr)
+        return 1
 
     if args.svg or args.all:
         svg_path = hw_dir / "assets" / "schematic.svg"
-        generate_schematic_svg(svg_path)
+        generate_schematic_svg(content, svg_path)
         print(f"Generated schematic SVG: {svg_path}")
 
     if args.mermaid or args.all:
@@ -369,9 +247,12 @@ def main() -> int:
         print(mermaid_text)
 
     if args.check:
-        formatted = reformat_police_flasher_diagram(content)
-        if content != formatted:
-            print(f"ERROR: {diagram_path} is not formatted cleanly", file=sys.stderr)
+        svg_path = hw_dir / "assets" / "schematic.svg"
+        if not svg_path.is_file():
+            print(f"ERROR: {svg_path} is missing; run --svg", file=sys.stderr)
+            return 1
+        if svg_path.read_text(encoding="utf-8") != _render_schematic_svg(content):
+            print(f"ERROR: {svg_path} is stale; run --svg", file=sys.stderr)
             return 1
 
     return 0
