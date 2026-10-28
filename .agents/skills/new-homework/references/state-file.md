@@ -95,9 +95,14 @@ error: a temporary root must stay resumable.
 
 ## Resume
 
-If the file already exists when the skill starts, ask `[Продовжити | Почати заново |
-Стоп]`. `Продовжити` resumes from `next_block` and never rewrites a completed block's
-record; `Почати заново` starts clean; `Стоп` leaves the file untouched. Only the
+If the file already exists when the skill starts, prompt the user via native multiple-choice
+(`ask_question` / `AskUserQuestion`) with options:
+- `(Recommended) Continue from next block`
+- `Start fresh (reset progress)`
+- `Stop`
+
+`Continue from next block` resumes from `next_block` and never rewrites a completed block's
+record; `Start fresh` starts clean; `Stop` leaves the file untouched. Only the
 explicit clean start may overwrite an abandoned record, so a stale file is never
 silently discarded.
 
