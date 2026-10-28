@@ -1,8 +1,7 @@
 # C/C++ style source for the whole tree (D-02, D-03).
 #
-# This is a documented APPROXIMATION of ESP-IDF style, never an equivalence:
-# ESP-IDF is formatted by AStyle, which clang-format cannot reproduce. The
-# approximation and its limits are recorded in docs/decisions.
+# This is an approximation of ESP-IDF style: ESP-IDF is formatted by AStyle,
+# which clang-format cannot exactly reproduce.
 #
 # There is no .editorconfig (D-03): this file is the only C/C++ style input.
 BasedOnStyle: LLVM

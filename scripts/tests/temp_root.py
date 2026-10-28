@@ -137,7 +137,7 @@ def write_synthetic_root(
       ``templates/board-profile/profile.yaml``.
 
     Non-copy list, deliberately unlike ``build_root``: this builder does **not**
-    copy ``partitions/``, the authored ``docs/decisions/`` tree, the real
+    copy ``partitions/``, the authored ``docs/`` tree, the real
     ``homeworks/`` tree, or any template other than ``templates/views/``, and
     it does **not** symlink ``lib/`` into the root. ``build_root`` copies
     ``partitions/`` because the scaffold validates a rendered homework against

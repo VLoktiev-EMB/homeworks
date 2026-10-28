@@ -34,7 +34,7 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
   `python-tests`, `static-analysis`, `simulate` and `gate`.
 - `.github/workflows/nightly.yml` — the scheduled full build and native-test matrix plus the
   full-history secret scan.
-- `docs/` — the authored documentation tree: the `decisions/` and `standards/` documents,
+- `docs/` — the authored documentation tree: the `standards/` documents,
   which GitHub renders directly in the repository view.
 - `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
   no-hardware check.
@@ -216,21 +216,9 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: review]** Use the public handle or organization name only —
   never a private name, an institution, or an email address — in `LICENSE`, report metadata,
   commits, or trailers. The public GitHub account's display name is the accepted exception for
-  server-side commit author metadata during a squash-merge (see `docs/decisions/0006-public-commit-identity.md`).
+  server-side commit author metadata during a squash-merge.
 - **[MUST]** **[ENFORCED: review]** Never commit internal course material or original
   assignment text. Assignments appear only as English paraphrase with attribution.
-
-### Decisions
-
-- **[MUST]** **[ENFORCED: review]** A new decision defaults to one row in
-  `docs/decisions/README.md`; that table is the index and the default record. Create an ADR
-  file only when the decision needs real argumentation — alternatives, consequences, a long
-  comparison — and link it from the row's `Record` column. No numbering is required.
-- **[MUST]** **[ENFORCED: review]** Mark a superseded decision in the table's `Status`
-  column. Do not rewrite the ADR body: it is the historical record of what was decided, and
-  a path it names may no longer exist.
-- **[SHOULD]** **[ENFORCED: review]** Raise required approvals from 0 to 1 when a second
-  maintainer joins; until then the ruleset keeps 0 approvals and no bypass actors.
 
 ### Architecture
 
@@ -241,10 +229,8 @@ Good:  feat(1_3): add police flasher state machine
 
 | Recurring task | Where the truth lives |
 |----------------|-----------------------|
-| Change a GitHub rule or repository setting | the GitHub UI; record the reason in `docs/decisions/README.md` |
 | Open a pull request | `.github/pull_request_template.md` — the single template |
 | Tag a merged homework | `scripts/tag_homework.sh <id>` — the only tag path |
-| Record a decision | a row in `docs/decisions/README.md`; link an ADR only when argumentation is needed |
 | Create a homework | `scripts/new_homework <id> --template <name>` — the only supported path |
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
 | Inspect or extend the secret gate | `.pre-commit-config.yaml`, `.github/workflows/ci.yml` and `.github/workflows/nightly.yml` |

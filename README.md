@@ -25,12 +25,6 @@ All contribution and agent rules live in [AGENTS.md](AGENTS.md). It is the canon
 rulebook for humans and agents alike; `.claude/CLAUDE.md` imports it rather than
 duplicating it.
 
-## Decisions
-
-Decisions are recorded in a one-page table at
-[docs/decisions/](docs/decisions/README.md). The table is the index and the default
-record; a deeper ADR file is created only when a decision needs real argumentation.
-
 ## License
 
 Original code, documentation, and homework reports are released under the MIT license —
