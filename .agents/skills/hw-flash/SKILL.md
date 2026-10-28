@@ -5,7 +5,6 @@ metadata:
   version: "0.2"
   status: active
 ---
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 > **Invocation:** explicit only — run `/hw-flash`. Do not invoke this skill automatically.
 
 # Flash a homework

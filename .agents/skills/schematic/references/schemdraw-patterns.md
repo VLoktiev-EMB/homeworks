@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Schemdraw Vector Schematic Patterns
 
 Complete reference for generating production-grade, IEEE-compliant vector electrical schematics (`assets/schematic.svg`) using the `schemdraw` Python library.

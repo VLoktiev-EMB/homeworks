@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Mermaid Block Diagram Architecture
 
 Guidelines for generating clean, unidirectional, and readable Mermaid circuit flowcharts (`flowchart LR`) embedded in Markdown reports and READMEs.

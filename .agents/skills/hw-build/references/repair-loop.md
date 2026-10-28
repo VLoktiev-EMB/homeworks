@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Repair loop
 
 `hw-build` runs two legs: the target build and the homework's native suite. Each leg

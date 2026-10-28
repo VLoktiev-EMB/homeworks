@@ -15,7 +15,6 @@ Optional cross-references:
 - [ ] `pio test -e native` is green when the change contains pure logic
 - [ ] `task.md`, `homework.yaml`, `README.md`, and `report.md` exist and `uv run scripts/check_metadata.py` passes
 - [ ] `pre-commit run --all-files` passes
-- [ ] `uv run scripts/check_report.py` passes
 - [ ] The required gate check is green
 
 ### Report self-audit

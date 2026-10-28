@@ -5,7 +5,6 @@ metadata:
   version: "2.1"
   status: active
 ---
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 
 # Schematic & Circuit Visualization
 

@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Wokwi Wiring Architectures & Routing Reference
 
 Guidelines and standards for creating clean, realistic, and offline-verifiable circuit models (`assets/diagram.json`) in the Wokwi simulator.

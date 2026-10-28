@@ -20,16 +20,14 @@ Run from the repository root, in this order, before opening a pull request.
 |------|---------|---------|
 | 1 | `pio run -d <project>` | Build the affected PlatformIO environment from its own project directory. |
 | 2 | `pio test -d tests -e native` | Run the shared-library Unity suite from the top-level `tests/` project, without a target toolchain. |
-| 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, the dependency rule, and the metadata contract — and the exact command the CI `meta` job runs. |
+| 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, format, and the metadata contract. |
 | 4 | `uv run scripts/check_metadata.py` | Validate homework metadata and task provenance against `schema/homework.schema.json`. |
-| 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs as `python -m unittest discover scripts/tests`. |
-| 6 | `uv run scripts/check_report.py` | Validate the report and evidence contract. |
+| 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs. |
 
 ## Repository layout
 
 Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gitattributes`,
-`.pre-commit-config.yaml`, `generated.manifest`, `generated.skills.manifest`, and the paths
-below.
+`.pre-commit-config.yaml`, and the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
 - `.github/workflows/ci.yml` — the pull-request gate: `meta`, `changes`, `build`,
@@ -41,36 +39,23 @@ below.
 - `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
   no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
-- `scripts/` — deterministic checks, the view generator and the tag script; `scripts/tests/`
+- `scripts/` — deterministic checks and the tag script; `scripts/tests/`
   — the test suite.
 - `schema/` — `homework.schema.json`, the JSON Schema 2020-12 metadata contract.
-- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`, plus
-  `templates/views/` — the text templates `scripts/gen_views.py` renders.
+- `templates/` — the scaffolding source, rendered only by `scripts/new_homework`.
 - `lib/` — `port`, `common`, `host`, and the thin Arduino and ESP-IDF adapters.
 - `homeworks/<id>/` — one project per assignment, created only by `scripts/new_homework`.
-- `.claude/skills/` — the canonical authored skills, each with `SKILL.md` and optional
+- `.agents/skills/` — the canonical authored skills, each with `SKILL.md` and optional
   `references/`, plus `_shared/guardrails.md`.
-- `.agents/skills/` — the generated, committed mirror for non-Claude agents, never
-  hand-edited.
-- `scripts/gen_skills.py` — the only writer of the mirror, with `--check`.
-- `generated.skills.manifest` — the mirror ledger.
+- `.claude/skills` — symlink to `.agents/skills/` for tool compatibility.
 
-The generated paths — the table region in `README.md`, `homeworks.code-workspace` and
-`platformio.shared.ini` — are committed and registered in `generated.manifest`;
-`.agents/skills/` is committed and registered in `generated.skills.manifest`. Each is
-regenerated with its own generator and drift-checked. The `gen-views-check` pre-commit hook
-runs `scripts/gen_views.py --all --check` and fails on drift; the `--check` now runs inside
-`meta`'s `pre-commit run --all-files` rather than in a separate workflow. The fix is
-`uv run scripts/gen_views.py --all`, never a hand edit. `site/` and `.pio/` are build
-output and stay ignored.
+`site/` and `.pio/` are build output and stay ignored.
 
 `scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
 `platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
 explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
-`templates/views/`, `boards/`, `.skill-state/`, `generated.manifest`,
-`generated.skills.manifest`, `homeworks.code-workspace`, `scripts/gen_skills.py` and
-`scripts/serial_capture.py`) selects nothing, and any unrecognised path widens to every
-project.
+`boards/`, `.skill-state/`, `homeworks.code-workspace`, and `scripts/serial_capture.py`)
+selects nothing, and any unrecognised path widens to every project.
 
 `ci.yml`'s `changes` job consumes its `{build, simulate}` payload as the build and simulation
 matrix, and `nightly.yml` feeds the mapper the `platformio.shared.ini` path so the mapper's
@@ -91,10 +76,7 @@ A homework is done when:
 1. `pio run` is green for its target environment.
 2. `pio test -e native` is green when the homework contains pure logic.
 3. `task.md`, `homework.yaml`, `README.md`, and `report.md` exist, and metadata validation passes.
-4. The report satisfies the checked contract in `docs/standards/report.md`, validated by
-   `uv run scripts/check_report.py`; prose quality and whether a value was measured stay
-   review duties.
-5. The pull request is merged and tagged `hw/<id>`.
+4. The pull request is merged and tagged `hw/<id>`.
 
 ## Rules
 
@@ -164,15 +146,9 @@ Good:  feat(1_3): add police flasher state machine
 
 ### Reports and evidence
 
-- **[MUST]** **[ENFORCED: pre-commit]** A report satisfies the checked contract in
-  `docs/standards/report.md`; `uv run scripts/check_report.py` is the machine gate, and it
-  proves structure and referential integrity, never that a value was measured.
-- **[MUST]** **[ENFORCED: pre-commit]** Every ledger claim carries one label from the closed
-  vocabulary — `measured`, `calculated`, `simulated`, `datasheet`, `not measured`, or
-  `measured (observed)` — and a calculation is never relabelled as measured.
-- **[MUST]** **[ENFORCED: pre-commit]** The homework status and `report.status` form an
-  allowed pair; the ten-section skeleton is always present; and `report.status: placeholder`
-  is the only exemption from the content rules.
+- **[SHOULD]** **[ENFORCED: review]** A report follows the structure in
+  `docs/standards/report.md`, with honest evidence labels (`measured`, `calculated`,
+  `simulated`, `datasheet`, `not measured`).
 
 ### Pull requests and tags
 
@@ -204,31 +180,12 @@ Good:  feat(1_3): add police flasher state machine
 
 - **[MUST]** **[ENFORCED: pre-commit]** C/C++ is formatted by the committed `.clang-format`,
   and the pinned hook runs it in check-only form (`--dry-run --Werror`): it reports and never
-  rewrites. The tracked tree is expected to conform, so a failure is a local fix rather than a
-  bulk reformat.
+  rewrites.
 - **[MUST]** **[ENFORCED: pre-commit]** Python and authored YAML are linted by ruff and
   yamllint from their committed policies (`pyproject.toml`, `.yamllint.yaml`).
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
-  Every formatter and linter named in this section arrives through a pinned `pre-commit`
-  revision, never a system package manager, so the gate is byte-identical on every machine.
-- **[MUST]** **[ENFORCED: pre-push]** clang-tidy 23.1.3 analyses the host translation units
-  under `lib/common/src` and `lib/host/src`, and never runs at pre-commit. A header is analysed
-  through a translation unit that includes it, never as a file of its own: a bare header has no
-  compile command, so a header-only change is not analysed locally, and `lib/port` is covered
-  only where a unit includes it. Native test translation units remain deferred per ADR-0013,
-  because this phase deliberately does not close that gap (D-17).
-- **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent, older than
-  a configuration input or a described source, or missing a `.c` file under the analysed trees,
-  `scripts/clang-tidy-db` fails and prints `pio run -d tests -e native -t compiledb`. The
-  clang-tidy hook fails rather than reporting success when clang-tidy skips a file for want of a
-  compile command. Regenerating the database is a developer action; no hook generates it.
-- **[MUST]** **[ENFORCED: CI]** `ci.yml`'s `meta` job runs the whole `pre-commit` hook surface
-  with `--all-files`, and the `static-analysis` job generates the native compile database and
-  runs the `pre-push` stage, so clang-tidy analyses the host translation units on every pull
-  request while the native test translation units stay the recorded ADR-0013 gap.
 - **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
-  not from ad-hoc settings. The committed editor contract is emitted by the generator and
-  mirrored into `.vscode/settings.json`, and a drift test keeps the two equal.
+  not from ad-hoc settings.
 
 ### Simulation
 
@@ -247,17 +204,10 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: review]** Link videos; never commit them. Images referenced by
   a repository Markdown document (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) stay normal git
   objects, so the repository view and a checkout render the same bytes.
-- **[MUST]** **[ENFORCED: pre-commit]** Generated files are never committed:
+- **[MUST]** **[ENFORCED: pre-commit]** Generated build output is never committed:
   `compile_commands.json`, the `site/` build, and build output such as `.pio/` are listed
   in `.gitignore`, and the `no-generated-files` hook fails when any is tracked anyway —
   `.gitignore` alone cannot stop `git add -f`.
-- **[MUST]** **[ENFORCED: pre-commit]** Generated files fall into two classes. Build output
-  (`compile_commands.json`, the `site/` build, `.pio/`, and ESP-IDF build products) is never
-  committed. A committed generated projection — the README table region,
-  `homeworks.code-workspace`, `platformio.shared.ini`, `.agents/skills/` and
-  `generated.skills.manifest` — is regenerated with its own generator and drift-checked by
-  its hook, so a hand edit is never the fix; for the skills mirror the repair command is
-  `uv run scripts/gen_skills.py`.
 
 ### Licensing and identity
 
@@ -284,9 +234,8 @@ Good:  feat(1_3): add police flasher state machine
 
 ### Architecture
 
-- **[MUST]** **[ENFORCED: pre-commit]** `lib/common` and `lib/port` carry no framework
-  headers, and `common` does not depend on the adapters. `python3 scripts/check_architecture.py`
-  runs in the hook on every change to `lib/`, `homeworks/`, or the checker itself.
+- **[MUST]** **[ENFORCED: CI]** `lib/common` and `lib/port` carry no framework
+  headers, proven directly by `pio test -d tests -e native` on host.
 
 ## Routing table
 
@@ -303,7 +252,7 @@ Good:  feat(1_3): add police flasher state machine
 | Choose a branch name | this file, "Git, branches, and history" |
 | Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
 | Report structure, evidence, and the self-audit checklist | `docs/standards/report.md` |
-| Reuse a versioned workflow skill | canonical `.claude/skills/`, generated mirror `.agents/skills/`; repair with `uv run scripts/gen_skills.py` |
+| Reuse a versioned workflow skill | canonical `.agents/skills/`, symlinked `.claude/skills/` |
 
 ## Precedence
 

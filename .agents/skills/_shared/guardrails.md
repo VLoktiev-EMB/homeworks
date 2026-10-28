@@ -1,4 +1,3 @@
-<!-- GENERATED — do not edit. Run: uv run scripts/gen_skills.py -->
 # Shared guardrails
 
 Every implemented skill reads this file before its first write, and no skill may
