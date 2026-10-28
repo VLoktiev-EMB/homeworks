@@ -133,6 +133,49 @@ d.add(elm.Vdd().label("3.3V", loc="top"))
 
 ---
 
+## 4a. Row Layout for Shared Pins
+
+A shared pin is not a forest: one GPIO drives two branches, so the branch layout's
+junction code has to place both branches at the same point. Schemdraw's offsets are too
+small for two series components, and the component labels collide. The renderer therefore
+refuses a signal net with more than one external branch and switches to the row layout.
+
+### Algorithm
+
+1. Build the net graph from the two-terminal components.
+2. Treat the MCU pins, power, and ground as anchors.
+3. Follow each component from an anchor through degree-two internal nets until the next
+   anchor. A shared anchor yields one chain per branch.
+4. Normalize each chain so power starts at the left and ground ends at the right.
+5. Sort chains by rail rank: power-first chains at the top, signal-to-ground chains below.
+6. Draw each chain as one horizontal row: endpoint symbol or net label, then
+   `line -> component -> line -> component -> line`, then the other endpoint.
+7. Draw the MCU block once, with a labelled stub per anchor. Repeat the shared net label
+   on every row that uses it; never invent an `N5` label for a series node.
+
+### Why the MCU block is drawn first
+
+`elm.Ic` inherits the drawing's current direction. If the last chain ended on a vertical
+ground symbol, adding the IC afterwards can rotate its pin side to the bottom. Add the IC
+before the chains, or reset the direction explicitly.
+
+### Row spacing and labels
+
+- Use a row pitch of about 4.0 units. A component label sits above its own row; the next
+  row starts below it.
+- Put a power or ground symbol at the rail end, and a net label at a signal end. The MCU
+  block repeats the same net labels, so connectivity is readable without a long wire.
+- Keep endpoint labels on the row's centerline and component labels above the body.
+- Reverse an LED when the chain is traversed from `C` to `A`; the anode must face the
+  source even when the row is drawn right-to-left.
+
+The implementation lives in `_extract_paths`, `_draw_path_endpoint`, and `_draw_paths` in
+`scripts/schematic_svg.py`; the regression cases are
+`test_a_shared_signal_net_uses_the_row_layout` and
+`test_shared_pin_rendering_is_deterministic`.
+
+---
+
 ## 5. Switch & Button Sanity
 
 Active-LOW pushbuttons with internal pull-up must be wired strictly in series between the GPIO pin and Ground:

@@ -36,6 +36,7 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
     Produces a clean, unidirectional left-to-right (LR) signal flow:
     - Resolves intermediate breadboard row nets so components connect directly.
     - Redirects Ground returns to terminal GND nodes rather than looping backward into MCU.
+    - Collapses a component-to-component ground bus into one GND sink per part.
     - Redirects Power rails (3.3V/5V) to dedicated source nodes rather than cutting across MCU.
     - Excludes debug serial monitor connections.
     """
@@ -44,6 +45,29 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
 
     board_part = next((p for p in parts.values() if "board" in p.get("type", "")), None)
     b_id = board_part["id"] if board_part else None
+
+    def is_ground_terminal(part: str, pin: str) -> bool:
+        board_ground = part == b_id and "GND" in pin.upper()
+        breadboard_ground = part.startswith("bb") and "tn" in pin.lower()
+        return board_ground or breadboard_ground
+
+    # Parts that reach the ground net through any pin. A shared ground bus
+    # between two of them is a sink relationship, not a signal edge.
+    ground_components: set[str] = set()
+    for conn in connections:
+        if len(conn) < 2:
+            continue
+        for terminal, other in ((conn[0], conn[1]), (conn[1], conn[0])):
+            part, _, pin = str(terminal).partition(":")
+            if is_ground_terminal(part, pin):
+                other_part, _, _ = str(other).partition(":")
+                ground_components.add(other_part)
+    ground_components = {
+        part
+        for part in ground_components
+        if part and part != b_id and not part.startswith("$") and not part.startswith("bb")
+    }
+    ground_edges: set[str] = set()
 
     bb_nets: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
     resolved_edges: list[tuple[str, str, str]] = []
@@ -66,6 +90,12 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         if src_part == b_id and ("3V3" in src_pin or "GND" in src_pin) and "bb" in dst_part:
             continue
 
+        # A cathode-to-cathode link is a shared ground bus, not a signal edge.
+        # Both parts are anchored to the GND sink after the loop.
+        if src_pin.upper() == "C" and dst_pin.upper() == "C":
+            ground_components.update((src_part, dst_part))
+            continue
+
         # Direct 3V3 power rail feeds to components
         if src_part == b_id and "3V3" in src_pin and "bb" not in dst_part:
             edge_lbl = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
@@ -79,6 +109,7 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         if is_dst_gnd:
             edge_lbl = f"|{src_pin}|" if src_pin else ""
             resolved_edges.append((src_part, edge_lbl, "gnd[GND]"))
+            ground_edges.add(src_part)
             continue
 
         is_src_gnd = (src_part == b_id and "GND" in src_pin.upper()) or (
@@ -87,6 +118,12 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         if is_src_gnd:
             edge_lbl = f"|{dst_pin}|" if dst_pin else ""
             resolved_edges.append(("gnd[GND]", edge_lbl, dst_part))
+            ground_edges.add(dst_part)
+            continue
+
+        # A ground bus between two components is not a signal edge. Both parts
+        # are anchored to gnd below, so the block diagram keeps one sink.
+        if src_part in ground_components and dst_part in ground_components:
             continue
 
         # Redirect Power rail connections
@@ -120,6 +157,12 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
             for d in dsts:
                 label = f"|{s[2]} -> {d[2]}|" if s[2] and d[2] else ""
                 resolved_edges.append((s[1], label, d[1]))
+
+    # A part that reaches ground only through another part's cathode still
+    # belongs at the GND sink, not at a component-to-component edge.
+    for component in sorted(ground_components):
+        if component not in ground_edges:
+            resolved_edges.append((component, "", "gnd[GND]"))
 
     lines = ["```mermaid", "flowchart LR"]
 

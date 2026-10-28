@@ -4,10 +4,16 @@ The renderer is diagram-driven: it never names a homework, a pin, or a part.
 It builds the electrical net graph from `parts` and `connections`, then chooses
 one of two layouts.
 
-* Branch layout — every external part has exactly two terminals and the net
-  graph is a forest rooted at the MCU signal pins. Branches are drawn as real
-  wires, series components, junctions, ground, and power symbols. This is the
-  readable layout for discrete circuits such as an LED with a series resistor.
+* Branch layout — every external part has exactly two terminals, every signal
+  net carries exactly one branch, and the net graph is a forest rooted at the
+  MCU signal pins. Branches are drawn as real wires, series components,
+  junctions, ground, and power symbols. This is the readable layout for a
+  single chain such as an LED with a series resistor.
+* Row layout — every two-terminal chain between two anchor nets (an MCU pin,
+  power, or ground) becomes one horizontal row. A shared pin yields one row per
+  branch and matching net labels carry the connectivity, so two branches never
+  fight for the same space. Internal series nets are drawn directly and are
+  never invented as `N` labels.
 * Net-label layout — the universal fallback. Every pin of every part, including
   the MCU, ends in a short stub labelled with its net name. Connectivity is
   expressed by matching labels, which is a standard schematic technique and
@@ -199,9 +205,10 @@ def _component_display(component: _Component, attrs: dict) -> str:
     kind = component.part_type.lower()
     if "resistor" in kind:
         value = attrs.get("value")
-        return f"{component.ref} {value}Ω" if value else component.ref
+        return f"{component.ref} {value} Ω" if value else component.ref
     if "led" in kind:
-        return f"{component.ref} {attrs.get('color', 'LED')} LED"
+        color = attrs.get("color")
+        return f"{component.ref} ({color})" if color else component.ref
     if "pushbutton" in kind or "button" in kind:
         return f"{component.ref} {attrs.get('label', 'BTN')}"
     if "capacitor" in kind:
@@ -329,11 +336,17 @@ def _draw_branches(model: _Model, d, elm) -> None:
     if not signal_nets:
         raise _FallbackNeeded("no MCU signal net")
 
-    # Every signal net must belong to exactly one MCU pin; a shared signal net
-    # would be drawn twice.
+    # Every signal net must belong to exactly one MCU pin and exactly one
+    # external branch. A shared pin is a junction in the physical circuit but a
+    # fork in the drawing; the branch layout has no room for a second branch
+    # and would overlap its labels, so the row layout owns that case.
     for _, net in signal_nets:
         if len(net["mcu_pins"]) != 1:
             raise _FallbackNeeded(f"net {net['label']} is shared by several MCU pins")
+
+    for net_id, net in signal_nets:
+        if len(model.incident.get(net_id, [])) != 1:
+            raise _FallbackNeeded(f"net {net['label']} has several branches")
 
     left = []
     right = []
@@ -383,6 +396,192 @@ def _draw_branches(model: _Model, d, elm) -> None:
     if len(placed) != len(model.components):
         missing = sorted({component.ref for component in model.components} - placed)
         raise _FallbackNeeded(f"unplaced components: {', '.join(missing)}")
+
+
+_PATH_RANK = {"power": 0, "signal": 1, "ground": 2}
+
+
+def _is_anchor_net(model: _Model, net_id: str) -> bool:
+    """A net is an anchor when it ends a chain: an MCU pin, power, or ground."""
+    net = model.nets[net_id]
+    return net["kind"] in ("power", "ground") or bool(net["mcu_pins"])
+
+
+def _extract_paths(model: _Model) -> list[dict]:
+    """Split the two-terminal graph into simple chains between anchor nets.
+
+    Each component is an edge between two nets. A chain starts at an anchor and
+    follows internal degree-two nets until it reaches another anchor. A shared
+    anchor, such as one GPIO driving two branches, naturally yields one chain
+    per branch instead of a fork with overlapping wires.
+    """
+    adjacency: dict[str, list[tuple[_Component, str, str, str]]] = defaultdict(list)
+    for component in model.components:
+        if len(component.pins) != 2:
+            raise _FallbackNeeded(f"component {component.ref} is not two-terminal")
+        (pin_a, net_a), (pin_b, net_b) = component.pins
+        if net_a == net_b:
+            raise _FallbackNeeded(f"component {component.ref} shorts one net")
+        adjacency[net_a].append((component, pin_a, pin_b, net_b))
+        adjacency[net_b].append((component, pin_b, pin_a, net_a))
+
+    used: set[str] = set()
+    paths: list[dict] = []
+    anchors = sorted(
+        (net_id for net_id in model.nets if _is_anchor_net(model, net_id)),
+        key=lambda net_id: (model.nets[net_id]["label"], net_id),
+    )
+
+    for anchor in anchors:
+        for component, pin_from, pin_to, next_net in sorted(
+            adjacency.get(anchor, []), key=lambda item: item[0].ref
+        ):
+            if component.ref in used:
+                continue
+            used.add(component.ref)
+            edges = [(component, pin_from, pin_to, anchor, next_net)]
+            current_net = next_net
+            while not _is_anchor_net(model, current_net):
+                candidates = [
+                    entry for entry in adjacency.get(current_net, []) if entry[0].ref not in used
+                ]
+                if len(adjacency.get(current_net, [])) != 2 or len(candidates) != 1:
+                    raise _FallbackNeeded(f"internal net {current_net} does not form a chain")
+                component, pin_from, pin_to, next_net = candidates[0]
+                used.add(component.ref)
+                edges.append((component, pin_from, pin_to, current_net, next_net))
+                current_net = next_net
+            paths.append({"start": anchor, "end": current_net, "edges": edges})
+
+    if len(used) != len(model.components):
+        missing = sorted({component.ref for component in model.components} - used)
+        raise _FallbackNeeded(f"unresolved components: {', '.join(missing)}")
+
+    # Draw power-first chains at the top and ground-last chains below, so the
+    # page reads from the positive rail down to ground.
+    normalized = []
+    for path in paths:
+        start, end = path["start"], path["end"]
+        if _PATH_RANK[model.nets[start]["kind"]] > _PATH_RANK[model.nets[end]["kind"]]:
+            edges = [
+                (component, pin_to, pin_from, net_to, net_from)
+                for component, pin_from, pin_to, net_from, net_to in reversed(path["edges"])
+            ]
+            normalized.append({"start": end, "end": start, "edges": edges})
+        else:
+            normalized.append(path)
+
+    return sorted(
+        normalized,
+        key=lambda path: (
+            _PATH_RANK[model.nets[path["start"]]["kind"]],
+            model.nets[path["start"]]["label"],
+            _PATH_RANK[model.nets[path["end"]]["kind"]],
+            model.nets[path["end"]]["label"],
+            path["edges"][0][0].ref,
+        ),
+    )
+
+
+def _draw_path_endpoint(d, model: _Model, net_id: str, point, elm, left: bool):
+    """Draw a rail symbol or a net-label stub at one end of a chain."""
+    net = model.nets[net_id]
+    x, y = point
+
+    if net["kind"] == "power":
+        d.add(elm.Line().at((x, y)).up(0.9))
+        d.add(elm.Vdd().at(d.here).label(net["label"], loc="top", fontsize=8))
+        if left:
+            d.add(elm.Line().at((x, y)).right(0.5))
+            return (x + 0.5, y)
+        return point
+
+    if net["kind"] == "ground":
+        d.add(elm.Line().at((x, y)).down(0.9))
+        # The ground symbol is standard and unambiguous; a second text label
+        # only crowds the bars.
+        d.add(elm.Ground().at(d.here))
+        if left:
+            d.add(elm.Line().at((x, y)).right(0.5))
+            return (x + 0.5, y)
+        return point
+
+    d.add(elm.Line().at((x, y)).right(0.5))
+    if left:
+        d.add(elm.Label().at((x + 0.25, y)).label(net["label"], loc="top", fontsize=8))
+    else:
+        d.add(elm.Label().at((x + 0.5, y)).label(net["label"], loc="right", fontsize=8))
+    return (x + 0.5, y)
+
+
+def _draw_mcu_block(d, model: _Model, path_count: int, elm) -> None:
+    """Draw one labelled MCU block; matching net labels carry connectivity."""
+    anchor_nets = sorted(
+        ((net_id, net) for net_id, net in model.nets.items() if _is_anchor_net(model, net_id)),
+        key=lambda item: (_PATH_RANK[item[1]["kind"]], item[1]["label"]),
+    )
+    if not anchor_nets:
+        return
+
+    # Schemdraw places slot 1 at the bottom; reverse the list so the page reads
+    # power, signals, ground from top to bottom.
+    pins = [
+        elm.IcPin(
+            name=net["label"].replace(" ", "_"),
+            side="right",
+            slot=f"{index + 1}/{len(anchor_nets) + 1}",
+        )
+        for index, (_, net) in enumerate(reversed(anchor_nets))
+    ]
+    height = max(3.5, 1.6 * len(anchor_nets) + 1.5)
+    top = -((path_count - 1) * 4.0) / 2
+    ic = d.add(
+        elm.Ic(size=(6.2, height), pins=pins)
+        .at((-10.0, top))
+        .label("ESP32-S3\nDevKitC-1", loc="center", fontsize=11)
+    )
+    for _, net in anchor_nets:
+        anchor = net["label"].replace(" ", "_")
+        d.add(elm.Line().at(ic[anchor]).right(1.0))
+        d.add(elm.Label().at(d.here).label(net["label"], loc="right", fontsize=8))
+
+
+def _draw_paths(model: _Model, d, elm) -> None:
+    """Row-per-chain layout for shared pins and other non-forest nets.
+
+    Every chain is drawn as a left-to-right series of real symbols. Its ends
+    carry a power symbol, a ground symbol, or a net label, and the MCU block
+    repeats the same net labels. No internal net label is invented, so a reader
+    sees exactly the nets the wiring declares.
+    """
+    paths = _extract_paths(model)
+    if not paths:
+        raise _FallbackNeeded("no chains to draw")
+
+    # Draw the MCU block before the chains: an Ic element inherits the current
+    # drawing direction, and a chain that ended on a vertical rail would
+    # otherwise rotate the block's pin side.
+    _draw_mcu_block(d, model, len(paths), elm)
+
+    for index, path in enumerate(paths):
+        y = -index * 4.0
+        point = _draw_path_endpoint(d, model, path["start"], (0.0, y), elm, left=True)
+        for component, pin_from, pin_to, _net_from, _net_to in path["edges"]:
+            x, current_y = point
+            d.add(elm.Line().at((x, current_y)).right(0.5))
+            x += 0.5
+            element = _element_for(component, "right", elm)
+            if pin_from == "C" and pin_to == "A":
+                element = element.reverse()
+            attrs = model.parts.get(component.ref, {}).get("attrs", {})
+            d.add(
+                element.at((x, current_y)).label(
+                    _component_display(component, attrs), loc="top", fontsize=8
+                )
+            )
+            x += 1.8
+            point = (x, current_y)
+        _draw_path_endpoint(d, model, path["end"], point, elm, left=False)
 
 
 def _draw_net_labels(model: _Model, d, elm) -> None:
@@ -476,7 +675,10 @@ def render_schematic_svg(diagram: dict) -> str:
     try:
         svg = _render(model, _draw_branches, schemdraw, elm)
     except _FallbackNeeded:
-        svg = _render(model, _draw_net_labels, schemdraw, elm)
+        try:
+            svg = _render(model, _draw_paths, schemdraw, elm)
+        except _FallbackNeeded:
+            svg = _render(model, _draw_net_labels, schemdraw, elm)
     return _with_card_background(svg)
 
 

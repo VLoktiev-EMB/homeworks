@@ -88,6 +88,82 @@ Use this pattern for all discrete microcontroller circuits where components conn
 }
 ```
 
+### Canonical layout checklist
+
+Before placing a part, fix the reading direction:
+
+- Power at the top, ground at the bottom, signal flow left to right.
+- One row per branch; align the resistor with its driving pin.
+- Right-angle wire vectors only; leave a pin straight before the first bend.
+- A junction dot marks a connection; a crossing without a dot is not one.
+- Component labels live above their own row and never share space with the next row.
+- A series resistor–LED node is drawn as a direct connection, not a named net.
+
+### Pattern A2: Shared-Pin Totem Pole (One Pin, Two Branches)
+
+Use this pattern when one GPIO sources one branch and sinks another, for example
+a red and a blue LED on one push-pull pin. The pin is the middle of a vertical
+stack:
+
+- Above the pin: 3V3 -> resistor -> LED (anode toward 3V3) -> pin.
+- Below the pin: pin -> resistor -> LED (anode toward the pin) -> ground.
+- Every other signal keeps its own row below the stack.
+
+Rules:
+
+1. Give each branch its own row and at least 40–60 px of vertical separation.
+2. Rotate a horizontal LED with `"rotate": 90` or `270` so `A` and `C` land left
+   and right. Put the anode toward the source, then verify the A/C direction by
+   hovering the pins in the editor.
+3. Join the cathode ends with one vertical ground bus and take that bus to the
+   board `GND` pin. Do not run two independent long ground wires that overlap.
+4. Feed the sink branch from the board `3V3` pin; do not invent a second supply.
+5. Route every wire with right-angle vectors and never across the board face.
+
+Example for the shared-GPIO4 police flasher:
+
+```json
+{
+  "version": 1,
+  "author": "VLoktiev-EMB",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
+    },
+    { "type": "wokwi-resistor", "id": "r_blue", "top": 20, "left": -90, "attrs": { "value": "100" } },
+    { "type": "wokwi-led", "id": "led_blue", "top": 20, "left": -145, "rotate": 270, "attrs": { "color": "blue", "label": "BLUE" } },
+    { "type": "wokwi-resistor", "id": "r_red", "top": 76.8, "left": -90, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "led_red", "top": 76.8, "left": -145, "rotate": 90, "attrs": { "color": "red", "label": "RED" } },
+    { "type": "wokwi-resistor", "id": "r_white", "top": 140, "left": -90, "attrs": { "value": "100" } },
+    { "type": "wokwi-led", "id": "led_white", "top": 140, "left": -145, "rotate": 90, "attrs": { "color": "white", "label": "WHITE" } }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["esp:3V3.1", "r_blue:1", "red", ["h-40", "v20"]],
+    ["r_blue:2", "led_blue:A", "blue", []],
+    ["esp:4", "led_blue:C", "blue", ["h-120", "v-56"]],
+    ["esp:4", "r_red:2", "orange", []],
+    ["r_red:1", "led_red:A", "blue", []],
+    ["led_red:C", "led_white:C", "black", ["v60"]],
+    ["led_white:C", "esp:GND.1", "black", ["v120", "h120"]],
+    ["esp:5", "r_white:2", "purple", ["v42", "h-90"]],
+    ["r_white:1", "led_white:A", "purple", []]
+  ],
+  "dependencies": {}
+}
+```
+
+The same topology in the SVG renderer becomes three rows: `3V3 -> r_blue ->
+led_blue -> GPIO4`, `GPIO4 -> r_red -> led_red -> GND`, and `GPIO5 -> r_white ->
+led_white -> GND`. The shared `GPIO4` label appears on both rows and on the MCU
+pin; no internal net name is invented.
+
 ---
 
 ## 3. Pattern B: Solderless Breadboard Wiring (Multi-Pin Chips)

@@ -10,25 +10,25 @@
       "left": 0,
       "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
     },
-    { "type": "wokwi-resistor", "id": "r_red", "top": 20, "left": -90, "attrs": { "value": "220" } },
-    { "type": "wokwi-led", "id": "led_red", "top": 20, "left": -145, "attrs": { "color": "red", "label": "RED" } },
-    { "type": "wokwi-resistor", "id": "r_blue", "top": 75, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_blue", "top": 75, "left": -145, "attrs": { "color": "blue", "label": "BLUE" } },
-    { "type": "wokwi-resistor", "id": "r_white", "top": 130, "left": -90, "attrs": { "value": "100" } },
-    { "type": "wokwi-led", "id": "led_white", "top": 130, "left": -145, "attrs": { "color": "white", "label": "WHITE" } }
+    { "type": "wokwi-resistor", "id": "r_blue", "top": 20, "left": -90, "attrs": { "value": "100" } },
+    { "type": "wokwi-led", "id": "led_blue", "top": 20, "left": -145, "rotate": 270, "attrs": { "color": "blue", "label": "BLUE" } },
+    { "type": "wokwi-resistor", "id": "r_red", "top": 76.8, "left": -90, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "led_red", "top": 76.8, "left": -145, "rotate": 90, "attrs": { "color": "red", "label": "RED" } },
+    { "type": "wokwi-resistor", "id": "r_white", "top": 140, "left": -90, "attrs": { "value": "100" } },
+    { "type": "wokwi-led", "id": "led_white", "top": 140, "left": -145, "rotate": 90, "attrs": { "color": "white", "label": "WHITE" } }
   ],
   "connections": [
     ["esp:TX", "$serialMonitor:RX", "", []],
     ["esp:RX", "$serialMonitor:TX", "", []],
-    ["esp:4", "r_red:2", "orange", []],
-    ["r_red:1", "led_red:A", "blue", []],
-    ["led_red:C", "esp:GND.1", "black", ["v200", "h120"]],
     ["esp:3V3.1", "r_blue:1", "red", ["h-40", "v20"]],
     ["r_blue:2", "led_blue:A", "blue", []],
-    ["esp:4", "led_blue:C", "blue", ["v40", "h-20"]],
-    ["esp:5", "r_white:2", "purple", []],
-    ["r_white:1", "led_white:A", "purple", []],
-    ["led_white:C", "esp:GND.1", "black", ["v160", "h120"]]
+    ["esp:4", "led_blue:C", "blue", ["h-120", "v-56"]],
+    ["esp:4", "r_red:2", "orange", []],
+    ["r_red:1", "led_red:A", "blue", []],
+    ["led_red:C", "led_white:C", "black", ["v60"]],
+    ["led_white:C", "esp:GND.1", "black", ["v120", "h120"]],
+    ["esp:5", "r_white:2", "purple", ["v42", "h-90"]],
+    ["r_white:1", "led_white:A", "purple", []]
   ],
   "dependencies": {}
 }

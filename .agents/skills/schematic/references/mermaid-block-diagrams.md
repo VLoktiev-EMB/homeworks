@@ -36,6 +36,21 @@ To ensure clean left-to-right rendering:
    ```
 3. **Breadboard Jumper Bypassing**: Do not render the breadboard (`bb1`) as a physical node. Resolve intermediate breadboard row nets so components connect to components directly (`r1 --> led1`).
 
+### Sink Branches and Connection Order
+
+A push-pull pin can sink a branch: 3V3 -> resistor -> LED -> GPIO. The physical
+current enters the pin, but the block diagram still shows **signal flow** from the
+controller to the load. Write that connection controller-first in `diagram.json`:
+
+```json
+["esp:4", "led_blue:C", "blue", ["v40", "h-20"]]
+```
+
+The generator then emits `esp --> led_blue`. Writing the LED first
+(`["led_blue:C", "esp:4"]`) emits `led_blue --> esp` and produces the loopback
+arrow this document forbids. Fix the connection order in `diagram.json`; never
+hand-edit the generated Mermaid text.
+
 ---
 
 ## 3. Structural Subgraphs Pattern

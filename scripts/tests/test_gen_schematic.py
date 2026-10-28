@@ -57,6 +57,28 @@ MULTI_PIN_DIAGRAM = {
     ],
 }
 
+# One GPIO drives two branches: a sink branch fed from 3V3 and a source branch
+# returning to ground. The branch layout must refuse this fork, and the row
+# layout must draw one chain per branch without inventing internal net labels.
+SHARED_PIN_DIAGRAM = {
+    "version": 1,
+    "parts": [
+        {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
+        {"type": "wokwi-resistor", "id": "r_red", "attrs": {"value": "220"}},
+        {"type": "wokwi-led", "id": "led_red", "attrs": {"color": "red"}},
+        {"type": "wokwi-resistor", "id": "r_blue", "attrs": {"value": "100"}},
+        {"type": "wokwi-led", "id": "led_blue", "attrs": {"color": "blue"}},
+    ],
+    "connections": [
+        ["esp:4", "r_red:2", "orange", []],
+        ["r_red:1", "led_red:A", "blue", []],
+        ["led_red:C", "esp:GND.1", "black", []],
+        ["esp:3V3.1", "r_blue:1", "red", []],
+        ["r_blue:2", "led_blue:A", "blue", []],
+        ["led_blue:C", "esp:4", "blue", []],
+    ],
+}
+
 
 def run_schematic(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
     """Invoke `uv run scripts/gen_schematic.py` from the repository root."""
@@ -160,6 +182,24 @@ class MermaidGenerationTests(unittest.TestCase):
         self.assertIn("esp -->|4 -> 1| r1", text)
         self.assertIn("r1 -->|2 -> A| led1", text)
 
+    def test_a_shared_ground_bus_resolves_to_gnd(self) -> None:
+        diagram = {
+            "version": 1,
+            "parts": [
+                {"type": "board-esp32-s3-devkitc-1", "id": "esp"},
+                {"type": "wokwi-led", "id": "led1"},
+                {"type": "wokwi-led", "id": "led2"},
+            ],
+            "connections": [
+                ["led1:C", "led2:C", "black", []],
+                ["led2:C", "esp:GND.1", "black", []],
+            ],
+        }
+        text = generate_mermaid_from_diagram(diagram)
+        self.assertIn("led1 --> gnd[GND]", text)
+        self.assertIn("led2 -->|C| gnd[GND]", text)
+        self.assertNotIn("led1 --> led2", text)
+
 
 class DiagramValidationTests(unittest.TestCase):
     """Unit tests for validate_diagram."""
@@ -196,9 +236,27 @@ class SchematicSvgTests(unittest.TestCase):
         self.assertTrue(svg.strip().endswith("</svg>"))
         self.assertIn("GPIO15", svg)
         self.assertIn("GPIO21", svg)
-        self.assertIn("r1 220Ω", svg)
-        self.assertIn("led1 red LED", svg)
+        self.assertIn("r1 220 Ω", svg)
+        self.assertIn("led1 (red)", svg)
         self.assertIn('fill="#ffffff"', svg)
+
+    def test_a_shared_signal_net_uses_the_row_layout(self) -> None:
+        svg = render_schematic_svg(SHARED_PIN_DIAGRAM)
+        self.assertTrue(svg.startswith("<svg"))
+        self.assertIn("r_red 220 Ω", svg)
+        self.assertIn("r_blue 100 Ω", svg)
+        self.assertIn("led_blue (blue)", svg)
+        self.assertIn("3V3", svg)
+        # The MCU pin and both branches carry the same net label.
+        self.assertGreaterEqual(svg.count("GPIO4"), 3)
+        # Internal series nets are drawn directly, never as invented N labels.
+        self.assertNotIn("N5", svg)
+
+    def test_shared_pin_rendering_is_deterministic(self) -> None:
+        self.assertEqual(
+            render_schematic_svg(SHARED_PIN_DIAGRAM),
+            render_schematic_svg(SHARED_PIN_DIAGRAM),
+        )
 
     def test_a_multi_pin_part_falls_back_to_net_labels(self) -> None:
         svg = render_schematic_svg(MULTI_PIN_DIAGRAM)
