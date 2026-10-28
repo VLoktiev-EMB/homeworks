@@ -27,7 +27,7 @@
 #             2  no usable esp-clangd, a non-executable $ESP_CLANGD, or a
 #                relative PLATFORMIO_CORE_DIR
 #
-# See docs/standards/vscode.md.
+# See .agents/standards/vscode.md.
 
 set -euo pipefail
 
@@ -80,7 +80,7 @@ fi
 
 # Step 4: name the remedy instead of guessing.
 if [ -z "${CLANGD:-}" ]; then
-  fail "esp-clangd not found. Install it with the Espressif IDF tools installer, then run: mkdir -p \"\$HOME/.local/bin\" && ln -sf \"\$PWD/scripts/clangd-wrapper.sh\" \"\$HOME/.local/bin/clangd-wrapper\". See docs/standards/vscode.md."
+  fail "esp-clangd not found. Install it with the Espressif IDF tools installer, then run: mkdir -p \"\$HOME/.local/bin\" && ln -sf \"\$PWD/scripts/clangd-wrapper.sh\" \"\$HOME/.local/bin/clangd-wrapper\". See .agents/standards/vscode.md."
 fi
 
 # D-17: every allowlisted driver must be absolute. A relative base would

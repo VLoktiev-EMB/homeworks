@@ -17,8 +17,7 @@ repos:
     rev: v6.0.0
     hooks:
       # The text-normalizing hooks below carry no exclusions: every tracked text
-      # file here is authored, and `gen_views.py` owns its own output byte for
-      # byte.
+      # file here is authored.
       #
       # Every hook here names `stages: [pre-commit]` explicitly. This pinned
       # manifest declares `stages: [pre-commit, pre-push, manual]` for three of

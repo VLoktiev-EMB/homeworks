@@ -247,7 +247,7 @@ the human review and the machine gate share one source (D-25).
   signal maps to a pin and a connection; every row keeps the header's cell count (`RPT-201`,
   `RPT-202`).
 - [ ] **Calculations.** Every family the design exercises is selected from
-  `docs/standards/electrical-calculations.md`; each row states the formula, units, input
+  `.agents/standards/electrical-calculations.md`; each row states the formula, units, input
   provenance, result, uncertainty, and assumption effect; every required cell is non-empty
   (`RPT-201`, `RPT-202`, `RPT-203`, `RPT-204`).
 - [ ] **Safety.** The checklist names at least one hazard, and every bullet opens with a bold
@@ -274,7 +274,7 @@ and would be brittle as a keyword rule:
 - **Semantic truth.** The checker cannot decide whether a value was really measured, whether a
   citation supports the claim, or whether the analysis is honest. That remains a review duty
   (D-14).
-- **Catalog membership.** `docs/standards/electrical-calculations.md` is a selection aid. The
+- **Catalog membership.** `.agents/standards/electrical-calculations.md` is a selection aid. The
   checker validates the calculation table's eight columns and non-empty cells, never whether a
   row names a catalog family; enforcing membership would couple report wording to a growing
   catalog (D-24).

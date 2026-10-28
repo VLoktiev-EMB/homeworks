@@ -18,7 +18,6 @@ A homework report is an enduring engineering artifact understandable a year late
 
 - Authoring a new report for an assignment from `templates/report/report.md`.
 - Updating measurements, electrical calculations, or architecture details in `report.md`.
-- Resolving validation failures reported by `uv run scripts/check_report.py`.
 - Auditing report evidence before opening a pull request.
 
 ### When NOT to Use
@@ -44,13 +43,13 @@ A homework report is an enduring engineering artifact understandable a year late
 
 ## Core Contract Rules
 
-The report contract is validated by `uv run scripts/check_report.py` and enforces 9 essential rules:
+The report follows `.agents/standards/report.md` and enforces the standard rules:
 
-1. **Heading Sequence (`RPT-101`..`RPT-103`)**: Exactly 10 section headings in ascending numerical order (`## 1.` to `## 10.`), matching the exact titles above without duplicates or omitted sections.
-2. **File Integrity (`RPT-002`, `RPT-004`)**: Document must be non-empty and under 256 kB.
-3. **No Unresolved Placeholders (`RPT-406`)**: Draft and complete reports must not contain `TODO` or `TBD`.
-4. **English Language (`RPT-405`)**: Text must be in English with ASCII identifiers and paths.
-5. **Report Status (`RPT-003`)**: Must declare status (`planned`, `draft`, `complete`, or `placeholder`). Only `placeholder` is exempt from content rules.
+1. **Heading Sequence**: Exactly 10 section headings in ascending numerical order (`## 1.` to `## 10.`), matching the exact titles above without duplicates or omitted sections.
+2. **File Integrity**: Document must be non-empty and under 256 kB.
+3. **No Unresolved Placeholders**: Draft and complete reports must not contain `TODO` or `TBD`.
+4. **English Language**: Text must be in English with ASCII identifiers and paths.
+5. **Report Status**: Must declare status (`planned`, `draft`, `complete`, or `placeholder`). Only `placeholder` is exempt from content rules.
 
 ## Evidence Ledger Labels
 
@@ -66,17 +65,14 @@ Every row in Section 8 must carry an honest label from the closed vocabulary:
 
 - **Red Flag**: Relabeling a theoretical calculation as `measured`. If it came from Ohm's law ($R = V/I$), it is `calculated`.
 - **Red Flag**: Leaving unresolved `TODO` or `TBD` markers when transitioning a report to `draft` or `complete`.
-- **Mistake**: Renaming section headings (e.g. changing `## 2. Objective` to `## 2. Goal`), which trips `RPT-101`.
+- **Mistake**: Renaming section headings (e.g. changing `## 2. Objective` to `## 2. Goal`).
 - **Mistake**: Omitting the implementation commit hash in Section 1.
 
-## Workflow Commands
+## Workflow Reference
 
 ```bash
-# Validate report contract locally
-uv run scripts/check_report.py
-
-# Worked reference example
-cat homeworks/1_3-police-flasher/report.md
+# Engineering standard reference
+cat .agents/standards/report.md
 
 # Starter skeleton
 cat templates/report/report.md

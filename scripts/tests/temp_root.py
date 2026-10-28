@@ -155,10 +155,6 @@ def write_synthetic_root(
         root / "schema" / "homework.schema.json",
     )
 
-    views = repository / "templates" / "views"
-    if views.is_dir():
-        _copy(views, root / "templates" / "views")
-
     for name, build in SYNTHETIC_LIBRARY_BUILD.items():
         library = {
             "name": name,

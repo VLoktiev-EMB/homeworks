@@ -34,9 +34,8 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
   `python-tests`, `static-analysis`, `simulate` and `gate`.
 - `.github/workflows/nightly.yml` — the scheduled full build and native-test matrix plus the
   full-history secret scan.
-- `docs/` — the authored documentation tree: the `standards/` documents,
-  which GitHub renders directly in the repository view.
-- `docs/standards/vscode.md` — the VS Code onboarding guide, from install to the
+- `.agents/standards/` — engineering standards: `report.md`, `electrical-calculations.md`, and `vscode.md`.
+- `.agents/standards/vscode.md` — the VS Code onboarding guide, from install to the
   no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
 - `scripts/` — deterministic checks and the tag script; `scripts/tests/`
@@ -147,7 +146,7 @@ Good:  feat(1_3): add police flasher state machine
 ### Reports and evidence
 
 - **[SHOULD]** **[ENFORCED: review]** A report follows the structure in
-  `docs/standards/report.md`, with honest evidence labels (`measured`, `calculated`,
+  `.agents/standards/report.md`, with honest evidence labels (`measured`, `calculated`,
   `simulated`, `datasheet`, `not measured`).
 
 ### Pull requests and tags
@@ -184,7 +183,7 @@ Good:  feat(1_3): add police flasher state machine
 - **[MUST]** **[ENFORCED: pre-commit]** Python and authored YAML are linted by ruff and
   yamllint from their committed policies (`pyproject.toml`, `.yamllint.yaml`).
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
-- **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
+- **[SHOULD]** **[ENFORCED: review]** An editor is configured from `.agents/standards/vscode.md`,
   not from ad-hoc settings.
 
 ### Simulation
@@ -236,8 +235,8 @@ Good:  feat(1_3): add police flasher state machine
 | Inspect or extend the secret gate | `.pre-commit-config.yaml`, `.github/workflows/ci.yml` and `.github/workflows/nightly.yml` |
 | Investigate a red required check | `.github/workflows/ci.yml` — the `gate` job |
 | Choose a branch name | this file, "Git, branches, and history" |
-| Set up a developer editor | `docs/standards/vscode.md` — the onboarding guide |
-| Report structure, evidence, and the self-audit checklist | `docs/standards/report.md` |
+| Set up a developer editor | `.agents/standards/vscode.md` — the onboarding guide |
+| Report structure, evidence, and the self-audit checklist | `.agents/standards/report.md` |
 | Reuse a versioned workflow skill | canonical `.agents/skills/`, symlinked `.claude/skills/` |
 
 ## Precedence
