@@ -5,7 +5,7 @@ title: "Police Flasher"
 board: esp32-s3-devkitc-1
 framework: arduino
 language: cpp
-status: planned
+status: in-progress
 source:
   reference: "Course assignment, Module 1.3 (internal course platform; no public URL)"
 toolchain:
@@ -17,4 +17,4 @@ tests:
   coverage: false
 report:
   path: report.md
-  status: placeholder
+  status: draft

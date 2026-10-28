@@ -3,7 +3,7 @@
 Independent PlatformIO homework for `1_3-police-flasher`. An ESP32-S3 drives a
 red/blue police beacon pair and a white strobe LED.
 
-**Status:** planned
+**Status:** in-progress
 
 ## Behaviour
 
