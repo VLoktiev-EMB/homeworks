@@ -125,8 +125,10 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
+      - name: Install uv
+        run: python -m pip install uv==0.13.5
       - name: Run the Python suite
-        run: python -m unittest discover scripts/tests
+        run: uv run python -m unittest discover scripts/tests
 
   gate:
     name: gate
