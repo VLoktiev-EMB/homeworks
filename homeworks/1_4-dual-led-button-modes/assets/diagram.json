@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "author": "VLoktiev-EMB",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
+    },
+    { "type": "wokwi-resistor", "id": "r_a", "top": 25.45, "left": -97.4, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "led_a", "top": -11.35, "left": -207.4, "attrs": { "color": "red", "label": "LED A" } },
+    { "type": "wokwi-resistor", "id": "r_b", "top": 67.95, "left": -97.4, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "led_b", "top": 31.15, "left": -207.4, "attrs": { "color": "red", "label": "LED B" } },
+    { "type": "wokwi-pushbutton", "id": "btn_ext", "top": 150, "left": 60, "attrs": { "color": "green", "label": "MODE" } },
+    { "type": "wokwi-pushbutton", "id": "btn_boot", "top": 100, "left": 60, "attrs": { "color": "blue", "label": "BOOT (onboard)" } },
+    { "type": "wokwi-resistor", "id": "r_boot_onboard", "top": 40, "left": 140, "attrs": { "value": "10k" } },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 230, "left": -260, "attrs": {} }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["esp:15", "r_a:2", "red", []],
+    ["r_a:1", "led_a:A", "red", []],
+    ["led_a:C", "gnd1:GND", "black", ["h-60", "v200"]],
+    ["esp:16", "r_b:2", "red", []],
+    ["r_b:1", "led_b:A", "red", []],
+    ["led_b:C", "gnd1:GND", "black", ["h-60", "v160"]],
+    ["esp:21", "btn_ext:1.l", "green", ["h20"]],
+    ["btn_ext:2.l", "gnd1:GND", "black", ["v100", "h-180"]],
+    ["esp:0", "btn_boot:1.l", "green", ["h20"]],
+    ["btn_boot:2.l", "gnd1:GND", "black", ["v120", "h-180"]],
+    ["esp:3V3.1", "r_boot_onboard:2", "red", ["v-40", "h100"]],
+    ["r_boot_onboard:1", "esp:0", "red", ["h-100", "v40"]]
+  ],
+  "dependencies": {}
+}
