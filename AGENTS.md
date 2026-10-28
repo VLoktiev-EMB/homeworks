@@ -30,13 +30,10 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
 `.pre-commit-config.yaml`, and the paths below.
 
 - `.github/pull_request_template.md` — the single pull-request template.
-- `.github/workflows/ci.yml` — the pull-request gate: `meta`, `changes`, `build`,
-  `python-tests`, `static-analysis`, `simulate` and `gate`.
+- `.github/workflows/ci.yml` — the pull-request gate: `meta`, `build`, `python-tests`, and `gate`.
 - `.github/workflows/nightly.yml` — the scheduled full build and native-test matrix plus the
   full-history secret scan.
 - `.agents/standards/` — engineering standards: `report.md`, `electrical-calculations.md`, and `vscode.md`.
-- `.agents/standards/vscode.md` — the VS Code onboarding guide, from install to the
-  no-hardware check.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
 - `scripts/` — deterministic checks and the tag script; `scripts/tests/`
   — the test suite.
@@ -50,23 +47,13 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
 
 `site/` and `.pio/` are build output and stay ignored.
 
-`scripts/affected.py` maps a diff to the build matrix: a change under `homeworks/`, `lib/`,
-`platformio.shared.ini`, `partitions/`, `scripts/pio/` or `schema/` selects projects, an
-explicit no-build-impact set (`.planning/`, `docs/`, `.github/`, `.claude/`, `.agents/`,
-`boards/`, `.skill-state/`, `homeworks.code-workspace`, and `scripts/serial_capture.py`)
-selects nothing, and any unrecognised path widens to every project.
-
-`ci.yml`'s `changes` job consumes its `{build, simulate}` payload as the build and simulation
-matrix, and `nightly.yml` feeds the mapper the `platformio.shared.ini` path so the mapper's
-own widen-all rule produces the full matrix.
+In pull requests, `ci.yml` inspects changed paths: if shared code or build configuration
+(`lib/`, `platformio.shared.ini`, `partitions/`, `scripts/pio/`) changes, it builds every
+homework; if a specific homework changes, it builds only that homework; pull requests with
+no firmware impact skip the target build. `nightly.yml` builds all homeworks.
 
 The GitHub Pages source is set to `None` by the maintainer; the repository publishes no
 site, and the authored documents render in the repository view.
-
-The live skills layout is `.claude/skills/<name>/SKILL.md` — the canonical authored tree —
-with `.agents/skills/` as its generated, committed mirror. `scripts/gen_skills.py` is the
-only writer of the mirror; `uv run scripts/gen_skills.py --check` and the
-`gen-skills-check` pre-commit hook are the drift gate.
 
 ## Definition of Done
 
@@ -80,7 +67,7 @@ A homework is done when:
 ## Rules
 
 Every rule carries two dimensions: severity (`[MUST]` or `[SHOULD]`) and where a violation is
-caught (`[ENFORCED: pre-commit]`, `[ENFORCED: pre-push]`, `[ENFORCED: CI]`, or
+caught (`[ENFORCED: pre-commit]`, `[ENFORCED: CI]`, or
 `[ENFORCED: review]`). No `[MAY]`, no `[INFO]`.
 
 ### Change workflow
@@ -186,14 +173,12 @@ Good:  feat(1_3): add police flasher state machine
 - **[SHOULD]** **[ENFORCED: review]** An editor is configured from `.agents/standards/vscode.md`,
   not from ad-hoc settings.
 
-### Simulation
+### Simulation and diagrams
 
-- **[SHOULD]** **[ENFORCED: CI]** Simulation runs only when a pull request changes a project,
-  a maintainer applies the `simulate` label, and the head repository equals the base
-  repository. The job caps a run at a 15-second timeout and keeps its evidence for 7 days.
-  These conditions describe when simulation *may* run; they are not a merge precondition.
-- **[MUST]** **[ENFORCED: CI]** A fork pull request never receives the simulation token, and
-  simulation is never a required check for it.
+- **[MUST]** **[ENFORCED: CI]** Every circuit diagram (`homeworks/*/assets/diagram.json`) is
+  linted offline by `wokwi-cli lint` in CI's `meta` job.
+- **[SHOULD]** **[ENFORCED: review]** Headless simulation scenarios are executed locally
+  via the `simulate` skill to verify circuit behavior and capture simulated evidence.
 
 ### Assets and generated files
 
