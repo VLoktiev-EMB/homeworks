@@ -44,9 +44,8 @@ explicitly instead of letting a bare `pio run` build every environment:
 pio run -d homeworks/<id> -e <env>
 ```
 
-The current homework declares exactly one environment (`default_envs = esp32s3_arduino`),
-so the bare form is correct there; the rule still applies to a homework that later adds a
-second environment.
+When a homework declares exactly one target in `default_envs` (e.g. `esp32s3_arduino` or
+`esp32s3_espidf`), the bare form `pio run -d homeworks/<id>` is standard.
 
 ## The native leg
 
@@ -71,8 +70,7 @@ only when one of exactly two triggers fired:
 
 - the user explicitly asked for it, or
 - `git diff --quiet -- lib/` reports a change (a non-zero exit), because a change under
-  the shared `lib/` fans out to every consumer. This is the same condition
-  `scripts/affected.py` uses for its build matrix.
+  the shared `lib/` fans out to all homework consumers.
 
 State which trigger fired. When neither fired, state that the shared suite was skipped
 because neither trigger fired.
@@ -109,7 +107,7 @@ reader can tell them apart.
 `hw-build` writes no durable checkpoint. `.skill-state/<id>.json` belongs to
 `new-homework`; this skill records its result only in the conversation.
 
-Two F-05 facts a repair must respect:
+Two native test facts a repair must respect:
 
 - The native environment repeats `-Wall -Wextra -Werror`, so a signed/unsigned
   comparison or an unused local fails only the host build while the target build stays
@@ -119,7 +117,7 @@ Two F-05 facts a repair must respect:
   pressed", so a test that forgets the seed fails for the fixture's reason, not the
   implementation's.
 
-Two F-03 cold-run facts:
+Two cold-run facts:
 
 - A first native run downloads Unity 2.6.1 into `.pio/`; the download is expected and is
   not a build failure.

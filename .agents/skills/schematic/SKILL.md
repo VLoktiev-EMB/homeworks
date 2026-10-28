@@ -1,6 +1,6 @@
 ---
 name: schematic
-description: Use when asked to draw, generate, or fix a circuit diagram or schematic for ANY homework — including an arbitrary Wokwi diagram.json, multi-pin ICs, sensors, or a topology never seen before. Renders IEEE vector SVGs and Mermaid flowcharts directly from the diagram, so "draw the schematic" needs no per-homework code. Also use when checking schematic drift, untangling crossing wires, or making a diagram readable in dark mode.
+description: Use when generating, drawing, or validating circuit diagrams, IEEE vector schematics (assets/schematic.svg), or Mermaid circuit diagrams from assets/diagram.json.
 metadata:
   version: "2.1"
   status: active
