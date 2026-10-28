@@ -1,0 +1,10 @@
+{
+  "name": "blink_modes",
+  "version": "0.1.0",
+  "description": "Framework-free mode selection and blink schedule for homework 1_4.",
+  "license": "MIT",
+  "build": {
+    "srcDir": "src",
+    "includeDir": "include"
+  }
+}

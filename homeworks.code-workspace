@@ -15,6 +15,10 @@
 		{
 			"name": "1_3-police-flasher",
 			"path": "homeworks/1_3-police-flasher"
+		},
+		{
+			"name": "1_4-dual-led-button-modes",
+			"path": "homeworks/1_4-dual-led-button-modes"
 		}
 	],
 	"settings": {
