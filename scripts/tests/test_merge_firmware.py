@@ -38,13 +38,9 @@ class StubPlatform:
     """`PioPlatform()` with both package surfaces the script touches."""
 
     def __init__(self, packages: dict | None = None, directories: dict | None = None) -> None:
-        self.packages = (
-            {"tool-esptool": {"version": "9"}} if packages is None else packages
-        )
+        self.packages = {"tool-esptool": {"version": "9"}} if packages is None else packages
         self._directories = (
-            {"tool-esptool": "/packages/tool-esptool"}
-            if directories is None
-            else directories
+            {"tool-esptool": "/packages/tool-esptool"} if directories is None else directories
         )
 
     def get_package_dir(self, name: str):
@@ -70,9 +66,7 @@ class StubEnv:
         if substitutions:
             self.substitutions.update(substitutions)
         self.extra_images = [] if extra_images is None else extra_images
-        self.board = StubBoardConfig(
-            {"build.mcu": "esp32s3"} if board is None else board
-        )
+        self.board = StubBoardConfig({"build.mcu": "esp32s3"} if board is None else board)
         self.platform = StubPlatform() if platform is None else platform
         self.execute_status = execute_status
         self.executed: list[str] = []
@@ -121,9 +115,7 @@ class MergeCommandTests(unittest.TestCase):
     def test_output_target(self) -> None:
         command = self.command(StubEnv())
 
-        self.assertEqual(
-            f'"{BUILD_DIR}/firmware.merged.bin"', command[command.index("-o") + 1]
-        )
+        self.assertEqual(f'"{BUILD_DIR}/firmware.merged.bin"', command[command.index("-o") + 1])
 
     def test_board_fallbacks(self) -> None:
         explicit = self.command(
@@ -143,17 +135,13 @@ class MergeCommandTests(unittest.TestCase):
         self.assertEqual("4MB", fallback[fallback.index("--flash-size") + 1])
 
     def test_integer_offset_renders_hex(self) -> None:
-        command = self.command(
-            StubEnv(extra_images=[(0x1000, "$BUILD_DIR/bootloader.bin")])
-        )
+        command = self.command(StubEnv(extra_images=[(0x1000, "$BUILD_DIR/bootloader.bin")]))
 
         self.assertIn("0x1000", command)
         self.assertNotIn(4096, command)
 
     def test_string_offset_passes_through(self) -> None:
-        command = self.command(
-            StubEnv(extra_images=[("0x8000", "$BUILD_DIR/partitions.bin")])
-        )
+        command = self.command(StubEnv(extra_images=[("0x8000", "$BUILD_DIR/partitions.bin")]))
 
         self.assertIn("0x8000", command)
 
@@ -203,9 +191,7 @@ class MergeCommandTests(unittest.TestCase):
                 "/packages/tool-esptool/esptool.exe",
                 esptool_binary("/packages/tool-esptool"),
             )
-        self.assertEqual(
-            "/packages/tool-esptool/esptool", esptool_binary("/packages/tool-esptool")
-        )
+        self.assertEqual("/packages/tool-esptool/esptool", esptool_binary("/packages/tool-esptool"))
 
 
 class MergeActionTests(unittest.TestCase):

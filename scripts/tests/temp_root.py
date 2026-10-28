@@ -163,9 +163,7 @@ def write_synthetic_root(
         }
         manifest = root / "lib" / name / "library.json"
         manifest.parent.mkdir(parents=True, exist_ok=True)
-        manifest.write_text(
-            json.dumps(library, indent=2) + "\n", encoding="utf-8"
-        )
+        manifest.write_text(json.dumps(library, indent=2) + "\n", encoding="utf-8")
         source = root / "lib" / name / "src" / f"{name}.c"
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text(
@@ -255,9 +253,7 @@ def _write_synthetic_homework(
             "  status: draft",
         ]
     )
-    (project / "homework.yaml").write_text(
-        "\n".join(lines) + "\n", encoding="utf-8"
-    )
+    (project / "homework.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     (project / "task.md").write_text(
         "---\n"
@@ -279,9 +275,7 @@ def _write_synthetic_homework(
         f"# {title} report\n\nSynthetic homework fixture.\n", encoding="utf-8"
     )
 
-    deps = "".join(
-        f"    {name}=symlink://../../lib/{name}\n" for name in libraries
-    )
+    deps = "".join(f"    {name}=symlink://../../lib/{name}\n" for name in libraries)
     ini = (
         "; Synthetic fixture: a homework project lives two levels below the root.\n"
         "[platformio]\n"

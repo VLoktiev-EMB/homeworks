@@ -80,10 +80,7 @@ def authored_template_files(template_dir: Path) -> dict:
             continue
         if relative.name in ("CMakeLists.txt", "compile_commands.json"):
             continue
-        if (
-            relative.name.startswith("sdkconfig.")
-            and relative.name != "sdkconfig.defaults"
-        ):
+        if relative.name.startswith("sdkconfig.") and relative.name != "sdkconfig.defaults":
             continue
         files[relative.as_posix()] = path
     return files
@@ -115,9 +112,7 @@ class ScaffoldTestBase(unittest.TestCase):
         self.root = temp_root.build_root(self.workspace / "root")
 
     def build(self, name: str, *, homeworks: bool = True) -> Path:
-        return temp_root.build_root(
-            self.workspace / name, homeworks=homeworks
-        )
+        return temp_root.build_root(self.workspace / name, homeworks=homeworks)
 
     def scaffold(
         self,
@@ -126,9 +121,7 @@ class ScaffoldTestBase(unittest.TestCase):
         template: str = "arduino",
         flags: tuple[str, ...] = (),
     ) -> subprocess.CompletedProcess:
-        return run_scaffold(
-            homework_id, "--template", template, "--dir", str(root), *flags
-        )
+        return run_scaffold(homework_id, "--template", template, "--dir", str(root), *flags)
 
     def target(self, root: Path, homework_id: str = HOMEWORK_ID) -> Path:
         return root / "homeworks" / homework_id
@@ -153,9 +146,7 @@ class ScaffoldTestBase(unittest.TestCase):
         expected["report.md"] = REPO_ROOT / "templates" / "report" / "report.md"
         actual = snapshot_tree(target)
 
-        self.assertEqual(
-            sorted(expected), sorted(actual), "the scaffolded file set differs"
-        )
+        self.assertEqual(sorted(expected), sorted(actual), "the scaffolded file set differs")
 
         for relative, source in sorted(expected.items()):
             source_bytes = source.read_bytes()
@@ -171,9 +162,7 @@ class ScaffoldTestBase(unittest.TestCase):
 
         for relative, content in sorted(actual.items()):
             with self.subTest(path=relative):
-                self.assertNotIn(
-                    "{{", content.decode("utf-8"), "a rendered file kept a token"
-                )
+                self.assertNotIn("{{", content.decode("utf-8"), "a rendered file kept a token")
 
         rendered = (target / "homework.yaml").read_text(encoding="utf-8")
         self.assertIn(f"language: {LANGUAGES[template]}", rendered)
@@ -186,18 +175,14 @@ class InventoryTests(ScaffoldTestBase):
         result = self.scaffold(self.root)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
-        missing = [
-            name for name in declared_paths("arduino") if not (target / name).is_file()
-        ]
+        missing = [name for name in declared_paths("arduino") if not (target / name).is_file()]
         self.assertEqual([], missing)
 
     def test_espidf_scaffold_creates_the_declared_paths(self) -> None:
         result = self.scaffold(self.root, template="espidf")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(self.root)
-        missing = [
-            name for name in declared_paths("espidf") if not (target / name).is_file()
-        ]
+        missing = [name for name in declared_paths("espidf") if not (target / name).is_file()]
         self.assertEqual([], missing)
         self.assertTrue((target / "sdkconfig.defaults").is_file())
 
@@ -207,9 +192,7 @@ class InventoryTests(ScaffoldTestBase):
             result = self.scaffold(root, template=template)
             with self.subTest(template=template):
                 self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-                text = (self.target(root) / "homework.yaml").read_text(
-                    encoding="utf-8"
-                )
+                text = (self.target(root) / "homework.yaml").read_text(encoding="utf-8")
                 self.assertIn('id: "1_3-fixture"', text)
                 self.assertIn('title: "Fixture"', text)
                 self.assertIn("status: planned", text)
@@ -274,9 +257,7 @@ class ReportScaffoldTests(ScaffoldTestBase):
 
     def test_report_block_is_placeholder_in_both_templates(self) -> None:
         for template in TEMPLATES:
-            manifest = (
-                REPO_ROOT / "templates" / f"homework-{template}" / "homework.yaml"
-            )
+            manifest = REPO_ROOT / "templates" / f"homework-{template}" / "homework.yaml"
             text = manifest.read_text(encoding="utf-8")
             with self.subTest(template=template):
                 self.assertIn(
@@ -300,12 +281,8 @@ class GeneratedTemplateOutputTests(ScaffoldTestBase):
         (template / ".pio" / "build" / "artifact.bin").write_bytes(b"\x80\x00")
         (template / "CMakeLists.txt").write_text("generated\n", encoding="utf-8")
         (template / "src").mkdir(parents=True, exist_ok=True)
-        (template / "src" / "CMakeLists.txt").write_text(
-            "generated\n", encoding="utf-8"
-        )
-        (template / "sdkconfig.esp32s3_espidf").write_text(
-            "generated\n", encoding="utf-8"
-        )
+        (template / "src" / "CMakeLists.txt").write_text("generated\n", encoding="utf-8")
+        (template / "sdkconfig.esp32s3_espidf").write_text("generated\n", encoding="utf-8")
         (template / "compile_commands.json").write_text("[]\n", encoding="utf-8")
 
         result = self.scaffold(self.root, template="espidf")
@@ -365,9 +342,7 @@ class ConflictTests(ScaffoldTestBase):
     """D-20 / T-04-03: any conflict blocks every write and is never overridden."""
 
     def test_conflict_and_deletion_write_nothing(self) -> None:
-        self.assertEqual(
-            0, self.scaffold(self.root, template="espidf").returncode
-        )
+        self.assertEqual(0, self.scaffold(self.root, template="espidf").returncode)
         target = self.target(self.root)
         with (target / "README.md").open("a", encoding="utf-8") as handle:
             handle.write("x\n")
@@ -417,17 +392,12 @@ class ConflictTests(ScaffoldTestBase):
         result = self.scaffold(self.root)
 
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout)
         self.assertIn(
-            "homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout
-        )
-        self.assertIn(
-            "intermediate path homeworks/1_3-fixture/src is a symlink; "
-            "refusing to follow it",
+            "intermediate path homeworks/1_3-fixture/src is a symlink; refusing to follow it",
             result.stdout,
         )
-        self.assertTrue(
-            (target / "src").is_symlink(), "the symlink must be left intact"
-        )
+        self.assertTrue((target / "src").is_symlink(), "the symlink must be left intact")
         self.assertEqual(
             [],
             sorted(path.name for path in outside.iterdir()),
@@ -475,9 +445,7 @@ class ConflictTests(ScaffoldTestBase):
                     "homeworks is a symlink; refusing to follow it",
                     result.stderr,
                 )
-                self.assertTrue(
-                    link.is_symlink(), "the symlink must be left intact"
-                )
+                self.assertTrue(link.is_symlink(), "the symlink must be left intact")
                 self.assertEqual(
                     [],
                     sorted(outside.rglob("*")),
@@ -492,17 +460,12 @@ class ConflictTests(ScaffoldTestBase):
         result = self.scaffold(self.root)
 
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout)
         self.assertIn(
-            "homeworks/1_3-fixture/src/main.cpp: CONFLICT — ", result.stdout
-        )
-        self.assertIn(
-            "intermediate path homeworks/1_3-fixture/src exists and is not "
-            "a directory",
+            "intermediate path homeworks/1_3-fixture/src exists and is not a directory",
             result.stdout,
         )
-        self.assertEqual(
-            "keep me\n", (target / "src").read_text(encoding="utf-8")
-        )
+        self.assertEqual("keep me\n", (target / "src").read_text(encoding="utf-8"))
         self.assertEqual(
             ["src"],
             sorted(path.name for path in target.iterdir()),
@@ -594,9 +557,7 @@ class ErrorTests(ScaffoldTestBase):
     def test_unknown_placeholder_exits_2(self) -> None:
         template = self.root / "templates" / "homework-unknown"
         shutil.copytree(self.root / "templates" / "homework-arduino", template)
-        (template / "README.md").write_text(
-            "# {{not_a_placeholder}}\n", encoding="utf-8"
-        )
+        (template / "README.md").write_text("# {{not_a_placeholder}}\n", encoding="utf-8")
 
         result = self.scaffold(self.root, template="unknown")
 
@@ -606,9 +567,7 @@ class ErrorTests(ScaffoldTestBase):
     def test_dollar_brace_exits_2(self) -> None:
         template = self.root / "templates" / "homework-dollar"
         shutil.copytree(self.root / "templates" / "homework-arduino", template)
-        (template / "README.md").write_text(
-            "${PROJECT_DIR}/main.cpp\n", encoding="utf-8"
-        )
+        (template / "README.md").write_text("${PROJECT_DIR}/main.cpp\n", encoding="utf-8")
 
         result = self.scaffold(self.root, template="dollar")
 

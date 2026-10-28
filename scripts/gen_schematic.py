@@ -36,6 +36,7 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
     Produces a clean, unidirectional left-to-right (LR) signal flow:
     - Resolves intermediate breadboard row nets so components connect directly.
     - Redirects Ground returns to terminal GND nodes rather than looping backward into MCU.
+    - Collapses a component-to-component ground bus into one GND sink per part.
     - Redirects Power rails (3.3V/5V) to dedicated source nodes rather than cutting across MCU.
     - Excludes debug serial monitor connections.
     """
@@ -44,6 +45,45 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
 
     board_part = next((p for p in parts.values() if "board" in p.get("type", "")), None)
     b_id = board_part["id"] if board_part else None
+
+    def is_ground_terminal(part: str, pin: str) -> bool:
+        board_ground = part == b_id and "GND" in pin.upper()
+        breadboard_ground = part.startswith("bb") and "tn" in pin.lower()
+        symbol_ground = parts.get(part, {}).get("type") == "wokwi-gnd"
+        return board_ground or breadboard_ground or symbol_ground
+
+    def is_power_terminal(part: str, pin: str) -> bool:
+        board_power = part == b_id and (
+            "3V3" in pin.upper() or "5V" in pin.upper() or "VIN" in pin.upper()
+        )
+        symbol_power = parts.get(part, {}).get("type") == "wokwi-vcc"
+        return board_power or symbol_power
+
+    # Parts that reach the ground net through any pin. A shared ground bus
+    # between two of them is a sink relationship, not a signal edge.
+    ground_components: set[str] = set()
+    power_components: set[str] = set()
+    for conn in connections:
+        if len(conn) < 2:
+            continue
+        for terminal, other in ((conn[0], conn[1]), (conn[1], conn[0])):
+            part, _, pin = str(terminal).partition(":")
+            other_part, _, _ = str(other).partition(":")
+            if is_ground_terminal(part, pin):
+                ground_components.add(other_part)
+            if is_power_terminal(part, pin):
+                power_components.add(other_part)
+    ground_components = {
+        part
+        for part in ground_components
+        if part and part != b_id and not part.startswith("$") and not part.startswith("bb")
+    }
+    power_components = {
+        part
+        for part in power_components
+        if part and part != b_id and not part.startswith("$") and not part.startswith("bb")
+    }
+    ground_edges: set[str] = set()
 
     bb_nets: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
     resolved_edges: list[tuple[str, str, str]] = []
@@ -57,6 +97,7 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
 
         src_part, _, src_pin = src.partition(":")
         dst_part, _, dst_pin = dst.partition(":")
+        edge_label = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
 
         # Ignore direct breadboard internal jumpers
         if "bb" in src_part and "bb" in dst_part:
@@ -66,27 +107,62 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
         if src_part == b_id and ("3V3" in src_pin or "GND" in src_pin) and "bb" in dst_part:
             continue
 
-        # Direct 3V3 power rail feeds to components
+        # A cathode-to-cathode link is a shared ground bus, not a signal edge.
+        # Both parts are anchored to the GND sink after the loop.
+        if src_pin.upper() == "C" and dst_pin.upper() == "C":
+            ground_components.update((src_part, dst_part))
+            continue
+
+        # Direct 3V3 power rail feeds to components, in either connection
+        # order: the generator must not turn a rail feed into an MCU loopback.
         if src_part == b_id and "3V3" in src_pin and "bb" not in dst_part:
             edge_lbl = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
             resolved_edges.append(('pwr["3.3V"]', edge_lbl, dst_part))
             continue
+        if dst_part == b_id and "3V3" in dst_pin and "bb" not in src_part:
+            edge_lbl = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, src_part))
+            continue
+
+        # A Wokwi VCC symbol is a rail source, just like the board 3V3 pin.
+        if parts.get(src_part, {}).get("type") == "wokwi-vcc":
+            edge_lbl = f"|{dst_pin}|" if dst_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, dst_part))
+            continue
+        if parts.get(dst_part, {}).get("type") == "wokwi-vcc":
+            edge_lbl = f"|{src_pin}|" if src_pin else ""
+            resolved_edges.append(('pwr["3.3V"]', edge_lbl, src_part))
+            continue
 
         # Redirect Ground connections to terminal GND
-        is_dst_gnd = (dst_part == b_id and "GND" in dst_pin.upper()) or (
-            "bb" in dst_part and "tn" in dst_pin
-        )
+        is_dst_gnd = is_ground_terminal(dst_part, dst_pin)
         if is_dst_gnd:
             edge_lbl = f"|{src_pin}|" if src_pin else ""
             resolved_edges.append((src_part, edge_lbl, "gnd[GND]"))
+            ground_edges.add(src_part)
             continue
 
-        is_src_gnd = (src_part == b_id and "GND" in src_pin.upper()) or (
-            "bb" in src_part and "tn" in src_pin
-        )
+        is_src_gnd = is_ground_terminal(src_part, src_pin)
         if is_src_gnd:
             edge_lbl = f"|{dst_pin}|" if dst_pin else ""
             resolved_edges.append(("gnd[GND]", edge_lbl, dst_part))
+            ground_edges.add(dst_part)
+            continue
+
+        # A ground bus between two components is not a signal edge. Both parts
+        # are anchored to gnd below, so the block diagram keeps one sink.
+        if src_part in ground_components and dst_part in ground_components:
+            continue
+
+        # A component fed from a power rail is the source end of a chain. The
+        # connection order in diagram.json is electrical, not directional, so
+        # reverse the edge when the rail-fed part is written second.
+        if src_part in power_components and dst_part not in power_components:
+            resolved_edges.append((src_part, edge_label, dst_part))
+            continue
+        if dst_part in power_components and src_part not in power_components:
+            reverse_label = f"|{dst_pin} -> {src_pin}|" if src_pin and dst_pin else ""
+            resolved_edges.append((dst_part, reverse_label, src_part))
             continue
 
         # Redirect Power rail connections
@@ -109,7 +185,6 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
             bb_nets[row].append(("dst", dst_part, dst_pin))
             continue
 
-        edge_label = f"|{src_pin} -> {dst_pin}|" if src_pin and dst_pin else ""
         resolved_edges.append((src_part, edge_label, dst_part))
 
     # Resolve breadboard row nets into direct component-to-component edges
@@ -120,6 +195,12 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
             for d in dsts:
                 label = f"|{s[2]} -> {d[2]}|" if s[2] and d[2] else ""
                 resolved_edges.append((s[1], label, d[1]))
+
+    # A part that reaches ground only through another part's cathode still
+    # belongs at the GND sink, not at a component-to-component edge.
+    for component in sorted(ground_components):
+        if component not in ground_edges:
+            resolved_edges.append((component, "", "gnd[GND]"))
 
     lines = ["```mermaid", "flowchart LR"]
 
@@ -132,7 +213,11 @@ def generate_mermaid_from_diagram(diagram: dict) -> str:
     # Parts
     for pid, part in parts.items():
         ptype = part.get("type", "")
-        if "board" in ptype or "breadboard" in ptype:
+        if (
+            "board" in ptype
+            or "breadboard" in ptype
+            or ptype in ("wokwi-gnd", "wokwi-vcc", "wokwi-text", "wokwi-junction")
+        ):
             continue
         attrs = part.get("attrs", {})
         if ptype == "wokwi-resistor":

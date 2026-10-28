@@ -38,9 +38,7 @@ class TestGenClangdDb(unittest.TestCase):
         (tmpl_dir / "platformio.ini").write_text("[env]\n", encoding="utf-8")
 
         db_path, remedy = find_arduino_source(self.root)
-        self.assertEqual(
-            db_path, Path("templates/homework-arduino/compile_commands.json")
-        )
+        self.assertEqual(db_path, Path("templates/homework-arduino/compile_commands.json"))
         self.assertIn("templates/homework-arduino", remedy)
 
     def test_check_source_stale_detects_missing_sdkconfig(self) -> None:
@@ -75,15 +73,11 @@ class TestGenClangdDb(unittest.TestCase):
         native_db.parent.mkdir(parents=True)
         native_db.write_text("[]", encoding="utf-8")
 
-        arduino_db = (
-            self.root / "templates" / "homework-arduino" / "compile_commands.json"
-        )
+        arduino_db = self.root / "templates" / "homework-arduino" / "compile_commands.json"
         arduino_db.parent.mkdir(parents=True)
         arduino_db.write_text("[]", encoding="utf-8")
 
-        espidf_db = (
-            self.root / "templates" / "homework-espidf" / "compile_commands.json"
-        )
+        espidf_db = self.root / "templates" / "homework-espidf" / "compile_commands.json"
         espidf_db.parent.mkdir(parents=True)
         espidf_db.write_text("[]", encoding="utf-8")
 
