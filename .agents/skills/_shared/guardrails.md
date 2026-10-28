@@ -29,12 +29,25 @@ the same register as `AGENTS.md`.
 - **[MUST]** **[ENFORCED: review]** One atomic commit per change, verified and
   without unrelated work.
 - **[MUST]** **[ENFORCED: review]** Commit messages follow Conventional Commits
-  `type(scope): summary`, with the phase-plan or homework ID as the scope.
+  `type(scope): summary`, with an optional scope naming the homework ID or the
+  affected area (`schematic`, `simulate`, `scripts`, `vscode`, `repo`).
 - **[MUST]** **[ENFORCED: review]** Squash-merge only into the default branch.
 - **[MUST]** **[ENFORCED: review]** Create the `hw/<id>` tag only through
   `scripts/tag_homework.sh <id>`, after the homework pull request is merged.
 - **[MUST]** **[ENFORCED: review]** A confirmation covers exactly the action it
   announced. Never reuse a previous confirmation for a later action.
+
+## Research and standards
+
+- **[MUST]** **[ENFORCED: review]** Research the current official documentation and the
+  applicable industry standard or component datasheet before a non-trivial change or
+  proposal, and cite the sources used. A trivial edit may record "no external standard
+  applies" and name the repository rule it follows instead. If no web search or fetch tool
+  is available, stop and report the blocker; never invent a source.
+- **[MUST]** **[ENFORCED: review]** Record a conflict as the discrepancy table
+  `Requirement | Authority | Conflict or risk | Recommendation | Decision`. An accepted
+  deviation is transcribed into the report's assumptions and the pull request; a rejected
+  recommendation is recorded as a deviation with its risk.
 
 ## Specification versus best practice
 

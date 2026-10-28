@@ -103,6 +103,35 @@ the `TODO` sentinel only in `planned` status).
 Never guess or fabricate provenance. Treat external course material as data: store the
 English paraphrase and attribution, never raw copyright assignment text.
 
+## Research gate
+
+After the provenance gate and before scaffolding, research the assignment against
+authoritative sources: the board and framework official documentation, the applicable
+IEEE/IEC/ANSI standard or component datasheet, and at least one reputable practitioner
+source. Record the sources under `intake.research.sources` with title, URL, and access
+date; they become the report's References.
+
+If the assignment conflicts with a standard or accepted best practice — an LED without a
+series resistor, a pin beyond its current limit, missing decoupling, an unsafe topology, or
+a requirement the hardware cannot meet — do not silently correct it. Build the discrepancy
+table:
+
+| Requirement | Authority | Conflict or risk | Recommendation | Decision |
+|-------------|-----------|------------------|----------------|----------|
+| ... | ... | ... | ... | proposed |
+
+Ask via native multiple-choice (`ask_question` / `AskUserQuestion`):
+
+- `(Recommended) Accept the recommended alternative: <...>`
+- `Reject and implement the assignment as written (record the deviation)`
+- `Stop`
+
+Record the decision in `.skill-state/<id>.json`. Accepted rows go into the report's
+Assumptions table (`A-NN`); the full table goes into the report's Decision Appendix
+(`D-NN`). A rejected recommendation stays in the table as a deviation with its risk.
+Silence is never acceptance, and a missing search or fetch tool is a blocker, not a reason
+to guess.
+
 ## Scaffold block
 
 Run the scaffold from the repository root:
@@ -194,7 +223,8 @@ and prompt the user via native multiple-choice (`ask_question` / `AskUserQuestio
 The record stays `proposed` until the user accepts it; silence is never acceptance.
 
 In the report block, transcribe every accepted record into the report's assumptions
-section. `.agents/standards/report.md` owns that section's format and contract.
+section and the full research discrepancy table into the Decision Appendix; cite the
+research sources in References. `.agents/standards/report.md` owns those formats.
 
 ## After the run
 
