@@ -95,6 +95,11 @@ reconstructing the topology from tangled wires.
 9. **Polarity.** An LED or diode points in the direction of conventional current: anode
    toward the source, cathode toward the sink. Rotate or flip the symbol, not the wires,
    when the reading direction is wrong.
+10. **Board side and return locality.** Put left-header signals on the left wing and
+    right-header signals on the right wing; route a rail feed to the opposite side over the
+    top or bottom perimeter, never across the board face. Use the nearest board ground pin
+    for a nearby return and one ground symbol for a far wing — both are the same net, but
+    the drawing avoids a long loop.
 
 ## Tier 1: the generated SVG
 

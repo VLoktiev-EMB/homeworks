@@ -98,6 +98,11 @@ Before placing a part, fix the reading direction:
 - A junction dot marks a connection; a crossing without a dot is not one.
 - Component labels live above their own row and never share space with the next row.
 - A series resistor–LED node is drawn as a direct connection, not a named net.
+- Split the wings by board side: left-header signals on the left, right-header
+  signals on the right; a rail feed to the opposite side goes over the top or
+  bottom perimeter.
+- Use the nearest ground return for each wing; one electrical net does not
+  require one long wire.
 
 ### Pattern A2: Shared-Pin Totem Pole (One Pin, Two Branches)
 
@@ -210,6 +215,136 @@ The same topology in the SVG renderer becomes three rows: `3V3 -> r_blue ->
 led_blue -> GPIO4`, `GPIO4 -> r_red -> led_red -> GND`, and `GPIO5 -> r_white ->
 led_white -> GND`. The shared `GPIO4` label appears on both rows and on the MCU
 pin; no internal net name is invented.
+
+### Pattern A3: Split Wings with Right-Side Controls and a Shared Boot Node
+
+Use this pattern when the board pinout separates outputs and inputs: the LED
+branches sit on the left header (GPIO15/16 here), while the buttons sit on the
+right header (GPIO0/21). The aim is one reading direction per side, a short
+signal wire per control, and no wire across the board face.
+
+Golden example (homework 1.4):
+
+```json
+{
+  "version": 1,
+  "author": "VLoktiev-EMB",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_a",
+      "top": 25.45,
+      "left": -97.4,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_a",
+      "top": -11.35,
+      "left": -207.4,
+      "attrs": { "color": "red", "label": "LED A" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_b",
+      "top": 67.95,
+      "left": -97.4,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_b",
+      "top": 31.15,
+      "left": -207.4,
+      "attrs": { "color": "red", "label": "LED B" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_ext",
+      "top": 179,
+      "left": 268.8,
+      "attrs": { "color": "green", "label": "MODE" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_boot",
+      "top": 140.6,
+      "left": 182.4,
+      "attrs": { "color": "blue", "label": "BOOT (onboard)" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_boot_onboard",
+      "top": -5.35,
+      "left": 113.8,
+      "attrs": { "value": "10k" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 230.4, "left": -250.2, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:15", "r_a:2", "red", [] ],
+    [ "r_a:1", "led_a:A", "red", [] ],
+    [ "led_a:C", "gnd1:GND", "black", [ "h-47.6", "v199.75" ] ],
+    [ "esp:16", "r_b:2", "red", [] ],
+    [ "r_b:1", "led_b:A", "red", [] ],
+    [ "led_b:C", "gnd1:GND", "black", [ "h-47.6", "v157.25" ] ],
+    [ "esp:21", "btn_ext:1.l", "green", [ "h20" ] ],
+    [ "esp:0", "btn_boot:1.l", "green", [ "h20" ] ],
+    [ "btn_boot:2.l", "esp:GND.4", "black", [ "h-19.2", "v57.8" ] ],
+    [ "btn_ext:2.l", "esp:GND.4", "black", [ "h-105.6", "v0.2" ] ],
+    [ "esp:3V3.1", "r_boot_onboard:1", "red", [ "v0" ] ],
+    [ "r_boot_onboard:2", "btn_boot:1.l", "red", [ "v-0.3", "h9.8" ] ]
+  ],
+  "dependencies": {}
+}
+```
+
+Why it reads well:
+
+- The left wing contains only the two output chains, so a reader follows
+  `GPIO -> resistor -> LED -> ground` twice without crossing a control wire.
+- Each button sits on the same horizontal row as its GPIO pin. The green signal
+  wire is one short segment, and the label stays above its own row.
+- The 10 kOhm pull-up is fed from the left-side `3V3.1` pin but placed above the
+  board. Its red path goes up, over the top perimeter, and down to the BOOT
+  node; it never crosses the antenna, the RGB LED, or the USB connectors.
+- The near returns use the board's own `GND.4` pin. The far LED cathodes use
+  one `wokwi-gnd` symbol. Both are the same electrical net, but each wing gets
+  the shortest return instead of a long loop from one end of the board to the
+  other.
+- `esp:0` and the pull-up both land on `btn_boot:1.l`, so the BOOT node is the
+  button's left pin. No synthetic `N` net is invented.
+- The label `BOOT (onboard)` and the id `r_boot_onboard` state that the Wokwi
+  model is a simulation equivalent of the DevKitC-1 hardware, not an extra
+  physical part.
+
+Reusable rules:
+
+1. Split the wings by board side. A left-header signal belongs on the left; a
+   right-header signal belongs on the right. A part that crosses the board
+   face is a layout defect, even when the netlist is correct.
+2. Align a control with its GPIO row. Place the button at the same `top` as the
+   pin and give the signal wire one short horizontal vector (`h20` here).
+3. Route a rail feed to the opposite side over the perimeter. A left-side
+   `3V3` feed to a right-side node goes up and across the top, then down; it
+   never cuts across the module, antenna, or connectors.
+4. Prefer the nearest return. Use a nearby board `GND` pin for a near wing and
+   one `wokwi-gnd` symbol for a far wing. The two are the same net; the rule is
+   about drawing economy, not two grounds.
+5. Keep the shared node explicit. A pull-up and a GPIO that meet on a button
+   pin share that pin; do not invent an intermediate net label.
+6. Mark simulation equivalents. Use the `(onboard)` label and an `_onboard` id
+   when the diagram models a board feature that Wokwi does not provide.
 
 ---
 

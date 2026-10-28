@@ -21,13 +21,13 @@ and no completed simulation session exist yet.
 | Platform | espressif32@8.0.0 |
 | Homework status | planned |
 | Report status | placeholder |
-| Implementation commit | TODO (pending commit) |
+| Implementation commit | c5b366e |
 | Wiring | [assets/diagram.json](assets/diagram.json) |
 
 The status pair is deliberate. The assignment provenance in `task.md` is still
-the `TODO` sentinel, which the metadata schema permits only while `status` is
-`planned`; the report therefore cannot honestly move to `draft` until a real
-source, retrieval date, attribution, and licence replace it.
+unfilled, a state the metadata schema permits only while `status` is `planned`;
+the report therefore cannot honestly move to `draft` until a real source,
+retrieval date, attribution, and licence replace it.
 
 ## 2. Objective
 
@@ -151,11 +151,11 @@ flowchart LR
     r_b -->|1 -> A| led_b
     led_b -->|C| gnd[GND]
     esp -->|21 -> 1.l| btn_ext
-    btn_ext -->|2.l| gnd[GND]
     esp -->|0 -> 1.l| btn_boot
     btn_boot -->|2.l| gnd[GND]
-    pwr["3.3V"] -->|3V3.1 -> 2| r_boot_onboard
-    r_boot_onboard -->|1 -> 0| esp
+    btn_ext -->|2.l| gnd[GND]
+    pwr["3.3V"] -->|3V3.1 -> 1| r_boot_onboard
+    r_boot_onboard -->|2 -> 1.l| btn_boot
 ```
 
 ### Bill of Materials
@@ -177,10 +177,10 @@ flowchart LR
 |--------|-----|-------------|-------|
 | LED A drive | GPIO15 | `r_a:2` -> `r_a:1` -> `led_a:A`; `led_a:C` -> `gnd1:GND` | Output, active high; 220 Ohm series |
 | LED B drive | GPIO16 | `r_b:2` -> `r_b:1` -> `led_b:A`; `led_b:C` -> `gnd1:GND` | Output, active high; 220 Ohm series |
-| External mode button | GPIO21 | `btn_ext:1.l`; `btn_ext:2.l` -> `gnd1:GND` | `INPUT_PULLUP`; active low; 20 ms debounce |
-| BOOT mode button | GPIO0 | `btn_boot:1.l`; `btn_boot:2.l` -> `gnd1:GND` | `INPUT`; active low; onboard 10 kOhm pull-up |
-| BOOT pull-up rail | 3V3 | `r_boot_onboard:2` -> `r_boot_onboard:1` -> GPIO0 | Onboard 10 kOhm; simulation equivalent in Wokwi |
-| Ground return | GND | `gnd1:GND` | LED cathodes and both button returns |
+| External mode button | GPIO21 | `btn_ext:1.l`; `btn_ext:2.l` -> `esp:GND.4` | `INPUT_PULLUP`; active low; 20 ms debounce |
+| BOOT mode button | GPIO0 | `btn_boot:1.l`; `btn_boot:2.l` -> `esp:GND.4` | `INPUT`; active low; onboard 10 kOhm pull-up |
+| BOOT pull-up rail | 3V3.1 | `r_boot_onboard:1` -> `r_boot_onboard:2` -> `btn_boot:1.l` (GPIO0 node) | Onboard 10 kOhm; simulation equivalent in Wokwi |
+| Ground return | GND | `gnd1:GND` for LED cathodes; `esp:GND.4` for button returns | One ground net; the nearest return is used for each wing |
 | Serial log | TX/RX | `$serialMonitor` at 115200 baud | `arduino_log_port` output; optional evidence |
 
 ### Electrical Calculations
@@ -230,9 +230,11 @@ branch. The commands and their observed results were:
    existing files. The local VS Code path is: select the config file
    `homeworks/1_4-dual-led-button-modes/assets/wokwi.toml`, then start the
    simulator. No headless run was executed because `WOKWI_CLI_TOKEN` is absent.
-8. Report gate: `uv run scripts/check_report.py` is the machine gate once the
-   status pair moves to `in-progress` and `draft`; the current `planned` and
-   `placeholder` pair deliberately keeps the document outside that gate.
+8. Report gate: the standard names `uv run scripts/check_report.py`, but that
+   script is absent from this checkout and `.pre-commit-config.yaml` has no
+   report hook. The document was therefore checked by review against
+   `.agents/standards/report.md`; the current `planned` and `placeholder` pair
+   also keeps it outside the full contract.
 
 No bench instrument was connected, so no measurement step was performed. The
 expected local simulation sequence is mode 1 at startup (both LEDs together),
@@ -258,13 +260,13 @@ screenshot or VCD artifact exists [8]. No value in this report is labelled
 
 | ID | Quantity | Value | Label | Instrument | Method | Uncertainty | Implementation commit |
 |----|----------|-------|-------|------------|--------|-------------|-----------------------|
-| L-01 | LED A/B operating current | 3.6-6.6 mA | calculated | none | C-02 with Vs from [1], Vf from [7], and R = 220 Ohm | Vf +/-0.1 V and R +/-5%; about +/-0.4 mA | TODO (pending commit) |
-| L-02 | LED forward voltage | Vf 1.85 V min and 2.5 V typ at 20 mA | datasheet | Kingbright WP7113SRD/E [7] | Datasheet table | +/-0.1 V | TODO (pending commit) |
-| L-03 | ESP32-S3 GPIO drive | 20 mA default drive; IOH 40 mA; IOL 28 mA | datasheet | Espressif ESP32-S3 datasheet [2] | Datasheet table | Datasheet limit | TODO (pending commit) |
-| L-04 | Mode 1 period | 200 ms nominal; quantization <= 1 ms | calculated | none | C-05; `test_mode_1_toggles_both_leds_every_200_ms` checks the 199/200/200 ms boundaries | 1 ms loop tick | TODO (pending commit) |
-| L-05 | Mode 2 period | 1000 ms nominal; quantization <= 1 ms | calculated | none | C-05; `test_boot_selects_mode_2_and_alternates_every_1000_ms` checks the 999/1000 ms boundaries | 1 ms loop tick | TODO (pending commit) |
-| L-06 | Wokwi behavior | not measured: no headless token and no local run artifact | not measured | none | `wokwi-cli lint --offline` only; no simulation session | Not applicable | TODO (pending commit) |
-| L-07 | Bench LED current | not measured: no bench instrument connected | not measured | none | No bench measurement performed | Not applicable | TODO (pending commit) |
+| L-01 | LED A/B operating current | 3.6-6.6 mA | calculated | none | C-02 with Vs from [1], Vf from [7], and R = 220 Ohm | Vf +/-0.1 V and R +/-5%; about +/-0.4 mA | c5b366e |
+| L-02 | LED forward voltage | Vf 1.85 V min and 2.5 V typ at 20 mA | datasheet | Kingbright WP7113SRD/E [7] | Datasheet table | +/-0.1 V | c5b366e |
+| L-03 | ESP32-S3 GPIO drive | 20 mA default drive; IOH 40 mA; IOL 28 mA | datasheet | Espressif ESP32-S3 datasheet [2] | Datasheet table | Datasheet limit | c5b366e |
+| L-04 | Mode 1 period | 200 ms nominal; quantization <= 1 ms | calculated | none | C-05; `test_mode_1_toggles_both_leds_every_200_ms` checks the 199/200/200 ms boundaries | 1 ms loop tick | c5b366e |
+| L-05 | Mode 2 period | 1000 ms nominal; quantization <= 1 ms | calculated | none | C-05; `test_boot_selects_mode_2_and_alternates_every_1000_ms` checks the 999/1000 ms boundaries | 1 ms loop tick | c5b366e |
+| L-06 | Wokwi behavior | not measured: no headless token and no local run artifact | not measured | none | `wokwi-cli lint --offline` only; no simulation session | Not applicable | c5b366e |
+| L-07 | Bench LED current | not measured: no bench instrument connected | not measured | none | No bench measurement performed | Not applicable | c5b366e |
 
 ### Traceability Matrix
 
@@ -283,7 +285,7 @@ screenshot or VCD artifact exists [8]. No value in this report is labelled
 | T-11 | Debounce, mode latch, simultaneous priority, read-failure safety | `lib/blink_modes/src/blink_modes.c` | `pio test -e native` | Four dedicated cases passed | verified |
 | T-12 | Target firmware builds for ESP32-S3 | `src/main.cpp`; `platformio.ini` | `pio run -d homeworks/1_4-dual-led-button-modes` | SUCCESS in 9.16 s | verified |
 | T-13 | Local Wokwi simulation path | `assets/diagram.json`; `assets/wokwi.toml` | `wokwi-cli lint --offline`; VS Code steps | Lint reports two informational notes; no run artifact | pending |
-| T-14 | Full report contract (REPORT-01 through REPORT-08) | `report.md` | `check_report.py` after the status pair moves to draft | Blocked by the `TODO` provenance sentinel | pending |
+| T-14 | Full report contract (REPORT-01 through REPORT-08) | `report.md` | `check_report.py` after the status pair moves to draft | Blocked by the unresolved provenance sentinel | pending |
 
 ## 8. Analysis
 
@@ -324,7 +326,7 @@ are provenance, a simulation artifact, and bench measurement.
 Status: the implementation, target build, native suite, schematic generation,
 and offline diagram lint are complete and verified on the working tree. The
 report remains declared `placeholder` and the homework remains `planned`
-because `task.md` provenance is still `TODO`; a real `source_url`, `retrieved`,
+because the provenance fields in `task.md` are still unfilled; a real `source_url`, `retrieved`,
 `attribution`, and `license` must replace it before the metadata status can
 move to `in-progress` and the report to `draft`. The Wokwi simulation is
 `pending`: the local VS Code path is configured, but no headless token is
@@ -337,7 +339,7 @@ homework delivery branch for the simulation artifact and bench evidence.
 1. Supply the real assignment provenance in `task.md` and `homework.yaml`, then
    flip the homework status to `in-progress` and the report to `draft`; the
    owner is the author, and the condition that closes the item is a clean
-   `check_metadata.py` and `check_report.py` run.
+   `check_metadata.py` run and the report gate named by the standard.
 2. Run the local Wokwi simulator in VS Code, capture a screenshot as
    `assets/simulation.png`, and record the observed sequence; the owner is the
    author, and the condition is a saved artifact plus a `simulation.status:
@@ -345,9 +347,11 @@ homework delivery branch for the simulation artifact and bench evidence.
 3. Measure the LED current and the two periods on the bench with a multimeter
    or logic analyzer; the owner is the author, and the condition is a
    `measured` ledger row with an instrument, method, and uncertainty.
-4. Commit the implementation and replace the `TODO (pending commit)` cells in
-   section 1 and the ledger with the commit hash; the owner is the author, and
-   the condition is a commit whose tree matches the tested working tree.
+4. The implementation is committed at `c5b366e`; keep section 1 and the ledger
+   in agreement with that hash when the working tree changes; the owner is the
+   author, and the condition is a clean `check_metadata.py` and `pre-commit
+   run --files homeworks/1_4-dual-led-button-modes/report.md` on the updated
+   tree.
 
 ## 10. References
 
