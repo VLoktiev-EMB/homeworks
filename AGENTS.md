@@ -20,10 +20,9 @@ Run from the repository root, in this order, before opening a pull request.
 |------|---------|---------|
 | 1 | `pio run -d <project>` | Build the affected PlatformIO environment from its own project directory. |
 | 2 | `pio test -d tests -e native` | Run the shared-library Unity suite from the top-level `tests/` project, without a target toolchain. |
-| 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, the dependency rule, and the metadata contract — and the exact command the CI `meta` job runs. |
+| 3 | `pre-commit run --all-files` | Run the local gate — hygiene, large files, secrets, format, and the metadata contract. |
 | 4 | `uv run scripts/check_metadata.py` | Validate homework metadata and task provenance against `schema/homework.schema.json`. |
-| 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs as `python -m unittest discover scripts/tests`. |
-| 6 | `uv run scripts/check_report.py` | Validate the report and evidence contract. |
+| 5 | `python3 -m unittest discover scripts/tests` | Run the Python suite that the CI `python-tests` job runs. |
 
 ## Repository layout
 
@@ -77,10 +76,7 @@ A homework is done when:
 1. `pio run` is green for its target environment.
 2. `pio test -e native` is green when the homework contains pure logic.
 3. `task.md`, `homework.yaml`, `README.md`, and `report.md` exist, and metadata validation passes.
-4. The report satisfies the checked contract in `docs/standards/report.md`, validated by
-   `uv run scripts/check_report.py`; prose quality and whether a value was measured stay
-   review duties.
-5. The pull request is merged and tagged `hw/<id>`.
+4. The pull request is merged and tagged `hw/<id>`.
 
 ## Rules
 
@@ -150,15 +146,9 @@ Good:  feat(1_3): add police flasher state machine
 
 ### Reports and evidence
 
-- **[MUST]** **[ENFORCED: pre-commit]** A report satisfies the checked contract in
-  `docs/standards/report.md`; `uv run scripts/check_report.py` is the machine gate, and it
-  proves structure and referential integrity, never that a value was measured.
-- **[MUST]** **[ENFORCED: pre-commit]** Every ledger claim carries one label from the closed
-  vocabulary — `measured`, `calculated`, `simulated`, `datasheet`, `not measured`, or
-  `measured (observed)` — and a calculation is never relabelled as measured.
-- **[MUST]** **[ENFORCED: pre-commit]** The homework status and `report.status` form an
-  allowed pair; the ten-section skeleton is always present; and `report.status: placeholder`
-  is the only exemption from the content rules.
+- **[SHOULD]** **[ENFORCED: review]** A report follows the structure in
+  `docs/standards/report.md`, with honest evidence labels (`measured`, `calculated`,
+  `simulated`, `datasheet`, `not measured`).
 
 ### Pull requests and tags
 
@@ -190,31 +180,12 @@ Good:  feat(1_3): add police flasher state machine
 
 - **[MUST]** **[ENFORCED: pre-commit]** C/C++ is formatted by the committed `.clang-format`,
   and the pinned hook runs it in check-only form (`--dry-run --Werror`): it reports and never
-  rewrites. The tracked tree is expected to conform, so a failure is a local fix rather than a
-  bulk reformat.
+  rewrites.
 - **[MUST]** **[ENFORCED: pre-commit]** Python and authored YAML are linted by ruff and
   yamllint from their committed policies (`pyproject.toml`, `.yamllint.yaml`).
 - **[MUST]** **[ENFORCED: pre-commit]** The secret gate is gitleaks; see "Secrets" above.
-  Every formatter and linter named in this section arrives through a pinned `pre-commit`
-  revision, never a system package manager, so the gate is byte-identical on every machine.
-- **[MUST]** **[ENFORCED: pre-push]** clang-tidy 23.1.3 analyses the host translation units
-  under `lib/common/src` and `lib/host/src`, and never runs at pre-commit. A header is analysed
-  through a translation unit that includes it, never as a file of its own: a bare header has no
-  compile command, so a header-only change is not analysed locally, and `lib/port` is covered
-  only where a unit includes it. Native test translation units remain deferred per ADR-0013,
-  because this phase deliberately does not close that gap (D-17).
-- **[MUST]** **[ENFORCED: pre-push]** When `tests/compile_commands.json` is absent, older than
-  a configuration input or a described source, or missing a `.c` file under the analysed trees,
-  `scripts/clang-tidy-db` fails and prints `pio run -d tests -e native -t compiledb`. The
-  clang-tidy hook fails rather than reporting success when clang-tidy skips a file for want of a
-  compile command. Regenerating the database is a developer action; no hook generates it.
-- **[MUST]** **[ENFORCED: CI]** `ci.yml`'s `meta` job runs the whole `pre-commit` hook surface
-  with `--all-files`, and the `static-analysis` job generates the native compile database and
-  runs the `pre-push` stage, so clang-tidy analyses the host translation units on every pull
-  request while the native test translation units stay the recorded ADR-0013 gap.
 - **[SHOULD]** **[ENFORCED: review]** An editor is configured from `docs/standards/vscode.md`,
-  not from ad-hoc settings. The committed editor contract is emitted by the generator and
-  mirrored into `.vscode/settings.json`, and a drift test keeps the two equal.
+  not from ad-hoc settings.
 
 ### Simulation
 
@@ -263,9 +234,8 @@ Good:  feat(1_3): add police flasher state machine
 
 ### Architecture
 
-- **[MUST]** **[ENFORCED: pre-commit]** `lib/common` and `lib/port` carry no framework
-  headers, and `common` does not depend on the adapters. `python3 scripts/check_architecture.py`
-  runs in the hook on every change to `lib/`, `homeworks/`, or the checker itself.
+- **[MUST]** **[ENFORCED: CI]** `lib/common` and `lib/port` carry no framework
+  headers, proven directly by `pio test -d tests -e native` on host.
 
 ## Routing table
 

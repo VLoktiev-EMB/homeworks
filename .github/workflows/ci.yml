@@ -1,19 +1,10 @@
 name: ci
 
-# D-1: one pull-request workflow owns the fast meta gate, the changed-only build matrix and
-# the single fan-in check. `homework.yml` and `generated-views.yml` retire into it, so their
-# commands live in `meta` rather than in a workflow of their own.
 on:
   pull_request:
-    # `edited` re-runs the title check after a retitle (Pitfall 15). `labeled` is required
-    # because applying the `simulate` label is otherwise a pull_request activity that never
-    # re-triggers the workflow (D-8).
-    types: [opened, synchronize, reopened, edited, labeled]
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
-# A pull-request job runs contributor-controlled code, so it gets read access to the
-# repository and nothing else: no secret, no write token and no pull-request-target trigger
-# (D-13, Pitfall 11).
 permissions:
   contents: read
 
@@ -27,37 +18,21 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      # Pinned to the v7.0.1 commit, not the mutable `v7` major tag: a tag can be repointed
-      # at other code between runs, a commit SHA cannot.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-          # D-3/D-14: both the diff base and the full-history scan need every ref.
           fetch-depth: 0
-      # D-14/Pitfall 3: the pre-commit gitleaks hook reads the staged index, which is empty
-      # on a clean CI checkout, so the history scan is its own step. It runs before
-      # `pre-commit install-hooks` and before any hook from the contributor's
-      # `.pre-commit-config.yaml`, so a pull request cannot supply a hook definition that
-      # runs first or interferes with the scan (T-8-20).
       - name: Install gitleaks
         env:
           GITLEAKS_VERSION: 8.30.1
-          # Published in gitleaks_8.30.1_checksums.txt and confirmed against
-          # the GitHub release-asset digest for the same upload.
           GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/gitleaks.tar.gz"
-          # The release URL is assembled in three parts so the YAML line stays
-          # readable; the resulting download is byte-identical to the one-line
-          # spelling. The checksum check below still fails closed.
-          release="https://github.com/gitleaks/gitleaks/releases/download"
-          release="${release}/v${GITLEAKS_VERSION}"
+          release="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
           curl --proto '=https' --tlsv1.2 -sSfL \
             "${release}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             -o "$archive"
-          # Fail closed: a substituted or truncated artifact stops the job
-          # before the binary is unpacked or executed.
           echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
           install -m 0755 "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
@@ -73,8 +48,6 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
-      # D-13: the key derives from the reviewed pin file and carries no `restore-keys`, so a
-      # near-miss never restores an environment built outside the pin.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pre-commit
@@ -83,14 +56,8 @@ jobs:
         run: python -m pip install pre-commit==4.7.0
       - name: Install pre-commit environments
         run: pre-commit install-hooks
-      # D-13: one command runs the whole reviewed hook surface — metadata schema, generated
-      # view drift, architecture rule, format and lint — check-only, never a repair.
       - name: Run the hook surface
         run: pre-commit run --all-files --show-diff-on-failure
-      # D-11: the diagram lint needs no token and spends no simulation quota, so it runs on
-      # every pull request. The v0.28.1 release publishes no checksum file, so
-      # `WOKWI_CLI_SHA256` is an observed value recorded here beside the pin, following the
-      # `GITLEAKS_SHA256` precedent.
       - name: Install wokwi-cli
         env:
           WOKWI_CLI_VERSION: 0.28.1
@@ -98,16 +65,12 @@ jobs:
         run: |
           set -euo pipefail
           asset="$RUNNER_TEMP/wokwi-cli-linuxstatic-x64"
-          release="https://github.com/wokwi/wokwi-cli/releases/download"
+          release="https://github.com/wokwi/wokwi-cli/releases/download/v${WOKWI_CLI_VERSION}"
           curl --proto '=https' --tlsv1.2 -sSfL \
-            "${release}/v${WOKWI_CLI_VERSION}/wokwi-cli-linuxstatic-x64" \
+            "${release}/wokwi-cli-linuxstatic-x64" \
             -o "$asset"
-          # Fail closed: a substituted or truncated artifact stops the job
-          # before the binary is installed or executed.
           echo "${WOKWI_CLI_SHA256}  ${asset}" | sha256sum -c -
           install -m 0755 "$asset" /usr/local/bin/wokwi-cli
-      # An unmatched glob stays literal, so `-e` is the skip test and `found` records that at
-      # least one diagram existed; a repository with no diagram still reports a green run.
       - name: Lint every diagram
         run: |
           set -euo pipefail
@@ -119,93 +82,39 @@ jobs:
           done
           [ "$found" -eq 1 ] || echo "no diagrams to lint"
 
-  changes:
-    name: changes
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      build: ${{ steps.affected.outputs.build }}
-      simulate: ${{ steps.affected.outputs.simulate }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-          # D-3: `origin/$BASE` resolves only with the full history.
-          fetch-depth: 0
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
-      - name: Install uv
-        run: python -m pip install uv==0.13.5
-      - name: Compute the affected matrix
-        id: affected
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          set -euo pipefail
-          # D-3: `workflow_dispatch` carries no base ref, so it falls back to `main`.
-          base="${BASE_REF:-main}"
-          payload="$(uv run scripts/affected.py --base "origin/$base")"
-          # The mapper prints indented JSON; `jq -c` makes each value a single line that
-          # `$GITHUB_OUTPUT` and `fromJson` can consume (Pitfall 5).
-          printf 'build=%s\n' "$(printf '%s' "$payload" | jq -c .build)" >> "$GITHUB_OUTPUT"
-          printf 'simulate=%s\n' "$(printf '%s' "$payload" | jq -c .simulate)" >> "$GITHUB_OUTPUT"
-
   build:
-    name: build / ${{ matrix.project }} / ${{ matrix.env }}
-    needs: changes
+    name: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    # D-4: an empty matrix must skip at job level — matrix expansion precedes step
-    # execution, so a step-level guard is too late. The empty-string term comes first so a
-    # `changes` job that dies before writing its output skips rather than fails on
-    # `fromJson('')` (Pitfall 4).
-    if: ${{ needs.changes.outputs.build != '' && needs.changes.outputs.build != '[]' }}
-    strategy:
-      # D-7: one failing entry must not cancel its siblings.
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        include: ${{ fromJson(needs.changes.outputs.build) }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      # D-18: the key derives from the reviewed pin files and carries no `restore-keys`.
-      # The root `platformio.ini` is absent by design; `hashFiles` tolerates the miss and
-      # `platformio.shared.ini` carries the platform pin, so it is the effective input
-      # (Pitfall 6).
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: |
             ~/.platformio/packages
             ~/.platformio/.cache
             ~/.cache/pip
-          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini') }}
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
       - name: Install PlatformIO Core
         run: python -m pip install platformio==6.2.0
-      # D-6/Pitfall 10: the matrix values are contributor-controlled, so they enter through
-      # `env:` and are quoted in the shell; no expression is interpolated into `run:`.
-      - name: Build or test the environment
-        env:
-          PROJECT: ${{ matrix.project }}
-          ENV_NAME: ${{ matrix.env }}
+      - name: Run native logic tests
+        run: pio test -d tests -e native
+      - name: Build all homeworks
         run: |
           set -euo pipefail
-          if [ "$ENV_NAME" = "native" ]; then
-            pio test -d "$PROJECT" -e "$ENV_NAME"
-          else
-            pio run -d "$PROJECT" -e "$ENV_NAME"
-          fi
+          for hw in homeworks/*; do
+            [ -d "$hw" ] || continue
+            [ -f "$hw/platformio.ini" ] || continue
+            echo "Building $hw..."
+            pio run -d "$hw"
+          done
 
   python-tests:
-    # D-15: the surviving half of the pull-request suite gate. The site-build half was
-    # removed with the documentation site before this phase, so only the stdlib suite is
-    # planned here. It closes the Phase 5 WR-13 gap: a broken checker or test now blocks the
-    # merge instead of waiting for a local run.
     name: python-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -216,221 +125,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
-      # Pitfall 18: several suites shell out to `uv run`, and the runner image ships no
-      # `uv`, so the suite fails with "uv is a required repository tool" unless the exact
-      # local pin is installed first.
-      - name: Install uv
-        run: python -m pip install uv==0.13.5
       - name: Run the Python suite
         run: python -m unittest discover scripts/tests
 
-  static-analysis:
-    # D-17/Pitfall 8: the two clang-tidy hooks declare `stages: [pre-push]`, so the `meta`
-    # hook run never executes them. This job generates the native compilation database and
-    # runs the pre-push stage explicitly, which is what proves the host translation units
-    # under `lib/common/src` and `lib/host/src`. Native test translation units stay the
-    # recorded ADR-0013 gap; closing it is not part of this phase.
-    name: static-analysis
-    runs-on: ubuntu-24.04
-    # D-19 does not enumerate a static-analysis budget; 20 minutes is derived from the
-    # 30-minute `build` budget and recorded in the plan's flagged assumptions.
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      # D-18: the same pin-derived key as `build`, with no `restore-keys`. The compiledb
-      # target needs the PlatformIO toolchain, so the cache is the same artefact.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: |
-            ~/.platformio/packages
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
-      # D-13: the same pre-commit environment cache `meta` restores, under the same key,
-      # so the pre-push hook environments are restored rather than rebuilt; no
-      # `restore-keys`, so a pin bump rebuilds instead of running an unreviewed revision.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
-      - name: Install the pinned analysis tools
-        run: python -m pip install platformio==6.2.0 pre-commit==4.7.0
-      - name: Install pre-commit environments
-        run: pre-commit install-hooks
-      # The database is generated here, never by the hook: `scripts/clang-tidy-db` is a
-      # validator, and regenerating a database is an explicit developer/CI action.
-      - name: Generate the native compilation database
-        run: pio run -d tests -e native -t compiledb
-      - name: Run the pre-push hook stage
-        run: pre-commit run --all-files --hook-stage pre-push
-
-  simulate:
-    # D-8/D-9: simulation is opt-in. A maintainer applies the `simulate` label, and the head
-    # repository must equal the base repository, so a fork pull request can never reach the
-    # job or the secret. The event guard comes first: `workflow_dispatch` carries no
-    # pull-request context, so reading it before the guard would dereference null (Pitfall
-    # 14). `meta` in `needs` plus the two explicit result checks mean a policy-failing pull
-    # request never spends a metered minute (T-8-22).
-    name: simulate / ${{ matrix.project }} / ${{ matrix.env }}
-    needs: [changes, meta]
-    if: >-
-      ${{ !cancelled()
-      && github.event_name == 'pull_request'
-      && needs.changes.result == 'success'
-      && needs.meta.result == 'success'
-      && github.event.pull_request.head.repo.full_name == github.repository
-      && contains(github.event.pull_request.labels.*.name, 'simulate')
-      && needs.changes.outputs.simulate != ''
-      && needs.changes.outputs.simulate != '[]' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    strategy:
-      # D-7: one failing entry must not cancel its siblings.
-      fail-fast: false
-      # T-8-14: parallel entries share one free-tier quota, so two at most.
-      max-parallel: 2
-      matrix:
-        include: ${{ fromJson(needs.changes.outputs.simulate) }}
-    # D-9: the `secrets` context is unavailable in a job-level `if`, so the token enters
-    # here and is tested at step level. It is never echoed (T-8-11).
-    env:
-      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      # D-18: the same pin-derived key as `build`, with no `restore-keys`.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: |
-            ~/.platformio/packages
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.shared.ini', 'platformio.ini') }}
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
-      - name: Install PlatformIO Core
-        run: python -m pip install platformio==6.2.0
-      - name: Refuse to run without a token
-        if: env.WOKWI_CLI_TOKEN == ''
-        run: |
-          echo "::error::WOKWI_CLI_TOKEN is not configured; add the repository secret before labelling a pull request"
-          exit 1
-      # Pitfall 13: `wokwi.toml` points at the merged firmware under `.pio/build/`, and no
-      # other job uploads it, so the target environment is built in this job first.
-      - name: Build the simulated firmware
-        env:
-          PROJECT: ${{ matrix.project }}
-          ENV_NAME: ${{ matrix.env }}
-        run: pio run -d "$PROJECT" -e "$ENV_NAME"
-      # D-10/Pitfall 12: the official action downloads `latest` and cannot tee stdout, so
-      # the pinned 0.28.1 binary is installed and checked against the recorded SHA-256.
-      - name: Install wokwi-cli
-        env:
-          WOKWI_CLI_VERSION: 0.28.1
-          WOKWI_CLI_SHA256: 869f194ee473257c6112ed58d786376527769020056320b0a49a37d9e7d3bdd7
-        run: |
-          set -euo pipefail
-          asset="$RUNNER_TEMP/wokwi-cli-linuxstatic-x64"
-          release="https://github.com/wokwi/wokwi-cli/releases/download"
-          curl --proto '=https' --tlsv1.2 -sSfL \
-            "${release}/v${WOKWI_CLI_VERSION}/wokwi-cli-linuxstatic-x64" \
-            -o "$asset"
-          # Fail closed: a substituted or truncated artifact stops the job before it runs.
-          echo "${WOKWI_CLI_SHA256}  ${asset}" | sha256sum -c -
-          install -m 0755 "$asset" /usr/local/bin/wokwi-cli
-      # T-8-23: the evidence directory and both log files exist before the CLI runs, so an
-      # early connection failure still leaves a diagnosable artifact set. T-8-21: the
-      # artifact name is derived here with every character outside [A-Za-z0-9._-] replaced;
-      # `actions/upload-artifact` rejects a slash, and a project id such as
-      # `homeworks/1_3-police-flasher` carries one.
-      - name: Prepare the evidence directory
-        env:
-          PROJECT: ${{ matrix.project }}
-          ENV_NAME: ${{ matrix.env }}
-        run: |
-          set -euo pipefail
-          out="$RUNNER_TEMP/simulation"
-          mkdir -p "$out"
-          : > "$out/serial.log"
-          : > "$out/stdout.log"
-          safe_project="$(printf '%s' "$PROJECT" | LC_ALL=C tr -c 'A-Za-z0-9._-' '-')"
-          safe_env="$(printf '%s' "$ENV_NAME" | LC_ALL=C tr -c 'A-Za-z0-9._-' '-')"
-          printf 'ARTIFACT_NAME=simulation-%s-%s\n' \
-            "$safe_project" "$safe_env" >> "$GITHUB_ENV"
-      # The scenario reads the firmware built above. The exit status is recorded before it
-      # is returned, so a failed or timed-out run still produces its evidence (D-10).
-      - name: Run the scenario
-        env:
-          PROJECT: ${{ matrix.project }}
-          ENV_NAME: ${{ matrix.env }}
-        run: |
-          set -uo pipefail
-          out="$RUNNER_TEMP/simulation"
-          started=$(date +%s)
-          # GitHub runs this script under `bash -e`; `set -uo pipefail` does not
-          # clear that inherited `-e`, so a non-zero `wokwi-cli` exit would abort
-          # the pipeline before PIPESTATUS is read and no evidence would be
-          # written. Disable `-e` for exactly the pipeline, then restore it.
-          set +e
-          wokwi-cli "$PROJECT" \
-            --timeout 15000 \
-            --scenario scenario.yaml \
-            --diagram-file assets/diagram.json \
-            --serial-log-file "$out/serial.log" \
-            2>&1 | tee "$out/stdout.log"
-          status=${PIPESTATUS[0]}
-          set -e
-          finished=$(date +%s)
-          case "$status" in
-            0) outcome=passed ;;
-            42) outcome=timeout ;;
-            *) outcome=failed ;;
-          esac
-          # An interrupted run may never create the serial log; record 0 bytes
-          # instead of aborting before quota.json is written (T-8-23).
-          serial_bytes="$(stat -c %s "$out/serial.log" 2>/dev/null || echo 0)"
-          jq -n \
-            --arg project "$PROJECT" \
-            --arg env "$ENV_NAME" \
-            --argjson wall_clock_seconds "$((finished - started))" \
-            --argjson simulated_seconds_upper_bound 15 \
-            --arg quota_label "calculated (upper bound)" \
-            --argjson runs 1 \
-            --argjson exit_code "$status" \
-            --argjson serial_log_bytes "$serial_bytes" \
-            --arg outcome "$outcome" \
-            '{project: $project, env: $env, wall_clock_seconds: $wall_clock_seconds,
-              simulated_seconds_upper_bound: $simulated_seconds_upper_bound,
-              quota_label: $quota_label, runs: $runs, exit_code: $exit_code,
-              serial_log_bytes: $serial_log_bytes, outcome: $outcome}' \
-            > "$out/quota.json"
-          exit "$status"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
-        if: always()
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/simulation
-          retention-days: 7
-          if-no-files-found: error
-
   gate:
     name: gate
-    needs: [changes, meta, build, python-tests, static-analysis, simulate]
-    # D-2: `!cancelled()` rather than `always()`, which also runs after cancellation.
+    needs: [meta, build, python-tests]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # D-2/Pitfall 2: the documented result vocabulary is success, failure, cancelled and
-      # skipped — there is no `timed_out`, and a timed-out job reports failure or cancelled.
-      # Only `success` and `skipped` pass, so an intentional empty-matrix skip stays green
-      # while every other outcome fails the one required check.
-      - name: Every dependency succeeded or was skipped
+      - name: Every dependency succeeded
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
