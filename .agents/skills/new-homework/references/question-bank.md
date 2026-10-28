@@ -14,6 +14,20 @@ listed first prefixed by `(Recommended)`.
 Record every answer in `.skill-state/<id>.json` under the state key named in its
 section as soon as it is given, and never ask for a credential value.
 
+## Preflight (not a bank topic)
+
+Before `mode`, check whether the id already exists:
+`git branch --list "hw/<id>"`, `git tag -l "hw/<id>"`,
+`git ls-tree -r --name-only HEAD -- homeworks/<id>`, and the working tree at
+`homeworks/<id>`. An existing branch, tag or homework means the id is published
+or in progress: never scaffold a duplicate and never move the tag. Ask
+`[Continue on hw/<id> | Start a new id | Stop]` and record the answer. The
+preflight only decides whether to continue an existing homework; never read that
+homework as a design example. If the id is free and the current branch is `main`
+or `master`, create `hw/<id>` before the first write; if the current branch is
+another branch, require `hw/<id>` or ask. Never scaffold or commit on the default
+branch.
+
 ## mode
 
 Select execution mode. The default is `direct` (clean, deterministic execution).
@@ -127,7 +141,7 @@ under `intake.provenance` and set `intake.provenance.status: complete` only when
 are real. While any value is missing or `TODO`, set `status: blocked` and leave
 `homework.status: planned`.
 
-Three scaffold facts are not questions, but every run must respect them:
+The scaffold facts below are not questions, but every run must respect them:
 1. Set `UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache"` for every `uv run`, not only the scaffold,
    to isolate the cache across runs.
 2. A homework-local private library manifest omits `frameworks` and `platforms` and never
@@ -136,3 +150,21 @@ Three scaffold facts are not questions, but every run must respect them:
 3. Native tests repeat `-Wall -Wextra -Werror`, so reset both host fakes in `setUp` and seed
    the idle button `HIGH`, or a warning-level defect fails the test binary while the target
    build stays green.
+4. Reuse `lib/common` before writing timing, debounce, CRC, hex or ring-buffer code.
+   `common_elapsed_ms`, `common_timer_expired` and `common_debounce_update` already exist;
+   a second implementation is a defect, not a style choice.
+5. Put homework-specific pure logic in `homeworks/<id>/lib/<name>/` with a private
+   `library.json` (no `frameworks` or `platforms`, never in `lib_deps`) and tests under
+   `test/test_<name>/`. Keep the library free of framework headers, keep `src/main.cpp`
+   a thin composition root, and reuse `lib/common` for timing.
+6. `pio run` does not generate the clangd database. Run
+   `pio run -d homeworks/<id> -t compiledb` and `uv run scripts/gen_clangd_db.py --generate`,
+   then `"$HOME/.local/bin/clangd-wrapper" --check=homeworks/<id>/src/main.cpp`; expect
+   `0 errors`. Without the per-project database, clangd reports
+   `'Arduino.h' file not found`.
+7. Register `homeworks/<id>` in `homeworks.code-workspace` when absent. The repository
+   currently has no workspace generator, so append the folder entry idempotently; if a
+   generator appears, run it instead.
+8. Never inspect or copy an existing `homeworks/<id>` tree, branch or tag as an example.
+   The templates, `lib/`, and the standards are the only sources of truth; the preflight
+   only decides whether an existing homework is continued.

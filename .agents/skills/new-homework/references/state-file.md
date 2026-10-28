@@ -11,7 +11,7 @@ every checkpoint menu, whatever the user then chooses.
 ```json
 {
   "schema_version": 1,
-  "homework_id": "1_4-example",
+  "homework_id": "<id>",
   "skill": "new-homework",
   "mode": "guided",
   "root": "repository",
@@ -25,10 +25,10 @@ every checkpoint menu, whatever the user then chooses.
     "tests": "unity-native",
     "deliverables": ["readme", "report"],
     "provenance": {
-      "source_url": "https://example.invalid/assignment",
-      "retrieved": "2026-10-26T20:00:00Z",
-      "attribution": "Course assignment, paraphrased in English.",
-      "license": "MIT",
+      "source_url": "<source-url>",
+      "retrieved": "<ISO-8601>",
+      "attribution": "<attribution>",
+      "license": "<license>",
       "status": "complete"
     }
   },
@@ -40,12 +40,12 @@ every checkpoint menu, whatever the user then chooses.
   "assumptions": [],
   "conflicts": [],
   "checkpoints": [
-    {"name": "intake", "at": "2026-10-26T20:05:00Z", "commit": "abc1234"}
+    {"name": "intake", "at": "<ISO-8601>", "commit": "<short-hash>"}
   ]
 }
 ```
 
-The example above uses the Arduino framework, so its `intake.language` is `cpp`; an
+The shape above uses the Arduino framework, so its `intake.language` is `cpp`; an
 ESP-IDF run records `c`.
 
 ## Fields
