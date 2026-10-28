@@ -4,7 +4,7 @@ This project is the independent PlatformIO homework for `1_3-police-flasher`: an
 ESP32-S3 Arduino police flasher whose pattern logic runs on the host in native unit
 tests.
 
-**Status:** in-progress
+**Status:** complete
 
 - [Report](report.md)
 - [Assignment paraphrase](task.md)
@@ -39,15 +39,15 @@ flowchart LR
     btn1("btn1 [MODE]")
 
     btn1 -->|1.l -> 7| esp
-    btn1 -->|2.l -> GND.1| esp
-    esp -->|4 -> 1| r1
-    r1 -->|2 -> A| led1
-    r1 -->|2 -> C| led2
-    led1 -->|C -> GND.2| esp
-    esp -->|3V3.1 -> A| led2
-    esp -->|6 -> 1| r2
-    r2 -->|2 -> A| led3
-    led3 -->|C -> GND.2| esp
+    btn1 -->|2.l| gnd[GND]
+    esp -->|4 -> 2| r1
+    r1 -->|1 -> A| led1
+    r1 -->|1 -> C| led2
+    pwr["3.3V"] -->|3V3.1 -> A| led2
+    led1 -->|C| gnd[GND]
+    esp -->|6 -> 2| r2
+    r2 -->|1 -> A| led3
+    led3 -->|C| gnd[GND]
 ```
 
 ## Simulation
@@ -79,8 +79,13 @@ resolution, so it cannot prove the paths. Run the command with
 WebSocket connection or token stage without a real credential. The only token value
 that belongs in this file is `dummy`; never write a real token here.
 `wokwi-cli lint --offline homeworks/1_3-police-flasher/assets/diagram.json` validates the
-wiring without one. The scenario has since been executed: all three counted runs exited 0 with
-one `pattern ready` line each, so `simulation.status` in `homework.yaml` is `verified`. The
-commands and per-run values are in
+wiring without one.
+
+The scenario exercises complete interactive behavior within ~1.2s of simulation time:
+- Boot check: asserts `pattern ready` serial message and confirms GPIO4 drives HIGH during frame 0.
+- Short button press: sets `btn1` pressed for 50 ms (debounced), asserting transition to `mode: double_flash`.
+- Long button press: sets `btn1` pressed for 650 ms (holding past 600 ms), asserting transition to `speed: fast`.
+
+The commands and evidence are recorded in the report and in
 `.planning/phases/07-simulation-spike/07-SPIKE-EVIDENCE.md`, and the tool decision is in
 `docs/decisions/0014-simulator-selection.md`.

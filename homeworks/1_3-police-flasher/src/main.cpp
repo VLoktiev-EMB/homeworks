@@ -45,6 +45,7 @@ void setup(void)
     logger = arduino_log_port();
 
     status = pattern_controller_init(&controller, &config, gpio, clock_port);
+    pattern_controller_set_logger(&controller, logger);
     if (status == PORT_OK) {
         port_log_write(&logger, PORT_LOG_INFO, "pattern ready");
     } else {

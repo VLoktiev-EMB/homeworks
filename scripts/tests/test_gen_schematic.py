@@ -1,7 +1,7 @@
-"""Tests for scripts/gen_schematic.py.
+"""Tests for scripts/gen_schematic.py and scripts/schematic_svg.py.
 
-Verifies Mermaid flowchart generation, clean Wokwi layout reformatting,
-Manhattan routing waypoints, and CLI flags (--mermaid, --format, --check).
+Verifies Mermaid generation, diagram validation, the universal SVG renderer
+(branch layout and net-label fallback), determinism, and the CLI flags.
 """
 
 from __future__ import annotations
@@ -13,14 +13,49 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.gen_schematic import (
-    generate_mermaid_from_diagram,
-    generate_schematic_svg,
-    reformat_police_flasher_diagram,
-)
+from scripts.gen_schematic import generate_mermaid_from_diagram, validate_diagram
+from scripts.schematic_svg import render_schematic_svg
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = str(REPO_ROOT / "scripts" / "gen_schematic.py")
+
+SIMPLE_DIAGRAM = {
+    "version": 1,
+    "parts": [
+        {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
+        {"type": "wokwi-resistor", "id": "r1", "top": 0, "left": 300, "attrs": {"value": "220"}},
+        {"type": "wokwi-led", "id": "led1", "top": 0, "left": 400, "attrs": {"color": "red"}},
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": 0,
+            "left": -150,
+            "attrs": {"label": "MODE"},
+        },
+    ],
+    "connections": [
+        ["esp:15", "r1:2", "orange", []],
+        ["r1:1", "led1:A", "blue", []],
+        ["led1:C", "esp:GND.1", "black", []],
+        ["btn1:1.l", "esp:21", "green", []],
+        ["btn1:2.l", "esp:GND.1", "black", []],
+    ],
+}
+
+MULTI_PIN_DIAGRAM = {
+    "version": 1,
+    "parts": [
+        {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
+        {"type": "wokwi-74hc595", "id": "ic1", "top": 0, "left": 400},
+    ],
+    "connections": [
+        ["esp:15", "ic1:DS", "green", []],
+        ["esp:16", "ic1:SHCP", "blue", []],
+        ["esp:17", "ic1:STCP", "orange", []],
+        ["ic1:VCC", "esp:3V3.1", "red", []],
+        ["ic1:GND", "esp:GND.1", "black", []],
+    ],
+}
 
 
 def run_schematic(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
@@ -51,6 +86,14 @@ def setUpModule() -> None:
         timeout=180,
         check=False,
     )
+
+
+def _schemdraw_available() -> bool:
+    try:
+        import schemdraw  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
 class MermaidGenerationTests(unittest.TestCase):
@@ -118,113 +161,55 @@ class MermaidGenerationTests(unittest.TestCase):
         self.assertIn("r1 -->|2 -> A| led1", text)
 
 
-class ReformatDiagramTests(unittest.TestCase):
-    """Unit tests for reformat_police_flasher_diagram."""
+class DiagramValidationTests(unittest.TestCase):
+    """Unit tests for validate_diagram."""
 
-    def setUp(self) -> None:
-        self.raw_diagram = {
-            "version": 1,
-            "parts": [
-                {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
-                {"type": "wokwi-resistor", "id": "r1", "top": -60, "left": 300},
-                {"type": "wokwi-led", "id": "led1", "top": -100, "left": 220},
-                {"type": "wokwi-led", "id": "led2", "top": -140, "left": 220},
-                {"type": "wokwi-resistor", "id": "r2", "top": -200, "left": 300},
-                {"type": "wokwi-led", "id": "led3", "top": -240, "left": 220},
-                {"type": "wokwi-pushbutton", "id": "btn1", "top": -300, "left": 220},
-            ],
-            "connections": [
-                ["esp:4", "r1:1", "green", []],
-            ],
-        }
+    def test_a_well_formed_diagram_passes(self) -> None:
+        validate_diagram(SIMPLE_DIAGRAM)
 
-    def test_reformat_places_components_in_clean_zones(self) -> None:
-        formatted = reformat_police_flasher_diagram(self.raw_diagram)
-        parts_by_id = {p["id"]: p for p in formatted["parts"]}
+    def test_an_unknown_part_in_a_connection_fails(self) -> None:
+        diagram = {"parts": [{"id": "esp"}], "connections": [["esp:1", "r9:1"]]}
+        with self.assertRaises(ValueError):
+            validate_diagram(diagram)
 
-        # Microcontroller board
-        self.assertEqual(parts_by_id["esp"]["top"], 0)
-        self.assertEqual(parts_by_id["esp"]["left"], 0)
+    def test_duplicate_part_ids_fail(self) -> None:
+        diagram = {"parts": [{"id": "esp"}, {"id": "esp"}], "connections": []}
+        with self.assertRaises(ValueError):
+            validate_diagram(diagram)
 
-        # Half breadboard adjacent to microcontroller
-        self.assertIn("bb1", parts_by_id)
-        self.assertEqual(parts_by_id["bb1"]["type"], "wokwi-breadboard-half")
-        self.assertEqual(parts_by_id["bb1"]["top"], -30)
-        self.assertEqual(parts_by_id["bb1"]["left"], 180)
-
-        # Input button to the left
-        self.assertEqual(parts_by_id["btn1"]["top"], 120)
-        self.assertEqual(parts_by_id["btn1"]["left"], -140)
-
-        # Output LEDs and resistors on breadboard
-        self.assertEqual(parts_by_id["r1"]["left"], 230)
-        self.assertEqual(parts_by_id["r2"]["left"], 230)
-        self.assertEqual(parts_by_id["led1"]["left"], 360)
-        self.assertEqual(parts_by_id["led2"]["left"], 360)
-        self.assertEqual(parts_by_id["led3"]["left"], 360)
-
-    def test_reformat_adds_manhattan_routing(self) -> None:
-        formatted = reformat_police_flasher_diagram(self.raw_diagram)
-        connections = formatted["connections"]
-
-        # Ensure all hardware connections have Manhattan waypoints
-        hw_conns = [
-            c for c in connections if "$serialMonitor" not in c[0] and "$serialMonitor" not in c[1]
-        ]
-        for conn in hw_conns:
-            src, dst, color, bends = conn
-            self.assertIsInstance(bends, list)
-            self.assertGreater(len(bends), 0, f"Connection {src}->{dst} must have bends")
-            for bend in bends:
-                self.assertTrue(
-                    bend.startswith("h") or bend.startswith("v"),
-                    f"Bend {bend} in {src}->{dst} must be Manhattan horizontal or vertical",
-                )
+    def test_a_malformed_terminal_fails(self) -> None:
+        diagram = {"parts": [{"id": "esp"}], "connections": [["esp:1", "oops"]]}
+        with self.assertRaises(ValueError):
+            validate_diagram(diagram)
 
 
 class SchematicSvgTests(unittest.TestCase):
-    """Unit tests for vector SVG generation."""
+    """Unit tests for the universal vector renderer."""
 
-    def test_generate_schematic_svg_via_cli(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            hw_dir = Path(tmpdir)
-            assets_dir = hw_dir / "assets"
-            assets_dir.mkdir(parents=True)
-            diagram_file = assets_dir / "diagram.json"
-            diagram_file.write_text(
-                '{"version": 1, "parts": [], "connections": []}', encoding="utf-8"
-            )
+    def setUp(self) -> None:
+        if not _schemdraw_available():
+            self.skipTest("schemdraw is only installed inside `uv run`")
 
-            res = run_schematic(str(hw_dir), "--svg")
-            self.assertEqual(res.returncode, 0)
-            self.assertIn("Generated schematic SVG", res.stdout)
+    def test_a_two_terminal_chain_renders_labelled_wires(self) -> None:
+        svg = render_schematic_svg(SIMPLE_DIAGRAM)
+        self.assertTrue(svg.startswith("<svg"))
+        self.assertTrue(svg.strip().endswith("</svg>"))
+        self.assertIn("GPIO15", svg)
+        self.assertIn("GPIO21", svg)
+        self.assertIn("r1 220Ω", svg)
+        self.assertIn("led1 red LED", svg)
+        self.assertIn('fill="#ffffff"', svg)
 
-            svg_file = assets_dir / "schematic.svg"
-            self.assertTrue(svg_file.is_file())
-            content = svg_file.read_text(encoding="utf-8")
-            self.assertTrue(content.startswith("<svg"))
-            self.assertTrue(content.endswith("</svg>"))
-            self.assertIn("ESP32-S3", content)
-            self.assertIn("GPIO4", content)
-            self.assertIn("GPIO6", content)
-            self.assertIn("GPIO7", content)
-            self.assertIn("MODE", content)
-            self.assertIn("150Ω", content)
+    def test_a_multi_pin_part_falls_back_to_net_labels(self) -> None:
+        svg = render_schematic_svg(MULTI_PIN_DIAGRAM)
+        self.assertTrue(svg.startswith("<svg"))
+        self.assertIn("GPIO15", svg)
+        self.assertIn("GPIO16", svg)
+        self.assertIn("GPIO17", svg)
+        self.assertIn("ic1", svg)
 
-    def test_generate_schematic_svg_direct_if_available(self) -> None:
-        try:
-            import schemdraw  # noqa: F401
-        except ImportError:
-            self.skipTest("schemdraw not installed in test runner environment; verified via uv run")
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            svg_path = Path(tmpdir) / "schematic.svg"
-            result_path = generate_schematic_svg(svg_path)
-            self.assertEqual(result_path, svg_path)
-            self.assertTrue(svg_path.is_file())
-            content = svg_path.read_text(encoding="utf-8")
-            self.assertTrue(content.startswith("<svg"))
-            self.assertTrue(content.endswith("</svg>"))
+    def test_rendering_is_deterministic(self) -> None:
+        self.assertEqual(render_schematic_svg(SIMPLE_DIAGRAM), render_schematic_svg(SIMPLE_DIAGRAM))
 
 
 class SchematicCliTests(unittest.TestCase):
@@ -236,53 +221,82 @@ class SchematicCliTests(unittest.TestCase):
             self.assertEqual(res.returncode, 1)
             self.assertIn("ERROR: No diagram.json found", res.stderr)
 
-    def test_format_and_check_cycle(self) -> None:
+    def test_multi_pin_diagram_renders_via_cli(self) -> None:
+        """The net-label fallback must be exercised through `uv run` in CI."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            hw_dir = Path(tmpdir)
+            assets_dir = hw_dir / "assets"
+            assets_dir.mkdir(parents=True)
+            (assets_dir / "diagram.json").write_text(
+                json.dumps(MULTI_PIN_DIAGRAM), encoding="utf-8"
+            )
+
+            res = run_schematic(str(hw_dir), "--svg")
+            self.assertEqual(res.returncode, 0)
+            content = (assets_dir / "schematic.svg").read_text(encoding="utf-8")
+            self.assertIn("GPIO15", content)
+            self.assertIn("GPIO16", content)
+            self.assertIn("GPIO17", content)
+            self.assertIn("ic1", content)
+
+    def test_rendering_is_deterministic_via_cli(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            hw_dir = Path(tmpdir)
+            assets_dir = hw_dir / "assets"
+            assets_dir.mkdir(parents=True)
+            (assets_dir / "diagram.json").write_text(
+                json.dumps(SIMPLE_DIAGRAM), encoding="utf-8"
+            )
+
+            self.assertEqual(run_schematic(str(hw_dir), "--svg").returncode, 0)
+            first = (assets_dir / "schematic.svg").read_bytes()
+            self.assertEqual(run_schematic(str(hw_dir), "--svg").returncode, 0)
+            self.assertEqual(first, (assets_dir / "schematic.svg").read_bytes())
+
+    def test_svg_and_check_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             hw_dir = Path(tmpdir)
             assets_dir = hw_dir / "assets"
             assets_dir.mkdir(parents=True)
             diagram_file = assets_dir / "diagram.json"
+            diagram_file.write_text(json.dumps(SIMPLE_DIAGRAM), encoding="utf-8")
 
-            raw_diagram = {
-                "version": 1,
-                "parts": [
-                    {"type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0},
-                    {"type": "wokwi-pushbutton", "id": "btn1", "top": 0, "left": 0},
-                ],
-                "connections": [],
-            }
-            diagram_file.write_text(json.dumps(raw_diagram), encoding="utf-8")
-
-            # Check fails before formatting
+            # A missing SVG is a drift failure.
             res_check1 = run_schematic(str(hw_dir), "--check")
             self.assertEqual(res_check1.returncode, 1)
+            self.assertIn("is missing", res_check1.stderr)
 
-            # Format in place
-            res_format = run_schematic(str(hw_dir), "--format")
-            self.assertEqual(res_format.returncode, 0)
-            self.assertIn("Formatted", res_format.stdout)
+            res_svg = run_schematic(str(hw_dir), "--svg")
+            self.assertEqual(res_svg.returncode, 0)
+            self.assertIn("Generated schematic SVG", res_svg.stdout)
+            svg_file = assets_dir / "schematic.svg"
+            self.assertTrue(svg_file.is_file())
 
-            # Check passes after formatting
             res_check2 = run_schematic(str(hw_dir), "--check")
             self.assertEqual(res_check2.returncode, 0)
 
-            # Mermaid output
             res_mermaid = run_schematic(str(hw_dir), "--mermaid")
             self.assertEqual(res_mermaid.returncode, 0)
             self.assertIn("flowchart LR", res_mermaid.stdout)
 
-            # Schemdraw SVG generation
-            res_svg = run_schematic(str(hw_dir), "--svg")
-            self.assertEqual(res_svg.returncode, 0)
-            self.assertIn("Generated schematic SVG", res_svg.stdout)
-            self.assertTrue((hw_dir / "assets" / "schematic.svg").is_file())
-
-            # Combined --all execution
             res_all = run_schematic(str(hw_dir), "--all")
             self.assertEqual(res_all.returncode, 0)
-            self.assertIn("Formatted", res_all.stdout)
             self.assertIn("Generated schematic SVG", res_all.stdout)
             self.assertIn("flowchart LR", res_all.stdout)
+
+            # A changed diagram makes the committed SVG stale.
+            changed = dict(SIMPLE_DIAGRAM)
+            changed["parts"] = SIMPLE_DIAGRAM["parts"] + [
+                {"type": "wokwi-led", "id": "led2", "attrs": {"color": "green"}}
+            ]
+            changed["connections"] = SIMPLE_DIAGRAM["connections"] + [
+                ["r1:1", "led2:A", "purple", []],
+                ["led2:C", "esp:GND.1", "black", []],
+            ]
+            diagram_file.write_text(json.dumps(changed), encoding="utf-8")
+            res_check3 = run_schematic(str(hw_dir), "--check")
+            self.assertEqual(res_check3.returncode, 1)
+            self.assertIn("is stale", res_check3.stderr)
 
 
 if __name__ == "__main__":

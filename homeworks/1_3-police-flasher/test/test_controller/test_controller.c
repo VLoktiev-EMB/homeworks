@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <unity.h>
 
@@ -8,14 +9,39 @@
 #include "pattern/controller.h"
 #include "pattern/pattern.h"
 #include "port/gpio.h"
+#include "port/log.h"
 #include "port/status.h"
 #include "port/time.h"
+
+typedef struct test_log_sink {
+    char last_message[64];
+    port_log_level_t last_level;
+    size_t write_count;
+} test_log_sink_t;
 
 static host_fake_gpio_t fake_gpio;
 static host_fake_time_t fake_time;
 static port_gpio_t gpio;
 static port_time_t clock_port;
 static pattern_controller_t controller;
+static test_log_sink_t test_log;
+
+static void test_log_write(void *ctx, port_log_level_t level, const char *message)
+{
+    test_log_sink_t *sink = (test_log_sink_t *)ctx;
+    if (sink != NULL && message != NULL) {
+        strncpy(sink->last_message, message, sizeof(sink->last_message) - 1);
+        sink->last_message[sizeof(sink->last_message) - 1] = '\0';
+        sink->last_level = level;
+        sink->write_count++;
+    }
+}
+
+static port_log_t test_log_port(test_log_sink_t *sink)
+{
+    port_log_t log = {test_log_write, sink};
+    return log;
+}
 
 static pattern_controller_config_t single_config(void)
 {
@@ -33,6 +59,7 @@ static pattern_controller_config_t three_led_config(void)
 
 void setUp(void)
 {
+    memset(&test_log, 0, sizeof(test_log));
     host_fake_gpio_reset(&fake_gpio);
     host_fake_time_reset(&fake_time);
     /* The fake models every pin as LOW at reset, but an idle INPUT_PULLUP
@@ -437,6 +464,34 @@ static void test_the_full_speed_cycle_returns_to_400_ms(void)
     TEST_ASSERT_EQUAL_INT(PATTERN_MODE_ALTERNATING, pattern_controller_mode(&controller));
 }
 
+static void test_controller_mode_transition_logs_event(void)
+{
+    init_single();
+    port_log_t log = test_log_port(&test_log);
+    pattern_controller_set_logger(&controller, log);
+
+    press_short();
+
+    TEST_ASSERT_EQUAL_INT(PATTERN_MODE_DOUBLE_FLASH, pattern_controller_mode(&controller));
+    TEST_ASSERT_EQUAL_UINT(1u, (unsigned)test_log.write_count);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_INFO, test_log.last_level);
+    TEST_ASSERT_EQUAL_STRING("mode: double_flash", test_log.last_message);
+}
+
+static void test_controller_speed_transition_logs_event(void)
+{
+    init_single();
+    port_log_t log = test_log_port(&test_log);
+    pattern_controller_set_logger(&controller, log);
+
+    press_long();
+
+    TEST_ASSERT_EQUAL_UINT(200u, (unsigned)pattern_controller_base_ms(&controller));
+    TEST_ASSERT_EQUAL_UINT(1u, (unsigned)test_log.write_count);
+    TEST_ASSERT_EQUAL_INT(PORT_LOG_INFO, test_log.last_level);
+    TEST_ASSERT_EQUAL_STRING("speed: fast", test_log.last_message);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -462,5 +517,7 @@ int main(void)
     RUN_TEST(test_a_speed_change_restarts_at_frame_zero);
     RUN_TEST(test_the_full_mode_cycle_returns_to_alternating);
     RUN_TEST(test_the_full_speed_cycle_returns_to_400_ms);
+    RUN_TEST(test_controller_mode_transition_logs_event);
+    RUN_TEST(test_controller_speed_transition_logs_event);
     return UNITY_END();
 }

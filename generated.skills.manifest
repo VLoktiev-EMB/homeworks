@@ -78,8 +78,32 @@
       "owner": "skills",
       "source": ".claude/skills/schematic/SKILL.md",
       "mode": "whole",
-      "sha256": "32d9a5442fd790f0c9380e83625ccf97754ac056d77136853bfe471ee9c52062",
-      "bytes": 3957
+      "sha256": "da6e2b0b13272300f99f1c1bcd672df4bcb4e8aa637a8c04b229b0efbbb4ce9b",
+      "bytes": 7810
+    },
+    {
+      "path": ".agents/skills/schematic/references/mermaid-block-diagrams.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/references/mermaid-block-diagrams.md",
+      "mode": "whole",
+      "sha256": "41db2ba203e38d8739a44b76dd74453ac62d0f6212d612bd62ac22215097de66",
+      "bytes": 2825
+    },
+    {
+      "path": ".agents/skills/schematic/references/schemdraw-patterns.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/references/schemdraw-patterns.md",
+      "mode": "whole",
+      "sha256": "cb40140af3ee6ec0e49b105408de1c114eef429423c0955bb3448a23c11cf9ae",
+      "bytes": 6104
+    },
+    {
+      "path": ".agents/skills/schematic/references/wokwi-breadboard.md",
+      "owner": "skills",
+      "source": ".claude/skills/schematic/references/wokwi-breadboard.md",
+      "mode": "whole",
+      "sha256": "7e7a8e76d7918c8ee1e3eb59679391a1fc4e527c84fde59293aaba693b32f34d",
+      "bytes": 6509
     },
     {
       "path": ".agents/skills/simulate/SKILL.md",

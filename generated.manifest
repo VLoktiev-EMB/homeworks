@@ -7,8 +7,8 @@
       "mode": "region",
       "marker_begin": "<!-- BEGIN GENERATED: homeworks -->",
       "marker_end": "<!-- END GENERATED -->",
-      "sha256": "0182decc2e13142bbdb9a6e1dde7ebfc4117c41405eb0512348ecefb913ff968",
-      "bytes": 326
+      "sha256": "d79b42b1c700130d042946457e9d83e637ba9aec729607f891b5a396c5ee6519",
+      "bytes": 323
     },
     {
       "path": "homeworks.code-workspace",

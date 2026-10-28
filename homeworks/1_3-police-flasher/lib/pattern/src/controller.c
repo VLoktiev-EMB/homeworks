@@ -86,6 +86,36 @@ static port_status_t apply_frame(pattern_controller_t *controller)
     return status;
 }
 
+static const char *mode_name(pattern_mode_t mode)
+{
+    switch (mode) {
+    case PATTERN_MODE_ALTERNATING:
+        return "mode: alternating";
+    case PATTERN_MODE_DOUBLE_FLASH:
+        return "mode: double_flash";
+    case PATTERN_MODE_CHASE:
+        return "mode: chase";
+    case PATTERN_MODE_SOLID:
+        return "mode: solid";
+    default:
+        return "mode: alternating";
+    }
+}
+
+static const char *speed_name(size_t index)
+{
+    switch (index) {
+    case 0u:
+        return "speed: normal";
+    case 1u:
+        return "speed: fast";
+    case 2u:
+        return "speed: fastest";
+    default:
+        return "speed: normal";
+    }
+}
+
 static void reset_schedule(pattern_controller_t *controller, uint32_t now_ms)
 {
     controller->step_index = 0u;
@@ -151,6 +181,7 @@ port_status_t pattern_controller_init(pattern_controller_t *controller, const pa
     controller->output_c.applied = false;
     controller->output_c.as_input = false;
     controller->output_c.level = PORT_GPIO_LOW;
+    controller->log = (port_log_t){0};
     controller->ready = false;
     controller->status = PORT_OK;
 
@@ -171,6 +202,13 @@ port_status_t pattern_controller_init(pattern_controller_t *controller, const pa
        them and the next tick retries. */
     controller->ready = true;
     return status;
+}
+
+void pattern_controller_set_logger(pattern_controller_t *controller, port_log_t log)
+{
+    if (controller != NULL) {
+        controller->log = log;
+    }
 }
 
 void pattern_controller_tick(pattern_controller_t *controller)
@@ -218,12 +256,14 @@ void pattern_controller_tick(pattern_controller_t *controller)
         (int32_t)common_elapsed_ms(now_ms, controller->press_started_ms) >= (int32_t)PATTERN_CONTROLLER_LONG_PRESS_MS) {
         controller->speed_index = (controller->speed_index + 1u) % pattern_speed_count();
         controller->long_press_handled = true;
+        port_log_write(&controller->log, PORT_LOG_INFO, speed_name(controller->speed_index));
         reset_schedule(controller, now_ms);
         changed_output = true;
     }
     if (!now_pressed && was_pressed) {
         if (!controller->long_press_handled) {
             controller->mode = pattern_mode_next(controller->mode);
+            port_log_write(&controller->log, PORT_LOG_INFO, mode_name(controller->mode));
             reset_schedule(controller, now_ms);
             changed_output = true;
         }
