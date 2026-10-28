@@ -1,0 +1,9 @@
+# Wokwi for VS Code project configuration.
+#
+# The simulator reads the PlatformIO build artifacts; it never compiles code
+# itself, so run `pio run -d homeworks/1_3-police-flasher` before starting it.
+# Paths are relative to this file, which sits next to assets/diagram.json.
+[wokwi]
+version = 1
+firmware = "../.pio/build/esp32s3_arduino/firmware.bin"
+elf = "../.pio/build/esp32s3_arduino/firmware.elf"
