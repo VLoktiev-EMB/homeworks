@@ -77,19 +77,7 @@ For another root, add `--dir <root>` so the scaffold writes there instead of res
 idempotent, so a verification that demands `CREATE` fails after the first successful run
 (F-01). A `CONFLICT` or `ERROR` record stops the block and names the path.
 
-Then regenerate the repeated views and show the diff:
-
-```bash
-UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/gen_views.py --all
-```
-
-Add `--dir <root>` for another root. The regeneration is part of the scaffold block the
-user reviews, and it runs by default. Skip it only when the target root has no authored
-`README.md` carrying the generated marker region and the generator exits 2: record that
-the view regeneration was skipped because the root carries no authored views, and never
-create a README just to force the generator to run.
-
-Finally validate the new metadata with the same cache setting:
+Finally validate the new metadata:
 
 ```bash
 UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache" uv run scripts/check_metadata.py homeworks/<id>
@@ -156,5 +144,5 @@ section. Phase 10 owns that section's format and its validation.
 
 ## After the run
 
-Point an editor question at `docs/standards/vscode.md`, which is the one onboarding guide
+Point an editor question at `.agents/standards/vscode.md`, which is the one onboarding guide
 and the only committed editor contract.

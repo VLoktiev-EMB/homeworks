@@ -30,7 +30,6 @@ from scripts.tests.temp_root import snapshot_tree
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = "scripts/new_homework"
-REPORT_SCRIPT = "scripts/check_report.py"
 METADATA_DIR = REPO_ROOT / "scripts" / "metadata"
 
 HOMEWORK_ID = "1_3-fixture"
@@ -98,24 +97,6 @@ def run_scaffold(*args: str, timeout: int = 180) -> subprocess.CompletedProcess:
         )
     return subprocess.run(
         ["uv", "run", SCRIPT, *args],
-        cwd=str(REPO_ROOT),
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-
-def run_report_checker(
-    *args: str, timeout: int = 180
-) -> subprocess.CompletedProcess:
-    """Invoke `uv run scripts/check_report.py` from the repository root."""
-    if shutil.which("uv") is None:
-        raise AssertionError(
-            "uv is a required repository tool; install it before running this suite"
-        )
-    return subprocess.run(
-        ["uv", "run", REPORT_SCRIPT, *args],
         cwd=str(REPO_ROOT),
         capture_output=True,
         text=True,

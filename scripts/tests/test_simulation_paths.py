@@ -21,8 +21,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WOKWI_CLI = shutil.which("wokwi-cli")
-PROJECT = "homeworks/1_3-police-flasher"
-DOUBLED = f"{PROJECT}/{PROJECT}/assets/diagram.json"
 
 ANSI_SGR = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -36,8 +34,23 @@ class SimulationPathTests(unittest.TestCase):
                 "wokwi-cli is not installed; install 0.28.1 with "
                 "`curl -L https://wokwi.com/ci/install.sh | sh -s 0.28.1`"
             )
-        self._tmp = tempfile.TemporaryDirectory(prefix="simulation-paths-")
+        self._tmp = tempfile.TemporaryDirectory(
+            prefix="simulation-paths-", dir=str(REPO_ROOT)
+        )
         self.addCleanup(self._tmp.cleanup)
+        self.project_path = Path(self._tmp.name).relative_to(REPO_ROOT)
+        self.project = str(self.project_path)
+        self.doubled = f"{self.project}/{self.project}/assets/diagram.json"
+
+        assets = Path(self._tmp.name) / "assets"
+        assets.mkdir(parents=True, exist_ok=True)
+        (Path(self._tmp.name) / "scenario.yaml").write_text(
+            "version: 1\nname: test\nsteps: []\n", encoding="utf-8"
+        )
+        (assets / "diagram.json").write_text(
+            '{"version": 1, "author": "test", "editor": "wokwi", "parts": [], "connections": []}\n',
+            encoding="utf-8",
+        )
         self.elf = Path(self._tmp.name) / "fixture.elf"
         self.elf.write_bytes(b"")
 
@@ -53,7 +66,7 @@ class SimulationPathTests(unittest.TestCase):
         return subprocess.run(
             [
                 WOKWI_CLI,
-                PROJECT,
+                self.project,
                 "--elf",
                 str(self.elf),
                 "--scenario",
@@ -85,7 +98,7 @@ class SimulationPathTests(unittest.TestCase):
 
     def test_repository_root_values_fail_at_the_path_stage(self) -> None:
         result = self.run_command(
-            f"{PROJECT}/scenario.yaml", f"{PROJECT}/assets/diagram.json"
+            f"{self.project}/scenario.yaml", f"{self.project}/assets/diagram.json"
         )
         output = self.stripped(result)
 
@@ -94,11 +107,11 @@ class SimulationPathTests(unittest.TestCase):
 
     def test_negative_names_the_doubled_path(self) -> None:
         result = self.run_command(
-            f"{PROJECT}/scenario.yaml", f"{PROJECT}/assets/diagram.json"
+            f"{self.project}/scenario.yaml", f"{self.project}/assets/diagram.json"
         )
         output = self.stripped(result)
 
-        self.assertIn(DOUBLED, output)
+        self.assertIn(self.doubled, output)
 
 
 if __name__ == "__main__":

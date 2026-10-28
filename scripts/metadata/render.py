@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""The one closed `{{name}}` renderer the scaffold and the generators share.
+"""The one closed `{{name}}` template renderer.
 
-D-19 lifts the placeholder vocabulary out of `scripts/new_homework`, so the
-scaffold and `scripts/gen_views.py` cannot drift. D-33 forbids a template
-language: substitution is a single, non-recursive pass over a closed map.
+Substitution is a single, non-recursive pass over a closed map.
+The non-recursive property guarantees that a metadata value that itself contains
+an opening `{{...}}` sequence is emitted verbatim: it is never re-scanned.
 
-The non-recursive property is load-bearing (T-5-01). A metadata value that
-itself contains an opening `{{...}}` sequence is emitted verbatim: it is never
-re-scanned, so a homework title can never inject a placeholder into a second
-pass. `re.sub` guarantees this; `RendererContractTests` pins it.
-
-This module imports `os`, `re`, `stat` and the shared exception only, so a
-stdlib-only test runner can import it without pulling PyYAML or jsonschema
-(04/D-14).
+This module imports `os`, `re`, `stat` and the shared exception only.
 """
 
 from __future__ import annotations

@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Identity and path helpers shared by the scaffold and the generators.
-
-These four names used to live in `scripts/metadata/contract.py`, which imports
-PyYAML and jsonschema at module scope. `scripts/gen_views.py` and
-`scripts/affected.py` declare only PyYAML in their PEP 723 header, so importing
-`contract.py` for `derive_parts`, `resolve_root`, `relative_path` or
-`HOMEWORK_ID` would fail with `ModuleNotFoundError: jsonschema` in exactly the
-environments that must run the drift gate (blocking review finding, T-5-28).
+"""Identity and path helpers shared across scripts.
 
 Everything here is stdlib-only: `pathlib`, `re`, `subprocess` and the shared
 exception. `contract.py` re-exports these names, so every existing

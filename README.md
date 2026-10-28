@@ -6,18 +6,12 @@ self-contained, reproducible engineering artifact: code, tests, an academic repo
 Markdown, wiring, a bill of materials, engineering calculations, and measured evidence —
 all understandable and verifiable a year later.
 
-**Status:** the first homework, [1.3 Police Flasher](homeworks/1_3-police-flasher/), is in
-progress. The repository holds the shared libraries, the metadata contract, the scaffold, the
-generated views, and that first homework project; the authored decision and standards
-documents render directly in the repository view.
+**Status:** ready for homework development. The repository holds the shared libraries,
+the metadata contract, scaffolding tools, and engineering standards under `.agents/standards/`.
 
 ## Homeworks
 
-<!-- BEGIN GENERATED: homeworks -->
-| ID | Project | Board | Framework | Status | Report |
-|----|---------|-------|-----------|--------|--------|
-| 1.3 | [1.3 Police Flasher](homeworks/1_3-police-flasher/) | esp32-s3-devkitc-1 | arduino | complete | [report](homeworks/1_3-police-flasher/report.md) |
-<!-- END GENERATED -->
+No homework assignments published yet.
 
 ## Repository rules
 
