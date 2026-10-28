@@ -95,6 +95,15 @@ Then regenerate the root database with one command:
 uv run scripts/gen_clangd_db.py
 ```
 
+Alternatively, pass `--generate` to build any missing or stale source databases (and required
+generated headers such as `sdkconfig.h`) automatically in one step:
+
+```bash
+uv run scripts/gen_clangd_db.py --generate
+```
+
+You can also run this in VS Code via `Terminal -> Run Task... -> Clangd: Regenerate Compilation Database`.
+
 The root database is written at the repository root, is a build artifact, and stays
 untracked. Project files and `tests/` files keep their nearest database; the root database
 is the fallback for `lib/`. `lib/port` is header-only, so its headers are served by

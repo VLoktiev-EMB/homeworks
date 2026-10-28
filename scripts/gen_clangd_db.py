@@ -20,7 +20,7 @@ file, through a sibling temporary file plus an atomic replace, so a reader
 never sees a half-written database.
 
 Usage:
-  python3 scripts/gen_clangd_db.py [--root PATH]
+  python3 scripts/gen_clangd_db.py [--root PATH] [--generate]
 
 Exit codes (the same 0/1/2 vocabulary as `scripts/clang-tidy-db`):
   0  a complete database was written
@@ -35,6 +35,8 @@ import argparse
 import contextlib
 import json
 import os
+import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -54,7 +56,7 @@ def find_arduino_source(root: Path) -> tuple[Path, str]:
     if homeworks_dir.is_dir():
         # First priority: an active homework with an existing compile_commands.json
         for hw in sorted(homeworks_dir.iterdir()):
-            if not hw.is_dir():
+            if not hw.is_dir() or not (hw / "homework.yaml").is_file():
                 continue
             db_path = hw / "compile_commands.json"
             if db_path.is_file():
@@ -64,14 +66,19 @@ def find_arduino_source(root: Path) -> tuple[Path, str]:
                 )
         # Second priority: an active homework directory without compile_commands.json
         for hw in sorted(homeworks_dir.iterdir()):
-            if not hw.is_dir():
+            if not hw.is_dir() or not (hw / "homework.yaml").is_file():
                 continue
-            hw_yaml = hw / "homework.yaml"
-            if hw_yaml.is_file():
-                return (
-                    (hw / "compile_commands.json").relative_to(root),
-                    f"pio run -d homeworks/{hw.name} -t compiledb",
-                )
+            return (
+                (hw / "compile_commands.json").relative_to(root),
+                f"pio run -d homeworks/{hw.name} -t compiledb",
+            )
+    # Third priority: template Arduino project
+    template_arduino = root / "templates" / "homework-arduino"
+    if (template_arduino / "platformio.ini").is_file():
+        return (
+            Path("templates") / "homework-arduino" / "compile_commands.json",
+            "pio run -d templates/homework-arduino -e esp32s3_arduino -t compiledb",
+        )
     return (
         Path("homeworks") / "<id>" / "compile_commands.json",
         "pio run -d homeworks/<id> -t compiledb (for an active Arduino homework)",
@@ -172,8 +179,28 @@ def _under(resolved: Path, base: Path) -> bool:
     return True
 
 
+def check_source_stale(
+    root: Path, subtrees: tuple[str, ...], db_path: Path
+) -> str | None:
+    """Return a reason if the database is stale or missing required dependencies, or None."""
+    if "espidf" in subtrees:
+        sdkconfig = (
+            db_path.parent
+            / ".pio"
+            / "build"
+            / "esp32s3_espidf"
+            / "config"
+            / "sdkconfig.h"
+        )
+        if not sdkconfig.is_file():
+            return f"{sdkconfig.relative_to(root)} is absent"
+    return None
+
+
 def select_entries(
-    root: Path, sources: list[tuple[tuple[str, ...], Path, str]] | None = None
+    root: Path,
+    sources: list[tuple[tuple[str, ...], Path, str]] | None = None,
+    generate: bool = False,
 ) -> dict[Path, dict]:
     """Return one source entry per resolved `lib/` path; the first group wins."""
     if sources is None:
@@ -182,8 +209,35 @@ def select_entries(
     libraries = root / "lib"
     for subtrees, database, remedy in sources:
         path = root / database
-        if not path.is_file():
-            raise MissingInput(f"{path} is absent.\n  regenerate it with: {remedy}")
+        stale_reason = check_source_stale(root, subtrees, path) if path.is_file() else None
+
+        if not path.is_file() or stale_reason:
+            if generate:
+                reason_desc = "missing" if not path.is_file() else f"stale ({stale_reason})"
+                print(
+                    f"gen-clangd-db: {path} is {reason_desc}; generating with: {remedy}",
+                    file=sys.stderr,
+                )
+                res = subprocess.run(shlex.split(remedy), cwd=root)
+                if res.returncode != 0:
+                    raise EnvironmentProblem(f"failed to generate {path} with: {remedy}")
+                if not path.is_file():
+                    raise MissingInput(
+                        f"{path} is absent after generation.\n  command: {remedy}"
+                    )
+                stale_reason = check_source_stale(root, subtrees, path)
+                if stale_reason:
+                    raise MissingInput(
+                        f"{path} remains stale after generation ({stale_reason}).\n"
+                        f"  command: {remedy}"
+                    )
+            elif not path.is_file():
+                raise MissingInput(f"{path} is absent.\n  regenerate it with: {remedy}")
+            else:
+                raise MissingInput(
+                    f"{path} is stale: {stale_reason}.\n  regenerate it with: {remedy}"
+                )
+
         entries = load_database(path)
         seen: set[Path] = set()
         for entry in entries:
@@ -252,10 +306,10 @@ def write_database(database: Path, entries: list) -> None:
         raise EnvironmentProblem(f"cannot write {database}: {exc}") from exc
 
 
-def run_generate(root: Path) -> tuple[int, list[str]]:
+def run_generate(root: Path, generate: bool = False) -> tuple[int, list[str]]:
     """Return the exit status and the message lines for one root."""
     sources = get_sources(root)
-    selected = select_entries(root, sources)
+    selected = select_entries(root, sources, generate=generate)
     unnamed = unmapped_subtrees(root, sources)
     if unnamed:
         raise EnvironmentProblem(
@@ -294,11 +348,17 @@ def main(argv=None) -> int:
         metavar="PATH",
         help="repository root to generate for (default: this script's repository)",
     )
+    parser.add_argument(
+        "--generate",
+        "-g",
+        action="store_true",
+        help="automatically run remedy commands to generate missing or stale source databases",
+    )
     args = parser.parse_args(argv)
 
     try:
         root = resolve_root(args.root)
-        status, lines = run_generate(root)
+        status, lines = run_generate(root, generate=args.generate)
     except MissingInput as exc:
         print(f"FAIL gen-clangd-db: {exc}")
         return 1

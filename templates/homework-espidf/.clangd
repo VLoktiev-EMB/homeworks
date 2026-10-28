@@ -12,6 +12,8 @@ CompileFlags:
     - -fno-shrink-wrap
     - -fstrict-volatile-bitfields
     - -fmacro-prefix-map=*
+    - -fzero-init-padding-bits=*
+    - -fno-malloc-dce
 Diagnostics:
   Suppress:
     - unknown-argument
