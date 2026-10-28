@@ -20,7 +20,7 @@ are preserved verbatim; do not edit inside them.
 | hw-flash | Use when firmware is successfully built, a physical target board is connected via USB, and you need to flash the microcontroller or capture serial monitor logs. | `.claude/skills/hw-flash/SKILL.md` |
 | hw-report | Use when authoring, structuring, or updating a homework report (report.md), filling in the 10 standard sections, or preparing for report contract validation. | `.claude/skills/hw-report/SKILL.md` |
 | new-homework | Use when starting a new homework assignment, scaffolding a fresh homework directory, or requesting the step-by-step guided homework workflow. | `.claude/skills/new-homework/SKILL.md` |
-| schematic | Use when designing, editing, or formatting Wokwi diagram.json schematics, generating Mermaid circuit flowcharts for READMEs or reports, or untangling overlapping wiring. | `.claude/skills/schematic/SKILL.md` |
+| schematic | Use when generating, drawing, or validating circuit diagrams, IEEE vector schematics (assets/schematic.svg), or Mermaid circuit diagrams from assets/diagram.json. | `.claude/skills/schematic/SKILL.md` |
 | simulate | Use when running Wokwi simulation scenarios headlessly, verifying circuit behavior without physical hardware, linting diagrams offline, or capturing simulated test evidence. | `.claude/skills/simulate/SKILL.md` |
 <!-- GSD:skills-end -->
 

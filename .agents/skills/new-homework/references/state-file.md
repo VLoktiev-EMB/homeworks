@@ -4,7 +4,7 @@
 Resolve the path under the chosen root: the repository root, or the `--dir` root when
 the homework is scaffolded somewhere else. The file is gitignored and machine-local,
 so it is never a repository artifact and may be deleted at any time. Write it before
-every checkpoint menu, whatever the user then chooses (D-14).
+every checkpoint menu, whatever the user then chooses.
 
 ## Shape
 
@@ -91,7 +91,7 @@ each, so `intake`, `code` and `report` appear at most once each.
 `commit` is the short hash from `git rev-parse --short HEAD`, taken with the failure
 tolerated rather than raised. When the call fails, or the chosen root is not a git
 worktree, record `"commit": null` and `"root": "temporary"`. A git failure is not an
-error: a temporary root must stay resumable (Pitfall 8).
+error: a temporary root must stay resumable.
 
 ## Resume
 

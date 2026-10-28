@@ -32,7 +32,7 @@ Headless simulation executes compiled firmware against Wokwi virtual hardware mo
 | Action | Command | Quota Cost |
 |---|---|---|
 | 1. Build target first | `pio run -d homeworks/<id>` | Zero (local compile) |
-| 2. Lint circuit offline | `wokwi-cli lint --offline homeworks/<id>/assets` | Zero (offline check) |
+| 2. Lint circuit offline | `wokwi-cli lint --offline homeworks/<id>/assets/diagram.json` | Zero (offline check) |
 | 3. Run interactive / scenario | `wokwi-cli homeworks/<id> --diagram-file assets/diagram.json --scenario scenario.yaml` | Consumes simulation seconds |
 
 ## Evidence and Quota Rules

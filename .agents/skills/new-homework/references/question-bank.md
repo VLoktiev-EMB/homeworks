@@ -4,7 +4,7 @@ This bank is the intake for `new-homework`. Acquire the homework id before the f
 bank question: take it from `/new-homework <id>` when it is supplied, otherwise ask one
 pre-bank question for it. Validate the id against `^[0-9]+_[0-9]+-[a-z0-9-]+$` before it
 appears in any command or path, and stop on a mismatch. The id is deliberately outside
-the eight topics below, so `mode` stays the first bank question (D-11).
+the eight topics below, so `mode` stays the first bank question.
 
 Ask one question at a time, in the user's language, and let each answer choose the next
 branch. A later answer that contradicts an earlier one re-opens the branch that depends
@@ -84,7 +84,7 @@ Ask whether the homework contains pure logic that can be tested on the host. The
 is `unity-native` when it does. A yes records `intake.tests: unity-native` together with
 the suite path `test/test_homework`. A no records `intake.tests: none`; the native-tests
 block is then omitted from the block sequence, and the remaining blocks keep the fixed
-order from D-06.
+order.
 
 ## deliverables
 
@@ -93,8 +93,8 @@ calculations. The default is the README and the report. Record the answers as a 
 array in `intake.deliverables`.
 
 A bill of materials or a calculations section is a sub-section of the report block, never
-a sixth block: D-06 fixes five blocks, and the report block names both sub-sections
-explicitly so a missing deliverable cannot be mistaken for handled.
+a separate sixth block: the report block names both sub-sections explicitly so a missing
+deliverable cannot be mistaken for handled.
 
 ---
 
@@ -114,10 +114,10 @@ in place of the four keys.
 
 Three scaffold facts are not questions, but every run must respect them. Set
 `UV_CACHE_DIR="${TMPDIR:-/tmp}/uv-cache"` for every `uv run`, not only the scaffold,
-because F-01 names the uv cache rather than one command. A homework-local private library
+to isolate the cache across runs. A homework-local private library
 manifest omits `frameworks` and `platforms` and never enters `lib_deps`, because the soft
 compatibility mode hides a framework-tagged library from the native environment and a
-later cleanup of `lib_deps` would break it silently (F-04). Native tests repeat
+later cleanup of `lib_deps` would break it silently. Native tests repeat
 `-Wall -Wextra -Werror`, so reset both host fakes in `setUp` and seed the idle button
 `HIGH`, or a warning-level defect fails the test binary while the target build stays
-green (F-05).
+green.

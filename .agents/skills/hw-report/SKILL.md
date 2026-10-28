@@ -12,7 +12,7 @@ Guide for authoring, structuring, and validating the 10-section engineering repo
 
 ## Overview
 
-A homework report is an enduring engineering artifact understandable a year later. It follows the lean 10-section contract established in Phase 10.1, verifying metadata, section order, English prose, and valid measurement provenance.
+A homework report is an enduring engineering artifact understandable a year later. It follows the lean 10-section contract defined in `.agents/standards/report.md`, verifying metadata, section order, English prose, and valid measurement provenance.
 
 ## When to Use
 

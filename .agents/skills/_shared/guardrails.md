@@ -84,6 +84,5 @@ the same register as `AGENTS.md`.
   verified claim.
 - **[MUST]** **[ENFORCED: review]** Never describe a simulation as a flash.
 
-These rules are `[ENFORCED: review]` per D-18, and the phase dry-run transcript
-is the only practical check of the flashing and commit rules; a red transcript
-is the finding, not a reason to soften the rule.
+These rules are `[ENFORCED: review]`, and adhering to them is required on every
+invocation; convenience or speed is never a reason to soften a rule.

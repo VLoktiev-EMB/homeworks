@@ -30,16 +30,19 @@ The course index is the authoritative registry of all PlatformIO homework projec
 
 | Discovery Task | Command or Source of Truth |
 |---|---|
-| View complete course table | Inspect `README.md` under `## Homeworks` |
-| Validate all homework metadata | `uv run scripts/check_metadata.py` |
-| View single project config | `cat homeworks/<id>/homework.yaml` |
-| Inspect available boards | `ls boards/` or `cat boards/<board>.yaml` |
+| List all homework directories on disk | `find homeworks -mindepth 1 -maxdepth 1 -type d \| sort` |
+| Validate all homework metadata & provenance | `uv run scripts/check_metadata.py` |
+| View single assignment metadata | `cat homeworks/<id>/homework.yaml` |
+| Inspect assignment task specification | `cat homeworks/<id>/task.md` |
+| Inspect available board profiles | `ls boards/` or `cat boards/<board>.yaml` |
+| View published course overview | `README.md` under `## Homeworks` |
 
 ## Discovery Rules
 
-1. **Single Source of Truth**: The table in `README.md` is the index of every `homework.yaml`. Always read `README.md` to answer which homeworks exist.
-2. **Deterministic Identifiers**: Every homework ID matches `^[0-9]+_[0-9]+-[a-z0-9-]+$` (e.g. `1_3-police-flasher`). The prefix represents `module_lesson`.
-3. **Board Profiles**: Target boards map to validated definitions in `boards/<board>.yaml` (e.g. `boards/esp32-s3-devkitc-1.yaml`).
+1. **Filesystem Reality**: The authoritative homeworks present in the workspace are the directories under `homeworks/` containing a valid `homework.yaml`.
+2. **Metadata Contract**: Every homework is validated by `uv run scripts/check_metadata.py` against `schema/homework.schema.json`.
+3. **Deterministic Identifiers**: Every homework ID matches `^[0-9]+_[0-9]+-[a-z0-9-]+$` (e.g. `1_3-police-flasher`). The prefix represents `module_lesson`.
+4. **Board Profiles**: Target boards map to validated definitions in `boards/<board>.yaml` (e.g. `boards/esp32-s3-devkitc-1.yaml`).
 
 ## Common Mistakes & Red Flags
 
