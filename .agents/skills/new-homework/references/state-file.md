@@ -30,6 +30,12 @@ every checkpoint menu, whatever the user then chooses.
       "attribution": "<attribution>",
       "license": "<license>",
       "status": "complete"
+    },
+    "research": {
+      "sources": [
+        {"title": "<title>", "url": "<url>", "accessed": "<ISO-8601>"}
+      ],
+      "status": "complete"
     }
   },
   "blocks": [
@@ -66,6 +72,7 @@ ESP-IDF run records `c`.
 | `intake.tests` | string | `unity-native` or `none` |
 | `intake.deliverables` | array of strings | the documents the assignment requires |
 | `intake.provenance` | object | `source_url`, `retrieved`, `attribution`, `license`, each a string, plus `status` of `complete` or `blocked` |
+| `intake.research` | object | `sources`, an array of `{title, url, accessed}`, plus `status` of `complete` or `blocked` |
 | `blocks` | array of objects | each `{id, status}`; `id` is `scaffold`, `controller`, `native-tests`, `wiring` or `report`, and `status` is `pending`, `in-progress` or `done` |
 | `next_block` | string or `null` | a block id, or `null` when nothing remains |
 | `assumptions` | array of objects | the record shape below, with `kind: ambiguity` |

@@ -28,6 +28,20 @@ or `master`, create `hw/<id>` before the first write; if the current branch is
 another branch, require `hw/<id>` or ask. Never scaffold or commit on the default
 branch.
 
+## Research gate (not a bank topic)
+
+After provenance and before the scaffold, research the assignment against the board and
+framework official documentation, the applicable IEEE/IEC/ANSI standard or component
+datasheet, and at least one reputable practitioner source. Record
+`intake.research.sources` with title, URL, and access date. A missing search or fetch tool
+blocks the run; never invent a source.
+
+If a requirement conflicts with a standard or accepted best practice, present the
+discrepancy table from the skill
+(`Requirement | Authority | Conflict or risk | Recommendation | Decision`) and ask before
+scaffolding. Accepted rows go into the report's Assumptions table; the full table goes
+into the Decision Appendix.
+
 ## mode
 
 Select execution mode. The default is `direct` (clean, deterministic execution).

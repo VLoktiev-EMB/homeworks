@@ -37,6 +37,18 @@ the same register as `AGENTS.md`.
 - **[MUST]** **[ENFORCED: review]** A confirmation covers exactly the action it
   announced. Never reuse a previous confirmation for a later action.
 
+## Research and standards
+
+- **[MUST]** **[ENFORCED: review]** Research the current official documentation and the
+  applicable industry standard or component datasheet before a non-trivial change or
+  proposal, and cite the sources used. A trivial edit may record "no external standard
+  applies" and name the repository rule it follows instead. If no web search or fetch tool
+  is available, stop and report the blocker; never invent a source.
+- **[MUST]** **[ENFORCED: review]** Record a conflict as the discrepancy table
+  `Requirement | Authority | Conflict or risk | Recommendation | Decision`. An accepted
+  deviation is transcribed into the report's assumptions and the pull request; a rejected
+  recommendation is recorded as a deviation with its risk.
+
 ## Specification versus best practice
 
 - **[MUST]** **[ENFORCED: review]** Present the specification and the best

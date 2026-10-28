@@ -8,6 +8,12 @@ Optional cross-references:
 
 - **Issue / tracker:** `<e.g. #123>`
 
+## Research and standards
+
+- Authoritative sources consulted (official docs, standards, datasheets):
+- Applicable standards and best practices:
+- Discrepancies and accepted deviations (if any):
+
 ## Definition of Done
 
 - [ ] `pio run` is green for the affected environment

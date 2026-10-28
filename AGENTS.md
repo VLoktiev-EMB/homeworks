@@ -98,6 +98,21 @@ Good:  feat(schematic): add row layout for shared pins
 Good:  style(scripts): format Python sources
 ```
 
+### Research and standards
+
+- **[MUST]** **[ENFORCED: review]** Base every non-trivial change or proposal on
+  authoritative sources: the current official documentation, the applicable industry
+  standard (IEEE, IEC, ANSI, ISO) or component datasheet, and at least one reputable
+  practitioner source. Record the sources and the decision in the pull request or report.
+  A trivial mechanical edit may record "no external standard applies" and name the
+  repository rule it follows instead. Use the available web search and fetch tools; when
+  neither is available, stop and report the blocker instead of inventing a source.
+- **[MUST]** **[ENFORCED: review]** When the request conflicts with a standard or accepted
+  best practice, do not silently implement it. Present a discrepancy table
+  (`Requirement | Authority | Conflict or risk | Recommendation | Decision`), ask the owner
+  to accept or reject the deviation, and record an accepted deviation in the report's
+  assumptions and the pull request.
+
 ### Git, branches, and history
 
 - **[MUST]** **[ENFORCED: CI]** Never push directly to the default branch and never
@@ -220,6 +235,7 @@ Good:  style(scripts): format Python sources
 | Recurring task | Where the truth lives |
 |----------------|-----------------------|
 | Open a pull request | `.github/pull_request_template.md` — the single template |
+| Check a change against standards | this file, "Research and standards", and `.github/pull_request_template.md` |
 | Tag a merged homework | `scripts/tag_homework.sh <id>` — the only tag path |
 | Create a homework | `scripts/new_homework <id> --template <name>` — the only supported path |
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |
