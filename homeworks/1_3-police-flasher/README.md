@@ -25,7 +25,6 @@ red/blue police beacon pair and a white strobe LED.
 | `src/main.cpp` | Arduino composition root and GPIO mapping |
 | `lib/police_pattern/` | Framework-free pattern state machine |
 | `test/test_police_pattern/` | Unity native tests for the pattern |
-| `test/test_homework/` | Unity native tests for the GPIO contract |
 | `assets/diagram.json` | Wiring source of truth |
 | `assets/schematic.svg` | Generated IEEE vector schematic |
 

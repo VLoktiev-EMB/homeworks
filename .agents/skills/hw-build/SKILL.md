@@ -34,11 +34,17 @@ exit code:
 pio run -d homeworks/<id>
 ```
 
-On success, run the homework's native suite and report its exit code:
+On success, run the homework's native suite only when the homework declares one: an
+`[env:native]` section in `homeworks/<id>/platformio.ini`, or a real suite under
+`homeworks/<id>/test/`. When either is present, run it and report its exit code:
 
 ```bash
 pio test -d homeworks/<id> -e native
 ```
+
+Never skip a suite that exists, because the suite is expected whenever the homework has
+pure logic. When neither is present, state that the homework declares no native
+environment and skip the leg; the target build is then the only leg.
 
 The native environment is reached with `pio test`, never with `pio run -e native`.
 
@@ -57,7 +63,10 @@ reported.
 
 ## The shared suite
 
-The shared suite is the second suite, not the homework's. Run it:
+The shared suite is the second suite, not the homework's. This conditional governs only
+the homework leg: the shared `tests/` project declares `[env:native]` unconditionally, so
+its command is never gated by the homework structure, and its two run triggers are
+unchanged. Run it:
 
 ```bash
 pio test -d tests -e native

@@ -120,15 +120,20 @@ for, echo, or read/write the token itself.
 
 ## tests
 
-Test strategy.
+Test strategy: does the homework contain pure logic of its own?
 
-- **Question:** "Select test strategy:"
+- **Question:** "Does the homework contain pure logic of its own?"
 - **Options:**
-  - `(Recommended) Unity native tests (host logic verification in test/test_homework)`
-  - `None`
+  - `(Recommended) No pure logic — no test directory, and homework.yaml declares tests.framework: none`
+  - `Pure logic — Unity native tests in a private-library suite test/test_<name>/`
 
-A yes records `intake.tests: unity-native` with suite path `test/test_homework`.
-A no records `intake.tests: none` and omits the native-tests block.
+A yes records `intake.tests: unity-native` with suite path `test/test_<name>/`, requires the
+`[env:native]` block in `homeworks/<id>/platformio.ini` copied from `1_3` or `1_4`, and is
+expected whenever the homework has pure logic; it is
+never a copy of the shared contract tests in `tests/`. A no records `intake.tests: none`,
+omits the native-tests block, ships no `test/` directory, and sets `tests.framework: none`
+and `tests.native: false` in `homework.yaml`. The scaffold has no logic, so `none` is
+correct for a fresh homework and the suite is added as soon as logic is introduced.
 
 ## deliverables
 

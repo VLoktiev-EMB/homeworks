@@ -4,10 +4,10 @@ current_phase: 11
 current_phase_name: pilot-homework-1-3-finalization
 status: phase 11 completed
 stopped_at: Phase 11 verified and ready for PR / merge
-last_updated: "2026-10-29T00:40:23.361Z"
+last_updated: "2026-10-29T01:11:17.349Z"
 last_activity: 2026-10-29
 last_activity_desc: "Completed Phase 11: Pilot Homework 1.3 Finalization (Wave 1, 2, 3)"
-state_head: c39ab271de85b58c1bdb9d1d169cc31a7fbd3417
+state_head: 3073edf6fac881a67c511af6e4843fcf7d318bed
 progress:
   total_phases: 15
   completed_phases: 14
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-27)
 Phase: 11 (pilot-homework-1-3-finalization) — COMPLETED
 Plan: 3/3 plans complete
 Status: phase 11 completed (ready for PR / merge)
-Last activity: 2026-10-29 - Added a reuse and shared-library rule to AGENTS.md
+Last activity: 2026-10-29 - Removed the duplicate homework test suite and clarified that real tests are expected
 
 Progress: [████████████████████] 110/110 plans ([██████████] 100%)
 
@@ -218,6 +218,7 @@ Recent decisions affecting current work:
 | 9 | Replace the 1_5 critical section with an interrupt-disable window | 2026-10-29 | 203a36d | — |
 | 10 | Add a simplicity rule to AGENTS.md | 2026-10-29 | be89a27 | — |
 | 11 | Add a reuse and shared-library rule to AGENTS.md | 2026-10-29 | c39ab27 | — |
+| 261029-45o | Remove the duplicate homework test suite and state that real tests are expected | 2026-10-29 | 3073edf | [261029-45o-remove-the-duplicate-test-test-homework-](./quick/261029-45o-remove-the-duplicate-test-test-homework-/) |
 
 ### Roadmap Evolution
 

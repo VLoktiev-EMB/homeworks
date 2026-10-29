@@ -35,13 +35,12 @@ METADATA_DIR = REPO_ROOT / "scripts" / "metadata"
 HOMEWORK_ID = "1_3-fixture"
 TEMPLATES = ("arduino", "espidf")
 
-# FOUND-01 / D-22: the eight shared paths plus the framework-specific entry
+# FOUND-01 / D-22: the seven shared paths plus the framework-specific entry
 # point. `report.md` is here so a green suite asserts the new artifact rather
 # than merely letting it appear (Pitfall 13).
 SHARED_PATHS = (
     "platformio.ini",
     "include/.gitkeep",
-    "test/test_homework/test_homework.c",
     "assets/.gitkeep",
     "README.md",
     "task.md",
@@ -232,9 +231,12 @@ class InventoryTests(ScaffoldTestBase):
 
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         target = self.target(root)
-        for relative in ("src", "include", "test/test_homework", "assets"):
+        for relative in ("src", "include", "assets"):
             with self.subTest(directory=relative):
                 self.assertTrue((target / relative).is_dir())
+        self.assertFalse(
+            (target / "test").exists(), "the scaffold must ship no test directory"
+        )
         for relative in declared_paths("arduino"):
             with self.subTest(file=relative):
                 self.assertTrue((target / relative).is_file())

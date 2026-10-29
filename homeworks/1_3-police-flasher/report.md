@@ -45,7 +45,7 @@ decisions.
 | ID | Assumption | Impact if wrong | Validation |
 |----|------------|-----------------|------------|
 | A-01 | Red and blue share GPIO4 in push-pull, and the white LED uses GPIO5; this combines the three optional items into one circuit. | The wiring, bill of materials, and evidence would describe a different topology. | Diagram integrity is checked by L-03, and section 5 maps every terminal to a diagram part. |
-| A-02 | Native tests are included although the initial intake selected none, because the repository Definition of Done requires a green native suite for pure logic. | The state machine would have no automated regression evidence, and the Definition of Done would be unmet. | L-02 records nine passing test cases across two suites. |
+| A-02 | Native tests are included although the initial intake selected none, because the repository Definition of Done requires a green native suite for pure logic. | The state machine would have no automated regression evidence, and the Definition of Done would be unmet. | L-02 is the historical two-suite result at `f2a1e0f`; the current tree runs the seven pattern tests in `test/test_police_pattern/`. |
 | A-03 | The red LED forward voltage is 2.0 V at the calculated current, with a 1.8 V to 2.2 V bound for a typical 5 mm lamp. | Red current and resistor dissipation move inside the C-01 and C-05 bounds. | C-01 states the bound; the bench current L-04 is not measured. |
 | A-04 | The blue LED forward voltage is 2.9 V at the calculated current, with a 2.8 V to 3.0 V bound. | Blue current moves inside the C-02 bound and brightness changes. | C-02 states the bound; the bench current L-05 is not measured. |
 | A-05 | The white LED forward voltage is 3.0 V at the calculated current, with a 2.9 V to 3.1 V bound. | White current moves inside the C-03 bound and brightness changes. | C-03 states the bound; the bench current L-06 is not measured. |
@@ -158,7 +158,7 @@ The build uses PlatformIO [3]. The diagram lint uses the Wokwi offline validator
 
 The target build completed successfully for `esp32s3_arduino`, the native suite passed every case, and the diagram validator reported no errors. The fast pattern lasts 2210 ms and the slow pattern lasts 4420 ms by calculation.
 
-**Native suite.** `pio test -d homeworks/1_3-police-flasher -e native` ran two suites and nine test cases, all passing: two GPIO-contract tests and seven pattern tests. The pattern tests cover the initial red state, deadline boundaries, red/blue alternation, the white strobe phase, the doubled cadence at the cycle boundary, the millisecond wrap, and null-argument handling.
+**Native suite.** `pio test -d homeworks/1_3-police-flasher -e native` ran one suite and seven test cases, all passing. The pattern tests cover the initial red state, deadline boundaries, red/blue alternation, the white strobe phase, the doubled cadence at the cycle boundary, the millisecond wrap, and null-argument handling.
 
 ### Measurement Ledger
 
@@ -173,6 +173,8 @@ The target build completed successfully for `esp32s3_arduino`, the native suite 
 | L-07 | Shared-pin off-state glow | not measured: the visual check requires the physical board | not measured | none | C-06 is the design basis | not applicable | f2a1e0f |
 | L-08 | Fast full-pattern duration | calculated: 2210 ms | calculated | none | C-07 sums the fourteen step durations | plus or minus 14 ms from the 1 ms polling tick | f2a1e0f |
 | L-09 | Slow full-pattern duration | calculated: 4420 ms | calculated | none | C-07 doubles every fast duration | plus or minus 14 ms from the 1 ms polling tick | f2a1e0f |
+
+L-02 is the historical observation at `f2a1e0f`. The GPIO-contract suite was removed afterwards as duplicate coverage of the top-level `tests/` project; the current tree runs the seven `police_pattern` tests in `test/test_police_pattern/`.
 
 ### Traceability Matrix
 
@@ -197,12 +199,11 @@ Industry note: a one-pin two-lamp selector is a useful pin-budget technique, but
 
 The firmware satisfies the mandatory and optional behaviours at the code and wiring-model level, and the native suite gives repeatable regression evidence for the pattern. The electrical and optical behaviour is calculated but not measured, so the report does not claim bench verification.
 
-Status: in-progress. The target build, the native suite, and the diagram lint pass; no bench measurement or simulation session was run. Open items are the bench current and off-state checks, the pull-request review, the merge, and the `hw/1_3-police-flasher` tag.
+Status: in-progress. The target build, the native suite, and the diagram lint pass; the homework pull request is merged; no bench measurement or simulation session was run. Open items are the bench current and off-state checks and the `hw/1_3-police-flasher` tag.
 
 ### Next Steps
 
 - Measure the three branch currents and the shared-pin off-state voltage on the assembled board; close L-04 through L-07 when they are recorded. Owner: the author.
-- Review and merge the homework pull request; the merge closes the metadata and report review.
 - Tag the merged commit with `scripts/tag_homework.sh 1_3-police-flasher`; the tag closes the Definition of Done.
 
 ## 10. References
