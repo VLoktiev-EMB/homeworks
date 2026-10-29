@@ -4,10 +4,10 @@ current_phase: 11
 current_phase_name: pilot-homework-1-3-finalization
 status: phase 11 completed
 stopped_at: Phase 11 verified and ready for PR / merge
-last_updated: "2026-10-29T12:45:52.973Z"
+last_updated: "2026-10-29T15:44:36.998Z"
 last_activity: 2026-10-29
 last_activity_desc: "Completed Phase 11: Pilot Homework 1.3 Finalization (Wave 1, 2, 3)"
-state_head: 79d80613323b91bc5fbbb749926709bf3d81650f
+state_head: 65977ffb52c0fb0510e0b64f5e4915dd2e05042e
 progress:
   total_phases: 15
   completed_phases: 14
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-27)
 Phase: 11 (pilot-homework-1-3-finalization) — COMPLETED
 Plan: 3/3 plans complete
 Status: phase 11 completed (ready for PR / merge)
-Last activity: 2026-10-29 - Recorded the 1_5 button-bounce measurements and marked the homework complete
+Last activity: 2026-10-29 - Completed quick task 261029-oe0: Add a deterministic root README homework index
 
 Progress: [████████████████████] 110/110 plans ([██████████] 100%)
 
@@ -220,6 +220,7 @@ Recent decisions affecting current work:
 | 11 | Add a reuse and shared-library rule to AGENTS.md | 2026-10-29 | c39ab27 | — |
 | 261029-45o | Remove the duplicate homework test suite and state that real tests are expected | 2026-10-29 | 3073edf | [261029-45o-remove-the-duplicate-test-test-homework-](./quick/261029-45o-remove-the-duplicate-test-test-homework-/) |
 | 261029-kbn | Record the 1_5 button-bounce measurements and mark the homework complete | 2026-10-29 | 79d8061 | [261029-kbn-fill-the-1-5-button-bounce-measurement-l](./quick/261029-kbn-fill-the-1-5-button-bounce-measurement-l/) |
+| 261029-oe0 | Add a deterministic root README homework index | 2026-10-29 | 65977ff | [261029-oe0-add-a-deterministic-root-readme-homework](./quick/261029-oe0-add-a-deterministic-root-readme-homework/) |
 
 ### Roadmap Evolution
 
