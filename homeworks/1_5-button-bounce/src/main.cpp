@@ -1,9 +1,8 @@
-/* Composition root for the contact-bounce homework.
+/* Firmware for the contact-bounce homework.
  *
- * The Arduino layer owns only what needs the framework: the pin, the CHANGE
- * interrupt, the microsecond timestamp, and the critical section that shares
- * the capture with the ISR. The analysis itself lives in the framework-free
- * `bounce_logic` library, so the host suite can verify it byte for byte.
+ * The firmware owns the whole measurement path: the pin, the CHANGE interrupt,
+ * the 256-edge capture shared with the ISR, the burst analysis, the serial
+ * protocol, and the online debounce.
  *
  * Serial protocol (115200 baud):
  *   BOUNCE_LOGGER 1
@@ -18,11 +17,11 @@
  * traffic never interleaves with the bounce it is describing. */
 
 #include <Arduino.h>
+#include <string.h>
 
 #include "arduino/gpio.h"
 #include "arduino/log.h"
 #include "arduino/time.h"
-#include "bounce_logic.h"
 #include "common/timing.h"
 #include "port/gpio.h"
 #include "port/log.h"
@@ -32,12 +31,20 @@
 static const uint8_t BUTTON_PIN = 16;
 static const uint32_t QUIET_GAP_MS = 250u;
 static const uint32_t DEBOUNCE_MS = 20u;
+static const size_t CAPTURE_CAPACITY = 256u;
 
-/* The capture is written by the ISR and drained by loop(); the mutex is the
-   only state shared across that boundary. The sequence counter lets the loop
-   notice a new edge without touching the capture. */
+typedef struct edge_record {
+    uint32_t at_us;
+    bool level;
+} edge_record_t;
+
+/* The capture is written by the ISR and drained by loop(); the critical section
+   is the only state shared across that boundary. The sequence counter lets the
+   loop notice a new edge without touching the capture. */
 static portMUX_TYPE capture_mutex = portMUX_INITIALIZER_UNLOCKED;
-static bounce_capture_t capture;
+static edge_record_t capture[CAPTURE_CAPACITY];
+static size_t capture_count = 0u;
+static bool capture_overflowed = false;
 static volatile uint32_t isr_edge_sequence = 0u;
 
 /* File-scope storage is an Arduino composition-root necessity: setup() runs
@@ -47,7 +54,7 @@ static port_time_t clock_port;
 static port_log_t logger;
 
 static common_debounce_t debounce_state = {true, true, 0u};
-static bounce_edge_t snapshot[BOUNCE_CAPTURE_CAPACITY];
+static edge_record_t snapshot[CAPTURE_CAPACITY];
 
 static uint32_t last_seen_sequence = 0u;
 static uint32_t last_edge_ms = 0u;
@@ -60,39 +67,75 @@ static uint32_t debounced_press_total = 0u;
 static void IRAM_ATTR button_isr(void)
 {
     const bool level_high = digitalRead(BUTTON_PIN) == HIGH;
+    const uint32_t at_us = (uint32_t)micros();
 
     portENTER_CRITICAL_ISR(&capture_mutex);
-    (void)bounce_capture_push(&capture, (uint32_t)micros(), level_high);
+    if (capture_count < CAPTURE_CAPACITY) {
+        capture[capture_count].at_us = at_us;
+        capture[capture_count].level = level_high;
+        capture_count++;
+    } else {
+        capture_overflowed = true;
+    }
     portEXIT_CRITICAL_ISR(&capture_mutex);
     isr_edge_sequence = isr_edge_sequence + 1u;
 }
 
 static void dump_burst(void)
 {
-    bounce_stats_t stats;
     size_t count;
     bool overflowed;
     size_t index;
+    uint32_t falling = 0u;
+    uint32_t rising = 0u;
+    uint32_t duration_us;
+    uint32_t max_high_us = 0u;
+    uint32_t min_stable_ms;
+    bool settled_low;
 
     portENTER_CRITICAL(&capture_mutex);
-    count = bounce_capture_count(&capture);
-    overflowed = capture.overflowed;
-    (void)bounce_capture_copy(&capture, snapshot, BOUNCE_CAPTURE_CAPACITY);
-    bounce_capture_reset(&capture);
+    count = capture_count;
+    overflowed = capture_overflowed;
+    memcpy(snapshot, capture, count * sizeof(edge_record_t));
+    capture_count = 0u;
+    capture_overflowed = false;
     portEXIT_CRITICAL(&capture_mutex);
 
-    if (!bounce_analyze(snapshot, count, overflowed, &stats)) {
+    if (count == 0u) {
         return;
     }
 
-    raw_falling_total += (uint32_t)stats.falling;
-    raw_rising_total += (uint32_t)stats.rising;
+    for (index = 0u; index < count; index++) {
+        if (snapshot[index].level) {
+            rising++;
+        } else {
+            falling++;
+        }
+
+        if (index + 1u < count && snapshot[index].level) {
+            const uint32_t gap_us = snapshot[index + 1u].at_us - snapshot[index].at_us;
+
+            if (gap_us > max_high_us) {
+                max_high_us = gap_us;
+            }
+        }
+    }
+
+    duration_us = snapshot[count - 1u].at_us - snapshot[0u].at_us;
+    /* The debounce accepts a candidate once elapsed >= the window, so a HIGH
+       gap equal to the window would still register. One millisecond more is the
+       smallest window that rejects every HIGH interval inside the burst. */
+    min_stable_ms = max_high_us > 0u ? max_high_us / 1000u + 1u : 0u;
+    settled_low = !snapshot[count - 1u].level;
+
+    raw_falling_total += falling;
+    raw_rising_total += rising;
 
     Serial.printf("BURST edges=%lu falling=%lu rising=%lu duration_us=%lu max_high_us=%lu "
                   "min_stable_ms=%lu settled=%s overflow=%u\n",
-                  (unsigned long)stats.edges, (unsigned long)stats.falling, (unsigned long)stats.rising,
-                  (unsigned long)stats.duration_us, (unsigned long)stats.max_high_us,
-                  (unsigned long)stats.min_stable_ms, stats.settled_low ? "LOW" : "HIGH", overflowed ? 1u : 0u);
+                  (unsigned long)count, (unsigned long)falling, (unsigned long)rising, (unsigned long)duration_us,
+                  (unsigned long)max_high_us, (unsigned long)min_stable_ms, settled_low ? "LOW" : "HIGH",
+                  overflowed ? 1u : 0u);
 
     for (index = 0u; index < count; index++) {
         Serial.printf("E %lu %lu %c\n", (unsigned long)index, (unsigned long)snapshot[index].at_us,
@@ -111,7 +154,6 @@ void setup(void)
     logger = arduino_log_port();
 
     Serial.begin(115200);
-    bounce_capture_reset(&capture);
 
     if (gpio.set_mode(gpio.ctx, BUTTON_PIN, PORT_GPIO_INPUT_PULLUP) != PORT_OK) {
         port_log_write(&logger, PORT_LOG_ERROR, "button pin configuration failed");
@@ -149,6 +191,8 @@ void loop(void)
         have_edges = true;
     }
 
+    /* Waiting for the quiet gap keeps the dump off the wire until the bounce
+       has stopped, so serial traffic never interleaves with the burst. */
     if (have_edges && common_elapsed_ms(now_ms, last_edge_ms) >= QUIET_GAP_MS) {
         dump_burst();
         have_edges = false;

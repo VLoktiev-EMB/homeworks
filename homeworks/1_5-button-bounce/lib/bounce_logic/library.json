@@ -1,9 +1,0 @@
-{
-  "name": "bounce_logic",
-  "version": "0.1.0",
-  "description": "Framework-free contact-bounce edge capture and burst analysis.",
-  "build": {
-    "srcDir": "src",
-    "includeDir": "include"
-  }
-}

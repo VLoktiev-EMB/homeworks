@@ -3,9 +3,9 @@
 This report documents a firmware and wiring artifact that measures contact bounce on a
 pull-up pushbutton at GPIO 16 of an ESP32-S3-DevKitC-1. The firmware timestamps every edge
 through a `CHANGE` interrupt, and the same node is recorded by channel 1 of a logic
-analyzer. The implementation is complete and verified by a target build, a native Unity
-suite, and a schematic check. The ten-press bench capture that turns the measurement ledger
-from `not measured` into `measured` is the remaining owner action.
+analyzer. The implementation is complete and verified by a target build and a schematic
+check. The ten-press bench capture that turns the measurement ledger from `not measured` into
+`measured` is the remaining owner action.
 
 ## 1. Title and Metadata
 
@@ -32,8 +32,8 @@ with the firmware count. The final questions are whether the counts agree, when 
 microcontroller misses or over-counts, the average bounce duration of this button, and the
 minimum sufficient debounce.
 
-This implementation delivers the firmware, the framework-free capture and analysis logic,
-the native tests, the wiring source of truth, and the measurement procedure. It does not
+This implementation delivers the firmware with its inline capture and analysis logic, the
+wiring source of truth, and the measurement procedure. It does not
 fabricate the ten-press result: the ledger rows stay `not measured` until the owner captures
 the serial log and the analyzer trace.
 
@@ -79,7 +79,7 @@ assignment must expose the raw bounce rather than suppress it.
 ### Debounce criterion
 
 The online path feeds the raw level to `common_debounce_update` with a 20 ms window. The
-offline analyzer derives the minimum window from the burst itself. A window accepts a
+firmware derives the minimum window from the captured burst itself. A window accepts a
 candidate once `elapsed >= stable_ms`, so a HIGH interval of exactly the window length would
 be accepted and create an extra transition. The smallest safe window is therefore the
 longest HIGH interval plus one millisecond:
@@ -144,10 +144,10 @@ GND connects to the board GND.
 
 ## 6. Methodology
 
-The target is built with `pio run -d homeworks/1_5-button-bounce` and the host suite runs
-with `pio test -d homeworks/1_5-button-bounce -e native`. The analyzer is configured for a
-sample rate of at least 10 MS/s, a 1.65 V threshold, and channel `D0` on GPIO 16; its ground
-is tied to the board ground. The serial monitor runs at 115200 baud.
+The target is built with `pio run -d homeworks/1_5-button-bounce`; the homework has no host
+test suite. The analyzer is configured for a sample rate of at least 10 MS/s, a 1.65 V
+threshold, and channel `D0` on GPIO 16; its ground is tied to the board ground. The serial
+monitor runs at 115200 baud.
 
 The operator waits for `READY`, then presses the button ten times with different speed and
 force. Each press produces one or more `BURST` lines. A press burst ends `settled=LOW`; the
@@ -159,22 +159,21 @@ all edges, the pulse count is half of that total.
 
 The firmware path is a `CHANGE` interrupt on GPIO 16, a 32-bit `micros()` timestamp per
 edge, a 256-edge capture, a burst dump after 250 ms of quiet, and an online
-`common_debounce_update` path with a 20 ms window. The pure logic lives in
-`lib/bounce_logic` and is exercised by `test/test_bounce_logic`; the hardware-specific
-interrupt and critical section live in `src/main.cpp`. No simulation was run, and no Wokwi
-session quota was consumed.
+`common_debounce_update` path with a 20 ms window. The interrupt, the critical section, the
+256-edge capture, and the burst analysis all live in `src/main.cpp`; the analysis is compiled
+only into the target and has no host test. No simulation was run, and no Wokwi session quota
+was consumed.
 
 ## 7. Results
 
-The target build succeeds for `esp32s3_arduino`. The native suite passes 10 of 10 tests,
-the schematic check exits 0, and the offline Wokwi lint reports only the informational
-`unsupported-part` note for the ESP32-S3 board. The ten-press bench capture has not yet
-been performed, so every measurement-ledger row is labeled `not measured` with the reason.
+The target build succeeds for `esp32s3_arduino`. The schematic check exits 0, and the offline
+Wokwi lint reports only the informational `unsupported-part` note for the ESP32-S3 board. The
+ten-press bench capture has not yet been performed, so every measurement-ledger row is
+labeled `not measured` with the reason.
 
-**Native suite.** The host suite in `test/test_bounce_logic` covers capture order and
-overflow, bounded copying, a clean press, a bouncing press, a long HIGH gap, a release
-burst, the 32-bit microsecond wrap, and invalid input. The template contract suite in
-`test/test_homework` also passes, for a total of 10 tests.
+**Test coverage.** The homework ships no host test suite; the capture and the burst
+analysis are compiled into the target only. The bench procedure in section 6 is the
+verification path for their arithmetic, so the implementation has no automated host check.
 
 ### Measurement Ledger
 
@@ -206,16 +205,16 @@ burst, the 32-bit microsecond wrap, and invalid input. The template contract sui
 | T-06 | REPORT-06: the methodology is reproducible. | `README.md`, report section 6 | Review of the serial protocol and procedure | README and section 6 | verified |
 | T-07 | REPORT-07: results carry honest evidence labels and traceability. | Report section 7 | Review of the ledger and matrix | L-01 through L-13; T-01 through T-12 | pending |
 | T-08 | REPORT-08: analysis, conclusions, and references close the argument. | Report sections 8, 9, 10 | Review | Sections 8 to 10 | verified |
-| T-09 | The firmware records every edge with a microsecond timestamp. | `src/main.cpp`, `lib/bounce_logic` | Native Unity suite | `test/test_bounce_logic` | verified |
+| T-09 | The firmware records every edge with a microsecond timestamp. | `src/main.cpp` | Target build and review of the ISR capture path | `src/main.cpp` | manual |
 | T-10 | The firmware count and the analyzer count are compared for ten presses. | Report ledger and procedure | Bench capture by the owner | L-01 through L-13 | pending |
-| T-11 | The minimum debounce is derived from the measured bursts. | `min_stable_ms` in `lib/bounce_logic` | Native tests and bench capture | C-03; L-12 | pending |
+| T-11 | The minimum debounce is derived from the measured bursts. | `min_stable_ms` in `src/main.cpp` | Bench capture | C-03; L-12 | pending |
 | T-12 | The schematic matches the wiring source of truth. | `assets/diagram.json` | `gen_schematic.py --check` | `assets/schematic.svg` | verified |
 
 ## 8. Analysis
 
-The evidence currently supports the build, the native tests, the wiring model, and the
-schematic consistency. It does not yet support a quantitative answer to the four assignment
-questions, because the ten-press capture has not been made.
+The evidence currently supports the build, the wiring model, and the schematic consistency.
+It does not yet support a quantitative answer to the four assignment questions, because the
+ten-press capture has not been made.
 
 The expected relationship is that the MCU falling count is less than or equal to the
 analyzer falling count for the same press burst. The ISR can miss a pulse shorter than its
@@ -242,16 +241,15 @@ principle applies to any mechanical input, from a keypad to a limit switch.
 ## 9. Conclusions
 
 The deliverable is a working measurement instrument: a `CHANGE`-interrupt capture with
-microsecond timestamps, a framework-free analyzer with native tests, a debounced counter,
-a wiring model, and a repeatable ten-press procedure. The target build is green and the
-native suite passes 10 of 10 tests. The four assignment questions remain open only because
-the bench capture is pending; the report gives the exact comparison and reduction that will
-answer them.
+microsecond timestamps, an in-firmware analyzer, a debounced counter, a wiring model, and a
+repeatable ten-press procedure. The target build is green. The four assignment questions
+remain open only because the bench capture is pending; the report gives the exact comparison
+and reduction that will answer them.
 
-Status: the implementation is committed at 66f966b. The target build, the native suite, the
-schematic check, and the offline diagram lint are green. The ten-press bench capture and
-the measured ledger are pending on the owner; the report is a draft, and no row is claimed
-as measured until the serial log and the analyzer trace exist.
+Status: the implementation is committed at 66f966b. The target build, the schematic check,
+and the offline diagram lint are green. The ten-press bench capture and the measured ledger
+are pending on the owner; the report is a draft, and no row is claimed as measured until the
+serial log and the analyzer trace exist.
 
 ### Next Steps
 

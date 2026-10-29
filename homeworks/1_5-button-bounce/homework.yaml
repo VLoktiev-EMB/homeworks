@@ -12,8 +12,8 @@ toolchain:
   platformio: "6.2.0"
   platform: "espressif32@8.0.0"
 tests:
-  framework: unity
-  native: true
+  framework: none
+  native: false
   coverage: false
 report:
   path: report.md

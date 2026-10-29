@@ -4,8 +4,8 @@ Independent PlatformIO homework for `1_5-button-bounce`. It measures contact bou
 pull-up pushbutton, records every edge on GPIO 16, and compares the firmware count with a
 logic analyzer capture of the same node.
 
-**Status:** in-progress. Firmware, native tests, and wiring are complete. Bench
-measurements are pending, so the report labels them `not measured` until they are captured.
+**Status:** in-progress. Firmware and wiring are complete. Bench measurements are pending, so
+the report labels them `not measured` until they are captured.
 
 - [Assignment paraphrase](task.md)
 - [Report](report.md)
@@ -25,15 +25,14 @@ GPIO 16 is configured as `INPUT_PULLUP`; the internal pull-up is typically 45 kO
 button therefore reads HIGH when released and LOW when pressed. The analyzer and the board
 must share a ground, and the analyzer input must tolerate 3.3 V logic.
 
-## Build and test
+## Build
 
 ```sh
 pio run -d homeworks/1_5-button-bounce
-pio test -d homeworks/1_5-button-bounce -e native
 ```
 
-The target environment is `esp32s3_arduino`. The native suite runs the framework-free
-`bounce_logic` analysis on the host.
+The single environment is `esp32s3_arduino`. The 256-edge capture and the burst analysis both
+live in `src/main.cpp`; the homework has no host test suite.
 
 ## Flash and capture
 
@@ -78,10 +77,7 @@ the bounce it describes. A press ends `settled=LOW`; a release ends `settled=HIG
 
 ## Layout
 
-- `src/main.cpp` — composition root: pin, `CHANGE` interrupt, critical section, serial
-  protocol, and the online debounce path.
-- `lib/bounce_logic/` — framework-free edge capture and burst analysis, shared with the
-  native suite.
-- `test/test_bounce_logic/` — Unity tests for the capture, the statistics, the debounce
-  window, the release case, and the microsecond wrap.
+- `src/main.cpp` — the complete firmware: pin and `CHANGE` interrupt, the 256-edge capture
+  under a critical section, the burst analysis, the serial protocol, and the online debounce
+  path.
 - `assets/diagram.json` — the Wokwi wiring model; `assets/schematic.svg` is generated from it.
