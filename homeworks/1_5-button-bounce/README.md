@@ -4,8 +4,8 @@ Independent PlatformIO homework for `1_5-button-bounce`. It measures contact bou
 pull-up pushbutton, records every edge on GPIO 16, and compares the firmware count with a
 logic analyzer capture of the same node.
 
-**Status:** in-progress. Firmware and wiring are complete. Bench measurements are pending, so
-the report labels them `not measured` until they are captured.
+**Status:** complete. The firmware, the wiring, and the ten-press bench capture are done, and
+the [report](report.md) records the measured results.
 
 - [Assignment paraphrase](task.md)
 - [Report](report.md)
@@ -24,6 +24,20 @@ the report labels them `not measured` until they are captured.
 GPIO 16 is configured as `INPUT_PULLUP`; the internal pull-up is typically 45 kOhm. The
 button therefore reads HIGH when released and LOW when pressed. The analyzer and the board
 must share a ground, and the analyzer input must tolerate 3.3 V logic.
+
+## Measurements
+
+The bench evidence is the raw firmware log
+[`serial.log`](assets/measurements/serial.log) and the Saleae Logic 8-channel export
+[`digital.csv`](assets/measurements/digital.csv). The analyzer ran at 24 MS/s over a 12.364 s
+capture and recorded 74 transitions (37 falling, 37 rising). The firmware `TOTAL` line
+reports 65 edges (35 falling-level, 30 rising-level), a difference of -9 edges (-12.2%).
+
+Five bounce events were measured: one press-phase event of 0.25 us and four release-phase
+events of 363.167, 3780.25, 305.5 and 441.333 us. The mean is 978.1 us, or 1222.6 us for the
+release-phase events alone. The largest HIGH gap inside a bounce cluster is 160.625 us, so
+the minimum sufficient debounce is 1 ms; the 20 ms online window is about 124x that measured
+gap.
 
 ## Build
 
@@ -71,9 +85,10 @@ the bounce it describes. A press ends `settled=LOW`; a release ends `settled=HIG
 2. Flash the firmware and open the serial monitor at 115200 baud.
 3. Wait for `READY`, then press the button ten times with different speed and force.
 4. Save the serial log and the analyzer capture of the same interval.
-5. For each press burst, compare `falling` and `min_stable_ms` with the analyzer trace.
-6. Fill the measurement ledger in [`report.md`](report.md) and change the `not measured`
-   labels to `measured` with the captured values.
+5. For each press, pair the `BURST` lines with the analyzer clusters formed by a 10 ms gap
+   over the `E` transitions, and compare the edge totals.
+6. The ledger in [`report.md`](report.md) already records the captured values. Repeat the
+   procedure and update both evidence files if the button or the wiring changes.
 
 ## Layout
 
@@ -81,3 +96,5 @@ the bounce it describes. A press ends `settled=LOW`; a release ends `settled=HIG
   with interrupts briefly disabled while the loop copies it, the burst analysis, the serial
   protocol, and the online debounce path.
 - `assets/diagram.json` — the Wokwi wiring model; `assets/schematic.svg` is generated from it.
+- `assets/measurements/serial.log` — the raw firmware log from the ten-press capture.
+- `assets/measurements/digital.csv` — the 24 MS/s logic-analyzer export of the same interval.

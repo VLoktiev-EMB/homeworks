@@ -5,7 +5,7 @@ title: "Button Contact Bounce Analysis with a Logic Analyzer and a Microcontroll
 board: esp32-s3-devkitc-1
 framework: arduino
 language: cpp
-status: in-progress
+status: complete
 source:
   reference: "Course assignment provided by the owner in chat; English paraphrase in task.md"
 toolchain:
@@ -17,7 +17,9 @@ tests:
   coverage: false
 report:
   path: report.md
-  status: draft
+  status: complete
 assets:
   - assets/diagram.json
   - assets/schematic.svg
+  - assets/measurements/serial.log
+  - assets/measurements/digital.csv

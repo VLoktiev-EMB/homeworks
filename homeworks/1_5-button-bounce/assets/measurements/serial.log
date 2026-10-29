@@ -1,0 +1,107 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x10cc
+load:0x403c8700,len:0xc2c
+load:0x403cb700,len:0x30b0
+entry 0x403c88b8
+BOUNCE_LOGGER 1
+BUTTON_PIN=16 QUIET_GAP_MS=250 DEBOUNCE_MS=20
+READY
+BURST edges=4 falling=3 rising=1 duration_us=169150 max_high_us=0 min_stable_ms=0 settled=HIGH overflow=0
+E 0 6580085 L
+E 1 6748872 L
+E 2 6748982 L
+E 3 6749235 H
+TOTAL falling=3 rising=1 debounced=1
+READY
+BURST edges=1 falling=1 rising=0 duration_us=0 max_high_us=0 min_stable_ms=0 settled=LOW overflow=0
+E 0 7439927 L
+TOTAL falling=4 rising=1 debounced=2
+READY
+BURST edges=1 falling=0 rising=1 duration_us=0 max_high_us=0 min_stable_ms=0 settled=HIGH overflow=0
+E 0 8822662 H
+TOTAL falling=4 rising=2 debounced=2
+READY
+BURST edges=1 falling=1 rising=0 duration_us=0 max_high_us=0 min_stable_ms=0 settled=LOW overflow=0
+E 0 9923573 L
+TOTAL falling=5 rising=2 debounced=3
+READY
+BURST edges=17 falling=8 rising=9 duration_us=3779 max_high_us=160 min_stable_ms=1 settled=HIGH overflow=0
+E 0 11122070 H
+E 1 11122230 L
+E 2 11122612 H
+E 3 11122691 L
+E 4 11123261 L
+E 5 11123273 H
+E 6 11123276 L
+E 7 11123914 H
+E 8 11123931 L
+E 9 11124277 H
+E 10 11124323 L
+E 11 11124613 H
+E 12 11124628 L
+E 13 11125045 H
+E 14 11125048 L
+E 15 11125814 H
+E 16 11125849 H
+TOTAL falling=13 rising=11 debounced=3
+READY
+BURST edges=1 falling=1 rising=0 duration_us=0 max_high_us=0 min_stable_ms=0 settled=LOW overflow=0
+E 0 11975137 L
+TOTAL falling=14 rising=11 debounced=4
+READY
+BURST edges=1 falling=0 rising=1 duration_us=0 max_high_us=0 min_stable_ms=0 settled=HIGH overflow=0
+E 0 13013996 H
+TOTAL falling=14 rising=12 debounced=4
+READY
+BURST edges=1 falling=1 rising=0 duration_us=0 max_high_us=0 min_stable_ms=0 settled=LOW overflow=0
+E 0 13976789 L
+TOTAL falling=15 rising=12 debounced=5
+READY
+BURST edges=1 falling=0 rising=1 duration_us=0 max_high_us=0 min_stable_ms=0 settled=HIGH overflow=0
+E 0 14978045 H
+TOTAL falling=15 rising=13 debounced=5
+READY
+BURST edges=37 falling=20 rising=17 duration_us=1797561 max_high_us=236070 min_stable_ms=237 settled=HIGH overflow=0
+E 0 15929828 L
+E 1 16083269 H
+E 2 16319339 L
+E 3 16488482 H
+E 4 16707334 L
+E 5 16891206 H
+E 6 16891272 L
+E 7 16891279 L
+E 8 16891282 L
+E 9 16891284 H
+E 10 16891287 L
+E 11 16891290 L
+E 12 16891292 H
+E 13 16891335 L
+E 14 16891337 H
+E 15 16891341 L
+E 16 16891345 H
+E 17 16891379 L
+E 18 16891392 H
+E 19 16891399 L
+E 20 16891405 H
+E 21 16891467 L
+E 22 16891472 H
+E 23 16891476 L
+E 24 16891481 H
+E 25 16891491 L
+E 26 16891499 H
+E 27 16891507 L
+E 28 16891512 H
+E 29 17098051 L
+E 30 17286752 H
+E 31 17286769 L
+E 32 17286856 H
+E 33 17287004 L
+E 34 17287193 H
+E 35 17501383 L
+E 36 17727389 H
+TOTAL falling=35 rising=30 debounced=10
+READY
