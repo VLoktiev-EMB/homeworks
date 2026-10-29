@@ -27,6 +27,14 @@
 #include "port/log.h"
 #include "port/time.h"
 
+/* Teleplot telemetry for local plotting. Disabled by default: build with
+   -DTELEPLOT=1 (for example, PLATFORMIO_BUILD_FLAGS=-DTELEPLOT=1) to stream
+   `>button` and `>presses` at 100 Hz. Teleplot plots only lines that start with
+   `>`, so these bypass port_log_write(), whose adapter prefixes a level letter. */
+#ifndef TELEPLOT
+#define TELEPLOT 0
+#endif
+
 /* Must match the wiring recorded in assets/ and in the report. */
 static const uint8_t BUTTON_PIN = 16;
 static const uint32_t QUIET_GAP_MS = 250u;
@@ -183,6 +191,18 @@ void loop(void)
         debounced_press_total++;
     }
     last_stable_high = stable_high;
+
+#if TELEPLOT
+    /* 100 Hz is about 2 KB/s at 115200 baud, leaving the BURST dump room. */
+    {
+        static uint32_t next_plot_ms = 0u;
+        if (now_ms >= next_plot_ms) {
+            next_plot_ms = now_ms + 10u;
+            Serial.printf(">button:%d\n", level == PORT_GPIO_HIGH ? 1 : 0);
+            Serial.printf(">presses:%lu\n", (unsigned long)debounced_press_total);
+        }
+    }
+#endif
 
     if (isr_edge_sequence != last_seen_sequence) {
         last_seen_sequence = isr_edge_sequence;
