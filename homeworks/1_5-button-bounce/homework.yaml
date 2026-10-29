@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../schema/homework.schema.json
+schema_version: 1
+id: "1_5-button-bounce"
+title: "Button Contact Bounce Analysis with a Logic Analyzer and a Microcontroller"
+board: esp32-s3-devkitc-1
+framework: arduino
+language: cpp
+status: in-progress
+source:
+  reference: "Course assignment provided by the owner in chat; English paraphrase in task.md"
+toolchain:
+  platformio: "6.2.0"
+  platform: "espressif32@8.0.0"
+tests:
+  framework: none
+  native: false
+  coverage: false
+report:
+  path: report.md
+  status: draft
+assets:
+  - assets/diagram.json
+  - assets/schematic.svg

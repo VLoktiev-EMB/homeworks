@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "author": "VLoktiev-EMB",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "flashSize": "16", "psramType": "octal", "psramSize": "8" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn",
+      "top": 67.95,
+      "left": -100,
+      "attrs": { "color": "green", "label": "BOUNCE" }
+    },
+    {
+      "type": "wokwi-logic-analyzer",
+      "id": "la",
+      "top": 170,
+      "left": -300,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["btn:1.l", "esp:16", "green", ["h20"]],
+    ["btn:2.l", "esp:GND.1", "black", ["v167.05", "h90"]],
+    ["la:D0", "esp:16", "blue", ["v-102.05", "h43"]],
+    ["la:GND", "esp:GND.1", "black", ["v-25", "h43"]]
+  ],
+  "dependencies": {}
+}
