@@ -4,10 +4,10 @@ current_phase: 11
 current_phase_name: pilot-homework-1-3-finalization
 status: phase 11 completed
 stopped_at: Phase 11 verified and ready for PR / merge
-last_updated: "2026-10-29T00:33:00.163Z"
+last_updated: "2026-10-29T00:38:47.604Z"
 last_activity: 2026-10-29
 last_activity_desc: "Completed Phase 11: Pilot Homework 1.3 Finalization (Wave 1, 2, 3)"
-state_head: 203a36d489258c3996c263cf07106f6ac113f942
+state_head: be89a27cb14e84ce7ed24fc7dc3054ea603d7d50
 progress:
   total_phases: 15
   completed_phases: 14
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-27)
 Phase: 11 (pilot-homework-1-3-finalization) — COMPLETED
 Plan: 3/3 plans complete
 Status: phase 11 completed (ready for PR / merge)
-Last activity: 2026-10-29 - Replaced the 1_5 critical section with an interrupt-disable window
+Last activity: 2026-10-29 - Added a simplicity rule to AGENTS.md
 
 Progress: [████████████████████] 110/110 plans ([██████████] 100%)
 
@@ -216,6 +216,7 @@ Recent decisions affecting current work:
 | 261027-vxo | Remove dead code, config-text tests, and template build junk | 2026-10-27 | 61c0100 | [261027-vxo-remove-dead-code-config-text-tests-and-t](./quick/261027-vxo-remove-dead-code-config-text-tests-and-t/) |
 | 261029-3bz | Simplify homework 1_5: inline the bounce logic into main.cpp and drop the native suite | 2026-10-29 | e6f9ad1 | [261029-3bz-simplify-homework-1-5-button-bounce-inli](./quick/261029-3bz-simplify-homework-1-5-button-bounce-inli/) |
 | 9 | Replace the 1_5 critical section with an interrupt-disable window | 2026-10-29 | 203a36d | — |
+| 10 | Add a simplicity rule to AGENTS.md | 2026-10-29 | be89a27 | — |
 
 ### Roadmap Evolution
 
