@@ -98,6 +98,21 @@ Good:  feat(schematic): add row layout for shared pins
 Good:  style(scripts): format Python sources
 ```
 
+### Simplicity
+
+- **[MUST]** **[ENFORCED: review]** Build only what the current requirement needs. A
+  feature, abstraction, configuration, or file added because it might be useful later is
+  removed rather than kept; the burden of proof sits on the complexity, not on the simpler
+  alternative.
+- **[SHOULD]** **[ENFORCED: review]** If the requirement can be met simply, meet it in the
+  simplest way that stays clear: direct code over indirection, one file over a module split,
+  and an existing library call over a hand-written helper. A layer earns its place only when
+  it carries behaviour or an existing rule requires it.
+- **[MUST]** **[ENFORCED: review]** A test must verify behaviour that is otherwise
+  unverified. Coverage that repeats a check already made at a lower layer is deleted, not
+  maintained. A homework with no host-testable logic ships no host suite and declares
+  `tests.framework: none`; tests are never added for appearance.
+
 ### Research and standards
 
 - **[MUST]** **[ENFORCED: review]** Base every non-trivial change or proposal on
