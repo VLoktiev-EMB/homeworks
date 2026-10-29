@@ -1,0 +1,6 @@
+# Wokwi for VS Code project configuration.
+# The simulator reads the PlatformIO build artifacts; it never compiles.
+[wokwi]
+version = 1
+firmware = "../.pio/build/esp32s3_arduino/firmware.bin"
+elf = "../.pio/build/esp32s3_arduino/firmware.elf"
