@@ -109,9 +109,10 @@ Good:  style(scripts): format Python sources
   and an existing library call over a hand-written helper. A layer earns its place only when
   it carries behaviour or an existing rule requires it.
 - **[MUST]** **[ENFORCED: review]** A test must verify behaviour that is otherwise
-  unverified. Coverage that repeats a check already made at a lower layer is deleted, not
-  maintained. A homework with no host-testable logic ships no host suite and declares
-  `tests.framework: none`; tests are never added for appearance.
+  unverified; tests that do so are expected, not discouraged. Coverage that repeats a
+  check already made at a lower layer is deleted, not maintained. A homework with no
+  host-testable logic ships no host suite and declares `tests.framework: none`; tests are
+  never added for appearance.
 
 ### Reuse and shared libraries
 
