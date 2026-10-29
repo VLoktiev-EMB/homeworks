@@ -113,6 +113,21 @@ Good:  style(scripts): format Python sources
   maintained. A homework with no host-testable logic ships no host suite and declares
   `tests.framework: none`; tests are never added for appearance.
 
+### Reuse and shared libraries
+
+- **[MUST]** **[ENFORCED: review]** Promote logic to a shared library as soon as reuse is
+  real — the second consumer, or the moment you are about to copy it. The move happens in
+  the same change that adds the second use; identical behaviour is never copy-pasted across
+  homeworks, scripts, or skills. A single consumer is not reuse: until the second one
+  exists, the code stays with its caller.
+- **[SHOULD]** **[ENFORCED: review]** Extract the smallest coherent unit and leave the
+  caller-specific part with the caller. Choose the narrowest existing home — `lib/common`
+  for framework-free logic, `lib/port` for a consumer-owned contract, `scripts/` for
+  repository tooling, a skill's `references/` for guidance — before inventing a new one.
+- **[MUST]** **[ENFORCED: review]** Shared logic is tested once, in the top-level native
+  suite (`tests/`), not in a per-homework copy. A new consumer inherits the library and its
+  coverage; it does not clone them.
+
 ### Research and standards
 
 - **[MUST]** **[ENFORCED: review]** Base every non-trivial change or proposal on
