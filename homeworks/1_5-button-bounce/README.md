@@ -78,6 +78,6 @@ the bounce it describes. A press ends `settled=LOW`; a release ends `settled=HIG
 ## Layout
 
 - `src/main.cpp` — the complete firmware: pin and `CHANGE` interrupt, the 256-edge capture
-  under a critical section, the burst analysis, the serial protocol, and the online debounce
-  path.
+  with interrupts briefly disabled while the loop copies it, the burst analysis, the serial
+  protocol, and the online debounce path.
 - `assets/diagram.json` — the Wokwi wiring model; `assets/schematic.svg` is generated from it.

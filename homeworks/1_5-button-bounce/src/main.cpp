@@ -38,13 +38,14 @@ typedef struct edge_record {
     bool level;
 } edge_record_t;
 
-/* The capture is written by the ISR and drained by loop(); the critical section
-   is the only state shared across that boundary. The sequence counter lets the
-   loop notice a new edge without touching the capture. */
-static portMUX_TYPE capture_mutex = portMUX_INITIALIZER_UNLOCKED;
+/* The capture is the only state shared between the ISR and loop(). The ISR is
+   the only writer: it cannot be preempted by the loop task, so it needs no lock.
+   The loop briefly disables interrupts while it copies and clears, so an edge
+   can never land mid-copy. This is an interrupt-disable window, not a mutex.
+   The sequence counter lets the loop notice a new edge without touching it. */
 static edge_record_t capture[CAPTURE_CAPACITY];
-static size_t capture_count = 0u;
-static bool capture_overflowed = false;
+static volatile size_t capture_count = 0u;
+static volatile bool capture_overflowed = false;
 static volatile uint32_t isr_edge_sequence = 0u;
 
 /* File-scope storage is an Arduino composition-root necessity: setup() runs
@@ -69,7 +70,6 @@ static void IRAM_ATTR button_isr(void)
     const bool level_high = digitalRead(BUTTON_PIN) == HIGH;
     const uint32_t at_us = (uint32_t)micros();
 
-    portENTER_CRITICAL_ISR(&capture_mutex);
     if (capture_count < CAPTURE_CAPACITY) {
         capture[capture_count].at_us = at_us;
         capture[capture_count].level = level_high;
@@ -77,7 +77,6 @@ static void IRAM_ATTR button_isr(void)
     } else {
         capture_overflowed = true;
     }
-    portEXIT_CRITICAL_ISR(&capture_mutex);
     isr_edge_sequence = isr_edge_sequence + 1u;
 }
 
@@ -93,13 +92,13 @@ static void dump_burst(void)
     uint32_t min_stable_ms;
     bool settled_low;
 
-    portENTER_CRITICAL(&capture_mutex);
+    noInterrupts();
     count = capture_count;
     overflowed = capture_overflowed;
     memcpy(snapshot, capture, count * sizeof(edge_record_t));
     capture_count = 0u;
     capture_overflowed = false;
-    portEXIT_CRITICAL(&capture_mutex);
+    interrupts();
 
     if (count == 0u) {
         return;

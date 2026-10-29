@@ -69,10 +69,10 @@ firmware counts falling edges as pulses and also records the total edge count.
 
 GPIO 16 is configured as `INPUT_PULLUP` through the consumer-owned GPIO contract. The
 `CHANGE` interrupt is attached to the same pin [3]. The ISR reads the level and stores a
-32-bit `micros()` timestamp in a 256-edge capture. The ISR runs from IRAM, and a FreeRTOS
-critical section protects the capture from the loop task. The loop copies the burst under
-the same critical section, analyzes it, and prints it only after 250 ms without a new edge,
-so serial traffic never interleaves with the bounce it describes. The ESP32-S3 also offers
+32-bit `micros()` timestamp in a 256-edge capture. The ISR runs from IRAM and is the only
+writer, so it needs no lock. The loop briefly disables interrupts while it copies and clears
+the capture, then analyzes it and prints it only after 250 ms without a new edge, so serial
+traffic never interleaves with the bounce it describes. The ESP32-S3 also offers
 a hardware glitch filter of two sample-clock cycles [4]; it is not enabled because the
 assignment must expose the raw bounce rather than suppress it.
 
@@ -159,10 +159,10 @@ all edges, the pulse count is half of that total.
 
 The firmware path is a `CHANGE` interrupt on GPIO 16, a 32-bit `micros()` timestamp per
 edge, a 256-edge capture, a burst dump after 250 ms of quiet, and an online
-`common_debounce_update` path with a 20 ms window. The interrupt, the critical section, the
-256-edge capture, and the burst analysis all live in `src/main.cpp`; the analysis is compiled
-only into the target and has no host test. No simulation was run, and no Wokwi session quota
-was consumed.
+`common_debounce_update` path with a 20 ms window. The interrupt, the interrupt-disable window
+around the drain, the 256-edge capture, and the burst analysis all live in `src/main.cpp`;
+the analysis is compiled only into the target and has no host test. No simulation was run,
+and no Wokwi session quota was consumed.
 
 ## 7. Results
 
