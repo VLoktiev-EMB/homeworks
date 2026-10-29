@@ -127,3 +127,19 @@ repos:
         files: ^(homeworks/|boards/|schema/|scripts/(check_metadata\.py|new_homework$|metadata/))
         pass_filenames: false
         stages: [pre-commit]
+
+      # The root README homework index is CHECK-ONLY, matching the check-only
+      # precedent above: the hook reports drift and never rewrites the document.
+      # `language: python` is required rather than `system` — the system carries
+      # no `python` and its `python3` has neither pin, while CI's `meta` job runs
+      # `pre-commit run --all-files` with only pre-commit installed. The hook's
+      # own virtualenv supplies both pins, so the same entry is green locally
+      # and in CI.
+      - id: readme-index
+        name: root README homework index
+        language: python
+        additional_dependencies: ["PyYAML==6.0.3", "jsonschema==4.26.0"]
+        entry: python scripts/gen_readme.py --check
+        files: '^(README\.md|homeworks/.*/homework\.yaml|schema/|scripts/gen_readme\.py)'
+        pass_filenames: false
+        stages: [pre-commit]
