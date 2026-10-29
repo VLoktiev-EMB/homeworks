@@ -2,8 +2,8 @@ minimum_pre_commit_version: '4.7.0'
 default_install_hook_types: [pre-commit]
 
 # `default_stages` defaults to ALL stages, so without this line every hook
-# would also run at pre-push. D-08 reserves that stage for clang-tidy only, so
-# each hook keeps the pre-commit stage unless it names its own `stages:`.
+# would also run at pre-push. Each hook keeps the pre-commit stage unless it
+# names its own `stages:`.
 default_stages: [pre-commit]
 
 repos:
@@ -23,7 +23,7 @@ repos:
       # manifest declares `stages: [pre-commit, pre-push, manual]` for three of
       # its hooks, and a hook's own `stages` overrides the top-level
       # `default_stages` — without the per-hook declaration those three would
-      # run at pre-push and break D-08's "pre-push runs clang-tidy only".
+      # run at pre-push as well.
       - id: trailing-whitespace
         stages: [pre-commit]
       - id: end-of-file-fixer
@@ -32,6 +32,15 @@ repos:
         stages: [pre-commit]
       - id: check-added-large-files
         args: [--maxkb=1024]
+        stages: [pre-commit]
+
+      # AGENTS.md forbids direct pushes to the default branch. This guard fails
+      # at the earliest point: it refuses a commit made on `main`, so a direct
+      # push from `main` cannot be created locally in the first place. A
+      # refspec that targets main from a feature branch is still caught by the
+      # server-side ruleset.
+      - id: no-commit-to-branch
+        args: [--branch, main]
         stages: [pre-commit]
 
   # D-04: the hook is CHECK-ONLY. The mirror's default entry is

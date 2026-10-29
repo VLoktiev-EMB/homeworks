@@ -63,6 +63,9 @@ uv run scripts/check_metadata.py
 python3 scripts/gen_clangd_db.py --generate
 ```
 
+The installed hook refuses to commit while `main` is checked out; work on a branch and
+open a pull request instead.
+
 The last command builds the root compile database that gives `lib/` working IntelliSense
 in the editor.
 
