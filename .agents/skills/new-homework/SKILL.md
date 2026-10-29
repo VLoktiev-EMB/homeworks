@@ -170,10 +170,10 @@ Reuse an existing helper instead of writing a second implementation. When the
 homework has pure logic of its own, put it in a homework-local private library
 `homeworks/<id>/lib/<name>/` with a `library.json` that omits `frameworks` and
 `platforms` and never enters `lib_deps`; the soft compatibility mode would hide
-a framework-tagged library from the native environment. Test the private
-library under `test/test_<name>/`. Keep the private library's pure tables free
-of framework headers, keep `src/main.cpp` a thin composition root, and use
-`common_debounce_update` / `common_elapsed_ms` for timing instead of a second
+a framework-tagged library from the native environment. Whenever the homework has pure
+logic, the private library is tested under `test/test_<name>/`. Keep the private library's
+pure tables free of framework headers, keep `src/main.cpp` a thin composition root, and
+use `common_debounce_update` / `common_elapsed_ms` for timing instead of a second
 implementation.
 
 ## Block sequence
@@ -181,7 +181,16 @@ implementation.
 The deliverable sequence is:
 1. `scaffold`: generate the directory tree and initial metadata.
 2. `controller`: implement the firmware in `src/` and header interfaces in `include/`, or in a homework-local private library when the pure logic must be shared with native tests. Verify with `pio run -d homeworks/<id>`, then generate the editor databases: `pio run -d homeworks/<id> -t compiledb`, `uv run scripts/gen_clangd_db.py --generate`, and `"$HOME/.local/bin/clangd-wrapper" --check=homeworks/<id>/src/main.cpp`; expect `All checks completed, 0 errors`.
-3. `native-tests`: implement pure-logic unit tests in `test/test_homework/` or the private-library suites `test/test_<name>/`. Verify with `pio test -d homeworks/<id> -e native`.
+3. `native-tests`: native tests are required when the homework contains pure logic of
+   its own and skipped when it does not. Put the unit tests in a private-library suite
+   `test/test_<name>/` beside `homeworks/<id>/lib/<name>/`; never copy the shared
+   contract tests in `tests/`, which own that coverage. Add the `[env:native]` block to
+   `homeworks/<id>/platformio.ini`, copying it from
+   `homeworks/1_3-police-flasher/platformio.ini` or
+   `homeworks/1_4-dual-led-button-modes/platformio.ini`. Verify with
+   `pio test -d homeworks/<id> -e native`. The scaffold ships no pure logic, so it ships
+   no `test/` directory and declares `tests.framework: none`; the suite is added as soon
+   as logic is introduced.
 4. `wiring`: author `assets/diagram.json` and generate vector schematics via `uv run scripts/gen_schematic.py homeworks/<id> --all`.
 5. `report`: populate `report.md` matching `.agents/standards/report.md` with honest evidence labels.
 

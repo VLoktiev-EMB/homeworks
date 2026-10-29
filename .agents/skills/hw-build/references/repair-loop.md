@@ -1,9 +1,10 @@
 # Repair loop
 
-`hw-build` runs two legs: the target build and the homework's native suite. Each leg
-may repair a failure at most twice per run, and the whole invocation stops for user
-direction as soon as either leg exhausts its two attempts. This file is the only
-statement of the loop; `SKILL.md` points here rather than restating it.
+`hw-build` runs up to two legs: the target build and, when the homework declares a native
+suite, the homework's native suite; the native leg is optional. Each leg may repair a
+failure at most twice per run, and the whole invocation stops for user direction as soon
+as either leg exhausts its two attempts. This file is the only statement of the loop;
+`SKILL.md` points here rather than restating it.
 
 ## The counter
 
@@ -49,6 +50,12 @@ When a homework declares exactly one target in `default_envs` (e.g. `esp32s3_ard
 
 ## The native leg
 
+First confirm the homework declares a native environment: an `[env:native]` section in
+`homeworks/<id>/platformio.ini` or at least one test file under `homeworks/<id>/test/`.
+When neither is present, skip the leg, record that the homework declares none, and do
+not run the command. When either is present, run it; an existing suite is expected to
+pass and is never skipped.
+
 Run the homework's native suite with the same counter and the same stop:
 
 ```bash
@@ -59,6 +66,10 @@ The native environment is reached with `pio test`, never with `pio run -e native
 Capture the exit code and report it.
 
 ## The shared native suite
+
+This gate applies only to the homework leg; the shared `tests/` project declares
+`[env:native]` unconditionally, so its command is never gated by the homework structure,
+and its two triggers below are unchanged.
 
 Run the shared suite:
 

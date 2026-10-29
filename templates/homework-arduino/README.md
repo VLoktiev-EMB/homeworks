@@ -1,7 +1,7 @@
 # {{title}}
 
 This project is the independent PlatformIO homework for `{{homework_id}}`; it
-contains the code, the tests, and the evidence the report refers to.
+contains the code and the evidence the report refers to.
 
 **Status:** planned
 
