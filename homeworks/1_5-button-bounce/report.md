@@ -107,7 +107,8 @@ cluster over the analyzer transitions rather than from a single `BURST` duration
 
 ## 5. Hardware and Wiring
 
-The wiring source of truth is [`assets/diagram.json`](assets/diagram.json); the generated
+The wiring source of truth is [`assets/diagram.json`](assets/diagram.json); the visual
+breadboard diagram is [`assets/wiring.png`](assets/wiring.png), and the generated
 IEEE vector view is [`assets/schematic.svg`](assets/schematic.svg). One side of the
 pushbutton connects to GPIO 16 (header J3, pin 9) and the other side to GND. GPIO 16 is an
 input with the internal pull-up, so the line is HIGH when released and LOW when pressed.
