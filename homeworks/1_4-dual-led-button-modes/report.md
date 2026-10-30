@@ -127,9 +127,9 @@ debounce.
 ## 5. Hardware and Wiring
 
 The wiring source of truth is [assets/diagram.json](assets/diagram.json); the
-generated vector schematic is
-[assets/schematic.svg](assets/schematic.svg). The diagram is authored in the
-Wokwi format [11] and rendered with the repository generator.
+visual breadboard diagram is [assets/wiring.png](assets/wiring.png), and the
+generated vector schematic is [assets/schematic.svg](assets/schematic.svg).
+The diagram is authored in the Wokwi format [11] and rendered with the repository tools.
 
 ```mermaid
 flowchart LR
