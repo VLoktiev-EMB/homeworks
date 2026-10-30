@@ -90,8 +90,9 @@ leakage beyond the C-06 bound.
 ## 5. Hardware and Wiring
 
 The board is an ESP32-S3-DevKitC-1-N8 powered over USB. The wiring source of
-truth is [assets/diagram.json](assets/diagram.json), and the generated IEEE
-vector view is [assets/schematic.svg](assets/schematic.svg). The diagram is
+truth is [assets/diagram.json](assets/diagram.json), the visual breadboard
+view is [assets/wiring.png](assets/wiring.png), and the generated IEEE vector
+view is [assets/schematic.svg](assets/schematic.svg). The diagram is
 linted offline by L-03, and its part ids are the bill-of-materials references
 below.
 

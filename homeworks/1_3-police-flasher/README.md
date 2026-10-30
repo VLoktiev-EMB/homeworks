@@ -26,7 +26,30 @@ red/blue police beacon pair and a white strobe LED.
 | `lib/police_pattern/` | Framework-free pattern state machine |
 | `test/test_police_pattern/` | Unity native tests for the pattern |
 | `assets/diagram.json` | Wiring source of truth |
+| `assets/wiring.png` | Visual Wokwi wiring screenshot |
 | `assets/schematic.svg` | Generated IEEE vector schematic |
+
+## Wiring and Schematic
+
+### Visual Breadboard Diagram
+
+![Visual Wiring](assets/wiring.png)
+
+### Bill of Materials
+
+| Ref | Component | Value / Spec | Quantity | Connection |
+|-----|-----------|--------------|----------|------------|
+| `esp` | ESP32-S3-DevKitC-1 | N8 (16 MB flash, 8 MB PSRAM) | 1 | Microcontroller |
+| `r_red` | Resistor | 220 Ω, 1/4 W | 1 | GPIO4 ↔ Red LED Anode |
+| `led_red` | Red LED | 5 mm THT, Vf ≈ 2.0 V | 1 | `r_red` ↔ GND |
+| `r_blue` | Resistor | 100 Ω, 1/4 W | 1 | 3.3V ↔ Blue LED Anode |
+| `led_blue` | Blue LED | 5 mm THT, Vf ≈ 2.9 V | 1 | `r_blue` ↔ GPIO4 (Sink) |
+| `r_white` | Resistor | 100 Ω, 1/4 W | 1 | GPIO5 ↔ White LED Anode |
+| `led_white` | White LED | 5 mm THT, Vf ≈ 3.0 V | 1 | `r_white` ↔ GND |
+
+### Engineering Schematic (IEEE)
+
+![Vector Schematic](assets/schematic.svg)
 
 ## Build and test
 
@@ -40,4 +63,5 @@ pio test -d homeworks/1_3-police-flasher -e native
 - [Assignment paraphrase](task.md)
 - [Report](report.md)
 - [Wiring source of truth](assets/diagram.json)
+- [Visual wiring diagram](assets/wiring.png)
 - [Vector schematic](assets/schematic.svg)
