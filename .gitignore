@@ -81,6 +81,7 @@ Thumbs.db
 # Per-homework skill checkpoints (D-13). Untracked by design: machine-specific,
 # deletable, and never a repository artifact.
 .skill-state/
+.playwright-cli/
 
 # Video (linked, never committed — D-21)
 *.mp4
