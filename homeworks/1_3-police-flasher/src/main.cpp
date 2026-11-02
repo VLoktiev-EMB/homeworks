@@ -16,9 +16,11 @@
 
 #include "arduino/gpio.h"
 #include "arduino/log.h"
+#include "arduino/time.h"
 #include "police_pattern.h"
 #include "port/gpio.h"
 #include "port/log.h"
+#include "port/time.h"
 
 /* Must match the wiring recorded in assets/ and in the report. */
 static const uint8_t PAIR_PIN = 4;
@@ -29,6 +31,7 @@ static const uint8_t WHITE_PIN = 5;
    instances are owned here and passed to the contract calls by pointer. */
 static port_gpio_t gpio;
 static port_log_t logger;
+static port_time_t clock_port;
 static police_pattern_t pattern;
 
 static void report_status(const char *operation, port_status_t status)
@@ -38,12 +41,16 @@ static void report_status(const char *operation, port_status_t status)
     }
 }
 
-static void apply_outputs(const police_outputs_t &outputs)
+static void apply_outputs(const police_outputs_t *outputs)
 {
-    if (outputs.pair == POLICE_PAIR_RED) {
+    if (outputs == NULL) {
+        return;
+    }
+
+    if (outputs->pair == POLICE_PAIR_RED) {
         report_status("pair pin mode failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_OUTPUT));
         report_status("red write failed", gpio.write(gpio.ctx, PAIR_PIN, PORT_GPIO_HIGH));
-    } else if (outputs.pair == POLICE_PAIR_BLUE) {
+    } else if (outputs->pair == POLICE_PAIR_BLUE) {
         report_status("pair pin mode failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_OUTPUT));
         report_status("blue write failed", gpio.write(gpio.ctx, PAIR_PIN, PORT_GPIO_LOW));
     } else {
@@ -51,7 +58,7 @@ static void apply_outputs(const police_outputs_t &outputs)
     }
 
     report_status("white write failed",
-                  gpio.write(gpio.ctx, WHITE_PIN, outputs.white_on ? PORT_GPIO_HIGH : PORT_GPIO_LOW));
+                  gpio.write(gpio.ctx, WHITE_PIN, outputs->white_on ? PORT_GPIO_HIGH : PORT_GPIO_LOW));
 }
 
 void setup(void)
@@ -60,14 +67,15 @@ void setup(void)
 
     gpio = arduino_gpio_port();
     logger = arduino_log_port();
+    clock_port = arduino_time_port();
 
     report_status("white pin configuration failed", gpio.set_mode(gpio.ctx, WHITE_PIN, PORT_GPIO_OUTPUT));
     report_status("white initial level failed", gpio.write(gpio.ctx, WHITE_PIN, PORT_GPIO_LOW));
     report_status("pair pin release failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_INPUT));
 
-    police_pattern_init(&pattern, millis());
-    (void)police_pattern_update(&pattern, millis(), &outputs);
-    apply_outputs(outputs);
+    police_pattern_init(&pattern, port_time_now_ms(&clock_port));
+    (void)police_pattern_update(&pattern, port_time_now_ms(&clock_port), &outputs);
+    apply_outputs(&outputs);
 
     port_log_write(&logger, PORT_LOG_INFO, "police flasher started");
 }
@@ -76,8 +84,8 @@ void loop(void)
 {
     police_outputs_t outputs = {POLICE_PAIR_OFF, false};
 
-    if (police_pattern_update(&pattern, millis(), &outputs)) {
-        apply_outputs(outputs);
+    if (police_pattern_update(&pattern, port_time_now_ms(&clock_port), &outputs)) {
+        apply_outputs(&outputs);
     }
 
     delay(1);
