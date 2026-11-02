@@ -4,10 +4,13 @@
 
 static uint32_t effective_period(const blink_modes_t *state)
 {
-    if (state->mode == BLINK_MODE_SYNC_FAST) {
-        return state->config.fast_period_ms;
+    uint32_t period =
+        (state->mode == BLINK_MODE_SYNC_FAST) ? state->config.fast_period_ms : state->config.slow_period_ms;
+    if (period == 0u) {
+        return (state->mode == BLINK_MODE_SYNC_FAST) ? BLINK_MODES_DEFAULT_FAST_PERIOD_MS
+                                                     : BLINK_MODES_DEFAULT_SLOW_PERIOD_MS;
     }
-    return state->config.slow_period_ms;
+    return period;
 }
 
 static bool led_a_on(const blink_modes_t *state)
