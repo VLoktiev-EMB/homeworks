@@ -1,10 +1,21 @@
+#ifndef PORT_TIME_H
+#define PORT_TIME_H
+
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Consumer-owned time operations table.
+
+   Placed in Flash / ROM (.rodata) as a const struct. */
+typedef struct port_time_ops {
+    uint32_t (*now_ms)(void *ctx);
+} port_time_ops_t;
 
 /* Consumer-owned time contract.
 
@@ -18,15 +29,21 @@ extern "C" {
    rather than by a comparison of absolute timestamps (about 49.7 days of raw
    range, but any signed-difference horizon is 2^31 - 1 ms). */
 typedef struct port_time {
-    uint32_t (*now_ms)(void *ctx);
+    const port_time_ops_t *ops;
     void *ctx;
 } port_time_t;
 
+/* Safe inline dispatch helper verifying pointers before dereferencing. */
 static inline uint32_t port_time_now_ms(const port_time_t *time)
 {
-    return time->now_ms(time->ctx);
+    if (time == NULL || time->ops == NULL || time->ops->now_ms == NULL) {
+        return 0u;
+    }
+    return time->ops->now_ms(time->ctx);
 }
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* PORT_TIME_H */

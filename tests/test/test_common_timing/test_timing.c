@@ -121,11 +121,15 @@ static void test_debounce_null_time_is_safe(void)
 
 static void test_debounce_null_callback_is_safe(void)
 {
-    port_time_t broken = {.now_ms = NULL, .ctx = NULL};
+    static const port_time_ops_t BROKEN_OPS = {NULL};
+    port_time_t broken = {.ops = &BROKEN_OPS, .ctx = NULL};
     common_debounce_t state = {true, false, 0u};
 
     TEST_ASSERT_TRUE(common_debounce_update(&state, &broken, false, 10u));
     state.stable = false;
+    TEST_ASSERT_FALSE(common_debounce_update(&state, &broken, true, 10u));
+
+    broken.ops = NULL;
     TEST_ASSERT_FALSE(common_debounce_update(&state, &broken, true, 10u));
 }
 

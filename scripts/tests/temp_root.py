@@ -58,7 +58,7 @@ def repository_root():
 def _copy(source, target):
     """Copy one file or directory, creating parents as needed."""
     if source.is_dir():
-        shutil.copytree(source, target)
+        shutil.copytree(source, target, ignore=shutil.ignore_patterns(".cache", ".pio"))
     else:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)

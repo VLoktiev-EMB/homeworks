@@ -166,7 +166,7 @@ void setup(void)
 
     Serial.begin(115200);
 
-    if (gpio.set_mode(gpio.ctx, BUTTON_PIN, PORT_GPIO_INPUT_PULLUP) != PORT_OK) {
+    if (port_gpio_set_mode(&gpio, BUTTON_PIN, PORT_GPIO_INPUT_PULLUP) != PORT_OK) {
         port_log_write(&logger, PORT_LOG_ERROR, "button pin configuration failed");
     }
 
@@ -186,7 +186,7 @@ void loop(void)
     port_gpio_level_t level = PORT_GPIO_HIGH;
     bool stable_high;
 
-    if (gpio.read(gpio.ctx, BUTTON_PIN, &level) != PORT_OK) {
+    if (port_gpio_read(&gpio, BUTTON_PIN, &level) != PORT_OK) {
         return;
     }
 

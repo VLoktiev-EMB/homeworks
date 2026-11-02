@@ -26,7 +26,7 @@ void app_main(void)
     port_log_t logger = espidf_log_port();
     port_gpio_level_t level = PORT_GPIO_LOW;
 
-    if (gpio.set_mode(gpio.ctx, LED_PIN, PORT_GPIO_OUTPUT) != PORT_OK) {
+    if (port_gpio_set_mode(&gpio, LED_PIN, PORT_GPIO_OUTPUT) != PORT_OK) {
         port_log_write(&logger, PORT_LOG_ERROR, "LED pin configuration failed");
     } else {
         port_log_write(&logger, PORT_LOG_INFO, "LED pin configured as output");
@@ -34,7 +34,7 @@ void app_main(void)
 
     for (;;) {
         level = (level == PORT_GPIO_LOW) ? PORT_GPIO_HIGH : PORT_GPIO_LOW;
-        if (gpio.write(gpio.ctx, LED_PIN, level) != PORT_OK) {
+        if (port_gpio_write(&gpio, LED_PIN, level) != PORT_OK) {
             port_log_write(&logger, PORT_LOG_ERROR, "LED write failed");
         }
         vTaskDelay(pdMS_TO_TICKS(500));

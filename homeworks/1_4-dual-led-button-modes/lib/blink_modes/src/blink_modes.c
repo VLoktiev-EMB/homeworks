@@ -36,7 +36,7 @@ static port_status_t read_button(const port_gpio_t *gpio, uint8_t pin, bool prev
 {
     port_gpio_level_t level = PORT_GPIO_HIGH;
 
-    if (gpio->read(gpio->ctx, pin, &level) != PORT_OK) {
+    if (port_gpio_read(gpio, pin, &level) != PORT_OK) {
         /* Keep the last debounced level: a failed read must never fabricate a
            press edge. */
         *raw_high = previous_stable;
@@ -52,7 +52,7 @@ static port_status_t write_led(const port_gpio_t *gpio, uint8_t pin, bool on, bo
     if (*applied == on) {
         return PORT_OK;
     }
-    if (gpio->write(gpio->ctx, pin, on ? PORT_GPIO_HIGH : PORT_GPIO_LOW) != PORT_OK) {
+    if (port_gpio_write(gpio, pin, on ? PORT_GPIO_HIGH : PORT_GPIO_LOW) != PORT_OK) {
         return PORT_ERR_IO;
     }
     *applied = on;
@@ -114,7 +114,8 @@ port_status_t blink_modes_update(blink_modes_t *state, const port_gpio_t *gpio, 
     if (state == NULL || gpio == NULL || time == NULL || !state->ready) {
         return PORT_ERR_INVALID_ARG;
     }
-    if (gpio->read == NULL || gpio->write == NULL || time->now_ms == NULL) {
+    if (gpio->ops == NULL || gpio->ops->read == NULL || gpio->ops->write == NULL || time->ops == NULL ||
+        time->ops->now_ms == NULL) {
         return PORT_ERR_INVALID_ARG;
     }
 

@@ -21,7 +21,7 @@ bool common_debounce_update(common_debounce_t *state, const port_time_t *time, b
     if (state == NULL) {
         return false;
     }
-    if (time == NULL || time->now_ms == NULL) {
+    if (time == NULL || time->ops == NULL || time->ops->now_ms == NULL) {
         return state->stable;
     }
 

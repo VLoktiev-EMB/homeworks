@@ -1,3 +1,6 @@
+#ifndef PORT_LOG_H
+#define PORT_LOG_H
+
 #pragma once
 
 #include <stddef.h>
@@ -8,6 +11,13 @@ extern "C" {
 
 /* Four logging levels, ordered from most to least severe. */
 typedef enum port_log_level { PORT_LOG_ERROR = 0, PORT_LOG_WARN, PORT_LOG_INFO, PORT_LOG_DEBUG } port_log_level_t;
+
+/* Consumer-owned log operations table.
+
+   Placed in Flash / ROM (.rodata) as a const struct. */
+typedef struct port_log_ops {
+    void (*write)(void *ctx, port_log_level_t level, const char *message);
+} port_log_ops_t;
 
 /* Consumer-owned logging contract.
 
@@ -23,17 +33,20 @@ typedef enum port_log_level { PORT_LOG_ERROR = 0, PORT_LOG_WARN, PORT_LOG_INFO, 
    This contract does not name a framework type, does not own state, does not
    block, and does not encode device behaviour. */
 typedef struct port_log {
-    void (*write)(void *ctx, port_log_level_t level, const char *message);
+    const port_log_ops_t *ops;
     void *ctx;
 } port_log_t;
 
+/* Safe inline dispatch helper verifying pointers before dereferencing. */
 static inline void port_log_write(const port_log_t *log, port_log_level_t level, const char *message)
 {
-    if (log != NULL && log->write != NULL) {
-        log->write(log->ctx, level, message);
+    if (log != NULL && log->ops != NULL && log->ops->write != NULL) {
+        log->ops->write(log->ctx, level, message);
     }
 }
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* PORT_LOG_H */
