@@ -21,5 +21,6 @@ report:
 assets:
   - assets/diagram.json
   - assets/schematic.svg
+  - assets/wiring.png
   - assets/measurements/serial.log
   - assets/measurements/digital.csv

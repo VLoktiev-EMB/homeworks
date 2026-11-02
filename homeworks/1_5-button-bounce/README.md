@@ -14,6 +14,20 @@ the [report](report.md) records the measured results.
 
 ## Wiring
 
+### Visual Breadboard Diagram
+
+![Visual Wiring Diagram](assets/wiring.png)
+
+### Bill of Materials
+
+| Reference | Component | Value / Model | Connections / Function |
+|-----------|-----------|---------------|------------------------|
+| `esp` | Microcontroller Board | ESP32-S3-DevKitC-1 | Core controller (USB-C, 3.3 V logic) |
+| `btn` | Pushbutton (tactile) | Momentary NO | BOUNCE test button on GPIO 16 (active-LOW with internal pull-up) |
+| `la` | Logic Analyzer (instrument / sim) | 8-channel 24 MS/s | Channel D0 connected to GPIO 16, GND to board GND |
+
+### Connections
+
 | Signal | ESP32-S3 pin | Connects to |
 |--------|--------------|-------------|
 | Button contact A | GPIO 16 (J3-9) | One side of the momentary pushbutton |
@@ -24,6 +38,10 @@ the [report](report.md) records the measured results.
 GPIO 16 is configured as `INPUT_PULLUP`; the internal pull-up is typically 45 kOhm. The
 button therefore reads HIGH when released and LOW when pressed. The analyzer and the board
 must share a ground, and the analyzer input must tolerate 3.3 V logic.
+
+### IEEE Vector Schematic
+
+![IEEE Schematic](assets/schematic.svg)
 
 ## Measurements
 
