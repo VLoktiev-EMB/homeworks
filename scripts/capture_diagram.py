@@ -236,9 +236,7 @@ def main() -> None:
     parser.add_argument(
         "homework", nargs="?", help="Homework path (e.g. homeworks/1_3-police-flasher)"
     )
-    parser.add_argument(
-        "--all", action="store_true", help="Capture for all homeworks with diagram"
-    )
+    parser.add_argument("--all", action="store_true", help="Capture for all homeworks with diagram")
     args = parser.parse_args()
 
     if args.all:

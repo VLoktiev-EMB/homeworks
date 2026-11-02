@@ -26,8 +26,10 @@ from pathlib import Path
 # as `uv run scripts/gen_schematic.py` and when a test imports
 # `scripts.gen_schematic`.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schematic_svg import generate_schematic_svg as _generate_schematic_svg  # noqa: E402
-from schematic_svg import render_schematic_svg as _render_schematic_svg  # noqa: E402
+from schematic_svg import (
+    generate_schematic_svg as _generate_schematic_svg,  # noqa: E402
+    render_schematic_svg as _render_schematic_svg,  # noqa: E402
+)
 
 
 def generate_mermaid_from_diagram(diagram: dict) -> str:

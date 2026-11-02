@@ -234,9 +234,7 @@ class InventoryTests(ScaffoldTestBase):
         for relative in ("src", "include", "assets"):
             with self.subTest(directory=relative):
                 self.assertTrue((target / relative).is_dir())
-        self.assertFalse(
-            (target / "test").exists(), "the scaffold must ship no test directory"
-        )
+        self.assertFalse((target / "test").exists(), "the scaffold must ship no test directory")
         for relative in declared_paths("arduino"):
             with self.subTest(file=relative):
                 self.assertTrue((target / relative).is_file())

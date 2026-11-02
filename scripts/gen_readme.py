@@ -98,9 +98,7 @@ def _load_homeworks(root):
         except (OSError, UnicodeDecodeError) as exc:
             raise UsageError(f"{document_path}: {exc}") from exc
         try:
-            document = validate_homework_text(
-                text, root=root, homework_id=homework_id
-            )
+            document = validate_homework_text(text, root=root, homework_id=homework_id)
         except CheckError as exc:
             raise ContentError(f"homeworks/{homework_id}/homework.yaml: {exc}") from exc
         records.append((homework_id, document))
@@ -174,9 +172,7 @@ def _write_atomic(path, text):
     """Install *text* at *path* through a sibling temporary file."""
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="wb", dir=path.parent, delete=False
-        ) as handle:
+        with tempfile.NamedTemporaryFile(mode="wb", dir=path.parent, delete=False) as handle:
             temporary = Path(handle.name)
             handle.write(text.encode("utf-8"))
             handle.flush()
@@ -189,13 +185,9 @@ def _write_atomic(path, text):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(
-        description="Regenerate the root README homework index"
-    )
+    parser = argparse.ArgumentParser(description="Regenerate the root README homework index")
     parser.add_argument("--dir", help="Repository root path")
-    parser.add_argument(
-        "--check", action="store_true", help="Report drift without writing"
-    )
+    parser.add_argument("--check", action="store_true", help="Report drift without writing")
     args = parser.parse_args(argv)
 
     try:
