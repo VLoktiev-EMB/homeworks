@@ -13,9 +13,76 @@ line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["ALL"]
+ignore = [
+    # Conflicts with ruff format (official Ruff warning):
+    "COM812", # missing-trailing-comma
+    "ISC001", # single-line-implicit-string-concatenation
+
+    # Ecosystem & framework mismatch:
+    "PT",     # flake8-pytest (repository standard is unittest)
+    "CPY",    # flake8-copyright (no top-of-file copyright headers required)
+    "T201",   # print (scripts/* are CLI tools with stdout output)
+    "INP001", # implicit-namespace-package (standalone scripts in scripts/)
+
+    # Pedantic docstring & typing policies:
+    "D",      # pydocstyle (all docstring rules)
+    "ANN",    # flake8-annotations (strict typing on every arg/self/kwargs)
+
+    # Exception ergonomics for CLI tools:
+    "EM",     # flake8-errmsg (forbids f-strings in raise expressions)
+    "TRY003", # raise-vanilla-args (forbids custom messages in exceptions)
+    "TRY301", # raise-within-try
+    "TRY004", # type-check-without-type-error
+
+    # Subprocess & system script allowances:
+    "S603",   # subprocess-without-shell-equals-true
+    "S607",   # start-process-with-partial-path
+    "S110",   # try-except-pass
+    "PLW1510",# subprocess-run-without-check
+    "EXE001", # shebang-not-executable
+
+    # Code style & complexity limits (to avoid arbitrary refactorings in existing scripts):
+    "C901",   # complex-structure
+    "PLR0911",# too-many-return-statements
+    "PLR0912",# too-many-branches
+    "PLR0913",# too-many-arguments
+    "PLR0915",# too-many-statements
+    "PLR0917",# too-many-positional-arguments
+    "PLR2004",# magic-value-comparison
+    "PLW2901",# redefined-loop-name
+    "PLC0415",# import-outside-top-level
+    "N818",   # error-suffix-on-exception-name
+    "N802",   # invalid-function-name
+    "FBT001", # boolean-type-hint-positional-argument
+    "FBT002", # boolean-default-value-positional-argument
+    "BLE001", # blind-except
+    "SIM105", # suppressible-exception
+    "SIM117", # multiple-with-statements
+    "PTH105", # os-replace (used for atomic file replacement)
+    "PTH118", # os-path-join
+    "PTH123", # builtin-open
+    "SLF001", # private-member-access
+    "PERF401",# manual-list-comprehension
+    "PERF102",# incorrect-dict-iterator
+    "ARG001", # unused-function-argument
+    "ARG002", # unused-method-argument
+    "RUF100", # unused-noqa (preserve annotations for alternative linters)
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+split-on-trailing-comma = true
 
 [tool.ruff.lint.per-file-ignores]
 # SCons injects `env` into these scripts; importing it would break the build, so
 # the F821 finding is a false positive at this one site.
 "scripts/pio/*.py" = ["F821"]
+"scripts/tests/**/*.py" = ["RUF005"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true

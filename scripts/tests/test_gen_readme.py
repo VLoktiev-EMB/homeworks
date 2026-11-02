@@ -119,9 +119,7 @@ class TableContentTests(GenReadmeTestCase):
         self.rewrite_homework("1_3-alpha", drop_report)
         completed = self.run_generator()
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        row = next(
-            line for line in self.region().splitlines() if "1_3-alpha" in line
-        )
+        row = next(line for line in self.region().splitlines() if "1_3-alpha" in line)
         self.assertTrue(row.endswith("| none |"), row)
 
     def test_pipe_in_title_is_escaped(self) -> None:
@@ -132,9 +130,7 @@ class TableContentTests(GenReadmeTestCase):
         completed = self.run_generator()
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("[Alpha \\| Beta](homeworks/1_3-alpha/)", self.region())
-        row = next(
-            line for line in self.region().splitlines() if "1_3-alpha" in line
-        )
+        row = next(line for line in self.region().splitlines() if "1_3-alpha" in line)
         self.assertEqual(row.count(" | "), TABLE_HEADER.count(" | "))
 
     def test_empty_homeworks_renders_the_empty_message(self) -> None:
@@ -142,9 +138,7 @@ class TableContentTests(GenReadmeTestCase):
             root = Path(other)
             temp_root.write_synthetic_root(root, homeworks=False)
             readme = root / "README.md"
-            readme.write_text(
-                PROSE_BEFORE + BEGIN + "\n\n" + END + PROSE_AFTER, encoding="utf-8"
-            )
+            readme.write_text(PROSE_BEFORE + BEGIN + "\n\n" + END + PROSE_AFTER, encoding="utf-8")
 
             completed = run_gen_readme("--dir", str(root))
             self.assertEqual(completed.returncode, 0, completed.stderr)

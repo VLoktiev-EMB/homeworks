@@ -21,7 +21,9 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 IndentCaseLabels: false
 SpaceBeforeParens: ControlStatements
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-SortIncludes: true
-ReflowComments: false
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+SortIncludes:
+  Enabled: true
+  IgnoreCase: false
+ReflowComments: Never

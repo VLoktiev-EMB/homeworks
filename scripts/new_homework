@@ -116,10 +116,7 @@ def _is_generated_template_entry(relative):
     """Return whether a template entry is build output rather than authored."""
     if relative.name in IGNORED_TEMPLATE_NAMES:
         return True
-    return (
-        relative.name.startswith("sdkconfig.")
-        and relative.name != AUTHORED_SDKCONFIG
-    )
+    return relative.name.startswith("sdkconfig.") and relative.name != AUTHORED_SDKCONFIG
 
 
 def _template_directory(root, name):
@@ -131,18 +128,12 @@ def _template_directory(root, name):
     write bytes it never inspected.
     """
     if not TEMPLATE_NAME.match(name):
-        raise CheckError(
-            f"invalid template name {name!r}; expected ^[a-z0-9][a-z0-9-]*$"
-        )
+        raise CheckError(f"invalid template name {name!r}; expected ^[a-z0-9][a-z0-9-]*$")
     directory = root / "templates" / f"homework-{name}"
     if directory.is_symlink():
-        raise CheckError(
-            f"template directory templates/homework-{name} is a symlink; refusing"
-        )
+        raise CheckError(f"template directory templates/homework-{name} is a symlink; refusing")
     if not directory.is_dir():
-        raise CheckError(
-            f"unknown template {name!r}; no directory at templates/homework-{name}"
-        )
+        raise CheckError(f"unknown template {name!r}; no directory at templates/homework-{name}")
     return directory
 
 
@@ -150,9 +141,7 @@ def _template_manifest(template_dir):
     """Read `template.yaml`; a missing manifest or key is a usage error."""
     manifest_path = template_dir / MANIFEST_NAME
     if not manifest_path.is_file():
-        raise CheckError(
-            f"template templates/{template_dir.name} has no {MANIFEST_NAME}"
-        )
+        raise CheckError(f"template templates/{template_dir.name} has no {MANIFEST_NAME}")
     try:
         text = manifest_path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
@@ -168,9 +157,7 @@ def _template_manifest(template_dir):
     for key in ("framework", "description"):
         value = document.get(key)
         if not isinstance(value, str) or not value.strip():
-            raise CheckError(
-                f"{MANIFEST_NAME} must declare a non-empty {key}"
-            )
+            raise CheckError(f"{MANIFEST_NAME} must declare a non-empty {key}")
     return document
 
 
@@ -187,23 +174,17 @@ def _template_files(template_dir):
     entries = []
     for current, dirnames, filenames in os.walk(template_dir, followlinks=False):
         current_path = Path(current)
-        dirnames[:] = [
-            name for name in dirnames if name not in IGNORED_TEMPLATE_DIRECTORIES
-        ]
+        dirnames[:] = [name for name in dirnames if name not in IGNORED_TEMPLATE_DIRECTORIES]
         for name in sorted(dirnames):
             candidate = current_path / name
             if candidate.is_symlink():
                 relative = candidate.relative_to(template_dir).as_posix()
-                raise CheckError(
-                    f"template entry {relative} is a symlink; refusing to follow it"
-                )
+                raise CheckError(f"template entry {relative} is a symlink; refusing to follow it")
         for name in sorted(filenames):
             candidate = current_path / name
             if candidate.is_symlink():
                 relative = candidate.relative_to(template_dir).as_posix()
-                raise CheckError(
-                    f"template entry {relative} is a symlink; refusing to follow it"
-                )
+                raise CheckError(f"template entry {relative} is a symlink; refusing to follow it")
             relative = candidate.relative_to(template_dir)
             if relative == Path(MANIFEST_NAME):
                 continue
@@ -227,9 +208,7 @@ def _candidates(root, template_dir):
         source = root / template_relative
         display = template_relative.as_posix()
         if source.is_symlink():
-            raise CheckError(
-                f"{display} is a symlink; refusing to follow it"
-            )
+            raise CheckError(f"{display} is a symlink; refusing to follow it")
         if not source.is_file():
             raise CheckError(f"missing {display}")
         candidates.append((Path(target_name), source))
@@ -237,9 +216,7 @@ def _candidates(root, template_dir):
     seen = set()
     for relative, _ in candidates:
         if relative in seen:
-            raise CheckError(
-                f"two template entries map to the target path {relative.as_posix()}"
-            )
+            raise CheckError(f"two template entries map to the target path {relative.as_posix()}")
         seen.add(relative)
     return sorted(candidates, key=lambda item: item[0].as_posix())
 
@@ -279,9 +256,7 @@ def _component_conflict(base, relative):
         except FileNotFoundError:
             return None
         except OSError as exc:
-            raise CheckError(
-                f"cannot inspect {consumed.as_posix()}: {exc}"
-            ) from exc
+            raise CheckError(f"cannot inspect {consumed.as_posix()}: {exc}") from exc
         if index == len(parts) - 1:
             if stat.S_ISLNK(mode):
                 return (
@@ -292,14 +267,12 @@ def _component_conflict(base, relative):
         if stat.S_ISLNK(mode):
             return (
                 "CONFLICT",
-                f"intermediate path {consumed.as_posix()} is a symlink; "
-                "refusing to follow it",
+                f"intermediate path {consumed.as_posix()} is a symlink; refusing to follow it",
             )
         if not stat.S_ISDIR(mode):
             return (
                 "CONFLICT",
-                f"intermediate path {consumed.as_posix()} exists and is not "
-                "a directory",
+                f"intermediate path {consumed.as_posix()} exists and is not a directory",
             )
     return None
 
@@ -352,15 +325,12 @@ def _contained_target(root, homework_id):
         raise CheckError(f"cannot inspect homeworks: {exc}") from exc
     if base_mode is not None:
         if stat.S_ISLNK(base_mode):
-            raise CheckError(
-                "homeworks is a symlink; refusing to follow it"
-            )
+            raise CheckError("homeworks is a symlink; refusing to follow it")
         if not stat.S_ISDIR(base_mode):
             raise CheckError("homeworks exists and is not a directory")
     if base.resolve() != root / "homeworks":
         raise CheckError(
-            "homeworks base resolves outside the repository root; refusing "
-            "to scaffold"
+            "homeworks base resolves outside the repository root; refusing to scaffold"
         )
     target = base / homework_id
     try:
@@ -368,26 +338,17 @@ def _contained_target(root, homework_id):
     except FileNotFoundError:
         mode = None
     except OSError as exc:
-        raise CheckError(
-            f"cannot inspect homeworks/{homework_id}: {exc}"
-        ) from exc
+        raise CheckError(f"cannot inspect homeworks/{homework_id}: {exc}") from exc
     if mode is not None:
         if stat.S_ISLNK(mode):
-            raise CheckError(
-                f"target homeworks/{homework_id} is a symlink; refusing to "
-                "follow it"
-            )
+            raise CheckError(f"target homeworks/{homework_id} is a symlink; refusing to follow it")
         if not stat.S_ISDIR(mode):
-            raise CheckError(
-                f"homeworks/{homework_id} exists and is not a directory"
-            )
+            raise CheckError(f"homeworks/{homework_id} exists and is not a directory")
     resolved = target.resolve()
     try:
         resolved.relative_to(base.resolve())
     except ValueError as exc:
-        raise CheckError(
-            f"target homeworks/{homework_id} escapes the homeworks directory"
-        ) from exc
+        raise CheckError(f"target homeworks/{homework_id} escapes the homeworks directory") from exc
     return target
 
 
@@ -432,9 +393,7 @@ def _build_plan(root, homework_id, target_dir, candidates, mapping):
 
 def _write_atomic(target, data):
     """Write *data* so each file appears whole or not at all (D-24)."""
-    descriptor, temporary = tempfile.mkstemp(
-        dir=target.parent, prefix=".new_homework-"
-    )
+    descriptor, temporary = tempfile.mkstemp(dir=target.parent, prefix=".new_homework-")
     try:
         with os.fdopen(descriptor, "wb") as handle:
             handle.write(data)
@@ -458,9 +417,7 @@ def _write_all(payloads, ordered):
 
 def _emit(records, as_json):
     """Print the plan sorted by path and return the ordered records."""
-    ordered = sorted(
-        records, key=lambda item: (item["path"], item["status"], item["reason"])
-    )
+    ordered = sorted(records, key=lambda item: (item["path"], item["status"], item["reason"]))
     if as_json:
         payload = [
             {
@@ -522,9 +479,7 @@ def main(argv=None):
         candidates = _candidates(root, template_dir)
         mapping = _mapping(root, args.homework_id, manifest)
         target_dir = _contained_target(root, args.homework_id)
-        records, payloads = _build_plan(
-            root, args.homework_id, target_dir, candidates, mapping
-        )
+        records, payloads = _build_plan(root, args.homework_id, target_dir, candidates, mapping)
         ordered = _emit(records, args.json)
     except CheckError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

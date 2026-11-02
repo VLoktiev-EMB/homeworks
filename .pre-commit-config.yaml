@@ -61,13 +61,15 @@ repos:
   # resolves from the repository root without a `-c` argument. D-06: the pinned
   # `rev` is the delivery path, never a system install.
   #
-  # The hook id is `ruff-check`: `ruff` is a legacy alias, and `ruff-format`
-  # would introduce a second mechanical rewrite that TOOL-03 does not require.
-  # No `--fix` argument: 05/D-21 makes every lint hook check-only.
+  # Both `ruff-check` and `ruff-format` run in check-only mode: they validate
+  # lint and format without rewriting.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.2
     hooks:
       - id: ruff-check
+        stages: [pre-commit]
+      - id: ruff-format
+        args: [--check]
         stages: [pre-commit]
 
   # D-14: the policy file is resolved from the working directory, and the hook

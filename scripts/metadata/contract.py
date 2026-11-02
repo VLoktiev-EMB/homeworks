@@ -14,17 +14,17 @@ from scripts.metadata.errors import CheckError
 from scripts.metadata.paths import HOMEWORK_ID, derive_parts, relative_path, resolve_root
 
 __all__ = [
-    "CheckError",
     "HOMEWORK_ID",
+    "CheckError",
     "derive_parts",
+    "load_board_schema",
+    "load_schema",
+    "read_shared_platform_pin",
     "relative_path",
     "resolve_root",
-    "load_schema",
-    "load_board_schema",
-    "read_shared_platform_pin",
-    "validate_homework_text",
     "validate_board_text",
     "validate_candidate",
+    "validate_homework_text",
 ]
 
 SCHEMA_PATH = Path("schema") / "homework.schema.json"
