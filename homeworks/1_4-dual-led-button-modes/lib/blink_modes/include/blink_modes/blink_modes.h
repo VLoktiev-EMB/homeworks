@@ -1,3 +1,6 @@
+#ifndef BLINK_MODES_H
+#define BLINK_MODES_H
+
 #pragma once
 
 #include <stdbool.h>
@@ -79,3 +82,5 @@ bool blink_modes_led_b_on(const blink_modes_t *state);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* BLINK_MODES_H */
