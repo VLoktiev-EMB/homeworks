@@ -1,3 +1,6 @@
+#ifndef POLICE_PATTERN_H
+#define POLICE_PATTERN_H
+
 #pragma once
 
 #include <stdbool.h>
@@ -58,3 +61,5 @@ uint32_t police_pattern_step_duration_ms(const police_pattern_t *pattern);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* POLICE_PATTERN_H */
