@@ -33,7 +33,7 @@ Present today: this rulebook, `README.md`, one MIT `LICENSE`, `.gitignore`, `.gi
 - `.github/workflows/ci.yml` — the pull-request gate: `meta`, `build`, `python-tests`, and `gate`.
 - `.github/workflows/nightly.yml` — the scheduled full build and native-test matrix plus the
   full-history secret scan.
-- `.agents/standards/` — engineering standards: `report.md`, `electrical-calculations.md`, and `vscode.md`.
+- `.agents/standards/` — engineering standards: `embedded-c.md`, `report.md`, `electrical-calculations.md`, and `vscode.md`.
 - `boards/` — one YAML profile per board, validated by the same metadata checker.
 - `scripts/` — deterministic checks and the tag script; `scripts/tests/`
   — the test suite.
@@ -260,10 +260,22 @@ Good:  style(scripts): format Python sources
 - **[MUST]** **[ENFORCED: review]** Never commit internal course material or original
   assignment text. Assignments appear only as English paraphrase with attribution.
 
-### Architecture
+### Architecture and embedded C
 
 - **[MUST]** **[ENFORCED: CI]** `lib/common` and `lib/port` carry no framework
   headers, proven directly by `pio test -d tests -e native` on host.
+- **[MUST]** **[ENFORCED: review]** Firmware domain logic and contracts must follow
+  `.agents/standards/embedded-c.md`: pure C99/C11, zero dynamic memory allocation
+  (`malloc`/`free`), `<stdint.h>` types, `<stdbool.h>` flags, and Flash-located
+  `const ops` tables for HAL interfaces.
+- **[MUST]** **[ENFORCED: review]** Stateful logic, filters, and measurement algorithms
+  must be decoupled from Arduino/ESP-IDF SDK calls into standalone, host-testable
+  libraries under `homeworks/<id>/lib/` covered by Unity unit tests.
+- **[MUST]** **[ENFORCED: review]** ISR-shared state must be qualified `volatile`, with
+  minimal critical sections (no bulk `memcpy` inside disabled interrupts; prefer
+  ping-pong zero-copy pointer swaps).
+- **[MUST]** **[ENFORCED: review]** Public API boundaries and contract wrappers must
+  defensively validate pointers for `NULL` before dereferencing.
 
 ## Routing table
 
@@ -271,6 +283,7 @@ Good:  style(scripts): format Python sources
 |----------------|-----------------------|
 | Open a pull request | `.github/pull_request_template.md` — the single template |
 | Check a change against standards | this file, "Research and standards", and `.github/pull_request_template.md` |
+| Write or review firmware C/C++ code | this file, "Architecture and embedded C", and `.agents/standards/embedded-c.md` |
 | Tag a merged homework | `scripts/tag_homework.sh <id>` — the only tag path |
 | Create a homework | `scripts/new_homework <id> --template <name>` — the only supported path |
 | Validate metadata and provenance | `uv run scripts/check_metadata.py` with `schema/homework.schema.json` |

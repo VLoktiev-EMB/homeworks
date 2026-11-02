@@ -97,5 +97,16 @@ the same register as `AGENTS.md`.
   verified claim.
 - **[MUST]** **[ENFORCED: review]** Never describe a simulation as a flash.
 
+## Embedded C and firmware architecture
+
+- **[MUST]** **[ENFORCED: review]** Firmware domain logic and contracts adhere to
+  `.agents/standards/embedded-c.md`: pure C99/C11, zero dynamic memory allocation,
+  strict `<stdint.h>` types, `volatile` qualification for ISR-shared state,
+  minimal critical sections without bulk `memcpy`, and Flash-located `const ops`
+  tables for HAL contracts.
+- **[MUST]** **[ENFORCED: review]** Pure domain algorithms (filters, state machines,
+  burst analyzers) must be decoupled from framework/SDK headers into testable
+  libraries verified by `pio test -d tests -e native` on host.
+
 These rules are `[ENFORCED: review]`, and adhering to them is required on every
 invocation; convenience or speed is never a reason to soften a rule.
