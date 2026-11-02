@@ -25,9 +25,13 @@ void host_fake_time_advance(host_fake_time_t *fake, uint32_t delta_ms)
     fake->now_ms += delta_ms;
 }
 
+static const port_time_ops_t HOST_FAKE_TIME_OPS = {
+    host_fake_time_now_ms,
+};
+
 port_time_t host_fake_time_port(host_fake_time_t *fake)
 {
-    port_time_t port = {host_fake_time_now_ms, fake};
+    port_time_t port = {&HOST_FAKE_TIME_OPS, fake};
 
     return port;
 }

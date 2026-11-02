@@ -57,8 +57,14 @@ static port_status_t arduino_read(void *ctx, uint8_t pin, port_gpio_level_t *lev
     return PORT_OK;
 }
 
+static const port_gpio_ops_t ARDUINO_GPIO_OPS = {
+    arduino_set_mode,
+    arduino_write,
+    arduino_read,
+};
+
 port_gpio_t arduino_gpio_port(void)
 {
-    port_gpio_t port = {arduino_set_mode, arduino_write, arduino_read, NULL};
+    port_gpio_t port = {&ARDUINO_GPIO_OPS, NULL};
     return port;
 }

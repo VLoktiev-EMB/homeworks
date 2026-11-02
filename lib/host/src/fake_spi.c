@@ -82,9 +82,14 @@ void host_fake_spi_fail_next(host_fake_spi_t *fake, port_status_t status)
     fake->forced_status = status;
 }
 
+static const port_spi_ops_t HOST_FAKE_SPI_OPS = {
+    host_fake_spi_transfer,
+    host_fake_spi_write,
+};
+
 port_spi_t host_fake_spi_port(host_fake_spi_t *fake)
 {
-    port_spi_t port = {host_fake_spi_transfer, host_fake_spi_write, fake};
+    port_spi_t port = {&HOST_FAKE_SPI_OPS, fake};
 
     return port;
 }

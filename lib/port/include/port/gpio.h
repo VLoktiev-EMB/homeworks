@@ -1,5 +1,9 @@
+#ifndef PORT_GPIO_H
+#define PORT_GPIO_H
+
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "port/status.h"
@@ -18,6 +22,16 @@ typedef enum port_gpio_mode { PORT_GPIO_INPUT = 0, PORT_GPIO_OUTPUT, PORT_GPIO_I
 /* Digital level. Explicit values keep the zero case unambiguous. */
 typedef enum port_gpio_level { PORT_GPIO_LOW = 0, PORT_GPIO_HIGH = 1 } port_gpio_level_t;
 
+/* Consumer-owned GPIO operations table.
+
+   Placed in Flash / ROM (.rodata) as a const struct to eliminate RAM waste
+   and protect function pointers against memory corruption. */
+typedef struct port_gpio_ops {
+    port_status_t (*set_mode)(void *ctx, uint8_t pin, port_gpio_mode_t mode);
+    port_status_t (*write)(void *ctx, uint8_t pin, port_gpio_level_t level);
+    port_status_t (*read)(void *ctx, uint8_t pin, port_gpio_level_t *level);
+} port_gpio_ops_t;
+
 /* Consumer-owned GPIO contract.
 
    The consumer owns the interface, the adapter owns the state behind `ctx`,
@@ -31,12 +45,37 @@ typedef enum port_gpio_level { PORT_GPIO_LOW = 0, PORT_GPIO_HIGH = 1 } port_gpio
    This contract does not name a framework type, does not own state, does not
    block, and does not encode device behaviour. */
 typedef struct port_gpio {
-    port_status_t (*set_mode)(void *ctx, uint8_t pin, port_gpio_mode_t mode);
-    port_status_t (*write)(void *ctx, uint8_t pin, port_gpio_level_t level);
-    port_status_t (*read)(void *ctx, uint8_t pin, port_gpio_level_t *level);
+    const port_gpio_ops_t *ops;
     void *ctx;
 } port_gpio_t;
+
+/* Safe inline dispatch helpers verifying pointers before dereferencing. */
+static inline port_status_t port_gpio_set_mode(const port_gpio_t *gpio, uint8_t pin, port_gpio_mode_t mode)
+{
+    if (gpio == NULL || gpio->ops == NULL || gpio->ops->set_mode == NULL) {
+        return PORT_ERR_INVALID_ARG;
+    }
+    return gpio->ops->set_mode(gpio->ctx, pin, mode);
+}
+
+static inline port_status_t port_gpio_write(const port_gpio_t *gpio, uint8_t pin, port_gpio_level_t level)
+{
+    if (gpio == NULL || gpio->ops == NULL || gpio->ops->write == NULL) {
+        return PORT_ERR_INVALID_ARG;
+    }
+    return gpio->ops->write(gpio->ctx, pin, level);
+}
+
+static inline port_status_t port_gpio_read(const port_gpio_t *gpio, uint8_t pin, port_gpio_level_t *level)
+{
+    if (gpio == NULL || gpio->ops == NULL || gpio->ops->read == NULL || level == NULL) {
+        return PORT_ERR_INVALID_ARG;
+    }
+    return gpio->ops->read(gpio->ctx, pin, level);
+}
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* PORT_GPIO_H */

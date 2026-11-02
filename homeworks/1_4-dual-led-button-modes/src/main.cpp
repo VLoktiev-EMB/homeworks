@@ -33,7 +33,7 @@ static bool fault_reported = false;
 
 static bool configure_pin(uint8_t pin, port_gpio_mode_t mode, const char *failure_message)
 {
-    if (gpio.set_mode(gpio.ctx, pin, mode) != PORT_OK) {
+    if (port_gpio_set_mode(&gpio, pin, mode) != PORT_OK) {
         port_log_write(&logger, PORT_LOG_ERROR, failure_message);
         return false;
     }

@@ -1,3 +1,6 @@
+#ifndef PORT_STATUS_H
+#define PORT_STATUS_H
+
 #pragma once
 
 #ifdef __cplusplus
@@ -17,3 +20,5 @@ typedef enum port_status_t {
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* PORT_STATUS_H */

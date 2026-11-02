@@ -37,9 +37,13 @@ void host_fake_log_reset(host_fake_log_t *fake)
     fake->dropped = 0u;
 }
 
+static const port_log_ops_t HOST_FAKE_LOG_OPS = {
+    host_fake_log_write,
+};
+
 port_log_t host_fake_log_port(host_fake_log_t *fake)
 {
-    port_log_t port = {host_fake_log_write, fake};
+    port_log_t port = {&HOST_FAKE_LOG_OPS, fake};
 
     return port;
 }

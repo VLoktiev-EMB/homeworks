@@ -119,9 +119,15 @@ void host_fake_i2c_preset(host_fake_i2c_t *fake, const uint8_t *data, size_t len
     fake->length = length;
 }
 
+static const port_i2c_ops_t HOST_FAKE_I2C_OPS = {
+    host_fake_i2c_write,
+    host_fake_i2c_read,
+    host_fake_i2c_write_read,
+};
+
 port_i2c_t host_fake_i2c_port(host_fake_i2c_t *fake)
 {
-    port_i2c_t port = {host_fake_i2c_write, host_fake_i2c_read, host_fake_i2c_write_read, fake};
+    port_i2c_t port = {&HOST_FAKE_I2C_OPS, fake};
 
     return port;
 }

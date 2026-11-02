@@ -80,8 +80,14 @@ static port_status_t espidf_read(void *ctx, uint8_t pin, port_gpio_level_t *leve
     return PORT_OK;
 }
 
+static const port_gpio_ops_t ESPIDF_GPIO_OPS = {
+    espidf_set_mode,
+    espidf_write,
+    espidf_read,
+};
+
 port_gpio_t espidf_gpio_port(void)
 {
-    port_gpio_t port = {espidf_set_mode, espidf_write, espidf_read, NULL};
+    port_gpio_t port = {&ESPIDF_GPIO_OPS, NULL};
     return port;
 }

@@ -31,8 +31,12 @@ static void espidf_log_write(void *ctx, port_log_level_t level, const char *mess
     esp_log_write(mapped, "port", "%s\n", message == NULL ? "" : message);
 }
 
+static const port_log_ops_t ESPIDF_LOG_OPS = {
+    espidf_log_write,
+};
+
 port_log_t espidf_log_port(void)
 {
-    port_log_t port = {espidf_log_write, NULL};
+    port_log_t port = {&ESPIDF_LOG_OPS, NULL};
     return port;
 }

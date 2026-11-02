@@ -107,7 +107,7 @@ CONFLICT_STATUSES = ("CONFLICT", "ERROR")
 # copy it: `.pio/`, a generated `CMakeLists.txt`, a generated `sdkconfig.<env>`
 # and a project database. The authored `sdkconfig.defaults` is deliberately
 # kept, mirroring the order-sensitive re-include in `.gitignore`.
-IGNORED_TEMPLATE_DIRECTORIES = frozenset({".pio"})
+IGNORED_TEMPLATE_DIRECTORIES = frozenset({".pio", ".cache"})
 IGNORED_TEMPLATE_NAMES = frozenset({"CMakeLists.txt", "compile_commands.json"})
 AUTHORED_SDKCONFIG = "sdkconfig.defaults"
 

@@ -48,17 +48,17 @@ static void apply_outputs(const police_outputs_t *outputs)
     }
 
     if (outputs->pair == POLICE_PAIR_RED) {
-        report_status("pair pin mode failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_OUTPUT));
-        report_status("red write failed", gpio.write(gpio.ctx, PAIR_PIN, PORT_GPIO_HIGH));
+        report_status("pair pin mode failed", port_gpio_set_mode(&gpio, PAIR_PIN, PORT_GPIO_OUTPUT));
+        report_status("red write failed", port_gpio_write(&gpio, PAIR_PIN, PORT_GPIO_HIGH));
     } else if (outputs->pair == POLICE_PAIR_BLUE) {
-        report_status("pair pin mode failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_OUTPUT));
-        report_status("blue write failed", gpio.write(gpio.ctx, PAIR_PIN, PORT_GPIO_LOW));
+        report_status("pair pin mode failed", port_gpio_set_mode(&gpio, PAIR_PIN, PORT_GPIO_OUTPUT));
+        report_status("blue write failed", port_gpio_write(&gpio, PAIR_PIN, PORT_GPIO_LOW));
     } else {
-        report_status("pair pin release failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_INPUT));
+        report_status("pair pin release failed", port_gpio_set_mode(&gpio, PAIR_PIN, PORT_GPIO_INPUT));
     }
 
     report_status("white write failed",
-                  gpio.write(gpio.ctx, WHITE_PIN, outputs->white_on ? PORT_GPIO_HIGH : PORT_GPIO_LOW));
+                  port_gpio_write(&gpio, WHITE_PIN, outputs->white_on ? PORT_GPIO_HIGH : PORT_GPIO_LOW));
 }
 
 void setup(void)
@@ -69,9 +69,9 @@ void setup(void)
     logger = arduino_log_port();
     clock_port = arduino_time_port();
 
-    report_status("white pin configuration failed", gpio.set_mode(gpio.ctx, WHITE_PIN, PORT_GPIO_OUTPUT));
-    report_status("white initial level failed", gpio.write(gpio.ctx, WHITE_PIN, PORT_GPIO_LOW));
-    report_status("pair pin release failed", gpio.set_mode(gpio.ctx, PAIR_PIN, PORT_GPIO_INPUT));
+    report_status("white pin configuration failed", port_gpio_set_mode(&gpio, WHITE_PIN, PORT_GPIO_OUTPUT));
+    report_status("white initial level failed", port_gpio_write(&gpio, WHITE_PIN, PORT_GPIO_LOW));
+    report_status("pair pin release failed", port_gpio_set_mode(&gpio, PAIR_PIN, PORT_GPIO_INPUT));
 
     police_pattern_init(&pattern, port_time_now_ms(&clock_port));
     (void)police_pattern_update(&pattern, port_time_now_ms(&clock_port), &outputs);

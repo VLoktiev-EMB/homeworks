@@ -89,9 +89,15 @@ void host_fake_gpio_fail_next(host_fake_gpio_t *fake, port_status_t status)
     fake->forced_status = status;
 }
 
+static const port_gpio_ops_t HOST_FAKE_GPIO_OPS = {
+    host_fake_set_mode,
+    host_fake_write,
+    host_fake_read,
+};
+
 port_gpio_t host_fake_gpio_port(host_fake_gpio_t *fake)
 {
-    port_gpio_t port = {host_fake_set_mode, host_fake_write, host_fake_read, fake};
+    port_gpio_t port = {&HOST_FAKE_GPIO_OPS, fake};
 
     return port;
 }

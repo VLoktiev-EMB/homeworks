@@ -28,8 +28,12 @@ static void arduino_log_write(void *ctx, port_log_level_t level, const char *mes
     log_printf("%c %s\n", prefix, message == NULL ? "" : message);
 }
 
+static const port_log_ops_t ARDUINO_LOG_OPS = {
+    arduino_log_write,
+};
+
 port_log_t arduino_log_port(void)
 {
-    port_log_t port = {arduino_log_write, NULL};
+    port_log_t port = {&ARDUINO_LOG_OPS, NULL};
     return port;
 }
